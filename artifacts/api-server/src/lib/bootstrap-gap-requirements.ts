@@ -285,7 +285,11 @@ export async function bootstrapGapRequirements(): Promise<void> {
     }
 
     // Mark requirements that have actually shipped as 'done' (idempotent).
-    const shippedCodes = ["ELTP-0005", "ELTP-0011", "ELTP-0013", "ELTP-0014", "ELTP-0015", "ELTP-0016", "ELTP-0017"];
+    const shippedCodes = [
+      "ELTP-0005", "ELTP-0011", "ELTP-0013", "ELTP-0014", "ELTP-0015", "ELTP-0016", "ELTP-0017",
+      // Wave 2 — workflow engine
+      "ELTP-0018", "ELTP-0019", "ELTP-0020",
+    ];
     await pool.query(
       `UPDATE requirements
        SET status = 'done', updated_at = NOW()

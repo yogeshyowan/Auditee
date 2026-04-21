@@ -14,6 +14,7 @@ import aiRouter from "./ai";
 import commentsRouter from "./comments";
 import capaRouter from "./capa";
 import reportsRouter from "./reports";
+import workflowsRouter from "./workflows";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(aiRouter);
 router.use(commentsRouter);
 router.use(capaRouter);
 router.use(reportsRouter);
+router.use(workflowsRouter);
 
 export default router;

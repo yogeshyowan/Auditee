@@ -12,3 +12,4 @@ export * from "./aiConversations";
 export * from "./comments";
 export * from "./capaActions";
 export * from "./aiReports";
+export * from "./workflows";

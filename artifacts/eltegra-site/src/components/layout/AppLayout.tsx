@@ -11,7 +11,8 @@ import {
   ChevronDown,
   Sparkles,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Workflow
 } from "lucide-react";
 import { useListProjects } from "@workspace/api-client-react";
 import { useProjectContext } from "@/lib/project-context";
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/app/capa", label: "CAPA Actions", icon: AlertTriangle },
   { href: "/app/reports", label: "AI Reports", icon: FileText },
+  { href: "/app/workflows", label: "Workflows", icon: Workflow },
   { href: "/app/pdlc", label: "PDLC Pipeline", icon: FastForward },
   { href: "/app/legacy", label: "Legacy Modernization", icon: Database },
   { href: "/app/activity", label: "Activity", icon: Activity },

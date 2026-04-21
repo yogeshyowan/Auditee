@@ -20,6 +20,7 @@ import Activity from "@/pages/app/Activity";
 import Ask from "@/pages/app/Ask";
 import Capa from "@/pages/app/Capa";
 import Reports from "@/pages/app/Reports";
+import Workflows from "@/pages/app/Workflows";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ function AppRoutes() {
           <Route path="/app/ask" component={Ask} />
           <Route path="/app/capa" component={Capa} />
           <Route path="/app/reports" component={Reports} />
+          <Route path="/app/workflows" component={Workflows} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>

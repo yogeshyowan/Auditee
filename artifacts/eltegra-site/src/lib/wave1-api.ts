@@ -182,3 +182,133 @@ export function useDeleteReport() {
 export function reportExportUrl(id: string, format: "html" | "docx" | "pdf") {
   return `${apiBase}/reports/${id}/export?format=${format}`;
 }
+
+// ───────── Workflows ─────────
+export type WorkflowStepDef = {
+  id: string;
+  name: string;
+  type: "task" | "approval" | "ai_action" | "branch" | "stop";
+  assignee?: string;
+  branches?: Array<{ when: string; goto: string }>;
+  blockedUntil?: Array<{ expr: string; reason: string }>;
+  aiPrompt?: string;
+  outputKey?: string;
+  dueOffsetDays?: number;
+};
+export type WorkflowRow = {
+  id: string;
+  name: string;
+  description: string;
+  version: number;
+  status: string;
+  trigger: string;
+  definition: { steps: WorkflowStepDef[] };
+  createdAt: string;
+  updatedAt: string;
+};
+export type WorkflowRunRow = {
+  id: string;
+  workflowId: string;
+  projectId: string | null;
+  status: string;
+  currentStepId: string | null;
+  blockedReason: string | null;
+  context: Record<string, unknown>;
+  startedBy: string;
+  startedAt: string;
+  completedAt: string | null;
+};
+export type WorkflowStepRunRow = {
+  id: string;
+  runId: string;
+  stepId: string;
+  stepName: string;
+  stepType: string;
+  status: string;
+  assignee: string | null;
+  output: Record<string, unknown>;
+  blockedReason: string | null;
+  dueAt: string | null;
+  startedAt: string;
+  completedAt: string | null;
+};
+
+export function useWorkflows() {
+  return useQuery({
+    queryKey: ["workflows"],
+    queryFn: () => jfetch<{ workflows: WorkflowRow[] }>("/workflows"),
+  });
+}
+export function useWorkflowRuns(filters: { projectId?: string; workflowId?: string; status?: string } = {}) {
+  const qs = new URLSearchParams();
+  if (filters.projectId) qs.set("projectId", filters.projectId);
+  if (filters.workflowId) qs.set("workflowId", filters.workflowId);
+  if (filters.status) qs.set("status", filters.status);
+  return useQuery({
+    queryKey: ["workflow-runs", filters],
+    queryFn: () => jfetch<{ runs: WorkflowRunRow[] }>(`/workflow-runs?${qs}`),
+  });
+}
+export function useWorkflowRun(id: string | undefined) {
+  return useQuery({
+    queryKey: ["workflow-run", id],
+    enabled: Boolean(id),
+    refetchInterval: 4000,
+    queryFn: () =>
+      jfetch<{ run: WorkflowRunRow; stepRuns: WorkflowStepRunRow[]; workflow: WorkflowRow | null }>(`/workflow-runs/${id}`),
+  });
+}
+export function useCreateWorkflow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string; description?: string; trigger?: string; definition: { steps: WorkflowStepDef[] } }) =>
+      jfetch<WorkflowRow>("/workflows", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workflows"] }),
+  });
+}
+export function useStartRun() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workflowId, ...body }: { workflowId: string; projectId?: string; context?: Record<string, unknown>; startedBy?: string }) =>
+      jfetch<{ run: WorkflowRunRow; currentStep: WorkflowStepDef }>(`/workflows/${workflowId}/runs`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workflow-runs"] }),
+  });
+}
+export function useAdvanceRun() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ runId, contextPatch, output }: { runId: string; contextPatch?: Record<string, unknown>; output?: Record<string, unknown> }) =>
+      jfetch<{ run: WorkflowRunRow; currentStep?: WorkflowStepDef; blockedReason?: string }>(`/workflow-runs/${runId}/advance`, {
+        method: "POST",
+        body: JSON.stringify({ contextPatch, output }),
+      }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["workflow-run", vars.runId] });
+      qc.invalidateQueries({ queryKey: ["workflow-runs"] });
+    },
+  });
+}
+export function useRecheckRun() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ runId, contextPatch }: { runId: string; contextPatch?: Record<string, unknown> }) =>
+      jfetch<{ run: WorkflowRunRow; currentStep?: WorkflowStepDef; blockedReason?: string }>(`/workflow-runs/${runId}/recheck`, {
+        method: "POST",
+        body: JSON.stringify({ contextPatch }),
+      }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["workflow-run", vars.runId] });
+      qc.invalidateQueries({ queryKey: ["workflow-runs"] });
+    },
+  });
+}
+export function useCancelRun() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (runId: string) => jfetch<WorkflowRunRow>(`/workflow-runs/${runId}/cancel`, { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workflow-runs"] }),
+  });
+}
