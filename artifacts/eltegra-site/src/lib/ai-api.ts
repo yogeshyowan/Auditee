@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -150,11 +150,58 @@ export type AskResult = {
   answer: string;
   citations: string[];
   confidence: "low" | "medium" | "high";
+  id?: string;
+  createdAt?: string;
 };
 
+export type AskConversation = {
+  id: string;
+  projectId: string | null;
+  question: string;
+  answer: string;
+  confidence: "low" | "medium" | "high" | null;
+  citations: string[];
+  createdAt: string;
+};
+
+const ASK_HISTORY_KEY = (projectId?: string) => ["ai", "ask", "history", projectId ?? "all"];
+
 export function useAskEltegra() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { question: string; projectId?: string }) =>
       aiFetch<AskResult>("/ai/ask", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ai", "ask", "history"] });
+    },
+  });
+}
+
+export function useAskHistory(projectId?: string) {
+  return useQuery({
+    queryKey: ASK_HISTORY_KEY(projectId),
+    queryFn: async () => {
+      const qs = projectId ? `?projectId=${encodeURIComponent(projectId)}` : "";
+      const r = await fetch(`${apiBase}/ai/ask/history${qs}`);
+      if (!r.ok) throw new Error(await r.text());
+      const json = (await r.json()) as { conversations: AskConversation[] };
+      return json.conversations;
+    },
+  });
+}
+
+export function useDeleteAskConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const r = await fetch(`${apiBase}/ai/ask/history/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ai", "ask", "history"] });
+    },
   });
 }

@@ -8,3 +8,4 @@ export * from "./activityEvents";
 export * from "./pdlcStages";
 export * from "./legacySystems";
 export * from "./demoRequests";
+export * from "./aiConversations";

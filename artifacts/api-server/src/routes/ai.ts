@@ -21,7 +21,9 @@ import {
   complianceControlsTable,
   activityEventsTable,
   legacySystemsTable,
+  aiConversationsTable,
 } from "@workspace/db";
+import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 
 const router: IRouter = Router();
@@ -542,7 +544,44 @@ Return strict JSON:
   type AskResult = { answer: string; citations: string[]; confidence: "low" | "medium" | "high" };
   const result = await jsonCompletion<AskResult>(sysPrompt, userPrompt);
 
-  res.json(result);
+  const [saved] = await db
+    .insert(aiConversationsTable)
+    .values({
+      id: randomUUID(),
+      projectId: body.projectId ?? null,
+      question: body.question,
+      answer: result.answer ?? "",
+      confidence: result.confidence ?? "medium",
+      citations: Array.isArray(result.citations) ? result.citations : [],
+    })
+    .returning();
+
+  res.json({ ...result, id: saved.id, createdAt: saved.createdAt });
+}));
+
+router.get("/ai/ask/history", aiHandler(async (req, res) => {
+  const projectId = optionalString(req.query.projectId);
+  const limitRaw = Number(req.query.limit ?? 50);
+  const limit = Math.max(1, Math.min(200, Number.isFinite(limitRaw) ? limitRaw : 50));
+  const rows = projectId
+    ? await db
+        .select()
+        .from(aiConversationsTable)
+        .where(eq(aiConversationsTable.projectId, projectId))
+        .orderBy(desc(aiConversationsTable.createdAt))
+        .limit(limit)
+    : await db
+        .select()
+        .from(aiConversationsTable)
+        .orderBy(desc(aiConversationsTable.createdAt))
+        .limit(limit);
+  res.json({ conversations: rows });
+}));
+
+router.delete("/ai/ask/history/:id", aiHandler(async (req, res) => {
+  const id = requireString(req.params.id, "id", { min: 1 });
+  await db.delete(aiConversationsTable).where(eq(aiConversationsTable.id, id));
+  res.json({ ok: true });
 }));
 
 export default router;

@@ -57,7 +57,9 @@ codegen pipeline; the frontend calls them via thin `useMutation` wrappers in
 - `POST /api/ai/analyze-code` — given a code snippet, classifies which existing requirements it implements/tests/violates, creates the code artifact and traceability links (UI: Traceability page → "Analyze code").
 - `POST /api/ai/compliance-audit` — runs a control-by-control audit of a project against a framework, returns verdicts + recommendations (UI: ComplianceDetail → "Run AI audit").
 - `POST /api/ai/legacy-extract` — pulls implicit requirements + risks out of legacy code, optionally saves them to a project (UI: Legacy page → "Extract requirements").
-- `POST /api/ai/ask` — natural-language Q&A across project context (UI: `/app/ask`).
+- `POST /api/ai/ask` — natural-language Q&A across project context (UI: `/app/ask`). Conversations persist server-side in the `ai_conversations` table and are scoped by `projectId` when one is selected.
+- `GET /api/ai/ask/history?projectId=...&limit=50` — list saved Q&A history (newest first).
+- `DELETE /api/ai/ask/history/:id` — remove a saved conversation.
 
 Provider client lives at `lib/integrations-openai-ai-server` (Replit AI Integrations
 proxy — no API key required). Model: `gpt-5.2` (JSON mode for structured outputs).

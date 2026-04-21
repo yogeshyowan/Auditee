@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { useListProjects } from "@workspace/api-client-react";
 import { useProjectContext } from "@/lib/project-context";
-import { useAskEltegra, type AskResult } from "@/lib/ai-api";
+import {
+  useAskEltegra,
+  useAskHistory,
+  useDeleteAskConversation,
+  type AskConversation,
+} from "@/lib/ai-api";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Loader2, MessageSquare } from "lucide-react";
+import { Sparkles, Loader2, MessageSquare, Trash2 } from "lucide-react";
 
 const CONFIDENCE_BADGE: Record<string, string> = {
   low: "bg-amber-50 text-amber-700 border-amber-200",
@@ -15,17 +20,31 @@ const CONFIDENCE_BADGE: Record<string, string> = {
   high: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
-type QA = { question: string; result: AskResult };
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diffMs = Date.now() - then;
+  const diffSec = Math.round(diffMs / 1000);
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.round(diffHr / 24);
+  if (diffDay < 30) return `${diffDay}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
 
 export default function Ask() {
   const { projectId } = useProjectContext();
   const { data: projects } = useListProjects();
   const currentProject = projects?.find((p) => p.id === projectId);
   const { toast } = useToast();
+
   const askMut = useAskEltegra();
+  const deleteMut = useDeleteAskConversation();
+  const historyQuery = useAskHistory(projectId ?? undefined);
 
   const [question, setQuestion] = useState("");
-  const [history, setHistory] = useState<QA[]>([]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +53,7 @@ export default function Ask() {
     askMut.mutate(
       { question: q, projectId: projectId ?? undefined },
       {
-        onSuccess: (result) => {
-          setHistory((h) => [{ question: q, result }, ...h]);
+        onSuccess: () => {
           setQuestion("");
         },
         onError: (err: Error) => {
@@ -44,6 +62,17 @@ export default function Ask() {
       },
     );
   };
+
+  const handleDelete = (id: string) => {
+    deleteMut.mutate(id, {
+      onError: (err: Error) => {
+        toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+      },
+    });
+  };
+
+  const history: AskConversation[] = historyQuery.data ?? [];
+  const isLoadingHistory = historyQuery.isLoading;
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
@@ -90,41 +119,76 @@ export default function Ask() {
         </Card>
       )}
 
-      {history.length === 0 && !askMut.isPending ? (
+      {isLoadingHistory ? (
+        <Card className="rounded-xl border-slate-200">
+          <CardContent className="p-6 flex items-center gap-3 text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading history...</span>
+          </CardContent>
+        </Card>
+      ) : history.length === 0 && !askMut.isPending ? (
         <Card className="rounded-xl border-slate-200 border-dashed">
           <CardContent className="p-10 text-center text-slate-500">
             <MessageSquare className="h-10 w-10 mx-auto mb-3 text-slate-300" />
-            Ask a question to get started.
+            {currentProject
+              ? `No questions asked about ${currentProject.name} yet.`
+              : "Ask a question to get started."}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {history.map((qa, i) => (
-            <Card key={i} className="rounded-xl border-slate-200" data-testid={`qa-${i}`}>
-              <CardContent className="p-5 space-y-3">
-                <div className="flex items-start gap-2">
-                  <MessageSquare className="h-4 w-4 text-slate-400 mt-1 flex-shrink-0" />
-                  <p className="text-sm font-medium text-slate-900">{qa.question}</p>
-                </div>
-                <div className="pl-6 space-y-3">
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{qa.result.answer}</p>
-                  {qa.result.citations.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {qa.result.citations.map((c, j) => (
-                        <Badge key={j} variant="outline" className="font-mono text-[10px]">{c}</Badge>
-                      ))}
+          <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+            <span>
+              {history.length} saved {history.length === 1 ? "conversation" : "conversations"}
+              {currentProject ? ` for ${currentProject.name}` : " across all projects"}
+            </span>
+          </div>
+          {history.map((qa) => {
+            const confidence = qa.confidence ?? "medium";
+            return (
+              <Card key={qa.id} className="rounded-xl border-slate-200" data-testid={`qa-${qa.id}`}>
+                <CardContent className="p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      <MessageSquare className="h-4 w-4 text-slate-400 mt-1 flex-shrink-0" />
+                      <p className="text-sm font-medium text-slate-900">{qa.question}</p>
                     </div>
-                  )}
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-xs text-slate-500">Confidence:</span>
-                    <Badge className={(CONFIDENCE_BADGE[qa.result.confidence] ?? "bg-slate-100 text-slate-700") + " border text-[10px]"}>
-                      {qa.result.confidence}
-                    </Badge>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-slate-400">{relativeTime(qa.createdAt)}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-red-600"
+                        onClick={() => handleDelete(qa.id)}
+                        disabled={deleteMut.isPending}
+                        data-testid={`delete-qa-${qa.id}`}
+                        aria-label="Delete conversation"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="pl-6 space-y-3">
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{qa.answer}</p>
+                    {qa.citations.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {qa.citations.map((c, j) => (
+                          <Badge key={j} variant="outline" className="font-mono text-[10px]">{c}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-xs text-slate-500">Confidence:</span>
+                      <Badge className={(CONFIDENCE_BADGE[confidence] ?? "bg-slate-100 text-slate-700") + " border text-[10px]"}>
+                        {confidence}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
