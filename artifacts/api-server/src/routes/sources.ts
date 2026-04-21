@@ -1,0 +1,221 @@
+import { Router, type IRouter } from "express";
+import multer from "multer";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { db, projectSourcesTable, sourceFilesTable, activityEventsTable } from "@workspace/db";
+import { ingestZipBuffer, ingestGithub, ingestRemoteSystem, persistFiles, type IngestedFile } from "../lib/source-ingestion.js";
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100 MB
+const router: IRouter = Router();
+
+const SUPPORTED_KINDS = ["github", "zip", "folder", "jira", "jenkins", "aws_s3", "gdrive", "alm", "cloud_server", "url"];
+
+// Strip secrets from config before returning to the client.
+function safeConfig(kind: string, cfg: Record<string, any>): Record<string, any> {
+  const out = { ...cfg };
+  for (const k of ["token", "secretAccessKey", "apiKey", "password", "sshKey"]) {
+    if (out[k]) out[k] = "•••";
+  }
+  return out;
+}
+
+router.get("/sources", async (req, res) => {
+  const projectId = typeof req.query.projectId === "string" ? req.query.projectId : undefined;
+  const conds = projectId ? [eq(projectSourcesTable.projectId, projectId)] : [];
+  const rows = await db
+    .select()
+    .from(projectSourcesTable)
+    .where(conds.length ? and(...conds) : undefined)
+    .orderBy(desc(projectSourcesTable.createdAt));
+  res.json({
+    sources: rows.map((r) => ({ ...r, config: safeConfig(r.kind, r.config) })),
+  });
+});
+
+router.post("/sources", async (req, res) => {
+  const b = req.body ?? {};
+  if (!b.projectId || typeof b.projectId !== "string") {
+    res.status(400).json({ error: "projectId required" });
+    return;
+  }
+  if (!SUPPORTED_KINDS.includes(b.kind)) {
+    res.status(400).json({ error: `kind must be one of ${SUPPORTED_KINDS.join(", ")}` });
+    return;
+  }
+  const id = randomUUID();
+  const [row] = await db
+    .insert(projectSourcesTable)
+    .values({
+      id,
+      projectId: b.projectId,
+      kind: b.kind,
+      label: typeof b.label === "string" && b.label.trim() ? b.label.slice(0, 240) : `${b.kind} source`,
+      config: typeof b.config === "object" && b.config ? b.config : {},
+      status: "idle",
+    })
+    .returning();
+  await db.insert(activityEventsTable).values({
+    id: randomUUID(),
+    kind: "source",
+    message: `Source connected: ${row.label} (${row.kind})`,
+    actor: "avery.kim",
+    entityCode: row.id,
+  });
+  res.status(201).json({ ...row, config: safeConfig(row.kind, row.config) });
+});
+
+router.delete("/sources/:id", async (req, res) => {
+  await db.delete(sourceFilesTable).where(eq(sourceFilesTable.sourceId, req.params.id!));
+  await db.delete(projectSourcesTable).where(eq(projectSourcesTable.id, req.params.id!));
+  res.status(204).end();
+});
+
+// Sync (re-ingest) — for github / remote-system kinds.
+router.post("/sources/:id/sync", async (req, res) => {
+  const [src] = await db.select().from(projectSourcesTable).where(eq(projectSourcesTable.id, req.params.id!));
+  if (!src) {
+    res.status(404).json({ error: "source not found" });
+    return;
+  }
+  await db.update(projectSourcesTable).set({ status: "syncing", statusMessage: "Sync started", updatedAt: new Date() }).where(eq(projectSourcesTable.id, src.id));
+  try {
+    let result: { count: number; bytes: number; summary?: string };
+    if (src.kind === "github") {
+      result = await ingestGithub(src.id, src.config as any);
+    } else if (src.kind === "zip" || src.kind === "folder") {
+      res.status(400).json({ error: "Re-upload to re-sync zip/folder sources" });
+      return;
+    } else {
+      result = await ingestRemoteSystem(src.id, src.kind, src.config as any);
+    }
+    const [updated] = await db.select().from(projectSourcesTable).where(eq(projectSourcesTable.id, src.id));
+    res.json({ ...updated, config: safeConfig(updated.kind, updated.config), syncResult: result });
+  } catch (err: any) {
+    await db
+      .update(projectSourcesTable)
+      .set({ status: "error", statusMessage: err.message?.slice(0, 500) ?? "Sync failed", updatedAt: new Date() })
+      .where(eq(projectSourcesTable.id, src.id));
+    res.status(502).json({ error: err.message ?? "Sync failed" });
+  }
+});
+
+// Upload a ZIP file. Field name: "file". Source row is created in the same request.
+router.post("/sources/upload-zip", upload.single("file"), async (req, res) => {
+  const projectId = req.body?.projectId;
+  const label = req.body?.label || req.file?.originalname || "ZIP upload";
+  if (!projectId || !req.file) {
+    res.status(400).json({ error: "projectId and file are required" });
+    return;
+  }
+  const id = randomUUID();
+  await db.insert(projectSourcesTable).values({
+    id,
+    projectId,
+    kind: "zip",
+    label: String(label).slice(0, 240),
+    config: { originalName: req.file.originalname, sizeBytes: req.file.size },
+    status: "syncing",
+  });
+  try {
+    const result = await ingestZipBuffer(id, req.file.buffer);
+    const [row] = await db.select().from(projectSourcesTable).where(eq(projectSourcesTable.id, id));
+    await db.insert(activityEventsTable).values({
+      id: randomUUID(),
+      kind: "source",
+      message: `ZIP ingested: ${row.label} — ${result.count} files`,
+      actor: "avery.kim",
+      entityCode: id,
+    });
+    res.status(201).json({ ...row, config: safeConfig(row.kind, row.config), syncResult: result });
+  } catch (err: any) {
+    await db
+      .update(projectSourcesTable)
+      .set({ status: "error", statusMessage: err.message?.slice(0, 500) ?? "Extract failed" })
+      .where(eq(projectSourcesTable.id, id));
+    res.status(400).json({ error: err.message ?? "Could not extract zip" });
+  }
+});
+
+// Upload a folder (multiple files). Field name: "files[]" (or "files").
+// Each file's relative path is read from req.body.paths[i] (sent in the same order).
+router.post("/sources/upload-folder", upload.array("files", 1000), async (req, res) => {
+  const projectId = req.body?.projectId;
+  const label = req.body?.label || "Folder upload";
+  const files = (req.files as Express.Multer.File[]) ?? [];
+  let paths: string[] = [];
+  if (typeof req.body?.paths === "string") {
+    try { paths = JSON.parse(req.body.paths); } catch { paths = []; }
+  } else if (Array.isArray(req.body?.paths)) {
+    paths = req.body.paths;
+  }
+  if (!projectId || files.length === 0) {
+    res.status(400).json({ error: "projectId and files are required" });
+    return;
+  }
+  const id = randomUUID();
+  await db.insert(projectSourcesTable).values({
+    id,
+    projectId,
+    kind: "folder",
+    label: String(label).slice(0, 240),
+    config: { fileCount: files.length },
+    status: "syncing",
+  });
+  try {
+    const ingested: IngestedFile[] = files.map((f, i) => ({
+      path: paths[i] || f.originalname,
+      size: f.size,
+      content: f.buffer,
+    }));
+    const result = await persistFiles(id, ingested);
+    const [row] = await db.select().from(projectSourcesTable).where(eq(projectSourcesTable.id, id));
+    await db.insert(activityEventsTable).values({
+      id: randomUUID(),
+      kind: "source",
+      message: `Folder uploaded: ${row.label} — ${result.count} files`,
+      actor: "avery.kim",
+      entityCode: id,
+    });
+    res.status(201).json({ ...row, config: safeConfig(row.kind, row.config), syncResult: result });
+  } catch (err: any) {
+    await db.update(projectSourcesTable).set({ status: "error", statusMessage: err.message?.slice(0, 500) ?? "Indexing failed" }).where(eq(projectSourcesTable.id, id));
+    res.status(400).json({ error: err.message ?? "Could not index files" });
+  }
+});
+
+// List files for a source.
+router.get("/sources/:id/files", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 500, 2000);
+  const rows = await db
+    .select({
+      id: sourceFilesTable.id,
+      path: sourceFilesTable.path,
+      size: sourceFilesTable.size,
+      language: sourceFilesTable.language,
+      isBinary: sourceFilesTable.isBinary,
+    })
+    .from(sourceFilesTable)
+    .where(eq(sourceFilesTable.sourceId, req.params.id!))
+    .orderBy(asc(sourceFilesTable.path))
+    .limit(limit);
+  const [{ totalSize }] = await db
+    .select({ totalSize: sql<number>`coalesce(sum(${sourceFilesTable.size}),0)` })
+    .from(sourceFilesTable)
+    .where(eq(sourceFilesTable.sourceId, req.params.id!));
+  res.json({ files: rows, totals: { count: rows.length, bytes: Number(totalSize) } });
+});
+
+// Fetch a single file's content.
+router.get("/sources/:id/files/:fileId", async (req, res) => {
+  const [row] = await db
+    .select()
+    .from(sourceFilesTable)
+    .where(and(eq(sourceFilesTable.sourceId, req.params.id!), eq(sourceFilesTable.id, req.params.fileId!)));
+  if (!row) {
+    res.status(404).json({ error: "file not found" });
+    return;
+  }
+  res.json(row);
+});
+
+export default router;

@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   Workflow,
   BarChart3,
-  CalendarClock
+  CalendarClock,
+  FolderInput
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useListProjects } from "@workspace/api-client-react";
@@ -24,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const NAV_ITEMS = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/ask", label: "Ask Eltegra", icon: Sparkles },
+  { href: "/app/sources", label: "Project Sources", icon: FolderInput },
   { href: "/app/requirements", label: "Requirements", icon: ListChecks },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },

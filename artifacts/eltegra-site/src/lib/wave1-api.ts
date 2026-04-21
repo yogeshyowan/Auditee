@@ -426,3 +426,84 @@ export function useWorkflowAnalytics(projectId: string | undefined) {
     queryFn: () => jfetch<WorkflowAnalytics>(`/analytics/workflows?projectId=${projectId}`),
   });
 }
+
+// ───────── Project Sources ─────────
+export type ProjectSourceRow = {
+  id: string;
+  projectId: string;
+  kind: "github" | "zip" | "folder" | "jira" | "jenkins" | "aws_s3" | "gdrive" | "alm" | "cloud_server" | "url";
+  label: string;
+  config: Record<string, any>;
+  status: "idle" | "syncing" | "ready" | "error";
+  statusMessage: string | null;
+  fileCount: number;
+  byteCount: number;
+  lastSyncAt: string | null;
+  createdAt: string;
+};
+export function useSources(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ["sources", projectId],
+    enabled: Boolean(projectId),
+    queryFn: () => jfetch<{ sources: ProjectSourceRow[] }>(`/sources?projectId=${projectId}`),
+  });
+}
+export function useCreateSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<ProjectSourceRow>) =>
+      jfetch<ProjectSourceRow>(`/sources`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sources"] }),
+  });
+}
+export function useSyncSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jfetch<ProjectSourceRow>(`/sources/${id}/sync`, { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sources"] }),
+  });
+}
+export function useDeleteSource() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jfetch<void>(`/sources/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sources"] }),
+  });
+}
+export function useSourceFiles(sourceId: string | undefined) {
+  return useQuery({
+    queryKey: ["source-files", sourceId],
+    enabled: Boolean(sourceId),
+    queryFn: () => jfetch<{ files: Array<{ id: string; path: string; size: number; language: string | null; isBinary: string }>; totals: { count: number; bytes: number } }>(`/sources/${sourceId}/files?limit=2000`),
+  });
+}
+export function useSourceFileContent(sourceId: string | undefined, fileId: string | undefined) {
+  return useQuery({
+    queryKey: ["source-file", sourceId, fileId],
+    enabled: Boolean(sourceId && fileId),
+    queryFn: () => jfetch<{ id: string; path: string; content: string | null; language: string | null; size: number }>(`/sources/${sourceId}/files/${fileId}`),
+  });
+}
+export async function uploadZip(projectId: string, file: File, label?: string): Promise<ProjectSourceRow> {
+  const fd = new FormData();
+  fd.append("projectId", projectId);
+  fd.append("file", file);
+  if (label) fd.append("label", label);
+  const r = await fetch(`/api/sources/upload-zip`, { method: "POST", body: fd });
+  if (!r.ok) throw new Error((await r.json()).error ?? "Upload failed");
+  return r.json();
+}
+export async function uploadFolder(projectId: string, files: FileList, label?: string): Promise<ProjectSourceRow> {
+  const fd = new FormData();
+  fd.append("projectId", projectId);
+  if (label) fd.append("label", label);
+  const paths: string[] = [];
+  for (const f of Array.from(files)) {
+    fd.append("files", f);
+    paths.push((f as any).webkitRelativePath || f.name);
+  }
+  fd.append("paths", JSON.stringify(paths));
+  const r = await fetch(`/api/sources/upload-folder`, { method: "POST", body: fd });
+  if (!r.ok) throw new Error((await r.json()).error ?? "Upload failed");
+  return r.json();
+}

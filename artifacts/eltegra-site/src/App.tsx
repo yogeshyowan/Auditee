@@ -23,6 +23,7 @@ import Reports from "@/pages/app/Reports";
 import Workflows from "@/pages/app/Workflows";
 import Analytics from "@/pages/app/Analytics";
 import RecurringAudits from "@/pages/app/RecurringAudits";
+import Sources from "@/pages/app/Sources";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ function AppRoutes() {
           <Route path="/app/workflows" component={Workflows} />
           <Route path="/app/analytics" component={Analytics} />
           <Route path="/app/recurring-audits" component={RecurringAudits} />
+          <Route path="/app/sources" component={Sources} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>

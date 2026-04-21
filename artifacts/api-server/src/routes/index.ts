@@ -18,6 +18,7 @@ import workflowsRouter from "./workflows";
 import notificationsRouter from "./notifications";
 import recurringAuditsRouter from "./recurringAudits";
 import analyticsRouter from "./analytics";
+import sourcesRouter from "./sources";
 
 const router: IRouter = Router();
 
@@ -40,5 +41,6 @@ router.use(workflowsRouter);
 router.use(notificationsRouter);
 router.use(recurringAuditsRouter);
 router.use(analyticsRouter);
+router.use(sourcesRouter);
 
 export default router;
