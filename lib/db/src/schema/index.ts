@@ -9,3 +9,6 @@ export * from "./pdlcStages";
 export * from "./legacySystems";
 export * from "./demoRequests";
 export * from "./aiConversations";
+export * from "./comments";
+export * from "./capaActions";
+export * from "./aiReports";

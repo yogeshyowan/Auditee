@@ -283,6 +283,15 @@ export async function bootstrapGapRequirements(): Promise<void> {
     if (inserted > 0) {
       logger.info({ project: PROJECT.id, inserted, total: REQUIREMENTS.length }, "Bootstrapped gap requirements");
     }
+
+    // Mark requirements that have actually shipped as 'done' (idempotent).
+    const shippedCodes = ["ELTP-0005", "ELTP-0011", "ELTP-0013", "ELTP-0014", "ELTP-0015", "ELTP-0016", "ELTP-0017"];
+    await pool.query(
+      `UPDATE requirements
+       SET status = 'done', updated_at = NOW()
+       WHERE project_id = $1 AND code = ANY($2::text[]) AND status <> 'done'`,
+      [PROJECT.id, shippedCodes],
+    );
   } catch (err) {
     logger.warn({ err }, "Gap requirements bootstrap failed (continuing startup)");
   }

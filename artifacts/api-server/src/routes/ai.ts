@@ -22,7 +22,9 @@ import {
   activityEventsTable,
   legacySystemsTable,
   aiConversationsTable,
+  capaActionsTable,
 } from "@workspace/db";
+import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 
@@ -362,9 +364,80 @@ Rules:
   };
   const result = await jsonCompletion<AuditResult>(system, user);
 
+  // Auto-create CAPAs for newly detected gaps (skip controls that already have an audit-sourced CAPA).
+  // Use a single base count + retry on collision to avoid race-condition duplicate codes when
+  // multiple audits run concurrently for the same project.
+  let capasCreated = 0;
+  const codeToControl = new Map(controls.map((c) => [c.code, c]));
+  const codePrefix = (project.slug ?? "PRJ").toUpperCase().slice(0, 4);
+  const [{ value: baseCount }] = await db
+    .select({ value: drizzleCount() })
+    .from(capaActionsTable)
+    .where(eq(capaActionsTable.projectId, project.id));
+  let nextSeq = Number(baseCount) + 1;
+  for (const a of result.controlAssessments ?? []) {
+    if (a.verdict !== "gap" && a.verdict !== "partial") continue;
+    const ctrl = codeToControl.get(a.controlCode);
+    if (!ctrl) continue;
+    const existingOpen = await db
+      .select({ id: capaActionsTable.id })
+      .from(capaActionsTable)
+      .where(
+        and(
+          eq(capaActionsTable.projectId, project.id),
+          eq(capaActionsTable.controlId, ctrl.id),
+          eq(capaActionsTable.source, "ai_audit"),
+        ),
+      );
+    if (existingOpen.length > 0) continue;
+    let inserted = false;
+    let attempts = 0;
+    while (!inserted && attempts < 25) {
+      const capaCode = `CAPA-${codePrefix}-${String(nextSeq).padStart(4, "0")}`;
+      // Skip if this code already exists in DB (concurrent run won the race).
+      const existingCode = await db
+        .select({ id: capaActionsTable.id })
+        .from(capaActionsTable)
+        .where(eq(capaActionsTable.code, capaCode));
+      if (existingCode.length > 0) {
+        nextSeq++;
+        attempts++;
+        continue;
+      }
+      try {
+        await db.insert(capaActionsTable).values({
+          id: randomUUID(),
+          code: capaCode,
+          projectId: project.id,
+          frameworkId: framework.id,
+          controlId: ctrl.id,
+          controlCode: ctrl.code,
+          title: `[${framework.code} ${ctrl.code}] ${a.verdict === "gap" ? "Gap" : "Partial"}: ${ctrl.title}`.slice(0, 240),
+          description: a.recommendation,
+          severity: a.verdict === "gap" ? "high" : "medium",
+          status: "open",
+          owner: ctrl.owner ?? "Unassigned",
+          source: "ai_audit",
+          tags: [framework.code, ctrl.code],
+        });
+        inserted = true;
+        nextSeq++;
+        capasCreated++;
+      } catch (e: any) {
+        // unique violation on `code` — bump the sequence and retry.
+        if (e?.code === "23505") {
+          nextSeq++;
+          attempts++;
+          continue;
+        }
+        throw e;
+      }
+    }
+  }
+
   await logActivity(
     "compliance",
-    `EltegraAI ran ${framework.code} audit on ${project.name}: ${result.overallVerdict}`,
+    `EltegraAI ran ${framework.code} audit on ${project.name}: ${result.overallVerdict}${capasCreated ? ` · ${capasCreated} CAPA(s) opened` : ""}`,
     "EltegraAI",
     framework.code,
   );
@@ -372,6 +445,7 @@ Rules:
   res.json({
     framework: { id: framework.id, code: framework.code, name: framework.name },
     project: { id: project.id, name: project.name },
+    capasCreated,
     ...result,
   });
 }));

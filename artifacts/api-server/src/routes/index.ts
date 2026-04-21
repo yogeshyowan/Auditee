@@ -11,6 +11,9 @@ import pdlcRouter from "./pdlc";
 import legacyRouter from "./legacy";
 import demoRequestsRouter from "./demoRequests";
 import aiRouter from "./ai";
+import commentsRouter from "./comments";
+import capaRouter from "./capa";
+import reportsRouter from "./reports";
 
 const router: IRouter = Router();
 
@@ -26,5 +29,8 @@ router.use(pdlcRouter);
 router.use(legacyRouter);
 router.use(demoRequestsRouter);
 router.use(aiRouter);
+router.use(commentsRouter);
+router.use(capaRouter);
+router.use(reportsRouter);
 
 export default router;

@@ -42,6 +42,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Search, FileText, Sparkles, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateRequirements } from "@/lib/ai-api";
+import { Comments } from "@/components/Comments";
 import { useToast } from "@/hooks/use-toast";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -325,6 +326,7 @@ export default function RequirementsPage() {
                     </div>
                   </div>
                 )}
+                <Comments entityType="requirement" entityId={selected.id} projectId={selected.projectId} />
               </div>
             </>
           )}

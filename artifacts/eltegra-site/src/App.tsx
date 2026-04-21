@@ -18,6 +18,8 @@ import Pdlc from "@/pages/app/Pdlc";
 import Legacy from "@/pages/app/Legacy";
 import Activity from "@/pages/app/Activity";
 import Ask from "@/pages/app/Ask";
+import Capa from "@/pages/app/Capa";
+import Reports from "@/pages/app/Reports";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,8 @@ function AppRoutes() {
           <Route path="/app/legacy" component={Legacy} />
           <Route path="/app/activity" component={Activity} />
           <Route path="/app/ask" component={Ask} />
+          <Route path="/app/capa" component={Capa} />
+          <Route path="/app/reports" component={Reports} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>
