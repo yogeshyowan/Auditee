@@ -1,16 +1,51 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ProjectProvider } from "@/lib/project-context";
+
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import { AppLayout } from "@/components/layout/AppLayout";
+
+// App Pages
+import Dashboard from "@/pages/app/Dashboard";
+import Requirements from "@/pages/app/Requirements";
+import Traceability from "@/pages/app/Traceability";
+import Compliance from "@/pages/app/Compliance";
+import ComplianceDetail from "@/pages/app/ComplianceDetail";
+import Pdlc from "@/pages/app/Pdlc";
+import Legacy from "@/pages/app/Legacy";
+import Activity from "@/pages/app/Activity";
 
 const queryClient = new QueryClient();
+
+function AppRoutes() {
+  return (
+    <ProjectProvider>
+      <AppLayout>
+        <Switch>
+          <Route path="/app" component={() => <Redirect to="/app/dashboard" />} />
+          <Route path="/app/dashboard" component={Dashboard} />
+          <Route path="/app/requirements" component={Requirements} />
+          <Route path="/app/traceability" component={Traceability} />
+          <Route path="/app/compliance" component={Compliance} />
+          <Route path="/app/compliance/:id" component={ComplianceDetail} />
+          <Route path="/app/pdlc" component={Pdlc} />
+          <Route path="/app/legacy" component={Legacy} />
+          <Route path="/app/activity" component={Activity} />
+          <Route component={NotFound} />
+        </Switch>
+      </AppLayout>
+    </ProjectProvider>
+  );
+}
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/app/*" component={AppRoutes} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   ArrowRight,
   Menu,
@@ -25,6 +28,105 @@ import {
   ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useCreateDemoRequest } from "@workspace/api-client-react";
+
+const demoSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  company: z.string().optional(),
+  message: z.string().optional()
+});
+
+function DemoDialog({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const createDemo = useCreateDemoRequest();
+  const [success, setSuccess] = useState(false);
+
+  const form = useForm<z.infer<typeof demoSchema>>({
+    resolver: zodResolver(demoSchema),
+    defaultValues: { name: "", email: "", company: "", message: "" }
+  });
+
+  const onSubmit = async (values: z.infer<typeof demoSchema>) => {
+    try {
+      await createDemo.mutateAsync({ data: values });
+      setSuccess(true);
+      form.reset();
+    } catch (e) {
+      toast({ title: "Error", description: "Could not submit request. Please try again.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) setTimeout(() => setSuccess(false), 300); }}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        {success ? (
+          <div className="py-12 text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
+              <ShieldCheck size={32} />
+            </div>
+            <h3 className="text-2xl font-bold font-display text-slate-900">Request Received</h3>
+            <p className="text-slate-500">We'll be in touch shortly to schedule your personalized demo of EltegraAI.</p>
+            <Button onClick={() => setOpen(false)} className="mt-4 w-full">Done</Button>
+          </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-display">See EltegraAI in action</DialogTitle>
+              <DialogDescription>
+                Schedule a personalized walkthrough of the platform.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl><Input placeholder="Jane Doe" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Work Email</FormLabel>
+                    <FormControl><Input placeholder="jane@company.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="company" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <FormControl><Input placeholder="Acme Corp" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="message" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What are you looking to solve?</FormLabel>
+                    <FormControl><Textarea placeholder="Tell us about your current challenges..." className="resize-none" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <Button type="submit" className="w-full h-12 text-base mt-2" disabled={createDemo.isPending}>
+                  {createDemo.isPending ? "Submitting..." : "Request Demo"}
+                </Button>
+              </form>
+            </Form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -80,10 +182,12 @@ function Navigation() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-primary transition-colors">Sign In</Link>
-          <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6">
-            Book a demo
-          </Button>
+          <Link href="/app" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">Launch Platform</Link>
+          <DemoDialog>
+            <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6">
+              Book a demo
+            </Button>
+          </DemoDialog>
         </div>
 
         <button 
@@ -104,10 +208,12 @@ function Navigation() {
             <a href="#company" onClick={() => setMobileMenuOpen(false)}>Company</a>
           </nav>
           <div className="mt-auto flex flex-col gap-4">
-            <Link href="/login" className="w-full text-center py-3 border border-slate-200 rounded-lg font-medium">Sign In</Link>
-            <Button className="w-full py-6 text-lg bg-primary hover:bg-primary/90 text-white rounded-lg">
-              Book a demo
-            </Button>
+            <Link href="/app" className="w-full text-center py-3 border border-primary text-primary rounded-lg font-medium">Launch Platform</Link>
+            <DemoDialog>
+              <Button className="w-full py-6 text-lg bg-primary hover:bg-primary/90 text-white rounded-lg">
+                Book a demo
+              </Button>
+            </DemoDialog>
           </div>
         </div>
       )}
@@ -146,14 +252,18 @@ function Hero() {
               From initial idea to post-launch optimization, EltegraAI covers the entire PDLC with intelligence, automation, and built-in compliance. Turn fragmented requirements, legacy code, and audit chaos into a single living knowledge graph.
             </motion.p>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="h-14 px-8 bg-primary hover:bg-primary/90 text-white rounded-full text-base font-semibold">
-                Book a demo
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline" className="h-14 px-8 rounded-full text-base font-semibold border-slate-300 hover:bg-slate-100 text-slate-900">
-                <PlayCircle className="mr-2 h-5 w-5 text-slate-500" />
-                Watch the demo
-              </Button>
+              <DemoDialog>
+                <Button size="lg" className="h-14 px-8 bg-primary hover:bg-primary/90 text-white rounded-full text-base font-semibold">
+                  Book a demo
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </DemoDialog>
+              <Link href="/app">
+                <Button size="lg" variant="outline" className="h-14 px-8 rounded-full text-base font-semibold border-slate-300 hover:bg-slate-100 text-slate-900">
+                  <PlayCircle className="mr-2 h-5 w-5 text-slate-500" />
+                  Launch Platform
+                </Button>
+              </Link>
             </motion.div>
           </motion.div>
 
