@@ -10,6 +10,7 @@ import activityRouter from "./activity";
 import pdlcRouter from "./pdlc";
 import legacyRouter from "./legacy";
 import demoRequestsRouter from "./demoRequests";
+import aiRouter from "./ai";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(activityRouter);
 router.use(pdlcRouter);
 router.use(legacyRouter);
 router.use(demoRequestsRouter);
+router.use(aiRouter);
 
 export default router;

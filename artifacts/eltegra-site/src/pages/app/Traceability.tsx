@@ -1,10 +1,41 @@
-import { useGetTraceabilityGraph } from "@workspace/api-client-react";
+import { useState } from "react";
+import { useGetTraceabilityGraph, useListRequirements } from "@workspace/api-client-react";
 import { useProjectContext } from "@/lib/project-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Network } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Network, Code2, Loader2 } from "lucide-react";
+import { useAnalyzeCode } from "@/lib/ai-api";
+import { useToast } from "@/hooks/use-toast";
+
+const LANGUAGES = ["TypeScript", "JavaScript", "Python", "Go", "C#", "Java", "Rust", "SQL", "COBOL"];
+
+const KIND_BADGE: Record<string, string> = {
+  implements: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  tests: "bg-blue-50 text-blue-700 border-blue-200",
+  violates: "bg-red-50 text-red-700 border-red-200",
+};
 
 const COLUMN_W = 280;
 const NODE_H = 36;
@@ -20,18 +51,169 @@ function kindColor(kind: string) {
 
 export default function Traceability() {
   const { projectId } = useProjectContext();
+  const { toast } = useToast();
+  const [analyzeOpen, setAnalyzeOpen] = useState(false);
+  const [filePath, setFilePath] = useState("");
+  const [symbol, setSymbol] = useState("");
+  const [language, setLanguage] = useState("TypeScript");
+  const [code, setCode] = useState("");
+  const analyzeMut = useAnalyzeCode();
+  const { data: requirements } = useListRequirements(projectId ? ({ projectId } as any) : ({} as any));
+
   const { data: graph, isLoading } = useGetTraceabilityGraph(
     { projectId: projectId ?? "" },
     { query: { enabled: !!projectId } as any }
   );
 
+  const reqByCode = new Map((requirements ?? []).map((r) => [r.code, r] as const));
+
+  const resetAnalyze = () => {
+    setFilePath("");
+    setSymbol("");
+    setLanguage("TypeScript");
+    setCode("");
+    analyzeMut.reset();
+  };
+
+  const analyzeDialog = (
+    <Dialog
+      open={analyzeOpen}
+      onOpenChange={(open) => {
+        if (!analyzeMut.isPending) {
+          setAnalyzeOpen(open);
+          if (!open) resetAnalyze();
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-[Inter_Tight] text-2xl flex items-center gap-2">
+            <Code2 className="h-5 w-5 text-primary" /> Analyze code
+          </DialogTitle>
+          <DialogDescription>EltegraAI links code to requirements in your project.</DialogDescription>
+        </DialogHeader>
+
+        {analyzeMut.isPending ? (
+          <div className="py-12 flex flex-col items-center gap-3 text-slate-600">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm">EltegraAI is analyzing your code...</p>
+          </div>
+        ) : analyzeMut.data ? (
+          <div className="space-y-5">
+            <div>
+              <Label className="text-xs uppercase text-slate-500 tracking-wider">Summary</Label>
+              <p className="mt-1 text-sm text-slate-700">{analyzeMut.data.summary}</p>
+            </div>
+            <div>
+              <Label className="text-xs uppercase text-slate-500 tracking-wider">Matches</Label>
+              {analyzeMut.data.matches.length === 0 ? (
+                <p className="text-sm text-slate-500 mt-2">No high-confidence matches found.</p>
+              ) : (
+                <ul className="space-y-3 mt-2">
+                  {analyzeMut.data.matches.map((m, i) => {
+                    const req = reqByCode.get(m.requirementCode);
+                    return (
+                      <li key={i} className="border border-slate-200 rounded-lg p-3 bg-white">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="font-mono text-xs">{m.requirementCode}</Badge>
+                          <Badge className={(KIND_BADGE[m.kind] ?? "bg-slate-100 text-slate-700") + " border"}>{m.kind}</Badge>
+                          <span className="text-sm font-medium text-slate-900">{req?.title ?? ""}</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <Progress value={Math.round(m.confidence * 100)} className="h-1.5 flex-1" />
+                          <span className="text-xs text-slate-500 w-12 text-right">{Math.round(m.confidence * 100)}%</span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-2">{m.rationale}</p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            <DialogFooter className="flex sm:justify-between items-center">
+              <span className="text-sm text-slate-600">Done — {analyzeMut.data.linksCreated} link(s) created</span>
+              <Button onClick={() => { setAnalyzeOpen(false); resetAnalyze(); }}>Close</Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!projectId) return;
+              analyzeMut.mutate(
+                { projectId, filePath, symbol, language, code },
+                {
+                  onError: (err: Error) => {
+                    toast({ title: "Analysis failed", description: err.message, variant: "destructive" });
+                  },
+                },
+              );
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="filePath">File path</Label>
+                <Input id="filePath" value={filePath} onChange={(e) => setFilePath(e.target.value)} placeholder="src/auth/login.ts" required className="mt-1.5" />
+              </div>
+              <div>
+                <Label htmlFor="symbol">Symbol</Label>
+                <Input id="symbol" value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="loginUser" required className="mt-1.5" />
+              </div>
+            </div>
+            <div>
+              <Label>Language</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="code">Code</Label>
+              <Textarea
+                id="code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                rows={12}
+                required
+                className="mt-1.5 font-mono text-xs resize-none"
+                placeholder="Paste a function or module here..."
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAnalyzeOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={!projectId || code.length < 10 || !filePath || !symbol} className="gap-2">
+                <Code2 className="h-4 w-4" /> Analyze
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+
   if (!projectId) {
-    return <div className="p-6 text-slate-500">Select a project to view its traceability graph.</div>;
+    return (
+      <div className="p-6 space-y-4">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Traceability Graph</h1>
+            <p className="text-slate-500 mt-1">Select a project to view its traceability graph.</p>
+          </div>
+          <Button onClick={() => setAnalyzeOpen(true)} disabled className="gap-2">
+            <Code2 className="h-4 w-4" /> Analyze code
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (isLoading || !graph) {
     return (
       <div className="p-6 space-y-4">
+        {analyzeDialog}
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-[600px] rounded-xl" />
       </div>
@@ -71,9 +253,15 @@ export default function Traceability() {
 
   return (
     <div className="p-6 space-y-6">
-      <header>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Traceability Graph</h1>
-        <p className="text-slate-500 mt-1">Live links between requirements, code, and compliance frameworks.</p>
+      {analyzeDialog}
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Traceability Graph</h1>
+          <p className="text-slate-500 mt-1">Live links between requirements, code, and compliance frameworks.</p>
+        </div>
+        <Button onClick={() => setAnalyzeOpen(true)} className="gap-2" data-testid="button-analyze-code">
+          <Code2 className="h-4 w-4" /> Analyze code
+        </Button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

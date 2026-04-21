@@ -39,8 +39,10 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, FileText } from "lucide-react";
+import { Plus, Search, FileText, Sparkles, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useGenerateRequirements } from "@/lib/ai-api";
+import { useToast } from "@/hooks/use-toast";
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 border-slate-200",
@@ -72,6 +74,10 @@ export default function RequirementsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Requirement | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [brief, setBrief] = useState("");
+  const { toast } = useToast();
+  const generateMut = useGenerateRequirements();
 
   const params = useMemo(() => {
     const p: Record<string, string> = {};
@@ -107,10 +113,73 @@ export default function RequirementsPage() {
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Requirements</h1>
           <p className="text-slate-500 mt-1">Browse, filter, and manage every requirement in the knowledge graph.</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> New Requirement
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setGenerateOpen(true)}
+            className="gap-2"
+            disabled={!projectId}
+            data-testid="button-generate-from-brief"
+          >
+            <Sparkles className="h-4 w-4" /> Generate from brief
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} variant="outline" className="gap-2">
+            <Plus className="h-4 w-4" /> New Requirement
+          </Button>
+        </div>
       </header>
+
+      <Dialog open={generateOpen} onOpenChange={(open) => { if (!generateMut.isPending) setGenerateOpen(open); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-[Inter_Tight] text-2xl flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> Generate from brief
+            </DialogTitle>
+            <DialogDescription>EltegraAI will draft a small set of well-formed requirements.</DialogDescription>
+          </DialogHeader>
+          {generateMut.isPending ? (
+            <div className="py-10 flex flex-col items-center gap-3 text-slate-600">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm">EltegraAI is drafting requirements...</p>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!projectId || brief.length < 20) return;
+                generateMut.mutate(
+                  { projectId, brief },
+                  {
+                    onSuccess: (data) => {
+                      toast({ title: `Generated ${data.count} requirements` });
+                      setBrief("");
+                      setGenerateOpen(false);
+                    },
+                    onError: (err: Error) => {
+                      toast({ title: "Generation failed", description: err.message, variant: "destructive" });
+                    },
+                  },
+                );
+              }}
+              className="space-y-4"
+            >
+              <Textarea
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                rows={8}
+                placeholder="Describe what you're building. EltegraAI will draft requirements covering business, product, functional, and non-functional aspects."
+                className="resize-none"
+                data-testid="textarea-brief"
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setGenerateOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={brief.length < 20 || !projectId} className="gap-2">
+                  <Sparkles className="h-4 w-4" /> Generate
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Card className="rounded-xl border-slate-200 p-4">
         <div className="flex flex-wrap gap-3">

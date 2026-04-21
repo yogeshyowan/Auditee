@@ -8,7 +8,8 @@ import {
   Database, 
   Activity,
   User,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 import { useListProjects } from "@workspace/api-client-react";
 import { useProjectContext } from "@/lib/project-context";
@@ -16,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 const NAV_ITEMS = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/app/ask", label: "Ask Eltegra", icon: Sparkles },
   { href: "/app/requirements", label: "Requirements", icon: ListChecks },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },
