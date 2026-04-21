@@ -47,6 +47,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/app" component={() => <Redirect to="/app/dashboard" />} />
       <Route path="/app/*" component={AppRoutes} />
       <Route component={NotFound} />
     </Switch>
