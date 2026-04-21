@@ -272,7 +272,7 @@ export function useStartRun() {
     mutationFn: ({ workflowId, ...body }: { workflowId: string; projectId?: string; context?: Record<string, unknown>; startedBy?: string }) =>
       jfetch<{ run: WorkflowRunRow; currentStep: WorkflowStepDef }>(`/workflows/${workflowId}/runs`, {
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify({ startedBy: "avery.kim", ...body }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workflow-runs"] }),
   });
@@ -310,5 +310,119 @@ export function useCancelRun() {
   return useMutation({
     mutationFn: (runId: string) => jfetch<WorkflowRunRow>(`/workflow-runs/${runId}/cancel`, { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["workflow-runs"] }),
+  });
+}
+
+// ───────── Notifications ─────────
+export type NotificationRow = {
+  id: string;
+  recipient: string;
+  kind: string;
+  title: string;
+  body: string;
+  link: string | null;
+  channels: string[];
+  data: Record<string, unknown>;
+  readAt: string | null;
+  createdAt: string;
+};
+export function useNotifications(recipient: string | undefined, opts: { unread?: boolean } = {}) {
+  const qs = new URLSearchParams();
+  if (recipient) qs.set("recipient", recipient);
+  if (opts.unread) qs.set("unread", "true");
+  return useQuery({
+    queryKey: ["notifications", recipient, opts.unread],
+    enabled: Boolean(recipient),
+    refetchInterval: 10000,
+    queryFn: () => jfetch<{ notifications: NotificationRow[] }>(`/notifications?${qs}`),
+  });
+}
+export function useMarkRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jfetch<NotificationRow>(`/notifications/${id}/read`, { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+export function useMarkAllRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (recipient: string) =>
+      jfetch<{ ok: boolean }>(`/notifications/mark-all-read`, {
+        method: "POST",
+        body: JSON.stringify({ recipient }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+// ───────── Recurring audits ─────────
+export type RecurringAuditRow = {
+  id: string;
+  projectId: string;
+  frameworkId: string;
+  cadence: string;
+  hourUtc: number;
+  notifyTo: string;
+  active: boolean;
+  lastRunAt: string | null;
+  lastRunStatus: string | null;
+  nextRunAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+export function useRecurringAudits(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ["recurring-audits", projectId],
+    enabled: Boolean(projectId),
+    queryFn: () => jfetch<{ schedules: RecurringAuditRow[] }>(`/recurring-audits?projectId=${projectId}`),
+  });
+}
+export function useCreateRecurringAudit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<RecurringAuditRow>) =>
+      jfetch<RecurringAuditRow>("/recurring-audits", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["recurring-audits"] }),
+  });
+}
+export function useUpdateRecurringAudit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: Partial<RecurringAuditRow> & { id: string }) =>
+      jfetch<RecurringAuditRow>(`/recurring-audits/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["recurring-audits"] }),
+  });
+}
+export function useDeleteRecurringAudit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => jfetch<void>(`/recurring-audits/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["recurring-audits"] }),
+  });
+}
+
+// ───────── Workflow analytics ─────────
+export type WorkflowAnalytics = {
+  workflows: Array<{
+    workflowId: string;
+    workflowName: string;
+    total: number;
+    running: number;
+    blocked: number;
+    completed: number;
+    cancelled: number;
+    completionRate: number;
+    avgCycleTimeMinutes: number | null;
+  }>;
+  blockers: Array<{ stepName: string; stepType: string; reason: string; count: number }>;
+  throughput: Array<{ day: string; starts: number; completions: number }>;
+  totals: { runs: number; completed: number; blocked: number; running: number };
+};
+export function useWorkflowAnalytics(projectId: string | undefined) {
+  return useQuery({
+    queryKey: ["workflow-analytics", projectId],
+    enabled: Boolean(projectId),
+    queryFn: () => jfetch<WorkflowAnalytics>(`/analytics/workflows?projectId=${projectId}`),
   });
 }

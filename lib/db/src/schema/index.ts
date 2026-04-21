@@ -13,3 +13,5 @@ export * from "./comments";
 export * from "./capaActions";
 export * from "./aiReports";
 export * from "./workflows";
+export * from "./notifications";
+export * from "./recurringAudits";

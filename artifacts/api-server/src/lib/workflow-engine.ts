@@ -34,7 +34,24 @@ export type WorkflowStep = {
   aiPrompt?: string;
   outputKey?: string;
   dueOffsetDays?: number;
+  weekdaysOnly?: boolean; // skip Sat/Sun when computing dueAt
 };
+
+// Add `days` business or calendar days to `from`, optionally skipping weekends.
+export function computeDueDate(from: Date, days: number, weekdaysOnly: boolean): Date {
+  const d = new Date(from);
+  if (!weekdaysOnly) {
+    d.setUTCDate(d.getUTCDate() + days);
+    return d;
+  }
+  let added = 0;
+  while (added < days) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const dow = d.getUTCDay(); // 0 = Sunday, 6 = Saturday
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return d;
+}
 
 // Returns the next step id after `currentId` finishes. For branch steps, evaluates
 // each `when` predicate in order and returns the first match's `goto`. For other

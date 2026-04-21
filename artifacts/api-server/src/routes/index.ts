@@ -15,6 +15,9 @@ import commentsRouter from "./comments";
 import capaRouter from "./capa";
 import reportsRouter from "./reports";
 import workflowsRouter from "./workflows";
+import notificationsRouter from "./notifications";
+import recurringAuditsRouter from "./recurringAudits";
+import analyticsRouter from "./analytics";
 
 const router: IRouter = Router();
 
@@ -34,5 +37,8 @@ router.use(commentsRouter);
 router.use(capaRouter);
 router.use(reportsRouter);
 router.use(workflowsRouter);
+router.use(notificationsRouter);
+router.use(recurringAuditsRouter);
+router.use(analyticsRouter);
 
 export default router;

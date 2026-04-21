@@ -12,8 +12,10 @@ import {
   evalExpr,
   nextStepId,
   checkBlockingPredicates,
+  computeDueDate,
   type WorkflowStep,
 } from "../lib/workflow-engine.js";
+import { notify } from "../lib/notify.js";
 
 const router: IRouter = Router();
 
@@ -68,6 +70,7 @@ function validateDefinition(def: any): { ok: true; steps: WorkflowStep[] } | { o
       aiPrompt: typeof raw.aiPrompt === "string" ? raw.aiPrompt : undefined,
       outputKey: typeof raw.outputKey === "string" ? raw.outputKey : undefined,
       dueOffsetDays: typeof raw.dueOffsetDays === "number" ? raw.dueOffsetDays : undefined,
+      weekdaysOnly: raw.weekdaysOnly === true ? true : undefined,
     });
   }
   // Validate branch targets and try-evaluate predicates with empty context to catch syntax errors.
@@ -188,7 +191,9 @@ async function instantiateStep(runId: string, step: WorkflowStep, context: Recor
     // advanceRun's nextStepId() will evaluate the predicates to pick the goto.
     status = "done";
   }
-  const dueAt = step.dueOffsetDays ? new Date(Date.now() + step.dueOffsetDays * 86400_000) : null;
+  const dueAt = step.dueOffsetDays
+    ? computeDueDate(new Date(), step.dueOffsetDays, step.weekdaysOnly === true)
+    : null;
   await db.insert(workflowStepRunsTable).values({
     id: randomUUID(),
     runId,
@@ -278,6 +283,19 @@ async function advanceRun(runId: string, opts: { contextPatch?: Record<string, u
         .set({ status: "blocked", currentStepId: step.id, blockedReason: result.blockedReason, context })
         .where(eq(workflowRunsTable.id, runId))
         .returning();
+      // Notify the assignee + run starter that the run is now blocked.
+      const recipients = new Set([run.startedBy, step.assignee].filter(Boolean) as string[]);
+      for (const r of recipients) {
+        await notify({
+          recipient: r,
+          kind: "workflow_blocked",
+          title: `Workflow blocked: ${wf?.name ?? "run"}`,
+          body: `${step.name} — ${result.blockedReason ?? "(no reason)"}`,
+          link: `/app/workflows`,
+          channels: ["in_app", "email"],
+          data: { runId, stepId: step.id },
+        });
+      }
       return { run: updated, currentStep: step, blockedReason: result.blockedReason };
     }
     if (result.status === "in_progress") {
@@ -304,6 +322,15 @@ async function advanceRun(runId: string, opts: { contextPatch?: Record<string, u
     message: `Run completed: ${wf?.name ?? run.workflowId}`,
     actor: run.startedBy,
     entityCode: wf?.name ?? "",
+  });
+  await notify({
+    recipient: run.startedBy,
+    kind: "workflow_completed",
+    title: `Workflow completed: ${wf?.name ?? run.workflowId}`,
+    body: `Run finished successfully.`,
+    link: `/app/workflows`,
+    channels: ["in_app", "email"],
+    data: { runId },
   });
   return { run: completed };
 }

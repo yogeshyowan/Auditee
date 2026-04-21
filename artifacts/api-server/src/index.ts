@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { bootstrapFrameworks } from "./lib/bootstrap-frameworks";
 import { bootstrapGapRequirements } from "./lib/bootstrap-gap-requirements";
+import { startScheduler } from "./lib/scheduler";
 
 const rawPort = process.env["PORT"];
 
@@ -29,4 +30,5 @@ app.listen(port, (err) => {
   // Runs in the background so it never blocks request handling.
   void bootstrapFrameworks();
   void bootstrapGapRequirements();
+  startScheduler(port);
 });

@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, desc, eq, count } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db, capaActionsTable, projectsTable, activityEventsTable } from "@workspace/db";
+import { notify } from "../lib/notify.js";
 
 const router: IRouter = Router();
 
@@ -59,6 +60,17 @@ router.post("/capa", async (req, res) => {
     actor: row.owner,
     entityCode: row.code,
   });
+  if (row.owner && row.owner !== "Unassigned") {
+    await notify({
+      recipient: row.owner,
+      kind: "capa_created",
+      title: `CAPA assigned: ${row.code}`,
+      body: row.title,
+      link: `/app/capa`,
+      channels: ["in_app", "email"],
+      data: { capaId: row.id, severity: row.severity },
+    });
+  }
   res.status(201).json(row);
 });
 
