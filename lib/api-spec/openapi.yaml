@@ -3,34 +3,511 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: EltegraAI platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: projects
+  - name: requirements
+  - name: traceability
+  - name: compliance
+  - name: dashboard
+  - name: activity
+  - name: pdlc
+  - name: legacy
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: array
+                items: { $ref: "#/components/schemas/Project" }
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+
+  /requirements:
+    get:
+      operationId: listRequirements
+      tags: [requirements]
+      parameters:
+        - { name: projectId, in: query, required: false, schema: { type: string } }
+        - { name: type, in: query, required: false, schema: { $ref: "#/components/schemas/RequirementType" } }
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/RequirementStatus" } }
+        - { name: search, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Requirement" }
+    post:
+      operationId: createRequirement
+      tags: [requirements]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRequirementBody" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Requirement" }
+  /requirements/{requirementId}:
+    get:
+      operationId: getRequirement
+      tags: [requirements]
+      parameters:
+        - { name: requirementId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequirementDetail" }
+    patch:
+      operationId: updateRequirement
+      tags: [requirements]
+      parameters:
+        - { name: requirementId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateRequirementBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Requirement" }
+    delete:
+      operationId: deleteRequirement
+      tags: [requirements]
+      parameters:
+        - { name: requirementId, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Deleted }
+
+  /traceability/graph:
+    get:
+      operationId: getTraceabilityGraph
+      tags: [traceability]
+      parameters:
+        - { name: projectId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TraceabilityGraph" }
+
+  /code-artifacts:
+    get:
+      operationId: listCodeArtifacts
+      tags: [traceability]
+      parameters:
+        - { name: projectId, in: query, required: false, schema: { type: string } }
+        - { name: language, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CodeArtifact" }
+
+  /compliance/frameworks:
+    get:
+      operationId: listComplianceFrameworks
+      tags: [compliance]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ComplianceFramework" }
+  /compliance/frameworks/{frameworkId}:
+    get:
+      operationId: getComplianceFramework
+      tags: [compliance]
+      parameters:
+        - { name: frameworkId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ComplianceFrameworkDetail" }
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DashboardSummary" }
+
+  /activity/recent:
+    get:
+      operationId: getRecentActivity
+      tags: [activity]
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, default: 20 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ActivityEvent" }
+
+  /pdlc/stages:
+    get:
+      operationId: getPdlcStages
+      tags: [pdlc]
+      parameters:
+        - { name: projectId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PdlcStage" }
+
+  /legacy/systems:
+    get:
+      operationId: listLegacySystems
+      tags: [legacy]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LegacySystem" }
+
+  /demo-requests:
+    post:
+      operationId: createDemoRequest
+      tags: [projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateDemoRequestBody" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoRequest" }
+
 components:
   schemas:
     HealthStatus:
       type: object
-      properties:
-        status:
-          type: string
-      required:
-        - status
+      properties: { status: { type: string } }
+      required: [status]
 
+    RequirementType:
+      type: string
+      enum: [BRD, PRD, FRD, NFR]
+    RequirementStatus:
+      type: string
+      enum: [draft, in_review, approved, implemented, verified]
+    RequirementPriority:
+      type: string
+      enum: [low, medium, high, critical]
+
+    Project:
+      type: object
+      required: [id, name, slug, description, requirementCount, complianceScore, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        owner: { type: string }
+        requirementCount: { type: integer }
+        complianceScore: { type: integer }
+        createdAt: { type: string, format: date-time }
+
+    Requirement:
+      type: object
+      required: [id, projectId, code, title, type, status, priority, owner, updatedAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        type: { $ref: "#/components/schemas/RequirementType" }
+        status: { $ref: "#/components/schemas/RequirementStatus" }
+        priority: { $ref: "#/components/schemas/RequirementPriority" }
+        owner: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        linkedCodeCount: { type: integer }
+        linkedFrameworks:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    RequirementDetail:
+      allOf:
+        - $ref: "#/components/schemas/Requirement"
+        - type: object
+          properties:
+            linkedCode:
+              type: array
+              items: { $ref: "#/components/schemas/CodeArtifact" }
+            children:
+              type: array
+              items: { $ref: "#/components/schemas/Requirement" }
+
+    CreateRequirementBody:
+      type: object
+      required: [projectId, title, type]
+      properties:
+        projectId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        type: { $ref: "#/components/schemas/RequirementType" }
+        status: { $ref: "#/components/schemas/RequirementStatus" }
+        priority: { $ref: "#/components/schemas/RequirementPriority" }
+        owner: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    UpdateRequirementBody:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        status: { $ref: "#/components/schemas/RequirementStatus" }
+        priority: { $ref: "#/components/schemas/RequirementPriority" }
+        owner: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    CodeArtifact:
+      type: object
+      required: [id, projectId, filePath, language, symbol, kind]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        filePath: { type: string }
+        language: { type: string }
+        symbol: { type: string }
+        kind: { type: string, description: "function | class | module | service" }
+        repoUrl: { type: string }
+        linkedRequirementCount: { type: integer }
+
+    TraceabilityNode:
+      type: object
+      required: [id, label, kind]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        kind: { type: string, description: "requirement | code | framework" }
+        meta: { type: string }
+    TraceabilityEdge:
+      type: object
+      required: [from, to, kind]
+      properties:
+        from: { type: string }
+        to: { type: string }
+        kind: { type: string, description: "implements | covers | depends" }
+    TraceabilityGraph:
+      type: object
+      required: [nodes, edges]
+      properties:
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/TraceabilityNode" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/TraceabilityEdge" }
+
+    ComplianceFramework:
+      type: object
+      required: [id, code, name, status, score, controlsTotal, controlsMet, lastAuditAt]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        category: { type: string }
+        status: { type: string, description: "passing | warning | gap" }
+        score: { type: integer }
+        controlsTotal: { type: integer }
+        controlsMet: { type: integer }
+        lastAuditAt: { type: string, format: date-time }
+
+    ComplianceControl:
+      type: object
+      required: [id, frameworkId, code, title, status, evidenceCount]
+      properties:
+        id: { type: string }
+        frameworkId: { type: string }
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, description: "met | partial | gap" }
+        owner: { type: string }
+        evidenceCount: { type: integer }
+        linkedRequirementCount: { type: integer }
+
+    ComplianceFrameworkDetail:
+      allOf:
+        - $ref: "#/components/schemas/ComplianceFramework"
+        - type: object
+          properties:
+            controls:
+              type: array
+              items: { $ref: "#/components/schemas/ComplianceControl" }
+
+    DashboardSummary:
+      type: object
+      required:
+        - totalRequirements
+        - implementedRequirements
+        - openGaps
+        - complianceAdherence
+        - traceabilityCoverage
+        - velocityIndex
+        - byStatus
+        - byType
+        - savings
+      properties:
+        totalRequirements: { type: integer }
+        implementedRequirements: { type: integer }
+        openGaps: { type: integer }
+        complianceAdherence: { type: integer, description: "0-100" }
+        traceabilityCoverage: { type: integer, description: "0-100" }
+        velocityIndex: { type: integer, description: "0-100" }
+        savings:
+          type: object
+          required: [estimatedAnnualUsd, hoursSaved]
+          properties:
+            estimatedAnnualUsd: { type: integer }
+            hoursSaved: { type: integer }
+        byStatus:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status: { type: string }
+              count: { type: integer }
+        byType:
+          type: array
+          items:
+            type: object
+            required: [type, count]
+            properties:
+              type: { type: string }
+              count: { type: integer }
+
+    ActivityEvent:
+      type: object
+      required: [id, kind, message, actor, createdAt]
+      properties:
+        id: { type: string }
+        kind: { type: string, description: "requirement | code | compliance | gap" }
+        message: { type: string }
+        actor: { type: string }
+        entityCode: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    PdlcStage:
+      type: object
+      required: [id, projectId, stage, completion, requirementCount]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        stage: { type: string, description: "ideation | design | development | testing | launch | governance" }
+        title: { type: string }
+        completion: { type: integer, description: "0-100" }
+        requirementCount: { type: integer }
+        blockers: { type: integer }
+
+    LegacySystem:
+      type: object
+      required: [id, name, language, locScanned, requirementsExtracted, riskScore]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        language: { type: string }
+        description: { type: string }
+        locScanned: { type: integer }
+        requirementsExtracted: { type: integer }
+        riskScore: { type: integer, description: "0-100, lower is better" }
+        modernizationStatus: { type: string }
+
+    DemoRequest:
+      type: object
+      required: [id, name, email, createdAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        company: { type: string }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    CreateDemoRequestBody:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        company: { type: string }
+        message: { type: string }
