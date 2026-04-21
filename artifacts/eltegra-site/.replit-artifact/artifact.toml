@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "EltegraAI"
+version = "1.0.0"
+id = "artifacts/eltegra-site"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24265
+
+[services.development]
+run = "pnpm --filter @workspace/eltegra-site run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/eltegra-site", "run", "build" ]
+publicDir = "artifacts/eltegra-site/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24265"
+BASE_PATH = "/"

@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "MXO8W8ZRBdpZxl8HiQ7Z3"
+uri = "file://artifacts/eltegra-site/public/hero-network.png"
+type = "image"
+title = "Abstract data network in green"
+
+[[generated]]
+id = "_fJuXARnbI5_4hQ8z0oGC"
+uri = "file://artifacts/eltegra-site/public/roi-bg.png"
+type = "image"
+title = "Green tinted enterprise topology"
+
+[[generated]]
+id = "-IipeLLkfvWpPyq9rVwSQ"
+uri = "file://artifacts/eltegra-site/public/office-bg.png"
+type = "image"
+title = "Blurred enterprise office space"
