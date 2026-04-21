@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { bootstrapFrameworks } from "./lib/bootstrap-frameworks";
+import { bootstrapGapRequirements } from "./lib/bootstrap-gap-requirements";
 
 const rawPort = process.env["PORT"];
 
@@ -27,4 +28,5 @@ app.listen(port, (err) => {
   // Idempotently ensure built-in process frameworks (ASPICE 4.0, CMMI 3.0) exist.
   // Runs in the background so it never blocks request handling.
   void bootstrapFrameworks();
+  void bootstrapGapRequirements();
 });
