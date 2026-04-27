@@ -28,6 +28,17 @@ const KIND_LABELS: Record<string, string> = {
   traceability: "Traceability narrative",
 };
 
+const KIND_DESCRIPTIONS: Record<string, string> = {
+  exec_brief:
+    "Board-ready 1–2 page summary of program health, top risks, and momentum.",
+  compliance_audit:
+    "Standards-grounded audit report against a chosen framework (ISO/SOC2/HIPAA/etc.) with control verdicts and evidence.",
+  requirements_summary:
+    "Coverage and quality narrative across all project requirements, grouped by type and priority.",
+  traceability:
+    "Requirements → design → code → tests → reports coverage story with gaps and recommendations.",
+};
+
 export default function Reports() {
   const { projectId } = useProjectContext();
   const { data, isLoading } = useReports(projectId);
@@ -87,13 +98,23 @@ export default function Reports() {
                 <div>
                   <label className="text-xs font-medium text-slate-600">Report kind</label>
                   <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger data-testid="report-kind-select"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {Object.entries(KIND_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                        <SelectItem key={k} value={k}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{v}</span>
+                            <span className="text-[10px] text-slate-500 max-w-[260px]">
+                              {KIND_DESCRIPTIONS[k]}
+                            </span>
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {KIND_DESCRIPTIONS[form.kind] && (
+                    <p className="text-[11px] text-slate-500 mt-1">{KIND_DESCRIPTIONS[form.kind]}</p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-600">Audience tone</label>
@@ -106,23 +127,26 @@ export default function Reports() {
                     </SelectContent>
                   </Select>
                 </div>
-                {form.kind === "compliance_audit" && (
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Framework</label>
-                    <Select
-                      value={form.frameworkId || "__none"}
-                      onValueChange={(v) => setForm({ ...form, frameworkId: v === "__none" ? "" : v })}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none">— none —</SelectItem>
-                        {frameworks?.map((f: any) => (
-                          <SelectItem key={f.id} value={f.id}>{f.code} — {f.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <div>
+                  <label className="text-xs font-medium text-slate-600">
+                    Framework{" "}
+                    <span className="text-slate-400 font-normal">
+                      ({form.kind === "compliance_audit" ? "required" : "optional — anchors the narrative"})
+                    </span>
+                  </label>
+                  <Select
+                    value={form.frameworkId || "__none"}
+                    onValueChange={(v) => setForm({ ...form, frameworkId: v === "__none" ? "" : v })}
+                  >
+                    <SelectTrigger data-testid="report-framework-select"><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— none —</SelectItem>
+                      {frameworks?.map((f: any) => (
+                        <SelectItem key={f.id} value={f.id}>{f.code} — {f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <label className="text-xs font-medium text-slate-600">Extra instructions (optional)</label>
                   <Textarea

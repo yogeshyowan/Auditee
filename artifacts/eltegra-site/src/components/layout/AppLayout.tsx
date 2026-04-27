@@ -18,9 +18,9 @@ import {
   FolderInput
 } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
-import { useListProjects } from "@workspace/api-client-react";
 import { useProjectContext } from "@/lib/project-context";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 const NAV_ITEMS = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -41,10 +41,10 @@ const NAV_ITEMS = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { projectId, setProjectId } = useProjectContext();
-  const { data: projects } = useListProjects();
+  const { projectId, setProjectId, connectedProjects, allProjects } = useProjectContext();
 
-  const currentProject = projects?.find(p => p.id === projectId) || projects?.[0];
+  const currentProject = connectedProjects.find((p) => p.id === projectId) ?? connectedProjects[0];
+  const unconnected = allProjects.filter((p) => p.sourceCount === 0);
 
   return (
     <div className="min-h-[100dvh] flex bg-slate-50">
@@ -53,22 +53,63 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-1.5 font-display font-bold text-2xl tracking-tight text-slate-950 mb-6">
             Eltegra<span className="text-primary">AI</span>
           </Link>
-          
+
           <DropdownMenu>
-            <DropdownMenuTrigger className="w-full flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100 transition-colors">
-              <span className="truncate">{currentProject?.name || "Select Project"}</span>
+            <DropdownMenuTrigger
+              className="w-full flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-100 transition-colors"
+              data-testid="project-switcher"
+            >
+              <span className="truncate">
+                {currentProject?.name ?? (connectedProjects.length === 0 ? "No connected projects" : "Select project")}
+              </span>
               <ChevronDown className="h-4 w-4 text-slate-500 flex-shrink-0" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[206px]">
-              {projects?.map(project => (
-                <DropdownMenuItem 
-                  key={project.id} 
-                  onClick={() => setProjectId(project.id)}
-                  className={projectId === project.id ? "bg-slate-100 font-semibold" : ""}
-                >
-                  {project.name}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent className="w-[260px]">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500">
+                Connected projects
+              </DropdownMenuLabel>
+              {connectedProjects.length === 0 ? (
+                <div className="px-2 py-3 text-xs text-slate-500">
+                  None yet. Go to{" "}
+                  <Link href="/app/sources" className="text-primary underline">
+                    Project Sources
+                  </Link>{" "}
+                  to connect a repository or upload files.
+                </div>
+              ) : (
+                connectedProjects.map((project) => (
+                  <DropdownMenuItem
+                    key={project.id}
+                    onClick={() => setProjectId(project.id)}
+                    className={projectId === project.id ? "bg-slate-100 font-semibold" : ""}
+                    data-testid={`project-option-${project.id}`}
+                  >
+                    <span className="flex-1 truncate">{project.name}</span>
+                    <Badge variant="outline" className="text-[10px] ml-2">
+                      {project.sourceCount} src
+                    </Badge>
+                  </DropdownMenuItem>
+                ))
+              )}
+              {unconnected.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-400">
+                    Not connected ({unconnected.length})
+                  </DropdownMenuLabel>
+                  {unconnected.map((project) => (
+                    <DropdownMenuItem
+                      key={project.id}
+                      disabled
+                      className="opacity-60"
+                      title="Connect a source from the Project Sources page to enable this project"
+                    >
+                      <span className="flex-1 truncate">{project.name}</span>
+                      <span className="text-[10px] text-slate-400 ml-2">no sources</span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

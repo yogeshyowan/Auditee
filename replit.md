@@ -43,10 +43,14 @@ Marketing landing page lives at `/` and the functional app lives under `/app/*`.
   Run with `pnpm --filter @workspace/scripts run seed`.
 
 ### App pages (under `/app`)
-Dashboard, Requirements (CRUD via dialog/sheet), Traceability (SVG graph),
-Compliance (cards) + ComplianceDetail (controls table), PDLC pipeline,
-Legacy systems, Activity timeline. State: `useProjectContext` from
-`src/lib/project-context.tsx`.
+Dashboard, Project Sources (connect repos/uploads/docs), Requirements (CRUD via
+dialog/sheet), Traceability (SVG graph), Compliance (cards + multi-framework
+"Run audit" launcher) + ComplianceDetail (controls table), CAPA Actions, AI
+Reports (templated narrative reports for any framework), Workflows, Analytics,
+Recurring Audits, PDLC pipeline. State: `useProjectContext` from
+`src/lib/project-context.tsx` — exposes `connectedProjects` (sourceCount > 0)
+which is what the sidebar dropdown surfaces; unconnected projects are shown
+disabled with a CTA to Sources.
 
 ### AI features (powered by OpenAI via Replit AI Integrations)
 All AI endpoints live under `/api/ai/*` and intentionally bypass the OpenAPI
