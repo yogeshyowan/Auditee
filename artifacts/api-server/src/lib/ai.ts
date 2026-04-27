@@ -1,6 +1,6 @@
 import type OpenAI from "openai";
 
-const MODEL = "gpt-5.2";
+const MODEL = "gpt-5.4";
 
 export class AIUnavailableError extends Error {
   constructor(message: string) {
@@ -37,11 +37,12 @@ async function getClient(): Promise<OpenAI> {
 export async function jsonCompletion<T>(
   systemPrompt: string,
   userPrompt: string,
+  opts?: { maxTokens?: number },
 ): Promise<T> {
   const client = await getClient();
   const response = await client.chat.completions.create({
     model: MODEL,
-    max_completion_tokens: 8192,
+    max_completion_tokens: opts?.maxTokens ?? 8192,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

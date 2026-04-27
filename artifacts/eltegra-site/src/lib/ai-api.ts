@@ -91,6 +91,9 @@ export type ControlAssessment = {
   verdict: "met" | "partial" | "gap";
   coveringRequirementCodes: string[];
   evidenceFiles?: string[];
+  requiredEvidence?: string[];
+  foundEvidence?: string[];
+  missingEvidence?: string[];
   recommendation: string;
 };
 
@@ -110,8 +113,45 @@ export type ComplianceAuditResult = {
   headlineFindings: string[];
   controlAssessments: ControlAssessment[];
   capasCreated?: number;
+  compliancePercentage?: number;
+  controlSummary?: { total: number; met: number; partial: number; gap: number };
   sourcesUsed?: AuditSourceSummary[];
   evidenceTotals?: { sources: number; indexedFiles: number; citedFiles: number };
+};
+
+export type CoverageStage = {
+  status: "covered" | "partial" | "missing";
+  artifacts: string[];
+  note: string;
+};
+
+export type RequirementCoverage = {
+  requirementCode: string;
+  design: CoverageStage;
+  code: CoverageStage;
+  tests: CoverageStage;
+  reports: CoverageStage;
+  recommendation: string;
+};
+
+export type TraceabilityAuditResult = {
+  project: { id: string; name: string };
+  overallVerdict: "strong" | "adequate" | "weak" | "failing";
+  headlineFindings: string[];
+  requirementCoverage: RequirementCoverage[];
+  completenessPercentage: number;
+  stagePercentages: { design: number; code: number; tests: number; reports: number };
+  requirementsAudited: number;
+  sourcesUsed: Array<{
+    sourceId: string;
+    sourceLabel: string;
+    sourceKind: string;
+    fileCount: number;
+    designCount: number;
+    codeCount: number;
+    testCount: number;
+    reportCount: number;
+  }>;
 };
 
 export function useComplianceAudit() {
@@ -119,6 +159,17 @@ export function useComplianceAudit() {
   return useMutation({
     mutationFn: (body: { projectId: string; frameworkId: string; sourceIds?: string[] }) =>
       aiFetch<ComplianceAuditResult>("/ai/compliance-audit", body),
+    onSuccess: () => {
+      qc.invalidateQueries();
+    },
+  });
+}
+
+export function useTraceabilityAudit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { projectId: string; sourceIds?: string[] }) =>
+      aiFetch<TraceabilityAuditResult>("/ai/traceability-audit", body),
     onSuccess: () => {
       qc.invalidateQueries();
     },

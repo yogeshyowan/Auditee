@@ -430,18 +430,35 @@ router.post("/ai/compliance-audit", aiHandler(async (req, res) => {
         return `### Source: ${s.sourceLabel} [${s.sourceKind}] — ${s.fileCount} files indexed\n\n#### File listing (truncated):\n${tree}\n\n#### Cited file contents:\n${snips}`;
       }).join("\n\n");
 
-  const system = `You are EltegraAI's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it.
+  const system = `You are EltegraAI's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it AND explicitly enumerate "required evidence vs found evidence vs missing evidence" so the user gets a clean conformance report.
+
 You have THREE inputs to reason from:
 1) The project's requirements (formal documented behaviour).
 2) The framework's controls (what must be true).
 3) Project sources — actual files ingested from GitHub / Jira / uploads / etc. These are real evidence. Cite them when they prove or disprove a control.
 
 Return strict JSON:
-{"overallVerdict":"strong"|"adequate"|"weak"|"failing","headlineFindings":string[],"controlAssessments":[{"controlCode":string,"verdict":"met"|"partial"|"gap","coveringRequirementCodes":string[],"evidenceFiles":string[],"recommendation":string}]}
+{
+ "overallVerdict":"strong"|"adequate"|"weak"|"failing",
+ "headlineFindings":string[],
+ "controlAssessments":[{
+   "controlCode":string,
+   "verdict":"met"|"partial"|"gap",
+   "coveringRequirementCodes":string[],
+   "evidenceFiles":string[],
+   "requiredEvidence":string[],
+   "foundEvidence":string[],
+   "missingEvidence":string[],
+   "recommendation":string
+ }]
+}
 Rules:
 - controlCode must be one of the provided codes.
 - coveringRequirementCodes is a list of project requirement codes (may be empty).
 - evidenceFiles is a list of file paths (verbatim from the listings) that support your verdict (may be empty). Only cite files that genuinely support your verdict — do not invent paths.
+- requiredEvidence: 2–4 short bullets (max ~80 chars each) describing the artefact types the standard expects (e.g. "Access-control policy", "Quarterly access reviews"). Speak the standard's vocabulary.
+- foundEvidence: 0–4 short bullets (max ~80 chars each) describing what was actually located, each ideally referencing a requirement code or file path.
+- missingEvidence: 0–4 short bullets — items in requiredEvidence that have no matching foundEvidence. Empty array if fully covered.
 - verdict 'met' = clearly covered (requirements + evidence), 'partial' = some coverage with gaps, 'gap' = no meaningful coverage.
 - recommendation: one concrete next step (1 sentence). If evidence is missing for a control, say which file is needed.
 - headlineFindings: 2-4 short bullets summarising the audit, mentioning concrete sources where relevant.`;
@@ -456,10 +473,33 @@ Rules:
       verdict: "met" | "partial" | "gap";
       coveringRequirementCodes: string[];
       evidenceFiles?: string[];
+      requiredEvidence?: string[];
+      foundEvidence?: string[];
+      missingEvidence?: string[];
       recommendation: string;
     }>;
   };
-  const result = await jsonCompletion<AuditResult>(system, user);
+  const result = await jsonCompletion<AuditResult>(system, user, { maxTokens: 16384 });
+
+  // Compute compliance percentage from per-control verdicts.
+  // met = 1.0, partial = 0.5, gap = 0.0. Denominator is the authoritative control count
+  // for the framework. Any control the model omitted is treated as a gap so met+partial+gap
+  // always equals total.
+  const verdictByCode = new Map<string, "met" | "partial" | "gap">();
+  for (const a of result.controlAssessments ?? []) {
+    if (a.verdict === "met" || a.verdict === "partial" || a.verdict === "gap") {
+      verdictByCode.set(a.controlCode, a.verdict);
+    }
+  }
+  let metCount = 0, partialCount = 0, gapCount = 0;
+  for (const c of controls) {
+    const v = verdictByCode.get(c.code);
+    if (v === "met") metCount++;
+    else if (v === "partial") partialCount++;
+    else gapCount++; // includes explicit "gap" AND controls the model omitted
+  }
+  const denom = controls.length || 1;
+  const compliancePercentage = Math.round(((metCount + partialCount * 0.5) / denom) * 100);
 
   // Auto-create CAPAs for newly detected gaps (skip controls that already have an audit-sourced CAPA).
   // Use a single base count + retry on collision to avoid race-condition duplicate codes when
@@ -546,6 +586,8 @@ Rules:
     framework: { id: framework.id, code: framework.code, name: framework.name },
     project: { id: project.id, name: project.name },
     capasCreated,
+    compliancePercentage,
+    controlSummary: { total: denom, met: metCount, partial: partialCount, gap: gapCount },
     sourcesUsed: evidenceBySource.map((s) => ({
       sourceId: s.sourceId,
       sourceLabel: s.sourceLabel,
@@ -556,6 +598,264 @@ Rules:
     })),
     evidenceTotals: { sources: includedSources.length, indexedFiles: totalIndexedFiles, citedFiles: totalCitedFiles },
     ...result,
+  });
+}));
+
+// =============================================================
+// AI: Traceability / Completeness audit
+// For each requirement, evaluates coverage across:
+//   design  →  code  →  tests  →  test reports
+// using existing traceability_links + uploaded source files.
+// =============================================================
+router.post("/ai/traceability-audit", aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  const requestedSourceIds: string[] = Array.isArray(req.body?.sourceIds)
+    ? req.body.sourceIds.filter((x: unknown) => typeof x === "string" && x.length > 0)
+    : [];
+
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const reqs = await db
+    .select()
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, projectId));
+  if (reqs.length === 0) {
+    res.status(400).json({ error: "Project has no requirements to audit. Add requirements first." });
+    return;
+  }
+
+  // Existing traceability links → code artifacts (the "manual" trace).
+  const reqIds = reqs.map((r) => r.id);
+  const links = reqIds.length
+    ? await db.select().from(traceabilityLinksTable).where(inArray(traceabilityLinksTable.requirementId, reqIds))
+    : [];
+  const artifactIds = Array.from(new Set(links.map((l) => l.codeArtifactId)));
+  const artifacts = artifactIds.length
+    ? await db.select().from(codeArtifactsTable).where(inArray(codeArtifactsTable.id, artifactIds))
+    : [];
+  const artifactById = new Map(artifacts.map((a) => [a.id, a]));
+  const linksByReq = new Map<string, Array<{ kind: string; path: string }>>();
+  for (const l of links) {
+    const a = artifactById.get(l.codeArtifactId);
+    if (!a) continue;
+    const arr = linksByReq.get(l.requirementId) ?? [];
+    arr.push({ kind: l.kind, path: a.filePath ?? a.symbol ?? a.id });
+    linksByReq.set(l.requirementId, arr);
+  }
+
+  // Source files — give the AI the full path listing per source so it can match.
+  const sourcesAll = await db
+    .select()
+    .from(projectSourcesTable)
+    .where(eq(projectSourcesTable.projectId, projectId));
+  const includedSources = (
+    requestedSourceIds.length
+      ? sourcesAll.filter((s) => requestedSourceIds.includes(s.id))
+      : sourcesAll.filter((s) => s.status === "ready")
+  );
+
+  const MAX_PATHS_PER_SOURCE = 800;
+  type SrcSummary = { id: string; label: string; kind: string; fileCount: number; paths: string[] };
+  const sourceSummaries: SrcSummary[] = [];
+  for (const s of includedSources) {
+    const files = await db
+      .select({ path: sourceFilesTable.path })
+      .from(sourceFilesTable)
+      .where(eq(sourceFilesTable.sourceId, s.id));
+    sourceSummaries.push({
+      id: s.id,
+      label: s.label,
+      kind: s.kind,
+      fileCount: files.length,
+      paths: files.slice(0, MAX_PATHS_PER_SOURCE).map((f) => f.path),
+    });
+  }
+
+  // Heuristic pre-classification of paths into design/code/test/report buckets.
+  // The AI uses these as hints but can override.
+  const isDesign = (p: string) =>
+    /\.(md|mdx|adoc|rst)$/i.test(p) ||
+    /(^|\/)(docs?|design|architecture|adr|specs?)\//i.test(p) ||
+    /(README|ARCHITECTURE|DESIGN|SPEC|RFC)\.(md|txt)$/i.test(p);
+  const isTest = (p: string) =>
+    /(\.|_|\/)(test|spec)s?(\.|\/)/i.test(p) ||
+    /(^|\/)(tests?|__tests__|cypress|e2e|playwright)\//i.test(p) ||
+    /\.(test|spec)\.[jt]sx?$/i.test(p);
+  const isReport = (p: string) =>
+    /(coverage|junit|cobertura|allure|playwright-report|test-results|cypress\/results|reports?)\b/i.test(p) ||
+    /\.(xml|json|html)$/i.test(p) && /(report|coverage|junit|allure)/i.test(p);
+  const isCode = (p: string) =>
+    /\.(ts|tsx|js|jsx|py|go|rs|java|kt|cs|cpp|c|h|hpp|rb|php|swift|m|mm|sql)$/i.test(p) &&
+    !isTest(p);
+
+  const buckets: Record<string, { design: string[]; code: string[]; tests: string[]; reports: string[] }> = {};
+  for (const s of sourceSummaries) {
+    buckets[s.id] = { design: [], code: [], tests: [], reports: [] };
+    for (const p of s.paths) {
+      if (isReport(p)) buckets[s.id].reports.push(p);
+      else if (isTest(p)) buckets[s.id].tests.push(p);
+      else if (isDesign(p)) buckets[s.id].design.push(p);
+      else if (isCode(p)) buckets[s.id].code.push(p);
+    }
+  }
+
+  const sourceBlock = sourceSummaries.length === 0
+    ? "(no project sources connected — completeness will rely on declared traceability links only)"
+    : sourceSummaries.map((s) => {
+        const b = buckets[s.id]!;
+        const fmt = (label: string, arr: string[]) =>
+          `${label} (${arr.length}):\n${arr.slice(0, 80).map((p) => `  - ${p}`).join("\n") || "  (none detected)"}`;
+        return `### Source: ${s.label} [${s.kind}] — ${s.fileCount} files\n${fmt("Design / docs", b.design)}\n${fmt("Code", b.code)}\n${fmt("Tests", b.tests)}\n${fmt("Test reports", b.reports)}`;
+      }).join("\n\n");
+
+  const reqBlock = reqs.map((r) => {
+    const ls = linksByReq.get(r.id) ?? [];
+    return `${r.code} [${r.type}/${r.status}] ${r.title}\n  description: ${(r.description ?? "").slice(0, 280)}\n  declared links: ${ls.length === 0 ? "(none)" : ls.map((l) => `${l.kind}→${l.path}`).join(", ")}`;
+  }).join("\n");
+
+  const system = `You are EltegraAI's traceability & completeness auditor. For every requirement, decide whether it is covered at FOUR stages of the development lifecycle:
+  1) Design — has a design doc / architecture note / ADR explained how this will be built?
+  2) Code — does the implementation exist in source files?
+  3) Tests — are there test cases (unit / integration / e2e) for this requirement?
+  4) Test reports — is there evidence the tests have actually been run (coverage report, JUnit XML, CI artifact, etc.)?
+
+Use BOTH the declared traceability links AND the source file listings to decide. Match by requirement code (e.g. HEL-0001) appearing in path/filename, by feature keyword, or by obvious domain mapping. Be conservative — if you cannot cite any artefact, mark "missing".
+
+Return strict JSON:
+{
+ "overallVerdict":"strong"|"adequate"|"weak"|"failing",
+ "headlineFindings": string[],
+ "requirementCoverage":[{
+   "requirementCode": string,
+   "design":   {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "code":     {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "tests":    {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "reports":  {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "recommendation": string
+ }]
+}
+Rules:
+- Return EXACTLY ONE entry per provided requirement code, no duplicates, no extras. The list must contain every code in the "Requirements" block, even if all four stages are missing.
+- requirementCode must be one of the provided codes (verbatim).
+- artifacts: file paths verbatim from the listings or declared links. Do not invent paths. May be empty.
+- note: ONE short sentence explaining what was (or wasn't) found.
+- recommendation: ONE concrete next action for this requirement (e.g. "Add e2e test in tests/auth.e2e.ts covering MFA flow").
+- headlineFindings: 2–4 short bullets about systemic gaps (e.g. "12 of 18 requirements have no test coverage").`;
+
+  const user = `Project: ${project.name}\n\nRequirements (${reqs.length}):\n${reqBlock}\n\nProject sources:\n${sourceBlock}`;
+
+  type CoverageStage = { status: "covered" | "partial" | "missing"; artifacts: string[]; note: string };
+  type ReqCoverage = {
+    requirementCode: string;
+    design: CoverageStage;
+    code: CoverageStage;
+    tests: CoverageStage;
+    reports: CoverageStage;
+    recommendation: string;
+  };
+  type TraceResult = {
+    overallVerdict: "strong" | "adequate" | "weak" | "failing";
+    headlineFindings: string[];
+    requirementCoverage: ReqCoverage[];
+  };
+  const result = await jsonCompletion<TraceResult>(system, user, { maxTokens: 16384 });
+
+  // Reconcile model output against authoritative requirement set.
+  // Any requirement code the model omitted (or returned with invalid shape) is treated as
+  // fully missing across all 4 stages, so completeness can never be inflated by omissions.
+  const MISSING_STAGE: { status: "missing"; artifacts: string[]; note: string } = {
+    status: "missing",
+    artifacts: [],
+    note: "Model returned no coverage entry for this requirement.",
+  };
+  function normalizeStage(s: any): { status: "covered" | "partial" | "missing"; artifacts: string[]; note: string } {
+    const status =
+      s?.status === "covered" || s?.status === "partial" || s?.status === "missing"
+        ? s.status
+        : "missing";
+    const artifacts = Array.isArray(s?.artifacts) ? s.artifacts.filter((x: any) => typeof x === "string") : [];
+    const note = typeof s?.note === "string" ? s.note : "";
+    return { status, artifacts, note };
+  }
+  const modelByCode = new Map<string, ReqCoverage>();
+  for (const r of result.requirementCoverage ?? []) {
+    if (r && typeof r.requirementCode === "string" && !modelByCode.has(r.requirementCode)) {
+      modelByCode.set(r.requirementCode, r);
+    }
+  }
+  const reconciled = reqs.map((req) => {
+    const m = modelByCode.get(req.code);
+    return {
+      requirementCode: req.code,
+      design: m ? normalizeStage(m.design) : { ...MISSING_STAGE },
+      code: m ? normalizeStage(m.code) : { ...MISSING_STAGE },
+      tests: m ? normalizeStage(m.tests) : { ...MISSING_STAGE },
+      reports: m ? normalizeStage(m.reports) : { ...MISSING_STAGE },
+      recommendation:
+        m && typeof m.recommendation === "string" && m.recommendation.trim()
+          ? m.recommendation
+          : "Establish design, code, tests, and reports for this requirement.",
+    };
+  });
+
+  // Compute completeness % — average of 4 stage scores across ALL project requirements
+  // (not just those returned by the model). covered=1, partial=0.5, missing=0
+  function scoreStage(s: { status: string }): number {
+    if (s.status === "covered") return 1;
+    if (s.status === "partial") return 0.5;
+    return 0;
+  }
+  let totalScore = 0;
+  const stageTotals = { design: 0, code: 0, tests: 0, reports: 0 };
+  for (const r of reconciled) {
+    const d = scoreStage(r.design);
+    const c = scoreStage(r.code);
+    const t = scoreStage(r.tests);
+    const rp = scoreStage(r.reports);
+    totalScore += (d + c + t + rp) / 4;
+    stageTotals.design += d;
+    stageTotals.code += c;
+    stageTotals.tests += t;
+    stageTotals.reports += rp;
+  }
+  const totalReqs = reconciled.length;
+  const completenessPercentage = totalReqs > 0 ? Math.round((totalScore / totalReqs) * 100) : 0;
+  const stagePercentages = {
+    design: totalReqs ? Math.round((stageTotals.design / totalReqs) * 100) : 0,
+    code: totalReqs ? Math.round((stageTotals.code / totalReqs) * 100) : 0,
+    tests: totalReqs ? Math.round((stageTotals.tests / totalReqs) * 100) : 0,
+    reports: totalReqs ? Math.round((stageTotals.reports / totalReqs) * 100) : 0,
+  };
+
+  await logActivity(
+    "compliance",
+    `EltegraAI ran traceability/completeness audit on ${project.name}: ${result.overallVerdict} (${completenessPercentage}%)`,
+    "EltegraAI",
+    project.slug ?? project.id,
+  );
+
+  res.json({
+    project: { id: project.id, name: project.name },
+    overallVerdict: result.overallVerdict,
+    headlineFindings: result.headlineFindings ?? [],
+    requirementCoverage: reconciled,
+    completenessPercentage,
+    stagePercentages,
+    requirementsAudited: totalReqs,
+    sourcesUsed: sourceSummaries.map((s) => ({
+      sourceId: s.id,
+      sourceLabel: s.label,
+      sourceKind: s.kind,
+      fileCount: s.fileCount,
+      designCount: buckets[s.id]?.design.length ?? 0,
+      codeCount: buckets[s.id]?.code.length ?? 0,
+      testCount: buckets[s.id]?.tests.length ?? 0,
+      reportCount: buckets[s.id]?.reports.length ?? 0,
+    })),
   });
 }));
 
