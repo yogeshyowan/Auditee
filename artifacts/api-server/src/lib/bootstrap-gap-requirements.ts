@@ -12,10 +12,10 @@ type GapReq = {
 
 const PROJECT = {
   id: "proj-platform-roadmap",
-  name: "EltegraAI — Platform Capabilities Roadmap",
+  name: "Montana — Platform Capabilities Roadmap",
   slug: "platform",
   description:
-    "Gap analysis vs. SafetyCulture iAuditor, Praxie, ReportGPT, and Process Street. Tracks capabilities EltegraAI must add to reach feature parity with adjacent inspection, work-management, AI-reporting, and workflow tools.",
+    "Gap analysis vs. SafetyCulture iAuditor, Praxie, ReportGPT, and Process Street. Tracks capabilities Montana must add to reach feature parity with adjacent inspection, work-management, AI-reporting, and workflow tools.",
   owner: "Product",
   complianceScore: 0,
 };

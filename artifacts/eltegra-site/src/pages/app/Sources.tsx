@@ -176,7 +176,7 @@ export default function Sources() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Project Sources</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Bring your project into Eltegra so the AI can audit it. Pull source from GitHub, upload a ZIP or folder, or
+          Bring your project into Montana so the AI can audit it. Pull source from GitHub, upload a ZIP or folder, or
           connect Jira / Jenkins / AWS / Drive / ALM / a cloud server to ingest evidence for compliance reviews.
         </p>
       </div>
@@ -740,7 +740,7 @@ function RunAuditDialog({
             Audit “{source.label}”
           </DialogTitle>
           <DialogDescription>
-            Pick a standard. Eltegra will analyse this source against every control in the framework and produce a grounded report.
+            Pick a standard. Montana will analyse this source against every control in the framework and produce a grounded report.
           </DialogDescription>
         </DialogHeader>
 
@@ -1105,7 +1105,7 @@ function TraceabilityAuditDialog({
             Traceability completeness — “{source.label}”
           </DialogTitle>
           <DialogDescription>
-            For every requirement in the project, Eltegra checks whether design, code, tests, and test reports exist in this source.
+            For every requirement in the project, Montana checks whether design, code, tests, and test reports exist in this source.
           </DialogDescription>
         </DialogHeader>
 

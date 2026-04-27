@@ -352,14 +352,14 @@ async function seed() {
   const now = Date.now();
   const events = [
     { kind: "requirement", message: "HEL-0007 right-to-erasure workflow drafted", actor: "Privacy", entityCode: "HEL-0007", offsetMins: 12 },
-    { kind: "code", message: "Linked verifyPatientIdentity to HEL-0001", actor: "EltegraAI", entityCode: "HEL-0001", offsetMins: 47 },
+    { kind: "code", message: "Linked verifyPatientIdentity to HEL-0001", actor: "Montana", entityCode: "HEL-0001", offsetMins: 47 },
     { kind: "compliance", message: "SOC 2 control CC8.1 evidence refreshed", actor: "Platform", entityCode: "CC8.1", offsetMins: 92 },
-    { kind: "gap", message: "GDPR Art.17 flagged: missing right-to-erasure implementation", actor: "EltegraAI", entityCode: "Art.17", offsetMins: 145 },
+    { kind: "gap", message: "GDPR Art.17 flagged: missing right-to-erasure implementation", actor: "Montana", entityCode: "Art.17", offsetMins: 145 },
     { kind: "requirement", message: "ATL-0001 pre-trade risk gating verified in pre-prod", actor: "Marcus Chen", entityCode: "ATL-0001", offsetMins: 200 },
     { kind: "requirement", message: "VEG-0002 fraud scoring moved to in_review", actor: "Fraud Ops", entityCode: "VEG-0002", offsetMins: 280 },
     { kind: "code", message: "AuditService deployed to staging cluster", actor: "Platform", entityCode: "HEL-0005", offsetMins: 360 },
     { kind: "compliance", message: "HIPAA quarterly attestation completed", actor: "Compliance", entityCode: "HIPAA", offsetMins: 420 },
-    { kind: "gap", message: "FDA 21 CFR 11 audit trail control 11.10(e) regressed to gap", actor: "EltegraAI", entityCode: "11.10(e)", offsetMins: 540 },
+    { kind: "gap", message: "FDA 21 CFR 11 audit trail control 11.10(e) regressed to gap", actor: "Montana", entityCode: "11.10(e)", offsetMins: 540 },
     { kind: "requirement", message: "HEL-0009 encryption at rest implemented", actor: "Security Eng", entityCode: "HEL-0009", offsetMins: 660 },
     { kind: "requirement", message: "VEG-0003 adjudication explainability approved", actor: "Priya Natarajan", entityCode: "VEG-0003", offsetMins: 780 },
     { kind: "code", message: "PreTradeRiskGate test coverage at 94%", actor: "QA", entityCode: "ATL-0001", offsetMins: 900 },

@@ -118,7 +118,7 @@ export async function ingestGithub(
   const repo = m[2];
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
-    "User-Agent": "EltegraAI-Sources/1.0",
+    "User-Agent": "Montana-Sources/1.0",
   };
   if (cfg.token) headers.Authorization = `Bearer ${cfg.token}`;
 

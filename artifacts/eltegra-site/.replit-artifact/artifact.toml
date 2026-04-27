@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "EltegraAI"
+title = "Montana"
 version = "1.0.0"
 id = "artifacts/eltegra-site"
 router = "path"

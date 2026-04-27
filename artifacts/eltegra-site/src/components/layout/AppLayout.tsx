@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 
 const NAV_ITEMS = [
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/app/ask", label: "Ask Eltegra", icon: Sparkles },
+  { href: "/app/ask", label: "Ask Montana", icon: Sparkles },
   { href: "/app/sources", label: "Project Sources", icon: FolderInput },
   { href: "/app/requirements", label: "Requirements", icon: ListChecks },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },
@@ -51,7 +51,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 border-r border-slate-200 bg-white flex flex-col fixed inset-y-0 left-0 z-20">
         <div className="p-6 border-b border-slate-200">
           <Link href="/" className="flex items-center gap-1.5 font-display font-bold text-2xl tracking-tight text-slate-950 mb-6">
-            Eltegra<span className="text-primary">AI</span>
+            <span className="text-primary">Montana</span>
           </Link>
 
           <DropdownMenu>

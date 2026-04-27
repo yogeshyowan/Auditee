@@ -90,13 +90,13 @@ export default function Traceability() {
           <DialogTitle className="font-[Inter_Tight] text-2xl flex items-center gap-2">
             <Code2 className="h-5 w-5 text-primary" /> Analyze code
           </DialogTitle>
-          <DialogDescription>EltegraAI links code to requirements in your project.</DialogDescription>
+          <DialogDescription>Montana links code to requirements in your project.</DialogDescription>
         </DialogHeader>
 
         {analyzeMut.isPending ? (
           <div className="py-12 flex flex-col items-center gap-3 text-slate-600">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm">EltegraAI is analyzing your code...</p>
+            <p className="text-sm">Montana is analyzing your code...</p>
           </div>
         ) : analyzeMut.data ? (
           <div className="space-y-5">

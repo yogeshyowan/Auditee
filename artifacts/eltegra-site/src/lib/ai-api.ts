@@ -230,7 +230,7 @@ export type AskConversation = {
 
 const ASK_HISTORY_KEY = (projectId?: string) => ["ai", "ask", "history", projectId ?? "all"];
 
-export function useAskEltegra() {
+export function useAskMontana() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { question: string; projectId?: string }) =>
