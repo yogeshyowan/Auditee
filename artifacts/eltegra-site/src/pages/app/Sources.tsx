@@ -1,5 +1,7 @@
 import { useState, useRef } from "react";
 import { useProjectContext } from "@/lib/project-context";
+import { useListComplianceFrameworks } from "@workspace/api-client-react";
+import { useComplianceAudit, type ComplianceAuditResult } from "@/lib/ai-api";
 import {
   useSources,
   useCreateSource,
@@ -44,6 +46,9 @@ import {
   Hammer,
   Globe,
   ChevronRight,
+  Wand2,
+  ShieldCheck,
+  Download,
 } from "lucide-react";
 
 type Kind = ProjectSourceRow["kind"];
@@ -91,6 +96,7 @@ export default function Sources() {
 
   const [picker, setPicker] = useState<Kind | null>(null);
   const [browsing, setBrowsing] = useState<ProjectSourceRow | null>(null);
+  const [auditing, setAuditing] = useState<ProjectSourceRow | null>(null);
 
   async function onUploadZip(file: File) {
     if (!projectId) return;
@@ -180,6 +186,16 @@ export default function Sources() {
                   {s.statusMessage && <div className="text-xs text-muted-foreground mt-0.5 italic">{s.statusMessage}</div>}
                 </div>
                 {statusBadge(s.status)}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                  disabled={s.status !== "ready"}
+                  onClick={() => setAuditing(s)}
+                  title={s.status !== "ready" ? "Source must be in 'ready' state to audit" : "Run AI audit on this source"}
+                >
+                  <Wand2 className="h-3 w-3 mr-1" /> Run audit
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => setBrowsing(s)}>
                   <FileCode2 className="h-3 w-3 mr-1" /> Browse
                 </Button>
@@ -220,6 +236,7 @@ export default function Sources() {
       />
 
       <BrowseDialog source={browsing} onClose={() => setBrowsing(null)} />
+      <RunAuditDialog source={auditing} projectId={projectId} onClose={() => setAuditing(null)} />
     </div>
   );
 }
@@ -438,4 +455,276 @@ function BrowseDialog({ source, onClose }: { source: ProjectSourceRow | null; on
       </DialogContent>
     </Dialog>
   );
+}
+
+// ───────── Run Audit dialog (pick standard → generate report) ─────────
+function RunAuditDialog({
+  source,
+  projectId,
+  onClose,
+}: {
+  source: ProjectSourceRow | null;
+  projectId: string | null;
+  onClose: () => void;
+}) {
+  const { data: frameworks, isLoading: fwLoading, error: fwError } = useListComplianceFrameworks();
+  const audit = useComplianceAudit();
+  const { toast } = useToast();
+  const [picked, setPicked] = useState<string | null>(null);
+  const [result, setResult] = useState<ComplianceAuditResult | null>(null);
+
+  if (!source) return null;
+
+  async function run() {
+    if (!source || !picked) return;
+    if (!projectId) {
+      toast({
+        title: "No project selected",
+        description: "Pick a project in the top-left switcher before running an audit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setResult(null);
+    try {
+      const r = await audit.mutateAsync({ projectId, frameworkId: picked, sourceIds: [source.id] });
+      setResult(r);
+    } catch (err: any) {
+      toast({ title: "Audit failed", description: err.message ?? "Unknown error", variant: "destructive" });
+    }
+  }
+
+  function reset() { setResult(null); setPicked(null); }
+  function close() { reset(); onClose(); }
+
+  function downloadMarkdown() {
+    if (!result) return;
+    const md = renderAuditMarkdown(result, source!);
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `audit-${result.framework.code.replace(/\s+/g, "-")}-${source!.label.replace(/\s+/g, "-")}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  const verdictColor: Record<ComplianceAuditResult["overallVerdict"], string> = {
+    strong: "bg-emerald-100 text-emerald-800 border-emerald-300",
+    adequate: "bg-blue-100 text-blue-800 border-blue-300",
+    weak: "bg-amber-100 text-amber-800 border-amber-300",
+    failing: "bg-rose-100 text-rose-800 border-rose-300",
+  };
+
+  return (
+    <Dialog open={!!source} onOpenChange={(o) => !o && close()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            Audit “{source.label}”
+          </DialogTitle>
+          <DialogDescription>
+            Pick a standard. Eltegra will analyse this source against every control in the framework and produce a grounded report.
+          </DialogDescription>
+        </DialogHeader>
+
+        {!result && (
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Standard / framework</Label>
+              {fwLoading ? (
+                <div className="text-sm text-muted-foreground py-3 flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading frameworks…
+                </div>
+              ) : fwError ? (
+                <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 mt-2">
+                  Couldn't load frameworks. {String((fwError as any)?.message ?? "Please try again.")}
+                </div>
+              ) : !frameworks || frameworks.length === 0 ? (
+                <div className="text-sm text-slate-600 bg-slate-50 border border-dashed rounded-md p-4 mt-2 text-center">
+                  No compliance frameworks are configured. Ask an admin to seed standards before running audits.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                  {frameworks.map((fw: any) => {
+                    const active = picked === fw.id;
+                    return (
+                      <button
+                        key={fw.id}
+                        onClick={() => setPicked(fw.id)}
+                        className={`text-left border rounded-md p-3 transition ${
+                          active ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500" : "hover:border-slate-400"
+                        }`}
+                      >
+                        <div className="text-xs font-mono text-emerald-700">{fw.code}</div>
+                        <div className="font-medium text-sm mt-0.5">{fw.name}</div>
+                        {fw.category && (
+                          <div className="text-xs text-muted-foreground mt-1">{fw.category}</div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-slate-50 border rounded-md p-3 text-xs text-slate-600">
+              <div className="flex items-center gap-2 mb-1 font-medium text-slate-800">
+                <FileCode2 className="h-3.5 w-3.5" /> Evidence ingested
+              </div>
+              <div>{source.fileCount} files · {bytesHuman(source.byteCount)} indexed from <span className="font-mono">{source.kind}</span></div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={close}>Cancel</Button>
+              <Button
+                onClick={run}
+                disabled={!picked || !projectId || audit.isPending}
+                title={!projectId ? "Select a project first" : !picked ? "Pick a standard first" : "Run AI audit"}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {audit.isPending ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running audit…</>
+                ) : (
+                  <><Wand2 className="h-4 w-4 mr-2" /> Generate audit report</>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+
+        {result && (
+          <div className="space-y-4">
+            <div className={`border rounded-md p-4 ${verdictColor[result.overallVerdict]}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs uppercase tracking-wider opacity-80">Overall verdict — {result.framework.code}</div>
+                  <div className="text-2xl font-semibold capitalize mt-0.5">{result.overallVerdict}</div>
+                </div>
+                <Button variant="outline" size="sm" onClick={downloadMarkdown}>
+                  <Download className="h-3.5 w-3.5 mr-1.5" /> Download .md
+                </Button>
+              </div>
+            </div>
+
+            {result.evidenceTotals && (
+              <div className="text-xs text-slate-600 bg-slate-50 border rounded-md p-2 px-3">
+                Evidence: {result.evidenceTotals.sources} source(s) · {result.evidenceTotals.indexedFiles} files indexed · {result.evidenceTotals.citedFiles} file(s) cited
+                {result.capasCreated ? <> · <span className="font-medium">{result.capasCreated} CAPA(s) auto-created</span></> : null}
+              </div>
+            )}
+
+            {result.headlineFindings?.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold mb-2">Headline findings</div>
+                <ul className="space-y-1.5">
+                  {result.headlineFindings.map((h, i) => (
+                    <li key={i} className="text-sm text-slate-700 flex gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>{h}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div>
+              <div className="text-sm font-semibold mb-2">Per-control assessment</div>
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-100 text-slate-700">
+                    <tr>
+                      <th className="text-left p-2 font-medium">Control</th>
+                      <th className="text-left p-2 font-medium">Verdict</th>
+                      <th className="text-left p-2 font-medium">Evidence cited</th>
+                      <th className="text-left p-2 font-medium">Recommendation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.controlAssessments.map((a, i) => (
+                      <tr key={i} className="border-t align-top">
+                        <td className="p-2 font-mono">{a.controlCode}</td>
+                        <td className="p-2">
+                          <Badge variant="outline" className={
+                            a.verdict === "met" ? "bg-emerald-50 text-emerald-700" :
+                            a.verdict === "partial" ? "bg-amber-50 text-amber-700" :
+                            "bg-rose-50 text-rose-700"
+                          }>{a.verdict}</Badge>
+                        </td>
+                        <td className="p-2">
+                          {a.evidenceFiles && a.evidenceFiles.length > 0 ? (
+                            <div className="space-y-0.5">
+                              {a.evidenceFiles.slice(0, 4).map((p) => (
+                                <div key={p} className="font-mono text-[11px] text-slate-600 truncate" title={p}>{p}</div>
+                              ))}
+                              {a.evidenceFiles.length > 4 && (
+                                <div className="text-[11px] text-slate-500">+{a.evidenceFiles.length - 4} more</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic">none</span>
+                          )}
+                        </td>
+                        <td className="p-2 text-slate-700">{a.recommendation}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={reset}>Run another</Button>
+              <Button onClick={close}>Done</Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function mdCell(s: string | undefined | null): string {
+  return String(s ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, " ")
+    .trim();
+}
+
+function renderAuditMarkdown(r: ComplianceAuditResult, source: ProjectSourceRow): string {
+  const lines: string[] = [];
+  lines.push(`# Compliance Audit — ${r.framework.name}`);
+  lines.push(``);
+  lines.push(`**Project:** ${r.project.name}  `);
+  lines.push(`**Source:** ${source.label} (${source.kind}) — ${source.fileCount} files indexed  `);
+  lines.push(`**Generated:** ${new Date().toLocaleString()}  `);
+  lines.push(`**Overall verdict:** \`${r.overallVerdict}\``);
+  lines.push(``);
+  if (r.evidenceTotals) {
+    lines.push(`> Evidence: ${r.evidenceTotals.sources} source(s) · ${r.evidenceTotals.indexedFiles} files indexed · ${r.evidenceTotals.citedFiles} file(s) cited` + (r.capasCreated ? ` · ${r.capasCreated} CAPA(s) auto-created` : ""));
+    lines.push(``);
+  }
+  if (r.headlineFindings?.length) {
+    lines.push(`## Headline findings`);
+    r.headlineFindings.forEach((h) => lines.push(`- ${h}`));
+    lines.push(``);
+  }
+  lines.push(`## Per-control assessment`);
+  lines.push(``);
+  lines.push(`| Control | Verdict | Evidence cited | Recommendation |`);
+  lines.push(`|---|---|---|---|`);
+  r.controlAssessments.forEach((a) => {
+    const ev =
+      (a.evidenceFiles ?? []).length === 0
+        ? "—"
+        : (a.evidenceFiles ?? []).map((p) => `\`${mdCell(p)}\``).join("<br/>");
+    lines.push(
+      `| \`${mdCell(a.controlCode)}\` | ${mdCell(a.verdict)} | ${ev} | ${mdCell(a.recommendation)} |`,
+    );
+  });
+  return lines.join("\n");
 }
