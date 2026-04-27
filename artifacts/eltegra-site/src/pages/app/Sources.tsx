@@ -17,6 +17,7 @@ import {
   useSourceFileContent,
   uploadZip,
   uploadFolder,
+  uploadReqif,
   type ProjectSourceRow,
 } from "@/lib/wave1-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,22 +56,31 @@ import {
   Wand2,
   ShieldCheck,
   Download,
+  ListChecks,
+  FileText,
+  BookOpen,
+  GitBranch,
+  Box,
+  Building2,
 } from "lucide-react";
 
 type Kind = ProjectSourceRow["kind"];
 
-const KIND_DEFS: Array<{
+type KindDef = {
   kind: Kind;
   title: string;
   blurb: string;
   icon: typeof Github;
   color: string;
-  ingests: "code" | "metadata";
-}> = [
+  ingests: "code" | "metadata" | "requirements";
+};
+
+// Code & evidence sources — the previous set.
+const KIND_DEFS: KindDef[] = [
   { kind: "github", title: "GitHub", blurb: "Pull source from any public or private repo by URL.", icon: Github, color: "bg-slate-900 text-white", ingests: "code" },
   { kind: "zip", title: "ZIP archive", blurb: "Upload a .zip of your project — files are extracted and indexed.", icon: FileArchive, color: "bg-amber-100 text-amber-800", ingests: "code" },
   { kind: "folder", title: "Project folder", blurb: "Drag a whole folder from your computer (browser permitting).", icon: FolderUp, color: "bg-emerald-100 text-emerald-800", ingests: "code" },
-  { kind: "jira", title: "Jira", blurb: "Connect a Jira project — issues are pulled in as audit evidence.", icon: Briefcase, color: "bg-blue-100 text-blue-800", ingests: "metadata" },
+  { kind: "jira", title: "Jira (issues)", blurb: "Connect a Jira project — issues are pulled in as audit evidence.", icon: Briefcase, color: "bg-blue-100 text-blue-800", ingests: "metadata" },
   { kind: "alm", title: "ALM (Azure DevOps)", blurb: "Pull work items via WIQL from Azure DevOps Boards.", icon: Briefcase, color: "bg-sky-100 text-sky-800", ingests: "metadata" },
   { kind: "jenkins", title: "Jenkins", blurb: "Connect a Jenkins host or single job — recent builds are indexed.", icon: Hammer, color: "bg-rose-100 text-rose-800", ingests: "metadata" },
   { kind: "aws_s3", title: "AWS S3", blurb: "Index objects in an S3 bucket (read-only).", icon: Cloud, color: "bg-orange-100 text-orange-800", ingests: "metadata" },
@@ -78,6 +88,26 @@ const KIND_DEFS: Array<{
   { kind: "cloud_server", title: "Cloud server", blurb: "Probe a server URL and capture reachability evidence.", icon: Server, color: "bg-violet-100 text-violet-800", ingests: "metadata" },
   { kind: "url", title: "Public URL", blurb: "Probe an arbitrary URL for status + headers.", icon: Globe, color: "bg-cyan-100 text-cyan-800", ingests: "metadata" },
 ];
+
+// Requirements-management connectors — pulls real requirement records into
+// the Requirements page, tagged with the source they came from. Each kind is
+// handled by a dedicated REST/OSLC client on the backend; ReqIF is a generic
+// XML import for any tool that exports the OMG ReqIF standard (DOORS Classic,
+// Visure, ReqView, Modern Requirements, Cradle, etc.).
+const RM_KIND_DEFS: KindDef[] = [
+  { kind: "doors_next", title: "IBM DOORS Next", blurb: "OSLC-RM connector for DOORS Next Generation (DNG 7.x).", icon: BookOpen, color: "bg-blue-100 text-blue-800", ingests: "requirements" },
+  { kind: "doors", title: "IBM DOORS (Classic)", blurb: "Export your module as ReqIF from DOORS 9.x and upload it here.", icon: BookOpen, color: "bg-blue-100 text-blue-800", ingests: "requirements" },
+  { kind: "jama", title: "Jama Connect", blurb: "REST integration — pulls items from a Jama project.", icon: ListChecks, color: "bg-rose-100 text-rose-800", ingests: "requirements" },
+  { kind: "polarion", title: "Polarion ALM", blurb: "Siemens Polarion REST — pulls work items from a project.", icon: Box, color: "bg-emerald-100 text-emerald-800", ingests: "requirements" },
+  { kind: "codebeamer", title: "codeBeamer", blurb: "PTC/Intland codeBeamer REST — pulls items from a tracker.", icon: ListChecks, color: "bg-orange-100 text-orange-800", ingests: "requirements" },
+  { kind: "helix_rm", title: "Helix RM (Perforce)", blurb: "Perforce Helix ALM REST — pulls requirements from a project.", icon: Building2, color: "bg-indigo-100 text-indigo-800", ingests: "requirements" },
+  { kind: "visure", title: "Visure Requirements", blurb: "REST integration with Visure Requirements ALM.", icon: ListChecks, color: "bg-purple-100 text-purple-800", ingests: "requirements" },
+  { kind: "azure_devops", title: "Azure DevOps Boards", blurb: "WIQL query against Azure DevOps work items as requirements.", icon: GitBranch, color: "bg-sky-100 text-sky-800", ingests: "requirements" },
+  { kind: "jira_reqs", title: "Jira (as requirements)", blurb: "Pull stories/features/epics from Jira as requirements.", icon: Briefcase, color: "bg-blue-100 text-blue-800", ingests: "requirements" },
+  { kind: "reqif", title: "ReqIF / .reqifz upload", blurb: "Generic ReqIF (OMG) import — works for any RM tool that exports ReqIF.", icon: FileText, color: "bg-slate-100 text-slate-800", ingests: "requirements" },
+];
+
+const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS];
 
 function statusBadge(s: ProjectSourceRow["status"]) {
   if (s === "ready") return <Badge variant="outline" className="bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-3 w-3 mr-1" />ready</Badge>;
@@ -125,6 +155,19 @@ export default function Sources() {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     }
   }
+  async function onUploadReqif(file: File) {
+    if (!projectId) return;
+    try {
+      const r = await uploadReqif(projectId, file, file.name);
+      toast({
+        title: "ReqIF imported",
+        description: r.statusMessage ?? `${r.fileCount} requirements pulled in`,
+      });
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: "ReqIF import failed", description: err.message, variant: "destructive" });
+    }
+  }
 
   const sources = data?.sources ?? [];
 
@@ -140,13 +183,47 @@ export default function Sources() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Connect a new source</CardTitle>
+          <CardTitle className="text-base">Code &amp; build evidence</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">Pull in source code, repos, build artifacts and metadata so the AI can audit completeness and traceability.</p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {KIND_DEFS.map((d) => (
               <button
                 key={d.kind}
+                data-testid={`kind-card-${d.kind}`}
+                onClick={() => setPicker(d.kind)}
+                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
+              >
+                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                  <d.icon className="h-5 w-5" />
+                </div>
+                <div className="font-medium text-sm">{d.title}</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-emerald-700" /> Requirements management
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Pull existing requirements from your RM tool of record. Imported requirements show up on the Requirements page tagged with the source they came from.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {RM_KIND_DEFS.map((d) => (
+              <button
+                key={d.kind}
+                data-testid={`kind-card-${d.kind}`}
                 onClick={() => setPicker(d.kind)}
                 className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
               >
@@ -176,7 +253,8 @@ export default function Sources() {
             </div>
           )}
           {sources.map((s) => {
-            const def = KIND_DEFS.find((d) => d.kind === s.kind);
+            const def = ALL_KIND_DEFS.find((d) => d.kind === s.kind);
+            const canSync = s.kind !== "zip" && s.kind !== "folder" && s.kind !== "reqif" && s.kind !== "doors";
             return (
               <div key={s.id} className="flex items-center gap-3 border rounded-md p-3 hover:bg-slate-50">
                 <div className={`h-9 w-9 rounded-md flex items-center justify-center ${def?.color ?? "bg-slate-100"}`}>
@@ -216,7 +294,7 @@ export default function Sources() {
                 <Button variant="outline" size="sm" onClick={() => setBrowsing(s)}>
                   <FileCode2 className="h-3 w-3 mr-1" /> Browse
                 </Button>
-                {s.kind !== "zip" && s.kind !== "folder" && (
+                {canSync && (
                   <Button variant="outline" size="sm" disabled={sync.isPending} onClick={() => sync.mutate(s.id)}>
                     <RefreshCw className={`h-3 w-3 mr-1 ${sync.isPending ? "animate-spin" : ""}`} /> Sync
                   </Button>
@@ -250,6 +328,7 @@ export default function Sources() {
         }}
         onZip={onUploadZip}
         onFolder={onUploadFolder}
+        onReqif={onUploadReqif}
       />
 
       <BrowseDialog source={browsing} onClose={() => setBrowsing(null)} />
@@ -267,6 +346,7 @@ function ConnectDialog({
   onCreate,
   onZip,
   onFolder,
+  onReqif,
 }: {
   kind: Kind | null;
   onClose: () => void;
@@ -274,15 +354,17 @@ function ConnectDialog({
   onCreate: (kind: Kind, label: string, config: Record<string, any>) => Promise<void>;
   onZip: (file: File) => Promise<void>;
   onFolder: (files: FileList) => Promise<void>;
+  onReqif: (file: File) => Promise<void>;
 }) {
   const [label, setLabel] = useState("");
   const [cfg, setCfg] = useState<Record<string, any>>({});
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const folderRef = useRef<HTMLInputElement>(null);
+  const reqifRef = useRef<HTMLInputElement>(null);
 
   if (!kind) return null;
-  const def = KIND_DEFS.find((d) => d.kind === kind)!;
+  const def = ALL_KIND_DEFS.find((d) => d.kind === kind)!;
 
   function up(k: string, v: string) { setCfg((p) => ({ ...p, [k]: v })); }
 
@@ -383,9 +465,122 @@ function ConnectDialog({
         <Field label="URL" placeholder="https://your-server.example.com/health" value={cfg.url ?? ""} onChange={(v) => up("url", v)} />
       </div>
     );
+  } else if (kind === "doors_next") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">IBM DOORS Next Generation (DNG 7.x) over OSLC. Use the URL of the JTS root.</p>
+        <Field label="DOORS Next host" placeholder="https://jazz.example.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project area URL" placeholder="https://jazz.example.com/rm/process/project-areas/_xxx" value={cfg.projectArea ?? ""} onChange={(v) => up("projectArea", v)} />
+        <Field label="Bearer token (PAT)" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "doors") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          IBM DOORS Classic (9.x) has no public REST API. Export your module from DOORS as <strong>ReqIF</strong> (File → Export → ReqIF) and upload the resulting <code>.reqif</code> or <code>.reqifz</code> file here.
+        </p>
+        <input
+          ref={reqifRef}
+          type="file"
+          accept=".reqif,.reqifz,application/xml,application/zip"
+          hidden
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            if (f) { setBusy(true); await onReqif(f); setBusy(false); onClose(); }
+          }}
+        />
+        <Button className="w-full" disabled={busy || !projectId} onClick={() => reqifRef.current?.click()}>
+          <FileText className="h-4 w-4 mr-2" /> {busy ? "Importing…" : "Choose ReqIF export"}
+        </Button>
+      </div>
+    );
+  } else if (kind === "jama") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Jama host" placeholder="https://yourorg.jamacloud.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project ID" placeholder="42" value={cfg.projectId ?? ""} onChange={(v) => up("projectId", v)} />
+        <Field label="Access token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "polarion") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Polarion host" placeholder="https://polarion.example.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project ID" placeholder="elibrary" value={cfg.projectId ?? ""} onChange={(v) => up("projectId", v)} />
+        <Field label="Bearer token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "codebeamer") {
+    body = (
+      <div className="space-y-3">
+        <Field label="codeBeamer host" placeholder="https://codebeamer.example.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Tracker ID" placeholder="1234" value={cfg.trackerId ?? ""} onChange={(v) => up("trackerId", v)} />
+        <Field label="User (optional, for basic auth)" value={cfg.user ?? ""} onChange={(v) => up("user", v)} />
+        <Field label="Password / token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "helix_rm") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Helix host" placeholder="https://helix.example.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project ID" value={cfg.projectId ?? ""} onChange={(v) => up("projectId", v)} />
+        <Field label="User (optional, for basic auth)" value={cfg.user ?? ""} onChange={(v) => up("user", v)} />
+        <Field label="Password / token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "visure") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Visure host" placeholder="https://visure.example.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project key" value={cfg.projectKey ?? ""} onChange={(v) => up("projectKey", v)} />
+        <Field label="Access token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "azure_devops") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Org URL" placeholder="https://dev.azure.com/yourorg" value={cfg.orgUrl ?? ""} onChange={(v) => up("orgUrl", v)} />
+        <Field label="Project" placeholder="MyProject" value={cfg.projectId ?? ""} onChange={(v) => up("projectId", v)} />
+        <Field label="Personal access token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+        <Field label="WIQL (optional override)" placeholder="SELECT [System.Id] FROM WorkItems WHERE …" value={cfg.wiql ?? ""} onChange={(v) => up("wiql", v)} />
+      </div>
+    );
+  } else if (kind === "jira_reqs") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">Pulls Stories / Features / Epics / Requirements from Jira and inserts them as requirements (separate from the Jira-issues evidence connector).</p>
+        <Field label="Jira host" placeholder="https://yourorg.atlassian.net" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project key" placeholder="ABC" value={cfg.projectKey ?? ""} onChange={(v) => up("projectKey", v)} />
+        <Field label="Email (Atlassian Cloud only)" value={cfg.email ?? ""} onChange={(v) => up("email", v)} />
+        <Field label="API token / PAT" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "reqif") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Generic ReqIF (OMG) import. Works with anything that exports the ReqIF standard — DOORS Classic, Visure, ReqView, Modern Requirements, Cradle, Innoslate, etc. Upload either a <code>.reqif</code> XML file or a <code>.reqifz</code> archive.
+        </p>
+        <input
+          ref={reqifRef}
+          type="file"
+          accept=".reqif,.reqifz,application/xml,application/zip"
+          hidden
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            if (f) { setBusy(true); await onReqif(f); setBusy(false); onClose(); }
+          }}
+        />
+        <Button className="w-full" disabled={busy || !projectId} onClick={() => reqifRef.current?.click()}>
+          <FileText className="h-4 w-4 mr-2" /> {busy ? "Importing…" : "Choose .reqif / .reqifz"}
+        </Button>
+      </div>
+    );
   }
 
-  const showSubmit = kind !== "zip" && kind !== "folder";
+  // File-upload kinds handle their own submit flow.
+  const showSubmit = kind !== "zip" && kind !== "folder" && kind !== "reqif" && kind !== "doors";
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>

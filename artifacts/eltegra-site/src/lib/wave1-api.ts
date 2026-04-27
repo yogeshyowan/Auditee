@@ -431,7 +431,11 @@ export function useWorkflowAnalytics(projectId: string | undefined) {
 export type ProjectSourceRow = {
   id: string;
   projectId: string;
-  kind: "github" | "zip" | "folder" | "jira" | "jenkins" | "aws_s3" | "gdrive" | "alm" | "cloud_server" | "url";
+  kind:
+    // Code / build evidence
+    | "github" | "zip" | "folder" | "jira" | "jenkins" | "aws_s3" | "gdrive" | "alm" | "cloud_server" | "url"
+    // Requirements-management tools
+    | "doors" | "doors_next" | "jama" | "polarion" | "codebeamer" | "helix_rm" | "visure" | "azure_devops" | "jira_reqs" | "reqif";
   label: string;
   config: Record<string, any>;
   status: "idle" | "syncing" | "ready" | "error";
@@ -505,5 +509,14 @@ export async function uploadFolder(projectId: string, files: FileList, label?: s
   fd.append("paths", JSON.stringify(paths));
   const r = await fetch(`/api/sources/upload-folder`, { method: "POST", body: fd });
   if (!r.ok) throw new Error((await r.json()).error ?? "Upload failed");
+  return r.json();
+}
+export async function uploadReqif(projectId: string, file: File, label?: string): Promise<ProjectSourceRow> {
+  const fd = new FormData();
+  fd.append("projectId", projectId);
+  fd.append("file", file);
+  if (label) fd.append("label", label);
+  const r = await fetch(`/api/sources/upload-reqif`, { method: "POST", body: fd });
+  if (!r.ok) throw new Error((await r.json()).error ?? "ReqIF import failed");
   return r.json();
 }

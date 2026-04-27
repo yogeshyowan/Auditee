@@ -2,13 +2,15 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, projectSourcesTable, sourceFilesTable, activityEventsTable } from "@workspace/db";
+import { db, projectSourcesTable, sourceFilesTable, activityEventsTable, requirementsTable } from "@workspace/db";
 import { ingestZipBuffer, ingestGithub, ingestRemoteSystem, persistFiles, type IngestedFile } from "../lib/source-ingestion.js";
+import { ingestRequirementsTool, ingestReqifBuffer, isRmKind, RM_KINDS } from "../lib/rm-ingestion.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100 MB
 const router: IRouter = Router();
 
-const SUPPORTED_KINDS = ["github", "zip", "folder", "jira", "jenkins", "aws_s3", "gdrive", "alm", "cloud_server", "url"];
+const CODE_KINDS = ["github", "zip", "folder", "jira", "jenkins", "aws_s3", "gdrive", "alm", "cloud_server", "url"];
+const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS];
 
 // Strip secrets from config before returning to the client.
 function safeConfig(kind: string, cfg: Record<string, any>): Record<string, any> {
@@ -65,7 +67,14 @@ router.post("/sources", async (req, res) => {
 });
 
 router.delete("/sources/:id", async (req, res) => {
+  // Delete source content + manifests, and unlink any imported requirements
+  // (we keep the requirements but null out the FK so the user doesn't lose
+  // them if they were already in use by traceability links).
   await db.delete(sourceFilesTable).where(eq(sourceFilesTable.sourceId, req.params.id!));
+  await db
+    .update(requirementsTable)
+    .set({ sourceId: null, externalSystem: null })
+    .where(eq(requirementsTable.sourceId, req.params.id!));
   await db.delete(projectSourcesTable).where(eq(projectSourcesTable.id, req.params.id!));
   res.status(204).end();
 });
@@ -85,6 +94,11 @@ router.post("/sources/:id/sync", async (req, res) => {
     } else if (src.kind === "zip" || src.kind === "folder") {
       res.status(400).json({ error: "Re-upload to re-sync zip/folder sources" });
       return;
+    } else if (src.kind === "reqif") {
+      res.status(400).json({ error: "Re-upload the .reqif file to re-sync" });
+      return;
+    } else if (isRmKind(src.kind)) {
+      result = await ingestRequirementsTool(src.id, src.projectId, src.kind, src.config as any);
     } else {
       result = await ingestRemoteSystem(src.id, src.kind, src.config as any);
     }
@@ -216,6 +230,40 @@ router.get("/sources/:id/files/:fileId", async (req, res) => {
     return;
   }
   res.json(row);
+});
+
+// Upload a ReqIF (or .reqifz) export from any RM tool. Field name: "file".
+// Creates a `reqif` source row + parses + inserts requirements in one shot.
+router.post("/sources/upload-reqif", upload.single("file"), async (req, res) => {
+  const projectId = req.body?.projectId;
+  const label = req.body?.label || req.file?.originalname || "ReqIF import";
+  if (!projectId || !req.file) {
+    res.status(400).json({ error: "projectId and file are required" });
+    return;
+  }
+  const id = randomUUID();
+  await db.insert(projectSourcesTable).values({
+    id,
+    projectId,
+    kind: "reqif",
+    label: String(label).slice(0, 240),
+    config: { originalName: req.file.originalname, sizeBytes: req.file.size },
+    status: "syncing",
+  });
+  try {
+    const result = await ingestReqifBuffer(id, projectId, req.file.buffer);
+    const [row] = await db.select().from(projectSourcesTable).where(eq(projectSourcesTable.id, id));
+    await db.insert(activityEventsTable).values({
+      id: randomUUID(),
+      kind: "source",
+      message: `ReqIF imported: ${row.label} — ${result.count} requirements`,
+      actor: "avery.kim",
+      entityCode: id,
+    });
+    res.status(201).json({ ...row, config: safeConfig(row.kind, row.config), syncResult: result });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message ?? "Could not parse ReqIF" });
+  }
 });
 
 export default router;

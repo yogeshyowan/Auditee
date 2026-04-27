@@ -68,6 +68,61 @@ const STATUS_LABEL: Record<string, string> = {
   verified: "Verified",
 };
 
+const RM_SYSTEM_LABEL: Record<string, string> = {
+  doors: "DOORS",
+  doors_next: "DOORS Next",
+  jama: "Jama",
+  polarion: "Polarion",
+  codebeamer: "codeBeamer",
+  helix_rm: "Helix RM",
+  visure: "Visure",
+  azure_devops: "Azure DevOps",
+  jira_reqs: "Jira",
+  reqif: "ReqIF",
+};
+
+// Defence-in-depth: only allow http(s) links to be rendered. Anything else
+// (javascript:, data:, vbscript:, etc.) is dropped to a non-clickable badge.
+function safeHttpUrl(u: string | null | undefined): string | null {
+  if (!u) return null;
+  try {
+    const parsed = new URL(u);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.toString();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function SourceBadge({ req }: { req: Requirement }) {
+  // externalSystem / externalUrl / externalId may not yet be present in
+  // the auto-generated TS type; the API still returns them on the row.
+  const r = req as Requirement & { externalSystem?: string | null; externalUrl?: string | null; externalId?: string | null };
+  if (!r.externalSystem) return null;
+  const label = RM_SYSTEM_LABEL[r.externalSystem] ?? r.externalSystem;
+  const text = r.externalId ? `${label} · ${r.externalId}` : label;
+  const safeUrl = safeHttpUrl(r.externalUrl);
+  if (safeUrl) {
+    return (
+      <a
+        href={safeUrl}
+        target="_blank"
+        rel="noreferrer noopener"
+        onClick={(e) => e.stopPropagation()}
+        className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 hover:underline"
+        title={`Open in ${label}`}
+      >
+        {text}
+      </a>
+    );
+  }
+  return (
+    <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+      {text}
+    </span>
+  );
+}
+
 export default function RequirementsPage() {
   const { projectId } = useProjectContext();
   const [search, setSearch] = useState("");
@@ -245,7 +300,12 @@ export default function RequirementsPage() {
                   className="cursor-pointer hover:bg-slate-50"
                 >
                   <TableCell className="font-mono text-xs text-slate-600">{req.code}</TableCell>
-                  <TableCell className="font-medium text-slate-900">{req.title}</TableCell>
+                  <TableCell className="font-medium text-slate-900">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span>{req.title}</span>
+                      <SourceBadge req={req} />
+                    </div>
+                  </TableCell>
                   <TableCell><Badge variant="outline">{req.type}</Badge></TableCell>
                   <TableCell><Badge className={STATUS_COLOR[req.status] + " border"}>{STATUS_LABEL[req.status]}</Badge></TableCell>
                   <TableCell><span className={"text-xs px-2 py-0.5 rounded font-medium " + PRIORITY_COLOR[req.priority]}>{req.priority}</span></TableCell>
@@ -269,9 +329,10 @@ export default function RequirementsPage() {
           {selected && (
             <>
               <SheetHeader>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <Badge variant="outline" className="font-mono text-xs">{selected.code}</Badge>
                   <Badge variant="outline">{selected.type}</Badge>
+                  <SourceBadge req={selected} />
                 </div>
                 <SheetTitle className="font-[Inter_Tight] text-2xl">{selected.title}</SheetTitle>
                 <SheetDescription>Owner: {selected.owner}</SheetDescription>

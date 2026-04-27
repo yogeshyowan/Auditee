@@ -43,14 +43,29 @@ Marketing landing page lives at `/` and the functional app lives under `/app/*`.
   Run with `pnpm --filter @workspace/scripts run seed`.
 
 ### App pages (under `/app`)
-Dashboard, Project Sources (connect repos/uploads/docs), Requirements (CRUD via
-dialog/sheet), Traceability (SVG graph), Compliance (cards + multi-framework
-"Run audit" launcher) + ComplianceDetail (controls table), CAPA Actions, AI
-Reports (templated narrative reports for any framework), Workflows, Analytics,
-Recurring Audits, PDLC pipeline. State: `useProjectContext` from
-`src/lib/project-context.tsx` — exposes `connectedProjects` (sourceCount > 0)
-which is what the sidebar dropdown surfaces; unconnected projects are shown
-disabled with a CTA to Sources.
+Dashboard, Project Sources (connect repos/uploads/docs + RM tools — see below),
+Requirements (CRUD via dialog/sheet, plus a SourceBadge that links imported
+requirements back to their RM tool of origin), Traceability (SVG graph),
+Compliance (cards + multi-framework "Run audit" launcher) + ComplianceDetail
+(controls table), CAPA Actions, AI Reports (templated narrative reports for any
+framework), Workflows, Analytics, Recurring Audits, PDLC pipeline.
+
+### Requirements-management connectors
+The Sources page has a second "Requirements management" section that pulls real
+requirements (not just code/evidence) into the Requirements table from external
+RM tools. Supported kinds: `doors_next` (OSLC), `doors` (Classic — ReqIF
+upload), `jama`, `polarion`, `codebeamer`, `helix_rm`, `visure`, `azure_devops`,
+`jira_reqs`, plus a generic `reqif` (.reqif/.reqifz) upload. All HTTP fetches go
+through `lib/safe-fetch.ts` (SSRF-guarded) and are dispatched in
+`lib/rm-ingestion.ts`. Imported rows are de-duped by a partial unique index on
+`(project_id, source_id, external_id)` so re-syncs upsert in place. Provenance
+columns on `requirements`: `sourceId`, `externalId`, `externalUrl`,
+`externalSystem`. ReqIF is uploaded via `POST /api/sources/upload-reqif`; all
+other RM kinds use the standard `/api/sources` + `/api/sources/:id/sync` flow.
+
+State: `useProjectContext` from `src/lib/project-context.tsx` — exposes
+`connectedProjects` (sourceCount > 0) which is what the sidebar dropdown
+surfaces; unconnected projects are shown disabled with a CTA to Sources.
 
 ### AI features (powered by OpenAI via Replit AI Integrations)
 All AI endpoints live under `/api/ai/*` and intentionally bypass the OpenAPI
