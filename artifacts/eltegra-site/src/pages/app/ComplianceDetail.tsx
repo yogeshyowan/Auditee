@@ -1,4 +1,5 @@
 import { Link, useParams } from "wouter";
+import { useState, useMemo } from "react";
 import { useGetComplianceFramework, useListProjects } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,10 +8,12 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, ShieldCheck, AlertTriangle, ShieldAlert, Wand2, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, ShieldCheck, AlertTriangle, ShieldAlert, Wand2, Loader2, FileCode2, FolderInput } from "lucide-react";
 import { format } from "date-fns";
 import { useProjectContext } from "@/lib/project-context";
 import { useComplianceAudit } from "@/lib/ai-api";
+import { useSources } from "@/lib/wave1-api";
 import { useToast } from "@/hooks/use-toast";
 
 const VERDICT_BADGE: Record<string, string> = {
@@ -47,6 +50,11 @@ export default function ComplianceDetail() {
   const currentProject = projects?.find((p) => p.id === projectId);
   const auditMut = useComplianceAudit();
   const { toast } = useToast();
+  const { data: sourcesData } = useSources(projectId);
+  const readySources = useMemo(() => (sourcesData?.sources ?? []).filter((s) => s.status === "ready"), [sourcesData]);
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[] | null>(null);
+  // null means "all ready sources" (default).
+  const effectiveSourceIds = selectedSourceIds ?? readySources.map((s) => s.id);
 
   if (isLoading) {
     return <div className="p-6 space-y-4"><Skeleton className="h-32 rounded-xl" /><Skeleton className="h-72 rounded-xl" /></div>;
@@ -102,8 +110,17 @@ export default function ComplianceDetail() {
                 <Button
                   onClick={() => {
                     auditMut.mutate(
-                      { projectId, frameworkId: fw.id },
+                      { projectId, frameworkId: fw.id, sourceIds: effectiveSourceIds.length > 0 ? effectiveSourceIds : undefined },
                       {
+                        onSuccess: (data) => {
+                          const cited = data.evidenceTotals?.citedFiles ?? 0;
+                          toast({
+                            title: `Audit complete — ${data.overallVerdict}`,
+                            description: cited > 0
+                              ? `${cited} file(s) cited as evidence across ${data.evidenceTotals?.sources ?? 0} source(s).`
+                              : `No source evidence used. Connect a project source for code-grounded findings.`,
+                          });
+                        },
                         onError: (err: Error) =>
                           toast({ title: "Audit failed", description: err.message, variant: "destructive" }),
                       },
@@ -153,6 +170,51 @@ export default function ComplianceDetail() {
         </CardContent>
       </Card>
 
+      {projectId && (
+        <Card className="rounded-xl border-slate-200" data-testid="card-audit-sources">
+          <CardHeader>
+            <CardTitle className="font-[Inter_Tight] flex items-center gap-2 text-base">
+              <FolderInput className="h-4 w-4 text-primary" /> Audit evidence sources
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {readySources.length === 0 ? (
+              <div className="text-sm text-slate-500 flex items-center justify-between gap-3">
+                <span>No project sources connected — the audit will run against your requirements only.</span>
+                <Link href="/app/sources">
+                  <Button variant="outline" size="sm" className="gap-1.5"><FolderInput className="h-3.5 w-3.5" />Connect a source</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-xs text-slate-500">
+                  Pick which sources to ingest as evidence. By default all ready sources are included.
+                </div>
+                {readySources.map((s) => {
+                  const checked = (selectedSourceIds ?? readySources.map((x) => x.id)).includes(s.id);
+                  return (
+                    <label key={s.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-slate-50 cursor-pointer">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          const cur = selectedSourceIds ?? readySources.map((x) => x.id);
+                          const next = v ? Array.from(new Set([...cur, s.id])) : cur.filter((id) => id !== s.id);
+                          setSelectedSourceIds(next);
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{s.label}</div>
+                        <div className="text-xs text-slate-500">{s.kind} · {s.fileCount} files indexed</div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {auditMut.data && (
         <Card className="rounded-xl border-slate-200" data-testid="card-audit-results">
           <CardHeader>
@@ -167,6 +229,17 @@ export default function ComplianceDetail() {
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
+            {(auditMut.data.evidenceTotals && auditMut.data.evidenceTotals.sources > 0) && (
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="font-semibold">Evidence:</span>
+                <span>{auditMut.data.evidenceTotals.sources} source(s)</span>
+                <span>·</span>
+                <span>{auditMut.data.evidenceTotals.indexedFiles.toLocaleString()} files indexed</span>
+                <span>·</span>
+                <span>{auditMut.data.evidenceTotals.citedFiles} file(s) cited</span>
+                {auditMut.data.capasCreated ? (<><span>·</span><span>{auditMut.data.capasCreated} CAPA(s) auto-opened</span></>) : null}
+              </div>
+            )}
             {auditMut.data.headlineFindings.length > 0 && (
               <div>
                 <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Headline findings</div>
@@ -183,12 +256,13 @@ export default function ComplianceDetail() {
                     <TableHead className="w-28">Control</TableHead>
                     <TableHead className="w-24">Verdict</TableHead>
                     <TableHead>Covering requirements</TableHead>
+                    <TableHead>Evidence</TableHead>
                     <TableHead>Recommendation</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {auditMut.data.controlAssessments.map((a, i) => (
-                    <TableRow key={i}>
+                    <TableRow key={i} className="align-top">
                       <TableCell className="font-mono text-xs text-slate-600">{a.controlCode}</TableCell>
                       <TableCell><Badge className={(ASSESSMENT_BADGE[a.verdict] ?? "bg-slate-100 text-slate-700") + " border"}>{a.verdict}</Badge></TableCell>
                       <TableCell>
@@ -202,12 +276,51 @@ export default function ComplianceDetail() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {!a.evidenceFiles || a.evidenceFiles.length === 0 ? (
+                            <span className="text-xs text-slate-400">—</span>
+                          ) : (
+                            a.evidenceFiles.map((path) => (
+                              <span key={path} className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-700 bg-slate-100 rounded px-1.5 py-0.5 max-w-[16rem] truncate" title={path}>
+                                <FileCode2 className="h-3 w-3 shrink-0" /> {path}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-sm text-slate-700">{a.recommendation}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
+            {auditMut.data.sourcesUsed && auditMut.data.sourcesUsed.length > 0 && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-slate-500 mb-2">Sources scanned</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {auditMut.data.sourcesUsed.map((s) => (
+                    <div key={s.sourceId} className="border rounded-md p-2.5 text-xs">
+                      <div className="font-medium text-slate-800 flex items-center justify-between">
+                        <span className="truncate">{s.sourceLabel}</span>
+                        <span className="text-slate-500 capitalize">{s.sourceKind}</span>
+                      </div>
+                      <div className="text-slate-500 mt-0.5">{s.fileCount} indexed · {s.citedCount} cited</div>
+                      {s.citedPaths.length > 0 && (
+                        <ul className="mt-1.5 space-y-0.5">
+                          {s.citedPaths.slice(0, 6).map((p) => (
+                            <li key={p} className="font-mono text-[10px] text-slate-600 truncate" title={p}>· {p}</li>
+                          ))}
+                          {s.citedPaths.length > 6 && (
+                            <li className="text-[10px] text-slate-400">…and {s.citedPaths.length - 6} more</li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

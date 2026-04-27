@@ -23,7 +23,10 @@ import {
   legacySystemsTable,
   aiConversationsTable,
   capaActionsTable,
+  projectSourcesTable,
+  sourceFilesTable,
 } from "@workspace/db";
+import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
@@ -312,6 +315,7 @@ router.post("/ai/compliance-audit", aiHandler(async (req, res) => {
   const body = {
     projectId: requireString(req.body?.projectId, "projectId", { min: 1 }),
     frameworkId: requireString(req.body?.frameworkId, "frameworkId", { min: 1 }),
+    sourceIds: Array.isArray(req.body?.sourceIds) ? (req.body.sourceIds as string[]).filter(Boolean) : undefined,
   };
   const [framework] = await db
     .select()
@@ -340,17 +344,109 @@ router.post("/ai/compliance-audit", aiHandler(async (req, res) => {
     .from(requirementsTable)
     .where(eq(requirementsTable.projectId, body.projectId));
 
-  const system = `You are EltegraAI's compliance auditor. For each control of the given framework, evaluate whether the project's requirements adequately cover it.
+  // ───────── Load project sources as evidence ─────────
+  // Default: every "ready" source for the project.  If the caller passed sourceIds, scope to those.
+  const sourcesForProject = await db
+    .select()
+    .from(projectSourcesTable)
+    .where(eq(projectSourcesTable.projectId, body.projectId));
+  const includedSources = (body.sourceIds && body.sourceIds.length > 0
+    ? sourcesForProject.filter((s) => body.sourceIds!.includes(s.id))
+    : sourcesForProject.filter((s) => s.status === "ready"));
+
+  // Files we want to read content from (high-signal "evidence" files).
+  // Listed in priority order; we cap text included per file to keep prompts small.
+  const EVIDENCE_PATTERNS: RegExp[] = [
+    /(^|\/)readme(\.|$)/i,
+    /(^|\/)security(\.|$)/i,
+    /(^|\/)license(\.|$)/i,
+    /(^|\/)code_of_conduct(\.|$)/i,
+    /(^|\/)contributing(\.|$)/i,
+    /(^|\/)changelog(\.|$)/i,
+    /(^|\/)package\.json$/i,
+    /(^|\/)pyproject\.toml$/i,
+    /(^|\/)requirements\.txt$/i,
+    /(^|\/)dockerfile$/i,
+    /(^|\/)docker-compose\.ya?ml$/i,
+    /(^|\/)\.github\/workflows\/.+\.ya?ml$/i,
+    /(^|\/)\.github\/.*\.ya?ml$/i,
+    /(^|\/)\.gitlab-ci\.ya?ml$/i,
+    /(^|\/)cloudbuild\.ya?ml$/i,
+    /(^|\/)terraform\/.+\.tf$/i,
+    /(^|\/)k8s\/.+\.ya?ml$/i,
+    /(^|\/)kubernetes\/.+\.ya?ml$/i,
+    /(^|\/)\.env\.example$/i,
+    /(^|\/)Makefile$/i,
+    /(^|\/)tsconfig\.json$/i,
+  ];
+  const MAX_FILE_BYTES = 4_000;       // ~4KB per cited file
+  const MAX_TOTAL_EVIDENCE_BYTES = 60_000; // ~60KB total prompt evidence
+  const MAX_PATH_LISTING = 600;       // also list paths so the AI sees scope
+
+  type EvidenceFile = { sourceLabel: string; path: string; size: number; snippet: string };
+  type SourceEvidence = {
+    sourceId: string;
+    sourceLabel: string;
+    sourceKind: string;
+    fileCount: number;
+    cited: EvidenceFile[];
+    listedPaths: string[];
+  };
+  const evidenceBySource: SourceEvidence[] = [];
+  let totalEvidenceBytes = 0;
+
+  for (const src of includedSources) {
+    const allFiles = await db
+      .select()
+      .from(sourceFilesTable)
+      .where(eq(sourceFilesTable.sourceId, src.id));
+    const relevant = allFiles.filter((f) => EVIDENCE_PATTERNS.some((re) => re.test(f.path)));
+    const cited: EvidenceFile[] = [];
+    for (const f of relevant) {
+      if (totalEvidenceBytes >= MAX_TOTAL_EVIDENCE_BYTES) break;
+      if (!f.content) continue;
+      const remaining = MAX_TOTAL_EVIDENCE_BYTES - totalEvidenceBytes;
+      const slice = f.content.slice(0, Math.min(MAX_FILE_BYTES, remaining));
+      cited.push({ sourceLabel: src.label, path: f.path, size: f.size, snippet: slice });
+      totalEvidenceBytes += slice.length;
+    }
+    evidenceBySource.push({
+      sourceId: src.id,
+      sourceLabel: src.label,
+      sourceKind: src.kind,
+      fileCount: allFiles.length,
+      cited,
+      listedPaths: allFiles.slice(0, MAX_PATH_LISTING).map((f) => f.path),
+    });
+  }
+
+  const evidenceBlock = evidenceBySource.length === 0
+    ? "(no project sources connected — audit reasons from requirements only)"
+    : evidenceBySource.map((s) => {
+        const tree = s.listedPaths.length === 0 ? "(no files indexed)" : s.listedPaths.join("\n");
+        const snips = s.cited.length === 0
+          ? "(no high-signal files to cite)"
+          : s.cited.map((f) => `--- ${f.path} (${f.size} bytes) ---\n${f.snippet}`).join("\n\n");
+        return `### Source: ${s.sourceLabel} [${s.sourceKind}] — ${s.fileCount} files indexed\n\n#### File listing (truncated):\n${tree}\n\n#### Cited file contents:\n${snips}`;
+      }).join("\n\n");
+
+  const system = `You are EltegraAI's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it.
+You have THREE inputs to reason from:
+1) The project's requirements (formal documented behaviour).
+2) The framework's controls (what must be true).
+3) Project sources — actual files ingested from GitHub / Jira / uploads / etc. These are real evidence. Cite them when they prove or disprove a control.
+
 Return strict JSON:
-{"overallVerdict":"strong"|"adequate"|"weak"|"failing","headlineFindings":string[],"controlAssessments":[{"controlCode":string,"verdict":"met"|"partial"|"gap","coveringRequirementCodes":string[],"recommendation":string}]}
+{"overallVerdict":"strong"|"adequate"|"weak"|"failing","headlineFindings":string[],"controlAssessments":[{"controlCode":string,"verdict":"met"|"partial"|"gap","coveringRequirementCodes":string[],"evidenceFiles":string[],"recommendation":string}]}
 Rules:
 - controlCode must be one of the provided codes.
 - coveringRequirementCodes is a list of project requirement codes (may be empty).
-- verdict 'met' = clearly covered, 'partial' = some coverage with gaps, 'gap' = no meaningful coverage.
-- recommendation: one concrete next step (1 sentence).
-- headlineFindings: 2-4 short bullets summarising the audit.`;
+- evidenceFiles is a list of file paths (verbatim from the listings) that support your verdict (may be empty). Only cite files that genuinely support your verdict — do not invent paths.
+- verdict 'met' = clearly covered (requirements + evidence), 'partial' = some coverage with gaps, 'gap' = no meaningful coverage.
+- recommendation: one concrete next step (1 sentence). If evidence is missing for a control, say which file is needed.
+- headlineFindings: 2-4 short bullets summarising the audit, mentioning concrete sources where relevant.`;
 
-  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}`;
+  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}\n\nProject sources & evidence:\n${evidenceBlock}`;
 
   type AuditResult = {
     overallVerdict: "strong" | "adequate" | "weak" | "failing";
@@ -359,6 +455,7 @@ Rules:
       controlCode: string;
       verdict: "met" | "partial" | "gap";
       coveringRequirementCodes: string[];
+      evidenceFiles?: string[];
       recommendation: string;
     }>;
   };
@@ -435,9 +532,12 @@ Rules:
     }
   }
 
+  const totalCitedFiles = evidenceBySource.reduce((n, s) => n + s.cited.length, 0);
+  const totalIndexedFiles = evidenceBySource.reduce((n, s) => n + s.fileCount, 0);
+
   await logActivity(
     "compliance",
-    `EltegraAI ran ${framework.code} audit on ${project.name}: ${result.overallVerdict}${capasCreated ? ` · ${capasCreated} CAPA(s) opened` : ""}`,
+    `EltegraAI ran ${framework.code} audit on ${project.name}: ${result.overallVerdict}${capasCreated ? ` · ${capasCreated} CAPA(s) opened` : ""}${includedSources.length ? ` · ${includedSources.length} source(s), ${totalCitedFiles} file(s) cited` : ""}`,
     "EltegraAI",
     framework.code,
   );
@@ -446,6 +546,15 @@ Rules:
     framework: { id: framework.id, code: framework.code, name: framework.name },
     project: { id: project.id, name: project.name },
     capasCreated,
+    sourcesUsed: evidenceBySource.map((s) => ({
+      sourceId: s.sourceId,
+      sourceLabel: s.sourceLabel,
+      sourceKind: s.sourceKind,
+      fileCount: s.fileCount,
+      citedCount: s.cited.length,
+      citedPaths: s.cited.map((f) => f.path),
+    })),
+    evidenceTotals: { sources: includedSources.length, indexedFiles: totalIndexedFiles, citedFiles: totalCitedFiles },
     ...result,
   });
 }));

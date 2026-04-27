@@ -90,7 +90,17 @@ export type ControlAssessment = {
   controlCode: string;
   verdict: "met" | "partial" | "gap";
   coveringRequirementCodes: string[];
+  evidenceFiles?: string[];
   recommendation: string;
+};
+
+export type AuditSourceSummary = {
+  sourceId: string;
+  sourceLabel: string;
+  sourceKind: string;
+  fileCount: number;
+  citedCount: number;
+  citedPaths: string[];
 };
 
 export type ComplianceAuditResult = {
@@ -99,12 +109,15 @@ export type ComplianceAuditResult = {
   overallVerdict: "strong" | "adequate" | "weak" | "failing";
   headlineFindings: string[];
   controlAssessments: ControlAssessment[];
+  capasCreated?: number;
+  sourcesUsed?: AuditSourceSummary[];
+  evidenceTotals?: { sources: number; indexedFiles: number; citedFiles: number };
 };
 
 export function useComplianceAudit() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { projectId: string; frameworkId: string }) =>
+    mutationFn: (body: { projectId: string; frameworkId: string; sourceIds?: string[] }) =>
       aiFetch<ComplianceAuditResult>("/ai/compliance-audit", body),
     onSuccess: () => {
       qc.invalidateQueries();
