@@ -63,6 +63,20 @@ columns on `requirements`: `sourceId`, `externalId`, `externalUrl`,
 `externalSystem`. ReqIF is uploaded via `POST /api/sources/upload-reqif`; all
 other RM kinds use the standard `/api/sources` + `/api/sources/:id/sync` flow.
 
+### Defect-management connectors
+The Sources page also has a "Defect management" section that pulls real bugs
+into a `defects` table from external trackers. Supported kinds: `jira_defects`,
+`ado_defects` (Azure DevOps Bugs via WIQL), `bugzilla`, `mantis`, `redmine`,
+`youtrack`, `clickup`, `linear`, `servicenow`, `alm_octane`, `github_issues`,
+`gitlab_issues`. All HTTP fetches go through `lib/safe-fetch.ts` and are
+dispatched in `lib/defect-ingestion.ts` via `ingestDefectsTool`. Imported rows
+are de-duped by a partial unique index on `(project_id, source_id, external_id)`.
+The compliance audit prompt in `routes/ai.ts` loads defects scoped to the
+sources included in the run, summarises totals + samples up to 25 most
+severe/oldest, and feeds them as input #4 ("Defects from connected
+defect-management tools — cite by ticket key when they prove or disprove a
+control"). Deleting a source cascades the deletion of its defect rows.
+
 State: `useProjectContext` from `src/lib/project-context.tsx` — exposes
 `connectedProjects` (sourceCount > 0) which is what the sidebar dropdown
 surfaces; unconnected projects are shown disabled with a CTA to Sources.

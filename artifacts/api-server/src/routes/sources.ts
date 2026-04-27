@@ -2,20 +2,21 @@ import { Router, type IRouter } from "express";
 import multer from "multer";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, projectSourcesTable, sourceFilesTable, activityEventsTable, requirementsTable } from "@workspace/db";
+import { db, projectSourcesTable, sourceFilesTable, activityEventsTable, requirementsTable, defectsTable } from "@workspace/db";
 import { ingestZipBuffer, ingestGithub, ingestRemoteSystem, persistFiles, type IngestedFile } from "../lib/source-ingestion.js";
 import { ingestRequirementsTool, ingestReqifBuffer, isRmKind, RM_KINDS } from "../lib/rm-ingestion.js";
+import { ingestDefectsTool, isDefectKind, DEFECT_KINDS } from "../lib/defect-ingestion.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100 MB
 const router: IRouter = Router();
 
 const CODE_KINDS = ["github", "zip", "folder", "jira", "jenkins", "aws_s3", "gdrive", "alm", "cloud_server", "url"];
-const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS];
+const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS, ...DEFECT_KINDS];
 
 // Strip secrets from config before returning to the client.
 function safeConfig(kind: string, cfg: Record<string, any>): Record<string, any> {
   const out = { ...cfg };
-  for (const k of ["token", "secretAccessKey", "apiKey", "password", "sshKey"]) {
+  for (const k of ["token", "secretAccessKey", "apiKey", "password", "sshKey", "pat", "clientSecret"]) {
     if (out[k]) out[k] = "•••";
   }
   return out;
@@ -70,11 +71,14 @@ router.delete("/sources/:id", async (req, res) => {
   // Delete source content + manifests, and unlink any imported requirements
   // (we keep the requirements but null out the FK so the user doesn't lose
   // them if they were already in use by traceability links).
+  // Defects, on the other hand, are deleted outright — they only have value
+  // when paired with a live source connection (they re-import on next sync).
   await db.delete(sourceFilesTable).where(eq(sourceFilesTable.sourceId, req.params.id!));
   await db
     .update(requirementsTable)
     .set({ sourceId: null, externalSystem: null })
     .where(eq(requirementsTable.sourceId, req.params.id!));
+  await db.delete(defectsTable).where(eq(defectsTable.sourceId, req.params.id!));
   await db.delete(projectSourcesTable).where(eq(projectSourcesTable.id, req.params.id!));
   res.status(204).end();
 });
@@ -99,6 +103,8 @@ router.post("/sources/:id/sync", async (req, res) => {
       return;
     } else if (isRmKind(src.kind)) {
       result = await ingestRequirementsTool(src.id, src.projectId, src.kind, src.config as any);
+    } else if (isDefectKind(src.kind)) {
+      result = await ingestDefectsTool(src.id, src.projectId, src.kind, src.config as any);
     } else {
       result = await ingestRemoteSystem(src.id, src.kind, src.config as any);
     }

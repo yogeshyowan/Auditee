@@ -435,7 +435,9 @@ export type ProjectSourceRow = {
     // Code / build evidence
     | "github" | "zip" | "folder" | "jira" | "jenkins" | "aws_s3" | "gdrive" | "alm" | "cloud_server" | "url"
     // Requirements-management tools
-    | "doors" | "doors_next" | "jama" | "polarion" | "codebeamer" | "helix_rm" | "visure" | "azure_devops" | "jira_reqs" | "reqif";
+    | "doors" | "doors_next" | "jama" | "polarion" | "codebeamer" | "helix_rm" | "visure" | "azure_devops" | "jira_reqs" | "reqif"
+    // Defect-management tools
+    | "jira_defects" | "ado_defects" | "bugzilla" | "mantis" | "redmine" | "youtrack" | "clickup" | "linear" | "servicenow" | "alm_octane" | "github_issues" | "gitlab_issues";
   label: string;
   config: Record<string, any>;
   status: "idle" | "syncing" | "ready" | "error";

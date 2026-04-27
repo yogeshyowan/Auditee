@@ -62,6 +62,12 @@ import {
   GitBranch,
   Box,
   Building2,
+  Bug,
+  AlertOctagon,
+  ShieldAlert,
+  Activity,
+  Layers,
+  Zap,
 } from "lucide-react";
 
 type Kind = ProjectSourceRow["kind"];
@@ -107,7 +113,26 @@ const RM_KIND_DEFS: KindDef[] = [
   { kind: "reqif", title: "ReqIF / .reqifz upload", blurb: "Generic ReqIF (OMG) import — works for any RM tool that exports ReqIF.", icon: FileText, color: "bg-slate-100 text-slate-800", ingests: "requirements" },
 ];
 
-const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS];
+// Defect-management connectors — pulls real defect/bug records from each tool
+// and persists them with provenance. The audit pipeline reads these as direct
+// evidence of incident-management maturity, problem-resolution effectiveness,
+// and unresolved risk against safety/security controls.
+const DEFECT_KIND_DEFS: KindDef[] = [
+  { kind: "jira_defects", title: "Jira (Bugs)", blurb: "Pulls Jira issues of type Bug from a project.", icon: Bug, color: "bg-blue-100 text-blue-800", ingests: "metadata" },
+  { kind: "ado_defects", title: "Azure DevOps (Bugs)", blurb: "WIQL query for Bug work items in Azure DevOps Boards.", icon: Bug, color: "bg-sky-100 text-sky-800", ingests: "metadata" },
+  { kind: "bugzilla", title: "Bugzilla", blurb: "Mozilla Bugzilla REST — pulls bugs from a product.", icon: Bug, color: "bg-rose-100 text-rose-800", ingests: "metadata" },
+  { kind: "mantis", title: "MantisBT", blurb: "MantisBT REST — pulls issues from a project.", icon: Bug, color: "bg-yellow-100 text-yellow-800", ingests: "metadata" },
+  { kind: "redmine", title: "Redmine", blurb: "Redmine REST — pulls issues filtered by project.", icon: Layers, color: "bg-rose-100 text-rose-800", ingests: "metadata" },
+  { kind: "youtrack", title: "JetBrains YouTrack", blurb: "YouTrack REST — pulls issues from a project.", icon: Zap, color: "bg-purple-100 text-purple-800", ingests: "metadata" },
+  { kind: "clickup", title: "ClickUp", blurb: "ClickUp REST — pulls bug-tagged tasks from a list.", icon: ListChecks, color: "bg-pink-100 text-pink-800", ingests: "metadata" },
+  { kind: "linear", title: "Linear", blurb: "Linear GraphQL — pulls bug-labelled issues from a team.", icon: Activity, color: "bg-indigo-100 text-indigo-800", ingests: "metadata" },
+  { kind: "servicenow", title: "ServiceNow", blurb: "ServiceNow Table API — pulls incidents/problems.", icon: ShieldAlert, color: "bg-emerald-100 text-emerald-800", ingests: "metadata" },
+  { kind: "alm_octane", title: "OpenText ALM Octane", blurb: "ALM Octane REST — pulls defects from a workspace.", icon: AlertOctagon, color: "bg-orange-100 text-orange-800", ingests: "metadata" },
+  { kind: "github_issues", title: "GitHub Issues", blurb: "Pulls bug-labelled issues from a GitHub repository.", icon: Github, color: "bg-slate-900 text-white", ingests: "metadata" },
+  { kind: "gitlab_issues", title: "GitLab Issues", blurb: "Pulls bug-labelled issues from a GitLab project.", icon: GitBranch, color: "bg-orange-100 text-orange-800", ingests: "metadata" },
+];
+
+const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS];
 
 function statusBadge(s: ProjectSourceRow["status"]) {
   if (s === "ready") return <Badge variant="outline" className="bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-3 w-3 mr-1" />ready</Badge>;
@@ -221,6 +246,38 @@ export default function Sources() {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {RM_KIND_DEFS.map((d) => (
+              <button
+                key={d.kind}
+                data-testid={`kind-card-${d.kind}`}
+                onClick={() => setPicker(d.kind)}
+                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
+              >
+                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                  <d.icon className="h-5 w-5" />
+                </div>
+                <div className="font-medium text-sm">{d.title}</div>
+                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bug className="h-4 w-4 text-rose-700" /> Defect management
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Connect your bug-tracker of record. Imported defects are weighed by the auditor: open critical bugs count against incident-response and problem-resolution controls; healthy close-rates count for them.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {DEFECT_KIND_DEFS.map((d) => (
               <button
                 key={d.kind}
                 data-testid={`kind-card-${d.kind}`}
@@ -575,6 +632,108 @@ function ConnectDialog({
         <Button className="w-full" disabled={busy || !projectId} onClick={() => reqifRef.current?.click()}>
           <FileText className="h-4 w-4 mr-2" /> {busy ? "Importing…" : "Choose .reqif / .reqifz"}
         </Button>
+      </div>
+    );
+  } else if (kind === "jira_defects") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Jira host" placeholder="https://acme.atlassian.net" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project key" placeholder="ENG" value={cfg.projectKey ?? ""} onChange={(v) => up("projectKey", v)} />
+        <Field label="Account email" placeholder="you@acme.com" value={cfg.email ?? ""} onChange={(v) => up("email", v)} />
+        <Field label="API token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+        <Field label="Extra JQL (optional)" placeholder='resolution = Unresolved' value={cfg.jql ?? ""} onChange={(v) => up("jql", v)} />
+      </div>
+    );
+  } else if (kind === "ado_defects") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Organization URL" placeholder="https://dev.azure.com/acme" value={cfg.orgUrl ?? ""} onChange={(v) => up("orgUrl", v)} />
+        <Field label="Project name" placeholder="MyProject" value={cfg.project ?? ""} onChange={(v) => up("project", v)} />
+        <Field label="Personal access token" type="password" value={cfg.pat ?? ""} onChange={(v) => up("pat", v)} />
+        <Field label="WIQL filter (optional)" placeholder="[State] <> 'Closed'" value={cfg.wiql ?? ""} onChange={(v) => up("wiql", v)} />
+      </div>
+    );
+  } else if (kind === "bugzilla") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Bugzilla host" placeholder="https://bugzilla.acme.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Product name" placeholder="MyProduct" value={cfg.product ?? ""} onChange={(v) => up("product", v)} />
+        <Field label="API key" type="password" value={cfg.apiKey ?? ""} onChange={(v) => up("apiKey", v)} />
+      </div>
+    );
+  } else if (kind === "mantis") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Mantis host" placeholder="https://mantis.acme.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project ID" placeholder="1" value={cfg.projectId ?? ""} onChange={(v) => up("projectId", v)} />
+        <Field label="API token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "redmine") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Redmine host" placeholder="https://redmine.acme.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project identifier" placeholder="my-project" value={cfg.projectId ?? ""} onChange={(v) => up("projectId", v)} />
+        <Field label="API key" type="password" value={cfg.apiKey ?? ""} onChange={(v) => up("apiKey", v)} />
+      </div>
+    );
+  } else if (kind === "youtrack") {
+    body = (
+      <div className="space-y-3">
+        <Field label="YouTrack host" placeholder="https://acme.youtrack.cloud" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project short name" placeholder="ENG" value={cfg.projectKey ?? ""} onChange={(v) => up("projectKey", v)} />
+        <Field label="Permanent token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "clickup") {
+    body = (
+      <div className="space-y-3">
+        <Field label="List ID" placeholder="901234567890" value={cfg.listId ?? ""} onChange={(v) => up("listId", v)} />
+        <Field label="Personal API token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "linear") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Team key" placeholder="ENG" value={cfg.teamKey ?? ""} onChange={(v) => up("teamKey", v)} />
+        <Field label="API key" type="password" value={cfg.apiKey ?? ""} onChange={(v) => up("apiKey", v)} />
+      </div>
+    );
+  } else if (kind === "servicenow") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Instance host" placeholder="https://acme.service-now.com" value={cfg.instance ?? ""} onChange={(v) => up("instance", v)} />
+        <Field label="Username" value={cfg.username ?? ""} onChange={(v) => up("username", v)} />
+        <Field label="Password" type="password" value={cfg.password ?? ""} onChange={(v) => up("password", v)} />
+        <Field label="Table name (optional)" placeholder="incident" value={cfg.table ?? ""} onChange={(v) => up("table", v)} />
+      </div>
+    );
+  } else if (kind === "alm_octane") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Octane host" placeholder="https://octane.acme.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Shared space ID" placeholder="1001" value={cfg.sharedSpaceId ?? ""} onChange={(v) => up("sharedSpaceId", v)} />
+        <Field label="Workspace ID" placeholder="1002" value={cfg.workspaceId ?? ""} onChange={(v) => up("workspaceId", v)} />
+        <Field label="Client ID" value={cfg.clientId ?? ""} onChange={(v) => up("clientId", v)} />
+        <Field label="Client secret" type="password" value={cfg.clientSecret ?? ""} onChange={(v) => up("clientSecret", v)} />
+      </div>
+    );
+  } else if (kind === "github_issues") {
+    body = (
+      <div className="space-y-3">
+        <Field label="Owner (user or org)" placeholder="acme" value={cfg.owner ?? ""} onChange={(v) => up("owner", v)} />
+        <Field label="Repository name" placeholder="my-app" value={cfg.repo ?? ""} onChange={(v) => up("repo", v)} />
+        <Field label="Personal access token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+        <Field label="Bug label (optional)" placeholder="bug" value={cfg.labels ?? ""} onChange={(v) => up("labels", v)} />
+      </div>
+    );
+  } else if (kind === "gitlab_issues") {
+    body = (
+      <div className="space-y-3">
+        <Field label="GitLab host (optional)" placeholder="https://gitlab.com" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Project ID" placeholder="278964" value={cfg.projectId ?? ""} onChange={(v) => up("projectId", v)} />
+        <Field label="Personal access token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+        <Field label="Bug label (optional)" placeholder="bug" value={cfg.labels ?? ""} onChange={(v) => up("labels", v)} />
       </div>
     );
   }

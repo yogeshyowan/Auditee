@@ -25,6 +25,7 @@ import {
   capaActionsTable,
   projectSourcesTable,
   sourceFilesTable,
+  defectsTable,
 } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
@@ -344,6 +345,16 @@ router.post("/ai/compliance-audit", aiHandler(async (req, res) => {
     .from(requirementsTable)
     .where(eq(requirementsTable.projectId, body.projectId));
 
+  // ───────── Load defects from connected defect-management tools ─────────
+  // For most security/safety/quality controls (e.g. ISO 27001 A.5.24 incident
+  // management, ISO 26262 problem resolution, FDA 11.10 audit trails) the open
+  // defect log is direct evidence of how well the team responds to issues.
+  // We feed a compact summary into the audit prompt so the AI weighs it.
+  const allDefects = await db
+    .select()
+    .from(defectsTable)
+    .where(eq(defectsTable.projectId, body.projectId));
+
   // ───────── Load project sources as evidence ─────────
   // Default: every "ready" source for the project.  If the caller passed sourceIds, scope to those.
   const sourcesForProject = await db
@@ -430,12 +441,46 @@ router.post("/ai/compliance-audit", aiHandler(async (req, res) => {
         return `### Source: ${s.sourceLabel} [${s.sourceKind}] — ${s.fileCount} files indexed\n\n#### File listing (truncated):\n${tree}\n\n#### Cited file contents:\n${snips}`;
       }).join("\n\n");
 
+  // ── Defects evidence block ────────────────────────────────────────────
+  // Only count defects from sources that are part of THIS audit run (sourceIds
+  // gate). We summarise totals + sample the most severe open ones so the AI
+  // can cite specific tickets as evidence (positive when closed-rate is high,
+  // negative when criticals remain open against safety/security controls).
+  const includedSourceIds = new Set(includedSources.map((s) => s.id));
+  const defectsForAudit = allDefects.filter((d) => includedSourceIds.has(d.sourceId));
+  const defectsBlock = ((): string => {
+    if (defectsForAudit.length === 0) {
+      return "(no defects imported from connected defect-management tools)";
+    }
+    const totals: Record<string, { open: number; resolved: number; critical: number }> = {};
+    for (const d of defectsForAudit) {
+      const sys = d.externalSystem || "Unknown";
+      totals[sys] ??= { open: 0, resolved: 0, critical: 0 };
+      if (d.status === "resolved") totals[sys]!.resolved++;
+      else totals[sys]!.open++;
+      if (d.severity === "critical" || d.severity === "blocker") totals[sys]!.critical++;
+    }
+    const sortedBySeverity = [...defectsForAudit].sort((a, b) => {
+      const sev = (s: string) => ({ blocker: 0, critical: 1, major: 2, minor: 3, trivial: 4 } as any)[s] ?? 5;
+      const stat = (s: string) => (s === "resolved" ? 1 : 0);
+      return stat(a.status) - stat(b.status) || sev(a.severity) - sev(b.severity);
+    }).slice(0, 25);
+    const summary = Object.entries(totals)
+      .map(([sys, t]) => `- ${sys}: ${t.open} open / ${t.resolved} resolved (${t.critical} critical)`)
+      .join("\n");
+    const samples = sortedBySeverity
+      .map((d) => `- [${d.externalSystem}] ${d.key} [${d.status}/${d.severity}/${d.priority}] "${d.title}"${d.component ? ` (${d.component})` : ""}`)
+      .join("\n");
+    return `Totals by tool:\n${summary}\n\nMost severe / oldest first (sample of up to 25):\n${samples}`;
+  })();
+
   const system = `You are Montana's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it AND explicitly enumerate "required evidence vs found evidence vs missing evidence" so the user gets a clean conformance report.
 
-You have THREE inputs to reason from:
-1) The project's requirements (formal documented behaviour).
+You have FOUR inputs to reason from:
+1) The project's requirements (formal documented behaviour). Many of these are imported from Requirements-Management tools (DOORS, Jama, Polarion, …) — treat the imported ones as authoritative when they cite an external system.
 2) The framework's controls (what must be true).
-3) Project sources — actual files ingested from GitHub / Jira / uploads / etc. These are real evidence. Cite them when they prove or disprove a control.
+3) Project sources — actual files ingested from GitHub / uploads / etc. These are real evidence. Cite them when they prove or disprove a control.
+4) Defects imported from connected defect-management tools (Jira, Azure DevOps Bugs, Bugzilla, ServiceNow, ALM Octane, Linear, GitHub Issues, …). The defect log is direct evidence of: incident-management maturity, problem-resolution effectiveness, and unresolved risk against safety/security controls. A high count of OPEN critical defects is a meaningful gap signal — call it out specifically by ticket key when relevant.
 
 Return strict JSON:
 {
@@ -463,7 +508,7 @@ Rules:
 - recommendation: one concrete next step (1 sentence). If evidence is missing for a control, say which file is needed.
 - headlineFindings: 2-4 short bullets summarising the audit, mentioning concrete sources where relevant.`;
 
-  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}\n\nProject sources & evidence:\n${evidenceBlock}`;
+  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}\n\nProject sources & evidence:\n${evidenceBlock}\n\nDefects from connected defect-management tools (cite these by ticket key when they prove or disprove a control):\n${defectsBlock}`;
 
   type AuditResult = {
     overallVerdict: "strong" | "adequate" | "weak" | "failing";
