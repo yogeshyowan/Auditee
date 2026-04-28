@@ -1,4 +1,4 @@
-# Montana — robots.txt
+# Auditee — robots.txt
 # Marketing site is fully indexable. The signed-in app at /app/* is private and
 # should never be indexed (no useful content for search and risks leaking
 # project names in URLs).
@@ -37,4 +37,4 @@ Disallow: /
 User-agent: Google-Extended
 Disallow: /
 
-Sitemap: https://montana.eltegra.ai/sitemap.xml
+Sitemap: https://auditee.eltegra.ai/sitemap.xml

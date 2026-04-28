@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
-import { AskMontanaFloater } from "@/components/AskMontanaFloater";
+import { AskAuditeeFloater } from "@/components/AskAuditeeFloater";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useProjectContext } from "@/lib/project-context";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 // Project Sources is the landing page (top of the nav) since nothing else
 // works without sources connected. Dashboard is now the last item — it's a
 // roll-up view that only becomes useful once data has been ingested.
-// Ask Montana lives as a floating button on every page (see AskMontanaFloater),
+// Ask Auditee lives as a floating button on every page (see AskAuditeeFloater),
 // so it's intentionally not in the sidebar list.
 const NAV_ITEMS = [
   { href: "/app/sources", label: "Project Sources", icon: FolderInput },
@@ -76,7 +76,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 border-r border-slate-200 bg-white flex flex-col fixed inset-y-0 left-0 z-20">
         <div className="p-6 border-b border-slate-200">
           <Link href="/" className="flex items-center gap-1.5 font-display font-bold text-2xl tracking-tight text-slate-950 mb-6">
-            <span className="text-primary">Montana</span>
+            <span className="text-primary">Auditee</span>
           </Link>
 
           <DropdownMenu>
@@ -190,7 +190,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-6 flex-1">{children}</div>
       </main>
 
-      <AskMontanaFloater />
+      <AskAuditeeFloater />
     </div>
   );
 }

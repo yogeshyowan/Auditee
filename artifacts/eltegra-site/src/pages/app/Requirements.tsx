@@ -245,12 +245,12 @@ export default function RequirementsPage() {
             <DialogTitle className="font-[Inter_Tight] text-2xl flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" /> Generate from brief
             </DialogTitle>
-            <DialogDescription>Montana will draft a small set of well-formed requirements.</DialogDescription>
+            <DialogDescription>Auditee will draft a small set of well-formed requirements.</DialogDescription>
           </DialogHeader>
           {generateMut.isPending ? (
             <div className="py-10 flex flex-col items-center gap-3 text-slate-600">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm">Montana is drafting requirements...</p>
+              <p className="text-sm">Auditee is drafting requirements...</p>
             </div>
           ) : (
             <form
@@ -277,7 +277,7 @@ export default function RequirementsPage() {
                 value={brief}
                 onChange={(e) => setBrief(e.target.value)}
                 rows={8}
-                placeholder="Describe what you're building. Montana will draft requirements covering business, product, functional, and non-functional aspects."
+                placeholder="Describe what you're building. Auditee will draft requirements covering business, product, functional, and non-functional aspects."
                 className="resize-none"
                 data-testid="textarea-brief"
               />

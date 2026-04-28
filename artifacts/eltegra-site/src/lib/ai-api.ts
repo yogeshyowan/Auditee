@@ -241,7 +241,7 @@ export type AskConversation = {
 
 const ASK_HISTORY_KEY = (projectId?: string) => ["ai", "ask", "history", projectId ?? "all"];
 
-export function useAskMontana() {
+export function useAskAuditee() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { question: string; projectId?: string }) =>

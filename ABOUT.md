@@ -1,14 +1,14 @@
-# Montana
+# Auditee
 
 **AI-native enterprise platform for the Product Development Lifecycle (PDLC).**
 
-Montana unifies fragmented requirements, source code, defect trackers, and compliance audits into a single living knowledge graph — so engineering and quality teams can ship regulated products faster, prove conformance continuously, and never lose traceability between "what we said we'd build" and "what we actually built."
+Auditee unifies fragmented requirements, source code, defect trackers, and compliance audits into a single living knowledge graph — so engineering and quality teams can ship regulated products faster, prove conformance continuously, and never lose traceability between "what we said we'd build" and "what we actually built."
 
 ---
 
 ## Table of contents
 
-1. [What problem Montana solves](#what-problem-montana-solves)
+1. [What problem Auditee solves](#what-problem-auditee-solves)
 2. [Who it's for](#who-its-for)
 3. [Product surface — the marketing site](#product-surface--the-marketing-site)
 4. [Product surface — the application](#product-surface--the-application)
@@ -26,7 +26,7 @@ Montana unifies fragmented requirements, source code, defect trackers, and compl
 
 ---
 
-## What problem Montana solves
+## What problem Auditee solves
 
 In any team building regulated, safety-critical, or audited software (medical devices, automotive ECUs, avionics, fintech, security software), the same five problems recur:
 
@@ -36,7 +36,7 @@ In any team building regulated, safety-critical, or audited software (medical de
 4. **Defect noise.** Bugs sit in Jira / Azure DevOps / Bugzilla / ServiceNow / Linear / GitHub Issues / GitLab Issues, with no link back to the requirements or controls they violate.
 5. **Legacy black boxes.** Decades-old code (often the most safety-critical) has no written requirements at all — knowledge lives in the heads of engineers who left years ago.
 
-Montana ingests all of it, builds a graph, and lets the AI answer "what does this codebase do, where is it non-compliant, and what evidence do I have?" in plain English.
+Auditee ingests all of it, builds a graph, and lets the AI answer "what does this codebase do, where is it non-compliant, and what evidence do I have?" in plain English.
 
 ---
 
@@ -57,7 +57,7 @@ Lives at `/` and is a single-page React landing site with these sections:
 - **Hero** — value prop, CTA, animated network illustration.
 - **The problem** — the five fragmentation pain-points above.
 - **The product** — knowledge graph, AI audit, traceability, CAPA, recurring audits.
-- **Compliance grid** — the standards Montana audits against (visual logos / cards).
+- **Compliance grid** — the standards Auditee audits against (visual logos / cards).
 - **ROI section** — "weeks → hours" framing with concrete numbers.
 - **Demo CTA** — name / email / company / message form that POSTs to `/api/demo-requests` and persists to the `demo_requests` table.
 
@@ -85,7 +85,7 @@ Lives under `/app/*` and is **excluded from search-engine indexing** (project na
 | 12 | **Activity** | Append-only event log of every ingestion, audit, edit, and notification. |
 | 13 | **Dashboard** | Roll-up view; intentionally last because it's only meaningful after data has been ingested. |
 
-**Ask Montana** is intentionally *not* in the sidebar — it lives as a floating pill button (bottom-right of every app page) that opens a quick-chat sheet. Backed by the same `useAskMontana` hook as the dedicated `/app/ask` page, with confidence badge + citations per answer.
+**Ask Auditee** is intentionally *not* in the sidebar — it lives as a floating pill button (bottom-right of every app page) that opens a quick-chat sheet. Backed by the same `useAskAuditee` hook as the dedicated `/app/ask` page, with confidence badge + citations per answer.
 
 **Project switcher** sits at the top of the sidebar. Disabled (greyed) projects are ones with zero connected sources — clicking them deep-links to Sources with a "connect your first source" CTA. There's a "+ New project" item at the bottom of the dropdown that opens a CreateProjectDialog.
 
@@ -106,7 +106,7 @@ Lives under `/app/*` and is **excluded from search-engine indexing** (project na
 | **Defect** | A bug pulled from a defect tracker, scoped to a source, de-duped on `(project_id, source_id, external_id)`. |
 | **Audit** | A run of the AI compliance auditor against `(project, framework)` — produces verdicts, recommendations, and a deterministic native-rating overlay. |
 | **Recurring audit** | A scheduled audit; the scheduler in `lib/scheduler.ts` triggers them on a cron interval. |
-| **Knowledge graph** | The implicit network formed by requirements ↔ code ↔ defects ↔ controls ↔ CAPAs. The AI traverses this graph for "Ask Montana" answers and audit reasoning. |
+| **Knowledge graph** | The implicit network formed by requirements ↔ code ↔ defects ↔ controls ↔ CAPAs. The AI traverses this graph for "Ask Auditee" answers and audit reasoning. |
 
 ---
 
@@ -157,7 +157,7 @@ All AI endpoints live under `/api/ai/*` and intentionally bypass the OpenAPI cod
 | `POST /api/ai/analyze-code` | Classifies which existing requirements a code snippet implements / tests / violates, creates the code artifact + traceability links. | Traceability page → "Analyze code" |
 | `POST /api/ai/compliance-audit` | Control-by-control audit of a project against a framework, returns verdicts + recommendations. | Compliance detail → "Run AI audit" |
 | `POST /api/ai/legacy-extract` | Pulls implicit requirements + risks out of legacy code, optionally saves them. | Legacy page → "Extract requirements" |
-| `POST /api/ai/ask` | Natural-language Q&A across project context. Conversations persist server-side in `ai_conversations`, scoped by `projectId`. | `/app/ask` and the floating Ask Montana sheet |
+| `POST /api/ai/ask` | Natural-language Q&A across project context. Conversations persist server-side in `ai_conversations`, scoped by `projectId`. | `/app/ask` and the floating Ask Auditee sheet |
 | `GET /api/ai/ask/history?projectId=…&limit=50` | List saved Q&A history (newest first). | Ask page sidebar |
 | `DELETE /api/ai/ask/history/:id` | Remove a saved conversation. | Ask page sidebar |
 
@@ -242,7 +242,7 @@ Adding a new framework is just two seed inserts (one row in `compliance_framewor
 | `activity_events` | Append-only event log. |
 | `notifications` | Per-user notification queue. |
 | `comments` | Threaded comments on requirements / controls / CAPAs. |
-| `ai_conversations` | Persisted Q&A history for Ask Montana. |
+| `ai_conversations` | Persisted Q&A history for Ask Auditee. |
 | `ai_reports` | Saved narrative reports. |
 | `demo_requests` | Marketing-site demo requests. |
 
@@ -327,7 +327,7 @@ The marketing site is fully optimised for search and social:
 - `public/sitemap.xml` lists the canonical homepage with image entries.
 - The signed-in app (`AppLayout`) injects a `<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">` while mounted, so even if a crawler ignores robots.txt the per-page directive still suppresses indexing.
 
-**Canonical hostname** is currently `https://montana.eltegra.ai/`. When the production domain is finalised, search-and-replace this URL across `index.html`, `public/robots.txt`, and `public/sitemap.xml` — that's the only site-wide change required.
+**Canonical hostname** is currently `https://auditee.eltegra.ai/`. When the production domain is finalised, search-and-replace this URL across `index.html`, `public/robots.txt`, and `public/sitemap.xml` — that's the only site-wide change required.
 
 ---
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useListProjects } from "@workspace/api-client-react";
 import { useProjectContext } from "@/lib/project-context";
 import {
-  useAskMontana,
+  useAskAuditee,
   useAskHistory,
   useDeleteAskConversation,
   type AskConversation,
@@ -40,7 +40,7 @@ export default function Ask() {
   const currentProject = projects?.find((p) => p.id === projectId);
   const { toast } = useToast();
 
-  const askMut = useAskMontana();
+  const askMut = useAskAuditee();
   const deleteMut = useDeleteAskConversation();
   const historyQuery = useAskHistory(projectId ?? undefined);
 
@@ -78,7 +78,7 @@ export default function Ask() {
     <div className="p-6 space-y-6 max-w-4xl">
       <header>
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Ask Montana</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Ask Auditee</h1>
           {currentProject && (
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3" /> Asking about: {currentProject.name}
@@ -114,7 +114,7 @@ export default function Ask() {
         <Card className="rounded-xl border-slate-200">
           <CardContent className="p-6 flex items-center gap-3 text-slate-600">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm">Montana is reading your project context...</span>
+            <span className="text-sm">Auditee is reading your project context...</span>
           </CardContent>
         </Card>
       )}

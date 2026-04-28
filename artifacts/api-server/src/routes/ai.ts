@@ -118,7 +118,7 @@ router.post("/ai/generate-requirements", aiHandler(async (req, res) => {
     })
     .from(complianceFrameworksTable);
 
-  const system = `You are Montana, an enterprise requirements analyst. From a product brief, extract a small, well-formed set of requirements (3-8). Return strict JSON of shape:
+  const system = `You are Auditee, an enterprise requirements analyst. From a product brief, extract a small, well-formed set of requirements (3-8). Return strict JSON of shape:
 {"requirements":[{"title":string,"description":string,"type":"BRD"|"PRD"|"FRD"|"NFR","priority":"low"|"medium"|"high"|"critical","tags":string[],"linkedFrameworkCodes":string[]}]}
 Rules:
 - title: <=90 chars, action-oriented.
@@ -163,7 +163,7 @@ Rules:
         type: r.type,
         status: "draft",
         priority: r.priority,
-        owner: "Montana",
+        owner: "Auditee",
         tags: r.tags ?? [],
         linkedFrameworks,
       })
@@ -171,8 +171,8 @@ Rules:
     created.push(row);
     await logActivity(
       "requirement",
-      `${code} drafted by Montana from brief`,
-      "Montana",
+      `${code} drafted by Auditee from brief`,
+      "Auditee",
       code,
     );
   }
@@ -210,7 +210,7 @@ router.post("/ai/analyze-code", aiHandler(async (req, res) => {
     .from(requirementsTable)
     .where(eq(requirementsTable.projectId, body.projectId));
 
-  const system = `You are Montana's code-to-requirements analyst. Given a code snippet and a list of project requirements, identify which requirements the code implements, tests, or violates.
+  const system = `You are Auditee's code-to-requirements analyst. Given a code snippet and a list of project requirements, identify which requirements the code implements, tests, or violates.
 Return strict JSON:
 {"summary":string,"matches":[{"requirementCode":string,"kind":"implements"|"tests"|"violates","confidence":number,"rationale":string}]}
 Rules:
@@ -294,8 +294,8 @@ Rules:
 
   await logActivity(
     "code",
-    `Montana linked ${body.symbol} to ${linksCreated.length} requirement(s)`,
-    "Montana",
+    `Auditee linked ${body.symbol} to ${linksCreated.length} requirement(s)`,
+    "Auditee",
     body.symbol,
   );
 
@@ -475,7 +475,7 @@ router.post("/ai/compliance-audit", aiHandler(async (req, res) => {
     return `Totals by tool:\n${summary}\n\nMost severe / oldest first (sample of up to 25):\n${samples}`;
   })();
 
-  const system = `You are Montana's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it AND explicitly enumerate "required evidence vs found evidence vs missing evidence" so the user gets a clean conformance report.
+  const system = `You are Auditee's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it AND explicitly enumerate "required evidence vs found evidence vs missing evidence" so the user gets a clean conformance report.
 
 You have FOUR inputs to reason from:
 1) The project's requirements (formal documented behaviour). Many of these are imported from Requirements-Management tools (DOORS, Jama, Polarion, …) — treat the imported ones as authoritative when they cite an external system.
@@ -634,8 +634,8 @@ Rules:
 
   await logActivity(
     "compliance",
-    `Montana ran ${framework.code} audit on ${project.name}: ${result.overallVerdict} · ${nativeRating.schemeName}: ${nativeRating.overall.value}${capasCreated ? ` · ${capasCreated} CAPA(s) opened` : ""}${includedSources.length ? ` · ${includedSources.length} source(s), ${totalCitedFiles} file(s) cited` : ""}`,
-    "Montana",
+    `Auditee ran ${framework.code} audit on ${project.name}: ${result.overallVerdict} · ${nativeRating.schemeName}: ${nativeRating.overall.value}${capasCreated ? ` · ${capasCreated} CAPA(s) opened` : ""}${includedSources.length ? ` · ${includedSources.length} source(s), ${totalCitedFiles} file(s) cited` : ""}`,
+    "Auditee",
     framework.code,
   );
 
@@ -777,7 +777,7 @@ router.post("/ai/traceability-audit", aiHandler(async (req, res) => {
     return `${r.code} [${r.type}/${r.status}] ${r.title}\n  description: ${(r.description ?? "").slice(0, 280)}\n  declared links: ${ls.length === 0 ? "(none)" : ls.map((l) => `${l.kind}→${l.path}`).join(", ")}`;
   }).join("\n");
 
-  const system = `You are Montana's traceability & completeness auditor. For every requirement, decide whether it is covered at FOUR stages of the development lifecycle:
+  const system = `You are Auditee's traceability & completeness auditor. For every requirement, decide whether it is covered at FOUR stages of the development lifecycle:
   1) Design — has a design doc / architecture note / ADR explained how this will be built?
   2) Code — does the implementation exist in source files?
   3) Tests — are there test cases (unit / integration / e2e) for this requirement?
@@ -893,8 +893,8 @@ Rules:
 
   await logActivity(
     "compliance",
-    `Montana ran traceability/completeness audit on ${project.name}: ${result.overallVerdict} (${completenessPercentage}%)`,
-    "Montana",
+    `Auditee ran traceability/completeness audit on ${project.name}: ${result.overallVerdict} (${completenessPercentage}%)`,
+    "Auditee",
     project.slug ?? project.id,
   );
 
@@ -937,7 +937,7 @@ router.post("/ai/legacy-extract", aiHandler(async (req, res) => {
     return;
   }
 
-  const sysPrompt = `You are Montana's legacy modernization analyst. Read the legacy code and extract the implicit business and functional requirements it encodes. Identify hidden risks (compliance gaps, brittle patterns, hard-coded business rules).
+  const sysPrompt = `You are Auditee's legacy modernization analyst. Read the legacy code and extract the implicit business and functional requirements it encodes. Identify hidden risks (compliance gaps, brittle patterns, hard-coded business rules).
 Return strict JSON:
 {"summary":string,"requirements":[{"title":string,"description":string,"type":"BRD"|"PRD"|"FRD"|"NFR","priority":"low"|"medium"|"high"|"critical","tags":string[]}],"risks":[{"severity":"low"|"medium"|"high","title":string,"detail":string}],"modernizationNotes":string}
 Rules:
@@ -982,7 +982,7 @@ Rules:
             type: r.type,
             status: "draft",
             priority: r.priority,
-            owner: "Montana (legacy)",
+            owner: "Auditee (legacy)",
             tags: [...(r.tags ?? []), "legacy", system.name],
             linkedFrameworks: [],
           })
@@ -1004,8 +1004,8 @@ Rules:
 
   await logActivity(
     "code",
-    `Montana extracted ${result.requirements.length} requirements from ${system.name}`,
-    "Montana",
+    `Auditee extracted ${result.requirements.length} requirements from ${system.name}`,
+    "Auditee",
     system.name,
   );
 
@@ -1017,7 +1017,7 @@ Rules:
 }));
 
 // =============================================================
-// AI: Ask Montana — natural language Q&A across project data
+// AI: Ask Auditee — natural language Q&A across project data
 // =============================================================
 router.post("/ai/ask", aiHandler(async (req, res) => {
   const body = {
@@ -1075,7 +1075,7 @@ router.post("/ai/ask", aiHandler(async (req, res) => {
     })),
   };
 
-  const sysPrompt = `You are Montana, an AI-native PDLC platform assistant. Answer questions using ONLY the structured project context provided. Cite specific requirement codes (e.g., HEL-0001), framework codes, or system names when relevant.
+  const sysPrompt = `You are Auditee, an AI-native PDLC platform assistant. Answer questions using ONLY the structured project context provided. Cite specific requirement codes (e.g., HEL-0001), framework codes, or system names when relevant.
 Return strict JSON:
 {"answer":string,"citations":string[],"confidence":"low"|"medium"|"high"}
 - answer: clear, concise (<=200 words), markdown allowed.

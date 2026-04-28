@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useProjectContext } from "@/lib/project-context";
-import { useAskMontana, type AskResult } from "@/lib/ai-api";
+import { useAskAuditee, type AskResult } from "@/lib/ai-api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +28,10 @@ function nextTurnId(): string {
   return `t-${Date.now()}-${__turnSeq}`;
 }
 
-export function AskMontanaFloater() {
+export function AskAuditeeFloater() {
   const { projectId } = useProjectContext();
   const { toast } = useToast();
-  const askMut = useAskMontana();
+  const askMut = useAskAuditee();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<LocalTurn[]>([]);
@@ -66,18 +66,18 @@ export function AskMontanaFloater() {
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-30 group flex items-center gap-2 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all px-5 py-3 font-semibold text-sm"
-        data-testid="ask-montana-fab"
-        aria-label="Ask Montana"
+        data-testid="ask-auditee-fab"
+        aria-label="Ask Auditee"
       >
         <Sparkles className="h-5 w-5" />
-        <span>Ask Montana</span>
+        <span>Ask Auditee</span>
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0 gap-0">
           <SheetHeader className="p-5 border-b border-slate-200">
             <SheetTitle className="flex items-center gap-2 font-[Inter_Tight] text-xl">
-              <Sparkles className="h-5 w-5 text-primary" /> Ask Montana
+              <Sparkles className="h-5 w-5 text-primary" /> Ask Auditee
             </SheetTitle>
             <SheetDescription>
               Quick natural-language Q&amp;A across this project's requirements, frameworks, controls and code.
@@ -89,7 +89,7 @@ export function AskMontanaFloater() {
               <div className="text-center text-slate-500 text-sm py-8">
                 <Sparkles className="h-8 w-8 mx-auto mb-3 text-slate-300" />
                 <p>Ask anything about your project.</p>
-                <p className="text-xs mt-1">For long, multi-turn research, open the full Ask Montana page below.</p>
+                <p className="text-xs mt-1">For long, multi-turn research, open the full Ask Auditee page below.</p>
               </div>
             )}
             {turns.map((t, i) => (
@@ -101,7 +101,7 @@ export function AskMontanaFloater() {
                 </div>
                 {t.pending && (
                   <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Montana is reading your project...
+                    <Loader2 className="h-3 w-3 animate-spin" /> Auditee is reading your project...
                   </div>
                 )}
                 {t.error && (

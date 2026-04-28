@@ -26,7 +26,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
 
-## Project: Montana
+## Project: Auditee
 
 AI-native enterprise platform for Product Development Lifecycle (PDLC) management.
 Marketing landing page lives at `/` and the functional app lives under `/app/*`.
@@ -78,7 +78,7 @@ The marketing site (`/`) is fully optimised for search and social:
 - The signed-in app (`AppLayout`) injects a `<meta name="robots"
   content="noindex, nofollow, noarchive, nosnippet">` while mounted, so even
   if a crawler ignores robots.txt the per-page directive still suppresses it.
-- Canonical hostname is set to `https://montana.eltegra.ai/`. **When the real
+- Canonical hostname is set to `https://auditee.eltegra.ai/`. **When the real
   production domain is decided, search-and-replace this URL across
   `index.html`, `robots.txt`, and `sitemap.xml`** — that's the only site-wide
   change needed.
@@ -98,16 +98,16 @@ selected as long as it exists in `allProjects` (not just `connectedProjects`),
 so freshly-created projects with 0 sources stay active until the user
 connects their first source.
 
-### Navigation order + floating Ask Montana
+### Navigation order + floating Ask Auditee
 The left-side app navigation is ordered around the natural workflow:
 **Project Sources** is the landing item (top of the list) because nothing
 else works without sources connected, and **Dashboard** is the last item
 since it's a roll-up view that only becomes meaningful after data has been
-ingested. **Ask Montana** is intentionally removed from the sidebar and
+ingested. **Ask Auditee** is intentionally removed from the sidebar and
 lives instead as a floating pill button (bottom-right of every app page)
-implemented in `components/AskMontanaFloater.tsx`. Clicking the floater
+implemented in `components/AskAuditeeFloater.tsx`. Clicking the floater
 opens a right-side Sheet with a minimal quick-chat — uses the same
-`useAskMontana` hook as the full page, shows confidence badge + citations
+`useAskAuditee` hook as the full page, shows confidence badge + citations
 per answer, and links out to `/app/ask` for the full multi-turn experience.
 
 ### Source-aware Requirements + standard-aware CAPA filters

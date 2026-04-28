@@ -75,13 +75,13 @@ function DemoDialog({ children }: { children: React.ReactNode }) {
               <ShieldCheck size={32} />
             </div>
             <h3 className="text-2xl font-bold font-display text-slate-900">Request Received</h3>
-            <p className="text-slate-500">We'll be in touch shortly to schedule your personalized demo of Montana.</p>
+            <p className="text-slate-500">We'll be in touch shortly to schedule your personalized demo of Auditee.</p>
             <Button onClick={() => setOpen(false)} className="mt-4 w-full">Done</Button>
           </div>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-display">See Montana in action</DialogTitle>
+              <DialogTitle className="text-2xl font-display">See Auditee in action</DialogTitle>
               <DialogDescription>
                 Schedule a personalized walkthrough of the platform.
               </DialogDescription>
@@ -146,7 +146,7 @@ const staggerContainer = {
 function Logo() {
   return (
     <Link href="/" className="flex items-center gap-1.5 z-50 relative font-display font-bold text-2xl tracking-tight text-slate-950">
-      <span className="text-primary">Montana</span>
+      <span className="text-primary">Auditee</span>
     </Link>
   );
 }
@@ -249,7 +249,7 @@ function Hero() {
               Complete AI-Native Platform for <span className="text-primary">Every Stage</span> of Product Development.
             </motion.h1>
             <motion.p variants={fadeIn} className="text-lg md:text-xl text-slate-600 mb-8 leading-relaxed max-w-xl">
-              From initial idea to post-launch optimization, Montana covers the entire PDLC with intelligence, automation, and built-in compliance. Turn fragmented requirements, legacy code, and audit chaos into a single living knowledge graph.
+              From initial idea to post-launch optimization, Auditee covers the entire PDLC with intelligence, automation, and built-in compliance. Turn fragmented requirements, legacy code, and audit chaos into a single living knowledge graph.
             </motion.p>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4">
               <DemoDialog>
@@ -540,7 +540,7 @@ function PdlcCoverage() {
             Complete PDLC Coverage
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl">
-            From the first spark of an idea to post-launch governance, Montana connects every phase of the lifecycle.
+            From the first spark of an idea to post-launch governance, Auditee connects every phase of the lifecycle.
           </p>
         </motion.div>
 
@@ -702,7 +702,7 @@ function FinalCta() {
             End requirements chaos.
           </h2>
           <p className="text-xl text-slate-600 mb-10">
-            Join the enterprise teams using Montana to build faster, safer, and with perfect clarity.
+            Join the enterprise teams using Auditee to build faster, safer, and with perfect clarity.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button size="lg" className="h-16 px-10 bg-primary hover:bg-primary/90 text-white rounded-full text-lg font-semibold shadow-xl shadow-primary/20">
@@ -726,7 +726,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-16">
           <div className="col-span-2 md:col-span-2">
             <Link href="/" className="inline-flex items-center gap-1.5 font-display font-bold text-2xl tracking-tight text-white mb-6">
-              <span className="text-primary">Montana</span>
+              <span className="text-primary">Auditee</span>
             </Link>
             <p className="text-slate-400 max-w-sm">
               The AI-native platform for the entire Product Development Lifecycle. Turn chaos into a living knowledge graph.
@@ -765,7 +765,7 @@ function Footer() {
         </div>
         
         <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
-          <p>© {new Date().getFullYear()} Montana. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Auditee. All rights reserved.</p>
           <div className="flex gap-6">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>

@@ -158,14 +158,14 @@ export default function Legacy() {
               <FileSearch className="h-5 w-5 text-primary" /> Extract requirements
             </DialogTitle>
             <DialogDescription>
-              {openSystem ? `Montana will read ${openSystem.name} code and extract implicit requirements + risks.` : ""}
+              {openSystem ? `Auditee will read ${openSystem.name} code and extract implicit requirements + risks.` : ""}
             </DialogDescription>
           </DialogHeader>
 
           {extractMut.isPending ? (
             <div className="py-12 flex flex-col items-center gap-3 text-slate-600">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm">Montana is reading the legacy code...</p>
+              <p className="text-sm">Auditee is reading the legacy code...</p>
             </div>
           ) : extractMut.data ? (
             <div className="space-y-5">

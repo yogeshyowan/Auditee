@@ -7,7 +7,7 @@
 // 0-5 with N/P/L/F process-attribute ratings, NIST CSF produces Implementation
 // Tiers 1-4, IEC 61508 produces SIL claim-limit, etc.
 //
-// Montana's audit pipeline still emits the universal {met, partial, gap}
+// Auditee's audit pipeline still emits the universal {met, partial, gap}
 // per-control verdict (and a 0-100 % roll-up), but it ALSO needs to surface
 // the standard-appropriate rating so downstream artefacts (audit reports,
 // CAPA priorities, certification submissions) are recognisable to the
@@ -320,8 +320,8 @@ export const FRAMEWORK_RATING_SCHEMES: Record<string, RatingScheme> = {
 
 /** Universal fallback when a framework code has no explicit scheme yet. */
 export const UNIVERSAL_SCHEME: RatingScheme = {
-  schemeName: "Montana Universal Conformity",
-  basedOn: "Montana platform default (control verdict + coverage %)",
+  schemeName: "Auditee Universal Conformity",
+  basedOn: "Auditee platform default (control verdict + coverage %)",
   description: "Generic scheme used when the framework has no industry-specific rating model.",
   perControl: PC_CONFORMITY,
   overall: [
