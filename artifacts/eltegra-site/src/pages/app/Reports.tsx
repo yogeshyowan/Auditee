@@ -22,6 +22,7 @@ import { FileText, Sparkles, Download, Trash2, RefreshCw } from "lucide-react";
 import { Comments } from "@/components/Comments";
 
 const KIND_LABELS: Record<string, string> = {
+  brd: "Business Requirements Document (BRD)",
   exec_brief: "Executive briefing",
   compliance_audit: "Compliance audit report",
   requirements_summary: "Requirements summary",
@@ -29,6 +30,8 @@ const KIND_LABELS: Record<string, string> = {
 };
 
 const KIND_DESCRIPTIONS: Record<string, string> = {
+  brd:
+    "Canonical Business Requirements Document — context, stakeholders, objectives, scope, functional & non-functional requirements, constraints, risks, acceptance.",
   exec_brief:
     "Board-ready 1–2 page summary of program health, top risks, and momentum.",
   compliance_audit:

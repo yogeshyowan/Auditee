@@ -43,9 +43,10 @@ import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, Folde
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateRequirements, useFetchCodeUrl } from "@/lib/ai-api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useSources, useSourceFiles, useSourceFileContent } from "@/lib/wave1-api";
+import { useSources, useSourceFiles, useSourceFileContent, useGenerateReport } from "@/lib/wave1-api";
 import { Comments } from "@/components/Comments";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700 border-slate-200",
@@ -298,6 +299,42 @@ export default function RequirementsPage() {
       },
     },
   });
+  const [, navigate] = useLocation();
+  const generateBrd = useGenerateReport();
+  const handleGenerateBrd = () => {
+    if (!projectId || generateBrd.isPending) return;
+    const reqs = allProjectReqs ?? [];
+    if (reqs.length === 0) {
+      toast({
+        title: "No requirements yet",
+        description: "Generate or import at least a few requirements first — a BRD needs source material.",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: "Generating BRD…",
+      description: "Auditee is composing your Business Requirements Document. You'll be taken to the report when it's ready.",
+    });
+    generateBrd.mutate(
+      {
+        projectId,
+        kind: "brd",
+        tone: "executive",
+        instructions:
+          "Compose a complete, signature-ready Business Requirements Document. Be specific about scope and acceptance.",
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "BRD generated", description: "Opening in the Reports library." });
+          navigate("/app/reports");
+        },
+        onError: (err: Error) => {
+          toast({ title: "BRD generation failed", description: err.message, variant: "destructive" });
+        },
+      },
+    );
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -306,7 +343,7 @@ export default function RequirementsPage() {
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Requirements</h1>
           <p className="text-slate-500 mt-1">Browse, filter, and manage every requirement in the knowledge graph.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             onClick={() => setGenerateOpen(true)}
             className="gap-2"
@@ -323,6 +360,20 @@ export default function RequirementsPage() {
             data-testid="button-generate-from-code"
           >
             <Code2 className="h-4 w-4" /> Generate from code
+          </Button>
+          <Button
+            onClick={handleGenerateBrd}
+            variant="outline"
+            className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+            disabled={!projectId || generateBrd.isPending}
+            data-testid="button-generate-brd"
+          >
+            {generateBrd.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            {generateBrd.isPending ? "Composing BRD…" : "Generate BRD"}
           </Button>
           <Button onClick={() => setCreateOpen(true)} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" /> New Requirement

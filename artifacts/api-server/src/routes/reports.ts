@@ -83,7 +83,7 @@ router.post("/reports/generate", asyncH(async (req, res) => {
     res.status(400).json({ error: "projectId is required" });
     return;
   }
-  const kind: string = ["compliance_audit", "requirements_summary", "traceability", "exec_brief"].includes(b.kind)
+  const kind: string = ["compliance_audit", "requirements_summary", "traceability", "exec_brief", "brd"].includes(b.kind)
     ? b.kind
     : "exec_brief";
   const tone: string = ["executive", "technical", "regulator"].includes(b.tone) ? b.tone : "executive";
@@ -128,10 +128,30 @@ router.post("/reports/generate", asyncH(async (req, res) => {
     ...controls.map((c) => ({ id: c.code, label: c.title, source: "control" })),
   ];
 
-  const sysPrompt = `You are Auditee, an AI-native PDLC platform that produces enterprise-grade ${kind.replace(
-    "_",
-    " ",
-  )} reports.
+  const KIND_BLUEPRINT: Record<string, { label: string; sectionGuide: string; minSections: number; maxSections: number }> = {
+    brd: {
+      label: "Business Requirements Document",
+      sectionGuide: `This is a CANONICAL Business Requirements Document. Produce these sections, in this order, using EXACTLY these headings (you may add at most one extra section if the project's data clearly demands it):
+  1. "Business Context & Problem Statement" — why this initiative exists, current pain, market or regulatory pressure.
+  2. "Stakeholders & Sponsors" — who funds it, who decides, who is impacted; if specific names aren't present in the data, describe roles.
+  3. "Business Objectives & Success Metrics" — measurable outcomes the business expects; quantify wherever the data supports it.
+  4. "Scope — In Scope / Out of Scope" — explicit bullet lists for each, derived from the requirement set.
+  5. "Functional Requirements" — group by capability; cite the BRD/PRD/FRD requirement codes from the evidence list.
+  6. "Non-Functional Requirements" — performance, security, availability, compliance; cite NFR codes from the evidence list.
+  7. "Constraints, Assumptions & Dependencies" — technical, regulatory, contractual.
+  8. "Risks & Mitigations" — top 3-6 with likelihood/impact qualifiers; reference any CAPA codes when applicable.
+  9. "Acceptance Criteria & Sign-off" — what 'done' means at a business level; reference traceability where it exists.`,
+      minSections: 7,
+      maxSections: 10,
+    },
+    exec_brief: { label: "executive briefing", sectionGuide: "", minSections: 4, maxSections: 7 },
+    compliance_audit: { label: "compliance audit report", sectionGuide: "", minSections: 4, maxSections: 7 },
+    requirements_summary: { label: "requirements summary", sectionGuide: "", minSections: 4, maxSections: 7 },
+    traceability: { label: "traceability narrative", sectionGuide: "", minSections: 4, maxSections: 7 },
+  };
+  const blueprint = KIND_BLUEPRINT[kind] ?? KIND_BLUEPRINT.exec_brief!;
+
+  const sysPrompt = `You are Auditee, an AI-native PDLC platform that produces enterprise-grade ${blueprint.label}s.
 
 ${TONE_SYSTEM[tone]}
 
@@ -139,12 +159,12 @@ Return STRICT JSON of shape:
 {"title": string, "subtitle": string, "executiveSummary": string, "sections": [{"id": string, "heading": string, "body": string, "citations": string[]}]}
 
 Rules:
-- 4 to 7 sections, each 100-220 words.
+- ${blueprint.minSections} to ${blueprint.maxSections} sections, each 120-260 words.
 - Body uses GitHub-flavoured Markdown. Use bullet lists where useful.
-- Every section must include 'citations' — IDs from the provided evidence list (requirement codes, CAPA codes, control codes).
+- Every section must include 'citations' — IDs from the provided evidence list (requirement codes, CAPA codes, control codes). Empty array is acceptable only when the section is purely contextual.
 - executiveSummary: 80-160 words, plain English.
-- Do NOT invent codes or facts that aren't in the supplied data.
-- Output JSON only.`;
+- Do NOT invent codes or facts that aren't in the supplied data. If data is sparse, say so explicitly rather than fabricating.
+- Output JSON only.${blueprint.sectionGuide ? `\n\nSection blueprint:\n${blueprint.sectionGuide}` : ""}`;
 
   const evidenceForPrompt = evidence.slice(0, 200);
   const payload = {
