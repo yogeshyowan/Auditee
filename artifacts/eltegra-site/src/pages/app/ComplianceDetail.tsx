@@ -9,12 +9,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, ShieldCheck, AlertTriangle, ShieldAlert, Wand2, Loader2, FileCode2, FolderInput } from "lucide-react";
+import { ArrowLeft, ShieldCheck, AlertTriangle, ShieldAlert, Wand2, Loader2, FileCode2, FolderInput, ChevronDown, ChevronRight, BadgeCheck, BadgeX, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import { format } from "date-fns";
 import { useProjectContext } from "@/lib/project-context";
 import { useComplianceAudit } from "@/lib/ai-api";
 import { useSources } from "@/lib/wave1-api";
 import { useToast } from "@/hooks/use-toast";
+import { useControlEvidence, useVerifyControl, type ControlEvidenceRow } from "@/lib/compliance-api";
 
 const VERDICT_BADGE: Record<string, string> = {
   strong: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -371,22 +372,17 @@ export default function ComplianceDetail() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50 hover:bg-slate-50">
+                  <TableHead className="w-8" />
                   <TableHead className="w-28">Code</TableHead>
                   <TableHead>Title</TableHead>
-                  <TableHead className="w-28">Status</TableHead>
+                  <TableHead className="w-44">Status</TableHead>
                   <TableHead className="w-40">Owner</TableHead>
                   <TableHead className="w-28 text-right">Evidence</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fw.controls.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-mono text-xs text-slate-600">{c.code}</TableCell>
-                    <TableCell className="font-medium text-slate-900">{c.title}</TableCell>
-                    <TableCell><Badge className={(CONTROL_STATUS[c.status] ?? "bg-slate-100 text-slate-700") + " border"}>{c.status}</Badge></TableCell>
-                    <TableCell className="text-sm text-slate-600">{c.owner ?? "—"}</TableCell>
-                    <TableCell className="text-right text-sm font-semibold text-slate-700">{c.evidenceCount}</TableCell>
-                  </TableRow>
+                {fw.controls.map((c) => (
+                  <ControlRow key={c.id} control={c as any} frameworkId={fw.id} projectId={projectId} />
                 ))}
               </TableBody>
             </Table>
@@ -394,5 +390,241 @@ export default function ComplianceDetail() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+type ControlRowProps = {
+  control: {
+    id: string;
+    code: string;
+    title: string;
+    status: string;
+    owner: string | null;
+    evidenceCount: number;
+    assertion?: string | null;
+    evidenceVerifiedCount?: number;
+    evidenceTotalCount?: number;
+  };
+  frameworkId: string;
+  projectId: string | null | undefined;
+};
+
+function ControlRow({ control, frameworkId, projectId }: ControlRowProps) {
+  const [open, setOpen] = useState(false);
+  const { data: evData, isLoading: evLoading } = useControlEvidence(open ? control.id : null, projectId ?? null);
+  const verifyMut = useVerifyControl(frameworkId);
+  const { toast } = useToast();
+
+  const assertion = control.assertion ?? null;
+  const statusBadge = renderControlStatusBadge(control.status, assertion);
+
+  const verifyAll = (action: "verify" | "reject") => {
+    if (!projectId) {
+      toast({ title: "Select a project first", variant: "destructive" });
+      return;
+    }
+    verifyMut.mutate(
+      { controlId: control.id, projectId, action },
+      {
+        onSuccess: (d) =>
+          toast({
+            title: action === "verify" ? "Evidence verified" : "Evidence rejected",
+            description: `${d.updatedCount} item(s) updated. Control is now ${d.status}.`,
+          }),
+        onError: (e: Error) =>
+          toast({ title: "Update failed", description: e.message, variant: "destructive" }),
+      },
+    );
+  };
+
+  return (
+    <>
+      <TableRow data-testid={`control-row-${control.code}`}>
+        <TableCell className="p-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setOpen((v) => !v)}
+            data-testid={`control-toggle-${control.code}`}
+            aria-label={open ? "Collapse" : "Expand"}
+          >
+            {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          </Button>
+        </TableCell>
+        <TableCell className="font-mono text-xs text-slate-600">{control.code}</TableCell>
+        <TableCell className="font-medium text-slate-900">{control.title}</TableCell>
+        <TableCell>{statusBadge}</TableCell>
+        <TableCell className="text-sm text-slate-600">{control.owner ?? "—"}</TableCell>
+        <TableCell className="text-right text-sm font-semibold text-slate-700">
+          {control.evidenceVerifiedCount !== undefined && control.evidenceTotalCount !== undefined
+            ? `${control.evidenceVerifiedCount}/${control.evidenceTotalCount}`
+            : control.evidenceCount}
+        </TableCell>
+      </TableRow>
+      {open && (
+        <TableRow className="bg-slate-50/40 hover:bg-slate-50/40">
+          <TableCell colSpan={6} className="p-0">
+            <div className="px-6 py-4 space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Evidence locker</div>
+                {assertion === "ai_asserted" && projectId && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 h-7 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                      disabled={verifyMut.isPending}
+                      onClick={() => verifyAll("verify")}
+                      data-testid={`control-verify-all-${control.code}`}
+                    >
+                      <ThumbsUp className="h-3 w-3" /> Verify all
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 h-7 border-rose-300 text-rose-700 hover:bg-rose-50"
+                      disabled={verifyMut.isPending}
+                      onClick={() => verifyAll("reject")}
+                      data-testid={`control-reject-all-${control.code}`}
+                    >
+                      <ThumbsDown className="h-3 w-3" /> Reject all
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {evLoading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : !evData || evData.evidence.length === 0 ? (
+                <div className="text-sm text-slate-500 italic">
+                  {projectId
+                    ? "No evidence captured yet — run an AI audit or promote a gap-analysis finding to populate this locker."
+                    : "Select a project to view its evidence for this control."}
+                </div>
+              ) : (
+                <ul className="space-y-1.5">
+                  {evData.evidence.map((row) => (
+                    <EvidenceRow
+                      key={row.id}
+                      row={row}
+                      controlCode={control.code}
+                      onAct={(action) => {
+                        if (!projectId) return;
+                        verifyMut.mutate(
+                          { controlId: control.id, projectId, action, evidenceId: row.id },
+                          {
+                            onError: (e: Error) =>
+                              toast({ title: "Update failed", description: e.message, variant: "destructive" }),
+                          },
+                        );
+                      }}
+                      pending={verifyMut.isPending}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
+}
+
+function renderControlStatusBadge(status: string, assertion: string | null) {
+  if (status === "met" && assertion === "verified") {
+    return (
+      <Badge className="border bg-emerald-100 text-emerald-800 border-emerald-300 inline-flex items-center gap-1">
+        <BadgeCheck className="h-3 w-3" /> Met · Verified
+      </Badge>
+    );
+  }
+  if (status === "met" && assertion === "ai_asserted") {
+    return (
+      <Badge className="border bg-indigo-50 text-indigo-700 border-indigo-200 inline-flex items-center gap-1">
+        <Sparkles className="h-3 w-3" /> Met · AI-asserted
+      </Badge>
+    );
+  }
+  if (assertion === "rejected") {
+    return (
+      <Badge className="border bg-rose-50 text-rose-700 border-rose-200 inline-flex items-center gap-1">
+        <BadgeX className="h-3 w-3" /> Rejected
+      </Badge>
+    );
+  }
+  const cls =
+    status === "met"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : status === "partial"
+      ? "bg-amber-50 text-amber-700 border-amber-200"
+      : "bg-rose-50 text-rose-700 border-rose-200";
+  return <Badge className={`${cls} border`}>{status}</Badge>;
+}
+
+function EvidenceRow({
+  row,
+  controlCode,
+  onAct,
+  pending,
+}: {
+  row: ControlEvidenceRow;
+  controlCode: string;
+  onAct: (action: "verify" | "reject") => void;
+  pending: boolean;
+}) {
+  const statusClasses =
+    row.status === "verified"
+      ? "border-emerald-200 bg-emerald-50/60"
+      : row.status === "rejected"
+      ? "border-rose-200 bg-rose-50/60 opacity-60"
+      : "border-indigo-200 bg-white";
+  return (
+    <li className={`border rounded-md p-2.5 text-sm flex items-start gap-3 ${statusClasses}`}
+        data-testid={`evidence-row-${controlCode}-${row.id}`}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
+            {row.kind}
+          </span>
+          <span className="text-[10px] uppercase tracking-wider text-slate-400">{row.source}</span>
+          <span className="text-[10px] text-slate-400">{format(new Date(row.createdAt), "MMM d, HH:mm")}</span>
+          {row.status === "verified" && (
+            <Badge className="border bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">verified</Badge>
+          )}
+          {row.status === "rejected" && (
+            <Badge className="border bg-rose-100 text-rose-800 border-rose-300 text-[10px]">rejected</Badge>
+          )}
+        </div>
+        <div className="text-slate-800 mt-1 break-words">{row.refLabel}</div>
+        {row.note && <div className="text-xs text-slate-500 mt-1 italic">{row.note}</div>}
+      </div>
+      {row.status === "ai_asserted" && (
+        <div className="flex gap-1 shrink-0">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-emerald-700 hover:bg-emerald-100"
+            disabled={pending}
+            onClick={() => onAct("verify")}
+            title="Verify this evidence"
+            data-testid={`evidence-verify-${row.id}`}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-rose-700 hover:bg-rose-100"
+            disabled={pending}
+            onClick={() => onAct("reject")}
+            title="Reject this evidence"
+            data-testid={`evidence-reject-${row.id}`}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+    </li>
   );
 }

@@ -171,7 +171,7 @@ export default function GapsPage() {
                 <SelectValue placeholder="General industry best practices" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">General industry best practices</SelectItem>
+                <SelectItem value="__none">General industry best practices</SelectItem>
                 {(frameworks ?? []).map((f) => (
                   <SelectItem key={f.id} value={f.id}>
                     {f.code} — {f.name}

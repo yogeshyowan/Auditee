@@ -29,8 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Network, Code2, Loader2 } from "lucide-react";
-import { useAnalyzeCode } from "@/lib/ai-api";
+import { Network, Code2, Loader2, Layers, FileText, FileCode2, Beaker, Rocket, Building2 } from "lucide-react";
+import {
+  useAnalyzeCode,
+  useLifecycleTraceability,
+  LIFECYCLE_STAGES,
+  type LifecycleStage,
+} from "@/lib/ai-api";
 import { useToast } from "@/hooks/use-toast";
 
 const LANGUAGES = ["TypeScript", "JavaScript", "Python", "Go", "C#", "Java", "Rust", "SQL", "COBOL"];
@@ -73,6 +78,7 @@ export default function Traceability() {
     } as any,
     { query: { enabled: !!projectId } as any }
   );
+  const { data: lifecycle, isLoading: isLifecycleLoading } = useLifecycleTraceability(projectId ?? null);
 
   const selectedFramework = (frameworks ?? []).find((f) => f.id === frameworkId);
 
@@ -307,6 +313,8 @@ export default function Traceability() {
         </Card>
       )}
 
+      <LifecyclePanel data={lifecycle} loading={isLifecycleLoading} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="rounded-xl border-slate-200 lg:col-span-2 overflow-hidden">
           <CardHeader className="flex-row items-center justify-between space-y-0">
@@ -438,5 +446,166 @@ function LegendDot({ color, label }: { color: string; label: string }) {
       <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color }} />
       {label}
     </span>
+  );
+}
+
+const STAGE_META: Record<LifecycleStage, { label: string; icon: typeof Building2; tone: string }> = {
+  architecture: { label: "Architecture", icon: Building2, tone: "text-violet-700 bg-violet-50 border-violet-200" },
+  design: { label: "Design", icon: FileText, tone: "text-blue-700 bg-blue-50 border-blue-200" },
+  implementation: { label: "Implementation", icon: FileCode2, tone: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  testing: { label: "Testing", icon: Beaker, tone: "text-amber-700 bg-amber-50 border-amber-200" },
+  deployment: { label: "Deployment", icon: Rocket, tone: "text-rose-700 bg-rose-50 border-rose-200" },
+};
+
+function LifecyclePanel({
+  data,
+  loading,
+}: {
+  data: ReturnType<typeof useLifecycleTraceability>["data"];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <Card className="rounded-xl border-slate-200">
+        <CardContent className="py-8">
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+  if (!data || data.requirementCount === 0) {
+    return (
+      <Card className="rounded-xl border-slate-200">
+        <CardHeader>
+          <CardTitle className="font-[Inter_Tight] flex items-center gap-2">
+            <Layers className="h-5 w-5 text-primary" /> 5-Stage Lifecycle Traceability
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-500">
+            No requirements yet. Add requirements to see end-to-end coverage across architecture, design, implementation, testing and deployment.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const overallTone =
+    data.overallPct >= 80 ? "text-emerald-700" : data.overallPct >= 50 ? "text-amber-700" : "text-rose-700";
+
+  return (
+    <Card className="rounded-xl border-slate-200" data-testid="lifecycle-panel">
+      <CardHeader className="flex-row items-start justify-between space-y-0 gap-4 flex-wrap">
+        <div>
+          <CardTitle className="font-[Inter_Tight] flex items-center gap-2">
+            <Layers className="h-5 w-5 text-primary" /> 5-Stage Lifecycle Traceability
+          </CardTitle>
+          <p className="text-sm text-slate-500 mt-1">
+            Requirements → Architecture → Design → Implementation → Testing → Deployment.
+            Computed deterministically from reports, code links and source files.
+          </p>
+        </div>
+        <div className="text-right">
+          <div className={`text-3xl font-bold tabular-nums ${overallTone}`} data-testid="lifecycle-overall">
+            {data.overallPct}%
+          </div>
+          <div className="text-xs uppercase tracking-wider text-slate-500">overall coverage</div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {LIFECYCLE_STAGES.map((stage) => {
+            const meta = STAGE_META[stage];
+            const Icon = meta.icon;
+            const covered = data.coveragePerStage[stage] ?? 0;
+            const total = data.requirementCount;
+            const pct = total === 0 ? 0 : Math.round((covered / total) * 100);
+            return (
+              <div
+                key={stage}
+                className={`border rounded-lg p-3 ${meta.tone}`}
+                data-testid={`lifecycle-stage-${stage}`}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
+                  <Icon className="h-3.5 w-3.5" />
+                  {meta.label}
+                </div>
+                <div className="text-2xl font-bold tabular-nums mt-1">{pct}%</div>
+                <div className="text-[11px] opacity-70">
+                  {covered}/{total} requirements
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="border border-slate-200 rounded-lg overflow-hidden">
+          <div className="bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 grid grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))_60px] gap-2 items-center">
+            <span>Requirement</span>
+            {LIFECYCLE_STAGES.map((s) => (
+              <span key={s} className="text-center">{STAGE_META[s].label}</span>
+            ))}
+            <span className="text-right">Score</span>
+          </div>
+          <ScrollArea className="max-h-[420px]">
+            <ul className="divide-y divide-slate-100">
+              {data.requirements.map((r) => (
+                <li
+                  key={r.requirementId}
+                  className="px-3 py-2 grid grid-cols-[minmax(0,1.4fr)_repeat(5,minmax(0,1fr))_60px] gap-2 items-center text-sm hover:bg-slate-50/60"
+                  data-testid={`lifecycle-row-${r.requirementCode}`}
+                >
+                  <div className="min-w-0">
+                    <div className="font-mono text-xs text-slate-600">{r.requirementCode}</div>
+                    <div className="truncate text-slate-900">{r.requirementTitle}</div>
+                  </div>
+                  {LIFECYCLE_STAGES.map((stage) => {
+                    const info = r.stages[stage];
+                    const covered = info.status === "covered";
+                    const evidence = info.evidence
+                      .map((e) => `[${e.source}] ${e.label}`)
+                      .join("\n");
+                    return (
+                      <div
+                        key={stage}
+                        className="flex justify-center"
+                        title={covered ? evidence : "No evidence found for this stage"}
+                      >
+                        <span
+                          className={
+                            "inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold " +
+                            (covered
+                              ? "bg-emerald-500 text-white"
+                              : "bg-slate-200 text-slate-400")
+                          }
+                          data-testid={`lifecycle-cell-${r.requirementCode}-${stage}`}
+                        >
+                          {covered ? info.evidence.length : "·"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="text-right">
+                    <Badge
+                      variant="outline"
+                      className={
+                        "font-mono text-[11px] " +
+                        (r.score === 5
+                          ? "border-emerald-300 text-emerald-700 bg-emerald-50"
+                          : r.score >= 3
+                          ? "border-amber-300 text-amber-700 bg-amber-50"
+                          : "border-rose-300 text-rose-700 bg-rose-50")
+                      }
+                    >
+                      {r.score}/5
+                    </Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </ScrollArea>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

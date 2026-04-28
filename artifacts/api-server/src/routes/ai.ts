@@ -19,6 +19,7 @@ import {
   traceabilityLinksTable,
   complianceFrameworksTable,
   complianceControlsTable,
+  complianceEvidenceTable,
   activityEventsTable,
   legacySystemsTable,
   aiConversationsTable,
@@ -26,6 +27,7 @@ import {
   projectSourcesTable,
   sourceFilesTable,
   defectsTable,
+  testCasesTable,
 } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
@@ -893,6 +895,57 @@ Rules:
   const totalCitedFiles = evidenceBySource.reduce((n, s) => n + s.cited.length, 0);
   const totalIndexedFiles = evidenceBySource.reduce((n, s) => n + s.fileCount, 0);
 
+  // ---- Pack C — auto-mark "met" controls as AI-asserted + log evidence ----
+  // For every control the model judged "met" we:
+  //   1. flip the control row to status="met", assertion="ai_asserted" (only if it
+  //      isn't already verified — never downgrade a human verdict).
+  //   2. insert a complianceEvidenceTable row capturing each cited evidence file
+  //      so the locker has a full audit trail.
+  let controlsAutoMarked = 0;
+  let evidenceAutoCreated = 0;
+  for (const a of result.controlAssessments ?? []) {
+    if (a.verdict !== "met") continue;
+    const ctrl = codeToControl.get(a.controlCode);
+    if (!ctrl) continue;
+    if (ctrl.assertion !== "verified") {
+      await db
+        .update(complianceControlsTable)
+        .set({ status: "met", assertion: "ai_asserted" })
+        .where(eq(complianceControlsTable.id, ctrl.id));
+      controlsAutoMarked++;
+    }
+    const cited = Array.isArray(a.evidenceFiles) ? a.evidenceFiles.slice(0, 12) : [];
+    if (cited.length === 0) {
+      // Even with no file evidence, log the AI assertion itself so the
+      // locker shows *something* the user can verify or reject.
+      await db.insert(complianceEvidenceTable).values({
+        id: randomUUID(),
+        projectId: project.id,
+        controlId: ctrl.id,
+        frameworkId: framework.id,
+        kind: "note",
+        refLabel: `AI audit: ${a.recommendation.slice(0, 200)}`,
+        source: "ai",
+        status: "ai_asserted",
+      });
+      evidenceAutoCreated++;
+    } else {
+      for (const path of cited) {
+        await db.insert(complianceEvidenceTable).values({
+          id: randomUUID(),
+          projectId: project.id,
+          controlId: ctrl.id,
+          frameworkId: framework.id,
+          kind: "file",
+          refLabel: String(path).slice(0, 400),
+          source: "ai",
+          status: "ai_asserted",
+        });
+        evidenceAutoCreated++;
+      }
+    }
+  }
+
   // Standard-native rating overlay. Each framework (ASPICE, NIST CSF,
   // ISO 27001, IEC 61508, …) has its own audit vocabulary. We deterministically
   // derive the standard-native rating from the universal verdicts +
@@ -1011,31 +1064,43 @@ router.post("/ai/traceability-audit", consumeCredit(), aiHandler(async (req, res
     });
   }
 
-  // Heuristic pre-classification of paths into design/code/test/report buckets.
-  // The AI uses these as hints but can override.
+  // Heuristic pre-classification of paths into the FIVE lifecycle stages
+  // (architecture / design / implementation / testing / deployment). The AI
+  // uses these as hints but can override.
+  const isArchitecture = (p: string) =>
+    /(^|\/)(architecture|arch|adr|c4)\//i.test(p) ||
+    /(ARCHITECTURE|ADR-[0-9]{2,}|C4)\.(md|adoc|rst|txt)$/i.test(p);
   const isDesign = (p: string) =>
-    /\.(md|mdx|adoc|rst)$/i.test(p) ||
-    /(^|\/)(docs?|design|architecture|adr|specs?)\//i.test(p) ||
-    /(README|ARCHITECTURE|DESIGN|SPEC|RFC)\.(md|txt)$/i.test(p);
+    /(^|\/)(design|hld|lld|specs?|rfcs?)\//i.test(p) ||
+    /(DESIGN|HLD|LLD|SPEC|RFC)\.(md|adoc|rst|txt)$/i.test(p) ||
+    (/\.(md|mdx|adoc|rst)$/i.test(p) && /(^|\/)(docs?)\//i.test(p));
   const isTest = (p: string) =>
     /(\.|_|\/)(test|spec)s?(\.|\/)/i.test(p) ||
-    /(^|\/)(tests?|__tests__|cypress|e2e|playwright)\//i.test(p) ||
+    /(^|\/)(tests?|__tests__|cypress|e2e|playwright|vitest|jest)\//i.test(p) ||
     /\.(test|spec)\.[jt]sx?$/i.test(p);
-  const isReport = (p: string) =>
-    /(coverage|junit|cobertura|allure|playwright-report|test-results|cypress\/results|reports?)\b/i.test(p) ||
-    /\.(xml|json|html)$/i.test(p) && /(report|coverage|junit|allure)/i.test(p);
-  const isCode = (p: string) =>
+  const isDeployment = (p: string) =>
+    /(^|\/)(Dockerfile($|\.)|docker-compose|k8s\/|kubernetes\/|helm\/|terraform\/|infra\/|deploy\/|deployment\/|\.github\/workflows\/|\.gitlab-ci\.yml$|Jenkinsfile($|\.)|cloudformation\/|pulumi\/)/i.test(p);
+  const isImplementation = (p: string) =>
     /\.(ts|tsx|js|jsx|py|go|rs|java|kt|cs|cpp|c|h|hpp|rb|php|swift|m|mm|sql)$/i.test(p) &&
     !isTest(p);
 
-  const buckets: Record<string, { design: string[]; code: string[]; tests: string[]; reports: string[] }> = {};
+  type StageBucket = {
+    architecture: string[];
+    design: string[];
+    implementation: string[];
+    testing: string[];
+    deployment: string[];
+  };
+  const buckets: Record<string, StageBucket> = {};
   for (const s of sourceSummaries) {
-    buckets[s.id] = { design: [], code: [], tests: [], reports: [] };
+    buckets[s.id] = { architecture: [], design: [], implementation: [], testing: [], deployment: [] };
     for (const p of s.paths) {
-      if (isReport(p)) buckets[s.id].reports.push(p);
-      else if (isTest(p)) buckets[s.id].tests.push(p);
+      // Order matters — deployment > testing > architecture > design > implementation.
+      if (isDeployment(p)) buckets[s.id].deployment.push(p);
+      else if (isTest(p)) buckets[s.id].testing.push(p);
+      else if (isArchitecture(p)) buckets[s.id].architecture.push(p);
       else if (isDesign(p)) buckets[s.id].design.push(p);
-      else if (isCode(p)) buckets[s.id].code.push(p);
+      else if (isImplementation(p)) buckets[s.id].implementation.push(p);
     }
   }
 
@@ -1044,8 +1109,8 @@ router.post("/ai/traceability-audit", consumeCredit(), aiHandler(async (req, res
     : sourceSummaries.map((s) => {
         const b = buckets[s.id]!;
         const fmt = (label: string, arr: string[]) =>
-          `${label} (${arr.length}):\n${arr.slice(0, 80).map((p) => `  - ${p}`).join("\n") || "  (none detected)"}`;
-        return `### Source: ${s.label} [${s.kind}] — ${s.fileCount} files\n${fmt("Design / docs", b.design)}\n${fmt("Code", b.code)}\n${fmt("Tests", b.tests)}\n${fmt("Test reports", b.reports)}`;
+          `${label} (${arr.length}):\n${arr.slice(0, 60).map((p) => `  - ${p}`).join("\n") || "  (none detected)"}`;
+        return `### Source: ${s.label} [${s.kind}] — ${s.fileCount} files\n${fmt("Architecture (ADRs, C4, arch/)", b.architecture)}\n${fmt("Design (HLD/LLD/specs/RFCs)", b.design)}\n${fmt("Implementation (source code)", b.implementation)}\n${fmt("Testing (unit/integration/e2e)", b.testing)}\n${fmt("Deployment (CI, infra, runbooks)", b.deployment)}`;
       }).join("\n\n");
 
   const reqBlock = reqs.map((r) => {
@@ -1053,11 +1118,12 @@ router.post("/ai/traceability-audit", consumeCredit(), aiHandler(async (req, res
     return `${r.code} [${r.type}/${r.status}] ${r.title}\n  description: ${(r.description ?? "").slice(0, 280)}\n  declared links: ${ls.length === 0 ? "(none)" : ls.map((l) => `${l.kind}→${l.path}`).join(", ")}`;
   }).join("\n");
 
-  const system = `You are Auditee's traceability & completeness auditor. For every requirement, decide whether it is covered at FOUR stages of the development lifecycle:
-  1) Design — has a design doc / architecture note / ADR explained how this will be built?
-  2) Code — does the implementation exist in source files?
-  3) Tests — are there test cases (unit / integration / e2e) for this requirement?
-  4) Test reports — is there evidence the tests have actually been run (coverage report, JUnit XML, CI artifact, etc.)?
+  const system = `You are Auditee's end-to-end lifecycle traceability & completeness auditor. For every requirement, decide whether it is covered at FIVE stages of the software development lifecycle:
+  1) Architecture — is there an architecture description, ADR, C4 diagram or architectural rationale anchoring this requirement? (ISO/IEC/IEEE 42010 framing.)
+  2) Design — is there an HLD / LLD / functional spec / RFC describing HOW this will be built? (IEEE 1016 framing.)
+  3) Implementation — does the source code that delivers this requirement exist?
+  4) Testing — are there unit / integration / e2e test cases for this requirement?
+  5) Deployment — is there CI/CD, infra-as-code (Dockerfile, k8s, terraform), release runbook or deployment doc that ships this?
 
 Use BOTH the declared traceability links AND the source file listings to decide. Match by requirement code (e.g. HEL-0001) appearing in path/filename, by feature keyword, or by obvious domain mapping. Be conservative — if you cannot cite any artefact, mark "missing".
 
@@ -1067,30 +1133,32 @@ Return strict JSON:
  "headlineFindings": string[],
  "requirementCoverage":[{
    "requirementCode": string,
-   "design":   {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
-   "code":     {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
-   "tests":    {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
-   "reports":  {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "architecture":   {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "design":         {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "implementation": {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "testing":        {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
+   "deployment":     {"status":"covered"|"partial"|"missing", "artifacts": string[], "note": string},
    "recommendation": string
  }]
 }
 Rules:
-- Return EXACTLY ONE entry per provided requirement code, no duplicates, no extras. The list must contain every code in the "Requirements" block, even if all four stages are missing.
+- Return EXACTLY ONE entry per provided requirement code, no duplicates, no extras. The list must contain every code in the "Requirements" block, even if all five stages are missing.
 - requirementCode must be one of the provided codes (verbatim).
 - artifacts: file paths verbatim from the listings or declared links. Do not invent paths. May be empty.
 - note: ONE short sentence explaining what was (or wasn't) found.
-- recommendation: ONE concrete next action for this requirement (e.g. "Add e2e test in tests/auth.e2e.ts covering MFA flow").
-- headlineFindings: 2–4 short bullets about systemic gaps (e.g. "12 of 18 requirements have no test coverage").`;
+- recommendation: ONE concrete next action for this requirement (e.g. "Add e2e test in tests/auth.e2e.ts covering MFA flow", "Author an ADR for the chosen MFA mechanism").
+- headlineFindings: 2–4 short bullets about systemic lifecycle gaps (e.g. "14 of 18 requirements have no architecture artefact", "Deployment story is undocumented across the board").`;
 
   const user = `Project: ${project.name}\n\nRequirements (${reqs.length}):\n${reqBlock}\n\nProject sources:\n${sourceBlock}`;
 
   type CoverageStage = { status: "covered" | "partial" | "missing"; artifacts: string[]; note: string };
   type ReqCoverage = {
     requirementCode: string;
+    architecture: CoverageStage;
     design: CoverageStage;
-    code: CoverageStage;
-    tests: CoverageStage;
-    reports: CoverageStage;
+    implementation: CoverageStage;
+    testing: CoverageStage;
+    deployment: CoverageStage;
     recommendation: string;
   };
   type TraceResult = {
@@ -1102,13 +1170,13 @@ Rules:
 
   // Reconcile model output against authoritative requirement set.
   // Any requirement code the model omitted (or returned with invalid shape) is treated as
-  // fully missing across all 4 stages, so completeness can never be inflated by omissions.
+  // fully missing across all 5 stages, so completeness can never be inflated by omissions.
   const MISSING_STAGE: { status: "missing"; artifacts: string[]; note: string } = {
     status: "missing",
     artifacts: [],
     note: "Model returned no coverage entry for this requirement.",
   };
-  function normalizeStage(s: any): { status: "covered" | "partial" | "missing"; artifacts: string[]; note: string } {
+  function normalizeStage(s: any): CoverageStage {
     const status =
       s?.status === "covered" || s?.status === "partial" || s?.status === "missing"
         ? s.status
@@ -1123,22 +1191,37 @@ Rules:
       modelByCode.set(r.requirementCode, r);
     }
   }
+  const STAGE_KEYS = ["architecture", "design", "implementation", "testing", "deployment"] as const;
+  type StageKey = (typeof STAGE_KEYS)[number];
+  // Back-compat: older payloads from the model might still emit "code"/"tests"/
+  // "reports" keys. Map them onto the new stage names so a stale prompt cache
+  // doesn't degrade scores to zero. "reports" rolls up into "testing" because
+  // it's evidence that tests have actually been run.
+  function pickStage(m: any, key: StageKey): CoverageStage {
+    if (!m) return { ...MISSING_STAGE };
+    const direct = m[key];
+    if (direct) return normalizeStage(direct);
+    if (key === "implementation" && m.code) return normalizeStage(m.code);
+    if (key === "testing" && (m.tests || m.reports)) return normalizeStage(m.tests ?? m.reports);
+    return { ...MISSING_STAGE };
+  }
   const reconciled = reqs.map((req) => {
     const m = modelByCode.get(req.code);
     return {
       requirementCode: req.code,
-      design: m ? normalizeStage(m.design) : { ...MISSING_STAGE },
-      code: m ? normalizeStage(m.code) : { ...MISSING_STAGE },
-      tests: m ? normalizeStage(m.tests) : { ...MISSING_STAGE },
-      reports: m ? normalizeStage(m.reports) : { ...MISSING_STAGE },
+      architecture: pickStage(m, "architecture"),
+      design: pickStage(m, "design"),
+      implementation: pickStage(m, "implementation"),
+      testing: pickStage(m, "testing"),
+      deployment: pickStage(m, "deployment"),
       recommendation:
         m && typeof m.recommendation === "string" && m.recommendation.trim()
           ? m.recommendation
-          : "Establish design, code, tests, and reports for this requirement.",
+          : "Establish architecture, design, implementation, testing, and deployment artefacts for this requirement.",
     };
   });
 
-  // Compute completeness % — average of 4 stage scores across ALL project requirements
+  // Compute completeness % — average of 5 stage scores across ALL project requirements
   // (not just those returned by the model). covered=1, partial=0.5, missing=0
   function scoreStage(s: { status: string }): number {
     if (s.status === "covered") return 1;
@@ -1146,30 +1229,39 @@ Rules:
     return 0;
   }
   let totalScore = 0;
-  const stageTotals = { design: 0, code: 0, tests: 0, reports: 0 };
+  const stageTotals: Record<StageKey, number> = {
+    architecture: 0,
+    design: 0,
+    implementation: 0,
+    testing: 0,
+    deployment: 0,
+  };
   for (const r of reconciled) {
+    const a = scoreStage(r.architecture);
     const d = scoreStage(r.design);
-    const c = scoreStage(r.code);
-    const t = scoreStage(r.tests);
-    const rp = scoreStage(r.reports);
-    totalScore += (d + c + t + rp) / 4;
+    const i = scoreStage(r.implementation);
+    const t = scoreStage(r.testing);
+    const dep = scoreStage(r.deployment);
+    totalScore += (a + d + i + t + dep) / 5;
+    stageTotals.architecture += a;
     stageTotals.design += d;
-    stageTotals.code += c;
-    stageTotals.tests += t;
-    stageTotals.reports += rp;
+    stageTotals.implementation += i;
+    stageTotals.testing += t;
+    stageTotals.deployment += dep;
   }
   const totalReqs = reconciled.length;
   const completenessPercentage = totalReqs > 0 ? Math.round((totalScore / totalReqs) * 100) : 0;
-  const stagePercentages = {
+  const stagePercentages: Record<StageKey, number> = {
+    architecture: totalReqs ? Math.round((stageTotals.architecture / totalReqs) * 100) : 0,
     design: totalReqs ? Math.round((stageTotals.design / totalReqs) * 100) : 0,
-    code: totalReqs ? Math.round((stageTotals.code / totalReqs) * 100) : 0,
-    tests: totalReqs ? Math.round((stageTotals.tests / totalReqs) * 100) : 0,
-    reports: totalReqs ? Math.round((stageTotals.reports / totalReqs) * 100) : 0,
+    implementation: totalReqs ? Math.round((stageTotals.implementation / totalReqs) * 100) : 0,
+    testing: totalReqs ? Math.round((stageTotals.testing / totalReqs) * 100) : 0,
+    deployment: totalReqs ? Math.round((stageTotals.deployment / totalReqs) * 100) : 0,
   };
 
   await logActivity(
     "compliance",
-    `Auditee ran traceability/completeness audit on ${project.name}: ${result.overallVerdict} (${completenessPercentage}%)`,
+    `Auditee ran lifecycle traceability audit on ${project.name}: ${result.overallVerdict} (${completenessPercentage}%)`,
     "Auditee",
     project.slug ?? project.id,
   );
@@ -1187,10 +1279,11 @@ Rules:
       sourceLabel: s.label,
       sourceKind: s.kind,
       fileCount: s.fileCount,
+      architectureCount: buckets[s.id]?.architecture.length ?? 0,
       designCount: buckets[s.id]?.design.length ?? 0,
-      codeCount: buckets[s.id]?.code.length ?? 0,
-      testCount: buckets[s.id]?.tests.length ?? 0,
-      reportCount: buckets[s.id]?.reports.length ?? 0,
+      implementationCount: buckets[s.id]?.implementation.length ?? 0,
+      testingCount: buckets[s.id]?.testing.length ?? 0,
+      deploymentCount: buckets[s.id]?.deployment.length ?? 0,
     })),
   });
 }));
@@ -1661,7 +1754,150 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
     code,
   );
 
-  res.status(201).json({ created: row });
+  // ---- Pack C — auto-close compliance ----
+  // Optional: caller can supply controlId(s) and frameworkId so the new
+  // requirement immediately becomes evidence for the control(s) that the
+  // gap analysis determined it satisfies. We mark the control "Met
+  // (AI-asserted)" pending human verify.
+  const rawControlIds = Array.isArray(req.body?.controlIds)
+    ? (req.body.controlIds as unknown[]).filter((x): x is string => typeof x === "string" && x.length > 0)
+    : typeof req.body?.controlId === "string" && req.body.controlId.length > 0
+      ? [req.body.controlId as string]
+      : [];
+  const linkedControlIds: string[] = [];
+  if (rawControlIds.length > 0) {
+    const ctrls = await db
+      .select()
+      .from(complianceControlsTable)
+      .where(inArray(complianceControlsTable.id, rawControlIds.slice(0, 12)));
+    for (const ctrl of ctrls) {
+      await db.insert(complianceEvidenceTable).values({
+        id: randomUUID(),
+        projectId,
+        controlId: ctrl.id,
+        frameworkId: ctrl.frameworkId,
+        kind: "requirement",
+        refId: row.id,
+        refLabel: `${code} — ${title.slice(0, 200)}`,
+        source: "ai",
+        status: "ai_asserted",
+      });
+      // Only auto-promote control to "met (ai_asserted)" when it isn't
+      // already verified — never downgrade a human verdict.
+      if (ctrl.assertion !== "verified") {
+        await db
+          .update(complianceControlsTable)
+          .set({ status: "met", assertion: "ai_asserted" })
+          .where(eq(complianceControlsTable.id, ctrl.id));
+      }
+      linkedControlIds.push(ctrl.id);
+    }
+    if (linkedControlIds.length > 0) {
+      await logActivity(
+        "compliance",
+        `${code} auto-asserted as evidence for ${linkedControlIds.length} control(s) — pending verification`,
+        "Auditee",
+        code,
+      );
+    }
+  }
+
+  res.status(201).json({ created: row, linkedControlIds });
+}));
+
+// =============================================================
+// AI: Generate Test Cases — for a single requirement, draft a
+// suite of executable test cases (functional, negative, NFR)
+// and persist them in `test_cases`. Returns the inserted rows.
+// =============================================================
+router.post("/ai/generate-test-cases", consumeCredit(), aiHandler(async (req, res) => {
+  const requirementId = requireString(req.body?.requirementId, "requirementId", { min: 1 });
+  const [req_] = await db
+    .select()
+    .from(requirementsTable)
+    .where(eq(requirementsTable.id, requirementId));
+  if (!req_) {
+    res.status(404).json({ error: "Requirement not found" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, req_.projectId, "developer");
+  if (access === false) return;
+
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.id, req_.projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const sysPrompt = `You are Auditee's Senior QA architect. Generate a comprehensive test-case suite for ONE requirement.
+
+Return STRICT JSON of shape:
+{"testCases":[{"title":string,"type":"functional"|"negative"|"non_functional"|"acceptance","priority":"low"|"medium"|"high"|"critical","steps":string[],"expected":string}]}
+
+Rules:
+- 4-8 test cases total. Cover at least: 1 happy-path functional, 1 boundary/edge functional, 1-2 negative (invalid input / unauthorized / failure mode), and at least 1 non_functional OR acceptance.
+- title: ≤140 chars, action-first ("Reject login with empty password").
+- steps: 2-7 ordered imperative steps, each ≤200 chars. Include preconditions in step 1 if needed.
+- expected: single-paragraph observable result (≤400 chars). Concrete, testable.
+- priority: derive from requirement priority + risk; security/compliance failures are high or critical.
+- Output JSON only, no commentary.`;
+
+  const userPrompt = `Project: ${project.name}
+Requirement: ${req_.code} — ${req_.title}
+Type: ${req_.type}  Priority: ${req_.priority}
+Description:
+${req_.description ?? "(none)"}`;
+
+  type GenResult = {
+    testCases?: Array<{
+      title: string;
+      type: string;
+      priority: string;
+      steps: string[];
+      expected: string;
+    }>;
+  };
+  const result = await jsonCompletion<GenResult>(sysPrompt, userPrompt, { maxTokens: 4000 });
+  const cases = Array.isArray(result.testCases) ? result.testCases.slice(0, 12) : [];
+
+  const VALID_TYPES = new Set(["functional", "negative", "non_functional", "acceptance"]);
+  const VALID_PRIORITY = new Set(["low", "medium", "high", "critical"]);
+
+  const inserted: Array<typeof testCasesTable.$inferSelect> = [];
+  for (const tc of cases) {
+    if (typeof tc?.title !== "string" || tc.title.trim().length < 3) continue;
+    const row = await db
+      .insert(testCasesTable)
+      .values({
+        id: randomUUID(),
+        projectId: req_.projectId,
+        requirementId: req_.id,
+        title: String(tc.title).slice(0, 240),
+        type: VALID_TYPES.has(tc.type) ? tc.type : "functional",
+        priority: VALID_PRIORITY.has(tc.priority) ? tc.priority : "medium",
+        steps: Array.isArray(tc.steps)
+          ? tc.steps.filter((s): s is string => typeof s === "string").map((s) => s.slice(0, 600)).slice(0, 12)
+          : [],
+        expected: typeof tc.expected === "string" ? tc.expected.slice(0, 2000) : "",
+        status: "draft",
+        tags: ["ai-generated", req_.code],
+        createdBy: "Auditee",
+      })
+      .returning();
+    inserted.push(row[0]);
+  }
+
+  await logActivity(
+    "test_case",
+    `Generated ${inserted.length} test case(s) for ${req_.code}`,
+    "Auditee",
+    req_.code,
+  );
+
+  res.status(201).json({ created: inserted, count: inserted.length });
 }));
 
 // =============================================================

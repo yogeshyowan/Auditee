@@ -38,6 +38,7 @@ import Activity from "@/pages/app/Activity";
 import Ask from "@/pages/app/Ask";
 import Capa from "@/pages/app/Capa";
 import Reports from "@/pages/app/Reports";
+import TestCases from "@/pages/app/TestCases";
 import Workflows from "@/pages/app/Workflows";
 import Analytics from "@/pages/app/Analytics";
 import RecurringAudits from "@/pages/app/RecurringAudits";
@@ -151,6 +152,7 @@ function AppRoutes() {
           <Route path="/app/ask" component={Ask} />
           <Route path="/app/capa" component={Capa} />
           <Route path="/app/reports" component={Reports} />
+          <Route path="/app/tests" component={TestCases} />
           <Route path="/app/workflows" component={Workflows} />
           <Route path="/app/analytics" component={Analytics} />
           <Route path="/app/recurring-audits" component={RecurringAudits} />

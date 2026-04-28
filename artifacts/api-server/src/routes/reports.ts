@@ -108,7 +108,21 @@ router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
   }
   const access = await requireProjectAccessInline(req, res, projectId, "developer");
   if (access === false) return;
-  const kind: string = ["compliance_audit", "requirements_summary", "traceability", "exec_brief", "brd", "prd", "frd", "test_cases"].includes(b.kind)
+  const kind: string = [
+    "compliance_audit",
+    "requirements_summary",
+    "traceability",
+    "exec_brief",
+    "brd",
+    "prd",
+    "frd",
+    "test_cases",
+    "architecture_doc",
+    "hld",
+    "lld",
+    "deployment_doc",
+    "user_manual",
+  ].includes(b.kind)
     ? b.kind
     : "exec_brief";
   const tone: string = ["executive", "technical", "regulator"].includes(b.tone) ? b.tone : "executive";
@@ -253,6 +267,82 @@ router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
   7. "Execution & Maintenance Notes" — recommended test environments, data setup, ownership.`,
       minSections: 6,
       maxSections: 8,
+    },
+    architecture_doc: {
+      label: "Architecture Description",
+      sectionGuide: `This is a CANONICAL Architecture Description aligned to ISO/IEC/IEEE 42010:2022 (Systems and software engineering — Architecture description). Produce these sections, in this order, using EXACTLY these headings:
+  1. "System Overview & Mission" — one-paragraph statement of what the system is for and the value it delivers; cite the BRD/PRD codes.
+  2. "Stakeholders & Concerns" — table-style list (in prose) of every distinct stakeholder (sponsor, end-user, regulator, ops, security, finance, supplier) and their primary architectural concerns (e.g., latency, auditability, cost, data residency).
+  3. "Architecture Drivers" — quality attributes (security, scalability, availability, performance, modifiability, cost) ordered by priority with quantified targets where the data supports it.
+  4. "System Context" — what is inside vs. outside the system boundary; external actors, upstream/downstream systems, integration points.
+  5. "Logical / Functional View" — major capabilities and how they map to coarse-grained components/services. Cite functional requirement codes per capability.
+  6. "Process / Runtime View" — key runtime scenarios (auth, primary user journey, batch, failure recovery) described as numbered step sequences. Cite NFR codes for performance/SLA targets.
+  7. "Data View" — entities, ownership, data flow, retention, classification (PII / regulated / public); cite data-related controls.
+  8. "Deployment View" — physical topology: environments, regions, network zones, third-party SaaS dependencies; call out high-availability and disaster-recovery posture.
+  9. "Cross-cutting Concerns" — security, identity, observability, internationalisation, accessibility — one paragraph each.
+  10. "Architecture Decision Records (ADRs)" — list 4-8 significant decisions in this format inside the section body: "ADR-NN — <title>: Context / Decision / Consequences". Cite the requirement or compliance code each decision is anchored to.
+  11. "Risks, Trade-offs & Open Questions" — top 3-6 architectural risks with likelihood/impact and proposed mitigations.`,
+      minSections: 9,
+      maxSections: 11,
+    },
+    hld: {
+      label: "High-Level Design",
+      sectionGuide: `This is a CANONICAL High-Level Software Design Description aligned to IEEE 1016. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Design Overview & Drivers" — one-paragraph summary plus the design drivers (quality attributes, constraints) inherited from the architecture.
+  2. "Module Decomposition" — top-level modules / services / packages and their responsibilities. One bullet per module: name, responsibility, owns-which-data, depends-on. Cite requirement codes that justify each module.
+  3. "Component Interactions" — describe the 4-8 most important component-to-component interactions in narrative form. For each: trigger, participants, message/payload summary, expected outcome.
+  4. "External Interface Design" — every API the system exposes (REST / GraphQL / gRPC / events). For each: purpose, method+path or topic, request shape (bullets), response shape, error semantics. Cite interface-related requirements/controls.
+  5. "Data Design (HL)" — major entities, relationships, ownership boundaries, key indices, data lifecycle. No SQL — narrative + bulleted attributes.
+  6. "Tech Stack & Frameworks" — chosen languages, frameworks, datastores, message brokers, third-party services; one-line justification per choice tied to a driver.
+  7. "Cross-cutting Design Concerns" — auth/authz, logging, metrics, tracing, config, secrets, error model — one paragraph each.
+  8. "Design Constraints & Assumptions" — explicit list; flag anything the architecture assumed that the HLD now relies on.
+  9. "Open Design Questions" — 3-6 unresolved decisions with proposed options and a recommendation.`,
+      minSections: 7,
+      maxSections: 10,
+    },
+    lld: {
+      label: "Low-Level Design",
+      sectionGuide: `This is a CANONICAL Low-Level Software Design Description aligned to IEEE 1016. Produce these sections, in this order, using EXACTLY these headings:
+  1. "LLD Scope & Module Map" — which HLD modules this LLD covers; one paragraph per covered module restating its responsibility.
+  2. "Class / Module Specifications" — for each significant class/module: name, purpose, key fields, key methods (signatures), invariants, owners. Cite requirement codes the class implements.
+  3. "Function / Method Specifications" — for the 6-12 most critical functions, write a spec block: "<FunctionName>(args) -> ReturnType — Purpose / Preconditions / Postconditions / Side-effects / Error cases". Cite requirement codes.
+  4. "API Endpoint Contracts" — every public endpoint with: HTTP method+path, auth requirement, path/query/body params (with types and validation rules), success response schema, error response schema, status codes. Cite interface requirements.
+  5. "Data Structures & Schema" — table-by-table breakdown: columns (name, type, nullable, default), primary key, foreign keys, unique constraints, indexes, retention. Cite data requirements/controls.
+  6. "Algorithms & Pseudocode" — for any non-trivial algorithm (matching, scoring, scheduling, conflict resolution): purpose, inputs, outputs, step-by-step pseudocode, complexity (Big-O), edge cases.
+  7. "Error Handling, Logging & Tracing" — error taxonomy, retry policy, log level conventions, correlation/trace ID propagation rules.
+  8. "Concurrency, Transactions & State" — locking strategy, transaction boundaries, idempotency keys, optimistic vs. pessimistic concurrency, state machines (with allowed transitions).`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    deployment_doc: {
+      label: "Deployment Document",
+      sectionGuide: `This is a CANONICAL Deployment Document covering build, release, operations and rollback. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Deployment Overview" — what gets deployed, how often, by whom, what the SLOs are.
+  2. "Environment Topology" — list every environment (dev / qa / staging / prod / dr) with intended purpose, data classification, who has access, and how it differs from prod.
+  3. "Infrastructure Components" — compute, datastores, queues, caches, CDN, secrets store, identity provider — one bullet per component naming the provider, region, sizing/scale tier, and the requirement/control it backs.
+  4. "Build & CI Pipeline" — source repo layout, branch strategy, CI stages (lint → unit → integration → security scan → build → publish), artefact storage, signing.
+  5. "Release Strategy" — promotion model (manual gate / blue-green / canary / progressive), feature-flag conventions, schema-migration playbook, backwards-compat policy.
+  6. "Configuration & Secrets Management" — how config differs across envs, where secrets live, rotation cadence, who can read them, audit trail.
+  7. "Monitoring, Alerting & Observability" — metrics dashboards, log aggregation, distributed tracing, SLI/SLO/SLA, on-call routing, alert thresholds.
+  8. "Backup, Recovery & DR" — what's backed up, RPO, RTO, restore drill cadence, DR region failover steps.
+  9. "Rollback Procedure" — step-by-step rollback for the most likely failure modes (bad release, bad migration, regional outage). Include decision criteria.
+  10. "Operational Runbook" — common incident playbooks (high error rate, slow API, full disk, expired cert), each as ordered steps with expected outputs.`,
+      minSections: 8,
+      maxSections: 10,
+    },
+    user_manual: {
+      label: "User Manual",
+      sectionGuide: `This is a CANONICAL User Manual aligned to IEEE 1063 (Software user documentation). Audience-first, task-oriented, screen-aware. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Audience & Conventions" — who this manual is for (named personas/roles), prerequisite knowledge, typographic conventions, support channel.
+  2. "Getting Started" — first-run checklist: how to access the system, sign in, create a workspace/project, and reach the home screen. Numbered steps.
+  3. "Key Concepts" — define every domain term the user will see in the UI (workspace, project, requirement, traceability link, control, framework, etc.) in 1-2 sentences each.
+  4. "How-to: Core Tasks" — for each of the top 6-10 user goals (e.g. "Create a requirement", "Generate a BRD", "Run a gap analysis", "Invite a teammate"), write a numbered step-by-step procedure. Each step references the actual UI element ("click the **Generate report** button in the top-right").
+  5. "Reference: Screens & Settings" — for each major screen: name, purpose, key controls, data shown, common actions. List user roles and what each can/can't do.
+  6. "Permissions & Roles" — table-style summary (in prose) of workspace roles and project roles, with what each role can and cannot do.
+  7. "Troubleshooting & FAQ" — top 8-15 issues a user will hit, each as "Symptom → Cause → Resolution" plus an FAQ block.
+  8. "Glossary" — alphabetised plain-English definitions for every acronym and product-specific term used in this manual.`,
+      minSections: 7,
+      maxSections: 9,
     },
   };
   const blueprint = KIND_BLUEPRINT[kind] ?? KIND_BLUEPRINT.exec_brief!;

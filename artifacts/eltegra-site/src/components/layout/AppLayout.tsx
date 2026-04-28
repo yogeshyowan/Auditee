@@ -22,7 +22,8 @@ import {
   KeyRound,
   FileSearch,
   Plus,
-  Users
+  Users,
+  Beaker
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -46,6 +47,7 @@ const NAV_ITEMS = [
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/app/capa", label: "CAPA Actions", icon: AlertTriangle },
   { href: "/app/defects", label: "Defects", icon: Bug },
+  { href: "/app/tests", label: "Test Cases", icon: Beaker },
   { href: "/app/reports", label: "AI Reports", icon: FileText },
   { href: "/app/workflows", label: "Workflows", icon: Workflow },
   { href: "/app/analytics", label: "Analytics", icon: BarChart3 },

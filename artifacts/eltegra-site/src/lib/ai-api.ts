@@ -3,6 +3,48 @@ import { creditAwareFetch } from "./credits";
 
 const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
+/**
+ * 5-stage lifecycle traceability — fetched via the deterministic
+ * /api/traceability/lifecycle endpoint (no AI credit consumed).
+ */
+export const LIFECYCLE_STAGES = [
+  "architecture",
+  "design",
+  "implementation",
+  "testing",
+  "deployment",
+] as const;
+export type LifecycleStage = (typeof LIFECYCLE_STAGES)[number];
+
+export type LifecycleEvidence = { label: string; source: "report" | "code" | "file" };
+export type LifecycleStageInfo = { status: "covered" | "missing"; evidence: LifecycleEvidence[] };
+export type LifecycleRequirement = {
+  requirementId: string;
+  requirementCode: string;
+  requirementTitle: string;
+  stages: Record<LifecycleStage, LifecycleStageInfo>;
+  score: number;
+};
+export type LifecycleResponse = {
+  stages: readonly LifecycleStage[];
+  requirementCount: number;
+  coveragePerStage: Record<LifecycleStage, number>;
+  overallPct: number;
+  requirements: LifecycleRequirement[];
+};
+
+export function useLifecycleTraceability(projectId: string | null | undefined) {
+  return useQuery<LifecycleResponse>({
+    queryKey: ["traceability-lifecycle", projectId],
+    queryFn: async () => {
+      const r = await fetch(`${apiBase}/traceability/lifecycle?projectId=${encodeURIComponent(projectId ?? "")}`);
+      if (!r.ok) throw new Error((await r.text()) || `Request failed (${r.status})`);
+      return r.json() as Promise<LifecycleResponse>;
+    },
+    enabled: !!projectId,
+  });
+}
+
 async function aiFetch<T>(path: string, body: unknown): Promise<T> {
   const r = await creditAwareFetch(`${apiBase}${path}`, {
     method: "POST",

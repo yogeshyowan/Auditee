@@ -23,6 +23,14 @@ import { StandardsMultiSelect } from "@/components/StandardsMultiSelect";
 
 const KIND_LABELS: Record<string, string> = {
   brd: "Business Requirements Document (BRD)",
+  prd: "Product Requirements Document (PRD)",
+  frd: "Functional Requirements Document (FRD)",
+  architecture_doc: "Architecture Description (ISO/IEC/IEEE 42010)",
+  hld: "High-Level Design (HLD, IEEE 1016)",
+  lld: "Low-Level Design (LLD, IEEE 1016)",
+  test_cases: "Test Case Suite",
+  deployment_doc: "Deployment Document",
+  user_manual: "User Manual (IEEE 1063)",
   exec_brief: "Executive briefing",
   compliance_audit: "Compliance audit report",
   requirements_summary: "Requirements summary",
@@ -32,6 +40,22 @@ const KIND_LABELS: Record<string, string> = {
 const KIND_DESCRIPTIONS: Record<string, string> = {
   brd:
     "Canonical Business Requirements Document — context, stakeholders, objectives, scope, functional & non-functional requirements, constraints, risks, acceptance.",
+  prd:
+    "Canonical Product Requirements Document — overview, goals/non-goals, personas, user stories with acceptance, FR/NFR, UX flows, release plan, open risks.",
+  frd:
+    "Canonical Functional Requirements Document — system context, FR specs, data model, interface specs, business rules, error handling, security/compliance, test strategy, ops.",
+  architecture_doc:
+    "Architecture description per ISO/IEC/IEEE 42010 — stakeholders & concerns, drivers, system context, logical/process/data/deployment views, ADRs, risks.",
+  hld:
+    "High-Level Design per IEEE 1016 — module decomposition, component interactions, external interface design, data design, tech stack, cross-cutting concerns.",
+  lld:
+    "Low-Level Design per IEEE 1016 — class/method specs, API contracts, schemas, algorithms with pseudocode, error model, concurrency & state machines.",
+  test_cases:
+    "Standards-grade test suite generated from requirements — functional, negative/edge, non-functional, e2e — each case linked back to its requirement code.",
+  deployment_doc:
+    "Build, release, observability and rollback documentation — environments, infra components, CI pipeline, release strategy, runbook, DR posture.",
+  user_manual:
+    "End-user documentation per IEEE 1063 — getting started, key concepts, task-oriented procedures, screen reference, troubleshooting, glossary.",
   exec_brief:
     "Board-ready 1–2 page summary of program health, top risks, and momentum.",
   compliance_audit:
@@ -39,7 +63,7 @@ const KIND_DESCRIPTIONS: Record<string, string> = {
   requirements_summary:
     "Coverage and quality narrative across all project requirements, grouped by type and priority.",
   traceability:
-    "Requirements → design → code → tests → reports coverage story with gaps and recommendations.",
+    "Requirements → architecture → design → code → tests → deployment coverage story with gaps and recommendations.",
 };
 
 export default function Reports() {

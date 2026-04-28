@@ -43,6 +43,7 @@ import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, Folde
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateRequirements, useFetchCodeUrl, useEstimateEffort, type EffortEstimateResult } from "@/lib/ai-api";
+import { useGenerateTestCases, useTestCases } from "@/lib/test-cases-api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSources, useSourceFiles, useSourceFileContent, useGenerateReport } from "@/lib/wave1-api";
 import { Comments } from "@/components/Comments";
@@ -1053,6 +1054,7 @@ export default function RequirementsPage() {
                     </div>
                   </div>
                 )}
+                <RequirementTestCasesPanel requirement={selected} />
                 <Comments entityType="requirement" entityId={selected.id} projectId={selected.projectId} />
               </div>
             </>
@@ -1146,5 +1148,66 @@ function CreateRequirementDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RequirementTestCasesPanel({ requirement }: { requirement: Requirement }) {
+  const [, setLocation] = useLocation();
+  const { data, isLoading } = useTestCases(requirement.projectId, requirement.id);
+  const generateMut = useGenerateTestCases(requirement.projectId);
+  const { toast } = useToast();
+  const tests = data?.testCases ?? [];
+  const summary = {
+    total: tests.length,
+    passing: tests.filter((t) => t.status === "passing").length,
+    failing: tests.filter((t) => t.status === "failing").length,
+  };
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+          <TestTube2 className="h-3.5 w-3.5" /> Test cases
+        </Label>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-xs gap-1"
+          onClick={() =>
+            generateMut.mutate(requirement.id, {
+              onSuccess: (d) => toast({ title: `Generated ${d.count} test case(s)` }),
+              onError: (e: Error) => toast({ title: "Generation failed", description: e.message, variant: "destructive" }),
+            })
+          }
+          disabled={generateMut.isPending}
+          data-testid="button-generate-test-cases-for-req"
+        >
+          {generateMut.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+          Generate
+        </Button>
+      </div>
+      <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+        {isLoading ? (
+          <span className="text-slate-400">Loading…</span>
+        ) : tests.length === 0 ? (
+          <span className="text-slate-500">No test cases yet. Click Generate to draft a suite.</span>
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <span className="font-mono">{summary.total} total</span>
+              <span className="text-emerald-700">{summary.passing} passing</span>
+              <span className="text-rose-700">{summary.failing} failing</span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[11px]"
+              onClick={() => setLocation("/app/tests")}
+            >
+              Open all →
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
