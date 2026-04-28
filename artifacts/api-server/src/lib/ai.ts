@@ -1,6 +1,6 @@
-import type OpenAI from "openai";
+import OpenAI from "openai";
 
-const MODEL = "gpt-5.4";
+const DEFAULT_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o";
 
 export class AIUnavailableError extends Error {
   constructor(message: string) {
@@ -22,13 +22,19 @@ let cachedClientError: Error | null = null;
 async function getClient(): Promise<OpenAI> {
   if (cachedClient) return cachedClient;
   if (cachedClientError) throw cachedClientError;
+
+  if (process.env.OPENAI_API_KEY) {
+    cachedClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    return cachedClient;
+  }
+
   try {
     const mod = await import("@workspace/integrations-openai-ai-server");
     cachedClient = mod.openai;
     return cachedClient;
   } catch (err) {
     cachedClientError = new AIUnavailableError(
-      "AI service is not configured. Provision the OpenAI integration to enable AI features.",
+      "AI service is not configured. Set OPENAI_API_KEY or provision the OpenAI integration to enable AI features.",
     );
     throw cachedClientError;
   }
@@ -41,7 +47,7 @@ export async function jsonCompletion<T>(
 ): Promise<T> {
   const client = await getClient();
   const response = await client.chat.completions.create({
-    model: MODEL,
+    model: DEFAULT_MODEL,
     max_completion_tokens: opts?.maxTokens ?? 8192,
     messages: [
       { role: "system", content: systemPrompt },
@@ -63,7 +69,7 @@ export async function textCompletion(
 ): Promise<string> {
   const client = await getClient();
   const response = await client.chat.completions.create({
-    model: MODEL,
+    model: DEFAULT_MODEL,
     max_completion_tokens: 8192,
     messages: [
       { role: "system", content: systemPrompt },
