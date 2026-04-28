@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "MXO8W8ZRBdpZxl8HiQ7Z3"
@@ -18,3 +17,9 @@ id = "-IipeLLkfvWpPyq9rVwSQ"
 uri = "file://artifacts/eltegra-site/public/office-bg.png"
 type = "image"
 title = "Blurred enterprise office space"
+
+[[outputs]]
+id = "NNDXXJ6TsmUBsgzH3d_U6"
+uri = "file://ABOUT.md"
+type = "text"
+title = "Montana — App Documentation"
