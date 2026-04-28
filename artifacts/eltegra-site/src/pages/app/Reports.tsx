@@ -15,56 +15,97 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { FileText, Sparkles, Download, Trash2, RefreshCw } from "lucide-react";
 import { Comments } from "@/components/Comments";
 import { StandardsMultiSelect } from "@/components/StandardsMultiSelect";
 
-const KIND_LABELS: Record<string, string> = {
-  brd: "Business Requirements Document (BRD)",
-  prd: "Product Requirements Document (PRD)",
-  frd: "Functional Requirements Document (FRD)",
-  architecture_doc: "Architecture Description (ISO/IEC/IEEE 42010)",
-  hld: "High-Level Design (HLD, IEEE 1016)",
-  lld: "Low-Level Design (LLD, IEEE 1016)",
-  test_cases: "Test Case Suite",
-  deployment_doc: "Deployment Document",
-  user_manual: "User Manual (IEEE 1063)",
-  exec_brief: "Executive briefing",
-  compliance_audit: "Compliance audit report",
-  requirements_summary: "Requirements summary",
-  traceability: "Traceability narrative",
-};
+// Grouped catalogue of every report kind, used for both the dropdown UI
+// and the display label/description maps below. Order inside each group
+// is the order the user sees in the Select.
+const KIND_GROUPS: Array<{ label: string; kinds: Array<{ kind: string; label: string; description: string }> }> = [
+  {
+    label: "Core",
+    kinds: [
+      { kind: "exec_brief", label: "Executive briefing", description: "Board-ready 1–2 page summary of program health, top risks, and momentum." },
+      { kind: "compliance_audit", label: "Compliance audit report", description: "Standards-grounded audit report against a chosen framework (ISO/SOC2/HIPAA/etc.) with control verdicts and evidence." },
+      { kind: "requirements_summary", label: "Requirements summary", description: "Coverage and quality narrative across all project requirements, grouped by type and priority." },
+      { kind: "traceability", label: "Traceability narrative", description: "Requirements → architecture → design → code → tests → deployment coverage story with gaps and recommendations." },
+    ],
+  },
+  {
+    label: "Requirements / Design / Build",
+    kinds: [
+      { kind: "brd", label: "Business Requirements Document (BRD)", description: "Canonical BRD — context, stakeholders, objectives, scope, functional & non-functional requirements, constraints, risks, acceptance." },
+      { kind: "prd", label: "Product Requirements Document (PRD)", description: "Canonical PRD — overview, goals/non-goals, personas, user stories with acceptance, FR/NFR, UX flows, release plan, open risks." },
+      { kind: "frd", label: "Functional Requirements Document (FRD)", description: "Canonical FRD — system context, FR specs, data model, interface specs, business rules, error handling, security/compliance, test strategy, ops." },
+      { kind: "architecture_doc", label: "Architecture Description (ISO/IEC/IEEE 42010)", description: "Architecture description per ISO/IEC/IEEE 42010 — stakeholders & concerns, drivers, system context, logical/process/data/deployment views, ADRs, risks." },
+      { kind: "hld", label: "High-Level Design (HLD, IEEE 1016)", description: "HLD per IEEE 1016 — module decomposition, component interactions, external interface design, data design, tech stack, cross-cutting concerns." },
+      { kind: "lld", label: "Low-Level Design (LLD, IEEE 1016)", description: "LLD per IEEE 1016 — class/method specs, API contracts, schemas, algorithms with pseudocode, error model, concurrency & state machines." },
+      { kind: "test_cases", label: "Test Case Suite", description: "Standards-grade test suite generated from requirements — functional, negative/edge, non-functional, e2e — each case linked back to its requirement code." },
+      { kind: "deployment_doc", label: "Deployment Document", description: "Build, release, observability and rollback documentation — environments, infra components, CI pipeline, release strategy, runbook, DR posture." },
+      { kind: "user_manual", label: "User Manual (IEEE 1063)", description: "End-user documentation per IEEE 1063 — getting started, key concepts, task-oriented procedures, screen reference, troubleshooting, glossary." },
+    ],
+  },
+  {
+    label: "Functional Safety (ISO 26262 / IEC 61508 / EN 50128)",
+    kinds: [
+      { kind: "safety_plan", label: "Safety Plan", description: "Project-level functional Safety Plan per ISO 26262-2 / IEC 61508-1 — scope, lifecycle, roles, tailoring, confirmation measures, change control." },
+      { kind: "hara", label: "HARA — Hazard Analysis & Risk Assessment", description: "ISO 26262-3 hazard analysis — operational situations, hazards, S/E/C classification, ASIL determination, Safety Goals." },
+      { kind: "safety_concept", label: "Functional Safety Concept (FSC)", description: "ISO 26262-3 §7 — derives FSRs from Safety Goals, allocates to preliminary architecture, defines safe states, FTTI, warning & degradation strategy." },
+      { kind: "tech_safety_concept", label: "Technical Safety Concept (TSC)", description: "ISO 26262-4 §7 — derives TSRs from FSRs, defines safety mechanisms, HW/SW allocation, ASIL decomposition with independence arguments." },
+      { kind: "safety_case", label: "Safety Case (assurance argument)", description: "GSN-style safety case per ISO 26262-2 / IEC 61508-1 — top claim, sub-claims by Safety Goal, process & product compliance, residual risk." },
+      { kind: "fmea", label: "FMEA / FMEDA", description: "AIAG-VDA / IEC 60812 failure mode analysis — functions, failure modes, S/O/D + AP, diagnostic coverage, FMEDA quantitative metrics." },
+      { kind: "fta", label: "Fault Tree Analysis (FTA)", description: "IEC 61025 deductive analysis — top event, gates, basic events, cut sets, common-cause, importance measures, design implications." },
+      { kind: "dia", label: "Development Interface Agreement (DIA)", description: "ISO 26262-8 §5 OEM↔supplier agreement — RACI per work product, joint reviews, deliverables, tailoring, communication & change management." },
+      { kind: "srs_safety", label: "Safety Requirements Specification", description: "IEC 61508-1 §7.10 — safety functions catalogue, integrity requirements (PFD/PFH), allocation, environmental constraints, validation criteria." },
+    ],
+  },
+  {
+    label: "Cybersecurity (ISO/SAE 21434 / IEC 62443 / ISO 27001 / NIST)",
+    kinds: [
+      { kind: "cybersecurity_plan", label: "Cybersecurity Plan", description: "ISO/SAE 21434 §6 / IEC 62443-4-1 — scope, lifecycle, roles, methods, vulnerability & incident management, distributed activities, end-of-cybersecurity-support." },
+      { kind: "tara", label: "TARA — Threat Analysis & Risk Assessment", description: "ISO/SAE 21434 §15 — assets, damage scenarios, threat scenarios (STRIDE), attack paths, feasibility & risk, treatment decisions, cybersecurity goals." },
+      { kind: "cybersecurity_concept", label: "Cybersecurity Concept", description: "ISO/SAE 21434 §9 — derives CSRs from CGs, controls catalogue, key & identity management, secure boot/update, monitoring & incident response." },
+      { kind: "cybersecurity_case", label: "Cybersecurity Case", description: "ISO/SAE 21434 §6.4.5 — argued, evidence-backed claim of cybersecurity across the lifecycle; process & product compliance, residual risk, EOCS plan." },
+      { kind: "security_risk_assessment", label: "Security Risk Assessment", description: "NIST SP 800-30 / ISO 27005 / IEC 62443-3-2 — assets, threats, vulnerabilities, likelihood × impact, ranked risks with treatment & framework-mapped controls." },
+    ],
+  },
+  {
+    label: "Software Aspects (DO-178C / IEC 62304 / IEEE 730)",
+    kinds: [
+      { kind: "psac", label: "Plan for Software Aspects of Certification (PSAC)", description: "RTCA DO-178C §11.1 — system & software overview, certification considerations, lifecycle, lifecycle data, schedule with SOI reviews, additional considerations." },
+      { kind: "software_dev_plan", label: "Software Development Plan (SDP)", description: "DO-178C §11.2 / IEC 62304 §5.1 — lifecycle model, environment, standards & methods, architecture strategy, COTS/SOUP policy, problem reporting." },
+      { kind: "software_verification_plan", label: "Software Verification Plan (SVP)", description: "DO-178C §11.3 / IEC 62304 §5.6 — methods, reviews, test environment, coverage criteria (incl. MC/DC), verification of verification, regression strategy." },
+      { kind: "software_qa_plan", label: "Software Quality Assurance Plan (SQAP)", description: "IEEE 730 / DO-178C §11.5 — SQA org & independence, activities, conformance reviews, anomaly & CAPA, metrics, records." },
+      { kind: "soup_list", label: "SOUP / Third-Party Software List", description: "IEC 62304 §5.3.3 / §8.1.2 — itemised SOUP/OTS inventory with functional/perf requirements, env, anomaly analysis, vulnerability monitoring." },
+    ],
+  },
+  {
+    label: "Configuration & Quality",
+    kinds: [
+      { kind: "scmp", label: "Software Configuration Management Plan (SCMP)", description: "IEEE 828 / DO-178C §11.4 / IEC 62304 §8 — SCM org, identification, baselines, change control, status accounting, audits, tooling." },
+      { kind: "ci_list", label: "Configuration Item List (CI List)", description: "Formal inventory of every CI — plans, requirements, design, source, V&V, tools, SOUP, with version & control class (CC1/CC2)." },
+      { kind: "change_control_plan", label: "Change Control Plan", description: "IEEE 828 / ISO 9001 / IEC 62304 — CR workflow, CCB authorities, classification, mandatory impact analyses, emergency hot-fix process, metrics." },
+      { kind: "vnv_plan", label: "Verification & Validation Plan (V&V)", description: "IEEE 1012 / ISO 26262-8 §9 / IEC 62304 §5.6–§5.7 — V&V tasks per phase, independence levels, test strategy, coverage, anomaly & re-verification." },
+    ],
+  },
+  {
+    label: "Risk Management",
+    kinds: [
+      { kind: "risk_management_plan", label: "Risk Management Plan", description: "ISO 14971 / ISO 31000 — risk process, identification techniques, acceptance criteria, register format, treatment, monitoring, retention." },
+    ],
+  },
+];
 
-const KIND_DESCRIPTIONS: Record<string, string> = {
-  brd:
-    "Canonical Business Requirements Document — context, stakeholders, objectives, scope, functional & non-functional requirements, constraints, risks, acceptance.",
-  prd:
-    "Canonical Product Requirements Document — overview, goals/non-goals, personas, user stories with acceptance, FR/NFR, UX flows, release plan, open risks.",
-  frd:
-    "Canonical Functional Requirements Document — system context, FR specs, data model, interface specs, business rules, error handling, security/compliance, test strategy, ops.",
-  architecture_doc:
-    "Architecture description per ISO/IEC/IEEE 42010 — stakeholders & concerns, drivers, system context, logical/process/data/deployment views, ADRs, risks.",
-  hld:
-    "High-Level Design per IEEE 1016 — module decomposition, component interactions, external interface design, data design, tech stack, cross-cutting concerns.",
-  lld:
-    "Low-Level Design per IEEE 1016 — class/method specs, API contracts, schemas, algorithms with pseudocode, error model, concurrency & state machines.",
-  test_cases:
-    "Standards-grade test suite generated from requirements — functional, negative/edge, non-functional, e2e — each case linked back to its requirement code.",
-  deployment_doc:
-    "Build, release, observability and rollback documentation — environments, infra components, CI pipeline, release strategy, runbook, DR posture.",
-  user_manual:
-    "End-user documentation per IEEE 1063 — getting started, key concepts, task-oriented procedures, screen reference, troubleshooting, glossary.",
-  exec_brief:
-    "Board-ready 1–2 page summary of program health, top risks, and momentum.",
-  compliance_audit:
-    "Standards-grounded audit report against a chosen framework (ISO/SOC2/HIPAA/etc.) with control verdicts and evidence.",
-  requirements_summary:
-    "Coverage and quality narrative across all project requirements, grouped by type and priority.",
-  traceability:
-    "Requirements → architecture → design → code → tests → deployment coverage story with gaps and recommendations.",
-};
+const KIND_LABELS: Record<string, string> = Object.fromEntries(
+  KIND_GROUPS.flatMap((g) => g.kinds.map((k) => [k.kind, k.label])),
+);
+
+const KIND_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
+  KIND_GROUPS.flatMap((g) => g.kinds.map((k) => [k.kind, k.description])),
+);
 
 export default function Reports() {
   const { projectId } = useProjectContext();
@@ -142,16 +183,23 @@ export default function Reports() {
                   <label className="text-xs font-medium text-slate-600">Report kind</label>
                   <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v })}>
                     <SelectTrigger data-testid="report-kind-select"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(KIND_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{v}</span>
-                            <span className="text-[10px] text-slate-500 max-w-[260px]">
-                              {KIND_DESCRIPTIONS[k]}
-                            </span>
-                          </div>
-                        </SelectItem>
+                    <SelectContent className="max-h-[420px]">
+                      {KIND_GROUPS.map((group) => (
+                        <SelectGroup key={group.label}>
+                          <SelectLabel className="text-[11px] uppercase tracking-wide text-slate-500">
+                            {group.label}
+                          </SelectLabel>
+                          {group.kinds.map((k) => (
+                            <SelectItem key={k.kind} value={k.kind}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{k.label}</span>
+                                <span className="text-[10px] text-slate-500 max-w-[320px]">
+                                  {k.description}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
                       ))}
                     </SelectContent>
                   </Select>

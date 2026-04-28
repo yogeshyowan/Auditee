@@ -109,10 +109,12 @@ router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
   const access = await requireProjectAccessInline(req, res, projectId, "developer");
   if (access === false) return;
   const kind: string = [
+    // Core
     "compliance_audit",
     "requirements_summary",
     "traceability",
     "exec_brief",
+    // Requirements / Design / Build
     "brd",
     "prd",
     "frd",
@@ -122,6 +124,35 @@ router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
     "lld",
     "deployment_doc",
     "user_manual",
+    // Functional safety (ISO 26262, IEC 61508, EN 50128, ISO 13849)
+    "safety_plan",
+    "hara",
+    "safety_concept",
+    "tech_safety_concept",
+    "safety_case",
+    "fmea",
+    "fta",
+    "dia",
+    "srs_safety",
+    // Cybersecurity (ISO/SAE 21434, IEC 62443, ISO 27001, NIST)
+    "cybersecurity_plan",
+    "tara",
+    "cybersecurity_concept",
+    "cybersecurity_case",
+    "security_risk_assessment",
+    // Software aspects (DO-178C, IEC 62304, IEEE 730)
+    "psac",
+    "software_dev_plan",
+    "software_verification_plan",
+    "software_qa_plan",
+    "soup_list",
+    // Configuration & quality
+    "scmp",
+    "ci_list",
+    "change_control_plan",
+    "vnv_plan",
+    // Risk
+    "risk_management_plan",
   ].includes(b.kind)
     ? b.kind
     : "exec_brief";
@@ -341,6 +372,364 @@ router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
   6. "Permissions & Roles" — table-style summary (in prose) of workspace roles and project roles, with what each role can and cannot do.
   7. "Troubleshooting & FAQ" — top 8-15 issues a user will hit, each as "Symptom → Cause → Resolution" plus an FAQ block.
   8. "Glossary" — alphabetised plain-English definitions for every acronym and product-specific term used in this manual.`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    // ============================================================
+    // FUNCTIONAL SAFETY (ISO 26262 / IEC 61508 / ISO 13849 / EN 50128)
+    // ============================================================
+    safety_plan: {
+      label: "Safety Plan",
+      sectionGuide: `This is a CANONICAL functional Safety Plan aligned to ISO 26262-2 / IEC 61508-1. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Item Definition" — the item/system the plan governs, lifecycle phase, intended use, operational environment, vehicle/system class.
+  2. "Safety Goals & Integrity Level" — top-level safety goals derived from HARA; assigned ASIL/SIL/PL with rationale; cite requirement codes.
+  3. "Safety Lifecycle & Milestones" — phases (concept, development, production, operation, decommissioning) with deliverables and gating reviews.
+  4. "Roles, Responsibilities & Competence" — Safety Manager, Functional Safety Engineer, Independent Assessor; competence requirements and training plan.
+  5. "Tailoring & Justifications" — every clause/work product tailored or omitted with rationale; reference the standard sub-clause.
+  6. "Methods, Tools & Tool Qualification" — methods chosen per phase, TCL/TD assessment for software tools, tool confidence rationale.
+  7. "Confirmation Measures & Independent Assessment" — confirmation reviews, functional safety audit, functional safety assessment with independence levels.
+  8. "Communication & Interfaces" — DIA references, interfaces with cybersecurity, with quality, with project management; meeting cadence.
+  9. "Change & Configuration Management" — link to SCMP and CI list; change-impact rules for safety-related items.
+  10. "Issue, Anomaly & Field Monitoring" — production/field feedback loop, anomaly classification, residual-risk reassessment trigger.`,
+      minSections: 8,
+      maxSections: 10,
+    },
+    hara: {
+      label: "HARA — Hazard Analysis & Risk Assessment",
+      sectionGuide: `This is a CANONICAL Hazard Analysis and Risk Assessment per ISO 26262-3 (or IEC 61508-1 §7.4 for industrial). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Item Definition Recap" — boundary, functions, operating modes, interfaces; cite the BRD/PRD codes.
+  2. "Operational Situation Analysis" — situations the item operates in (driving scenarios, road type, weather, traffic density, driver state); enumerate the catalogue used.
+  3. "Hazard Identification" — list each hazardous event in the format "HAZ-NN — Function/Malfunction → Effect at vehicle level → Possible accident". Cover loss of function, unintended activation, incorrect output, stuck values, untimely.
+  4. "Severity (S) Classification" — for each hazard assign S0–S3 with one-sentence rationale anchored to AIS injury class.
+  5. "Exposure (E) Classification" — for each hazard assign E0–E4 with rationale (frequency or duration).
+  6. "Controllability (C) Classification" — for each hazard assign C0–C3 with rationale (driver/operator avoidability).
+  7. "ASIL / SIL Determination" — for each hazard derive ASIL (or SIL/PL for IEC 61508 / ISO 13849) from S×E×C; tabulate in prose.
+  8. "Safety Goals" — one Safety Goal per top-rated hazard; format "SG-NN — <statement>" with assigned ASIL and safe-state definition. Cite requirement codes that will inherit from each goal.
+  9. "Assumptions, Verification & Open Items" — explicit assumptions of use (AoU), verification method per safety goal, items deferred to system design.`,
+      minSections: 8,
+      maxSections: 10,
+    },
+    safety_concept: {
+      label: "Functional Safety Concept (FSC)",
+      sectionGuide: `This is a CANONICAL Functional Safety Concept per ISO 26262-3 §7. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Inputs from HARA" — restate Safety Goals (with ASIL) and the safe states they protect; cite HAZ/SG codes.
+  2. "Functional Safety Requirements (FSR)" — derive FSRs that satisfy each Safety Goal; format "FSR-NN [ASIL X] — <requirement>" with parent SG and target system function. Cite requirement codes.
+  3. "Allocation to Preliminary Architecture" — assign each FSR to a logical element (sensor, controller, actuator, monitor, watchdog, plausibility check, fallback); explain ASIL decomposition where applied.
+  4. "Operating Modes & Safe States" — for each safety goal, name the safe state(s), the transition trigger, and the entry/exit conditions.
+  5. "Fault Tolerance & Fault Reaction Time Interval (FTTI)" — for each FSR, define FTTI, fault tolerance time, single-point and multi-point fault metrics targets.
+  6. "Warning & Degradation Strategy" — driver warning, derating, limp-home, recovery; required HMI signals.
+  7. "Verification of the FSC" — review and analysis methods (walkthrough, FMEA, FTA refs), and how FSRs trace to TSC and downstream HW/SW requirements.
+  8. "Assumptions, Constraints & Open Items" — assumptions of use, environmental constraints, items deferred to TSC.`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    tech_safety_concept: {
+      label: "Technical Safety Concept (TSC)",
+      sectionGuide: `This is a CANONICAL Technical Safety Concept per ISO 26262-4 §7. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Inputs from FSC" — list inherited Functional Safety Requirements with ASIL; cite FSR codes.
+  2. "System Architecture (Technical View)" — block diagram in narrative form: ECUs, sensors, actuators, communication buses (CAN/LIN/Ethernet), redundancy structure, monitoring elements.
+  3. "Technical Safety Requirements (TSR)" — derive TSRs from each FSR; format "TSR-NN [ASIL X] — <requirement>" with parent FSR and HW/SW allocation. Include diagnostic and monitoring TSRs.
+  4. "Safety Mechanisms" — list every safety mechanism (range checks, plausibility, watchdogs, lock-step CPU, ECC, end-to-end protection); link to the TSR each detects/mitigates and the diagnostic coverage target (DC).
+  5. "HW/SW Allocation & Interfaces" — which TSRs are realised in HW vs SW; interface contracts (signal name, range, timing, ASIL); reference HSI document.
+  6. "Quantitative Targets" — PMHF/SPFM/LFM targets per ASIL; FTTI and fault reaction time per TSR; failure rate budgets.
+  7. "ASIL Decomposition & Independence Arguments" — every decomposition with rationale; freedom-from-interference arguments (timing, memory, exchange of information).
+  8. "Verification & Integration Strategy" — verification methods per TSR (analysis, simulation, HIL, vehicle test), integration sequence, acceptance criteria.`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    safety_case: {
+      label: "Safety Case",
+      sectionGuide: `This is a CANONICAL Safety Case (assurance argument) per ISO 26262-2 / IEC 61508-1 / DO-178C §11.20. Use a Goal-Structuring-Notation-style argument in prose. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Top Claim" — single sentence: "The <item> is acceptably safe for its intended use in <context>." Anchor to ASIL/SIL/DAL.
+  2. "Argument Strategy" — how the top claim is decomposed (by Safety Goal, by lifecycle phase, by hazard category); name the decomposition strategy.
+  3. "Sub-Claims by Safety Goal" — for each SG: a sub-claim, supporting sub-arguments, and the evidence references (FSC, TSC, FMEA, FTA, test reports, field data).
+  4. "Process Compliance Argument" — claim that the development process conformed to the standard; reference Safety Plan, audits, and confirmation measures.
+  5. "Product Compliance Argument" — claim that the product satisfies all Safety Goals; reference verification, validation, integration tests, quantitative metric achievement (PMHF/SPFM/LFM).
+  6. "Independent Assessment & Confirmation Measures" — assessor reports, confirmation reviews, audit findings and their disposition.
+  7. "Residual Risk & Operational Constraints" — known limitations, assumptions of use, operator/driver instructions required for safe operation.
+  8. "Open Issues, Justifications & Caveats" — every open item with disposition plan; explicit justification for any tailoring or deviation.`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    fmea: {
+      label: "FMEA / FMEDA",
+      sectionGuide: `This is a CANONICAL Failure Mode and Effects Analysis (System / Design / Process / FMEDA flavour as appropriate). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope, Boundary & Type" — what is under analysis (system / design / process / hardware), system boundary, interfaces; FMEA type (DFMEA/PFMEA/FMEDA) and standard followed (AIAG-VDA / SAE J1739 / IEC 60812).
+  2. "Function & Block Decomposition" — functions analysed and the items realising them; for FMEDA include the basic-element list with failure-rate source (SN 29500 / IEC 62380).
+  3. "Failure Modes Catalogue" — for each item: every failure mode considered (no/loss, intermittent, stuck, drift, premature, untimely, incorrect output).
+  4. "Effects Analysis (Local / Next-Higher / End)" — for each failure mode: local effect, effect on next-higher level, end effect on the user/vehicle/process. Cite the safety goal violated where applicable.
+  5. "Severity / Occurrence / Detection (S/O/D) and RPN or Action Priority" — assign S, O, D per AIAG-VDA AP table (or compute RPN) for each failure mode; tabulate in prose.
+  6. "Diagnostic Coverage & Safety Mechanisms (FMEDA-specific)" — for each failure mode list the safety mechanism, diagnostic coverage, and classification (safe / detected dangerous / undetected dangerous).
+  7. "Quantitative Metrics (FMEDA only)" — SPFM, LFM, PMHF computed against ASIL targets; pass/fail per safety goal.
+  8. "Recommended Actions & Owners" — for any AP=H/RPN above threshold or unmet metric, recommended action, owner, due date, re-evaluation result.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    fta: {
+      label: "Fault Tree Analysis (FTA)",
+      sectionGuide: `This is a CANONICAL Fault Tree Analysis per IEC 61025 / NUREG-0492 used as a deductive complement to FMEA. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Top Event" — the undesired top event under analysis (typically a Safety Goal violation); cite SG code and associated ASIL/SIL.
+  2. "System Description & Boundary" — what is in scope; assumptions, success criteria, mission time.
+  3. "Fault Tree Structure" — describe the tree in narrative + indented bullet form. Use AND / OR / NOT / k-of-n gates; each intermediate event has a label "IE-NN" and basic events "BE-NN" with description and source data reference.
+  4. "Cut Set Analysis" — list the minimal cut sets (or representative top-N if many); identify single-point failures, common-cause failures, order of cut sets.
+  5. "Quantitative Analysis" — assign failure rates / probabilities to basic events; compute top-event probability and importance measures (Fussell-Vesely, Birnbaum) for the top contributors.
+  6. "Common-Cause & Dependency Analysis" — explicit treatment of CCF (β-factor or similar), shared resources, software CCF, environmental commonality.
+  7. "Findings & Design Implications" — single points of failure to remove, weak gates needing redundancy or safety mechanism, links to FMEDA results and TSC mechanisms.
+  8. "Assumptions, Limitations & Open Items" — data sources, confidence intervals, items deferred to detailed design.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    dia: {
+      label: "Development Interface Agreement (DIA)",
+      sectionGuide: `This is a CANONICAL Development Interface Agreement per ISO 26262-8 §5 between customer (e.g., OEM) and supplier (e.g., Tier-1). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Parties & Item Scope" — customer and supplier, item/system covered, applicable variants, contract reference.
+  2. "Activity Responsibility Matrix (RACI)" — for every safety lifecycle work product (Safety Plan, HARA, FSC, TSC, HSI, integration, V&V, assessment) state R/A/C/I per party.
+  3. "Joint Activities & Reviews" — kick-off, technical reviews, safety audits, FSA, milestone gates; cadence and decision authority.
+  4. "Information & Work-Product Exchange" — exact deliverables exchanged each direction, format, classification, delivery channel, retention.
+  5. "Tailoring of Standard" — every clause tailored, omitted or deviated; rationale and approver.
+  6. "Tools, Methods & Languages" — agreed engineering tools, qualification status (TCL), modelling languages, units, naming conventions.
+  7. "Communication, Issue & Change Management" — escalation path, response SLAs, change request process, anomaly reporting, joint CCB.
+  8. "Confidentiality, IP & Compliance" — handling of confidential data, IP ownership of work products, export-control, archival.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    srs_safety: {
+      label: "Safety Requirements Specification",
+      sectionGuide: `This is a CANONICAL Safety Requirements Specification per IEC 61508-1 §7.10 (or ISO 26262 software/hardware safety requirements). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Inputs" — the SIL/ASIL targets inherited; reference Safety Plan and FSC/TSC.
+  2. "Safety Functions Catalogue" — each safety function (SF-NN) with description, demand mode (low/high/continuous), associated safe state.
+  3. "Safety Integrity Requirements" — per SF: target SIL/ASIL, PFD/PFH targets, fault tolerance (HFT), SFF, diagnostic coverage; cite the standard tables used.
+  4. "Functional Safety Requirements" — itemised "SR-NN" with shall-statements, parent SF, allocation (sensor/logic/actuator/HW/SW), verification method.
+  5. "Operational & Environmental Constraints" — temperature, EMC, vibration, humidity, supply voltage, expected mission profile.
+  6. "Interface & Independence Requirements" — required interfaces, freedom-from-interference (timing, memory, communication), partitioning constraints.
+  7. "Validation & Acceptance Criteria" — pass/fail criteria per SF; coverage targets; verification method matrix.
+  8. "Traceability & Change Control" — bidirectional trace to FSC/TSC and to downstream HW/SW; change-impact rules for safety-classified rows.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    // ============================================================
+    // CYBERSECURITY (ISO/SAE 21434 / IEC 62443 / ISO 27001 / NIST)
+    // ============================================================
+    cybersecurity_plan: {
+      label: "Cybersecurity Plan",
+      sectionGuide: `This is a CANONICAL Cybersecurity Plan aligned to ISO/SAE 21434 §6 (or IEC 62443-4-1 SM-1 for industrial). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Item Definition" — item/system covered, lifecycle phase, intended use, threat exposure profile.
+  2. "Cybersecurity Goals & Risk Acceptance Criteria" — top-level goals from TARA; risk treatment policy; acceptable residual-risk bands.
+  3. "Lifecycle Phases & Milestones" — concept, product development, post-development, end-of-cybersecurity-support; deliverables and gates per phase.
+  4. "Roles, Responsibilities & Competence" — Cybersecurity Manager, Cybersecurity Engineer, PSIRT, independent assessor; competence and training plan.
+  5. "Tailoring & Justifications" — every clause/work product tailored or omitted with rationale; reference standard clause.
+  6. "Methods, Tools & Cryptography Policy" — chosen analysis methods, secure-coding standards, crypto algorithm/keylength baseline, tool list and qualification.
+  7. "Cybersecurity Interface to Functional Safety & Quality" — coordination touchpoints with safety lifecycle (joint reviews, shared evidence), DIA references, link to QMS.
+  8. "Vulnerability, Incident & Field Monitoring" — vulnerability management process, PSIRT workflow, CVE intake, field telemetry, incident response.
+  9. "Distributed Cybersecurity Activities" — cybersecurity interface agreement (CIA) with suppliers; supplier capability assessment; off-the-shelf component handling.
+  10. "End-of-Cybersecurity-Support" — criteria for declaring EOCS, customer notification, secure decommissioning.`,
+      minSections: 8,
+      maxSections: 10,
+    },
+    tara: {
+      label: "TARA — Threat Analysis & Risk Assessment",
+      sectionGuide: `This is a CANONICAL Threat Analysis and Risk Assessment per ISO/SAE 21434 §15 (or IEC 62443-3-2 for industrial). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Item Definition & Asset Identification" — system boundary, functions, interfaces; enumerate cybersecurity assets (data, functions, keys, credentials) with their cybersecurity properties (C/I/A/Authenticity/Authorization/Non-repudiation).
+  2. "Damage Scenarios" — for each asset/property, possible damage scenario "DS-NN — <description>" with impact category (safety, financial, operational, privacy) and impact rating (severe/major/moderate/negligible).
+  3. "Threat Scenarios" — derive threat scenarios "TS-NN — <attacker action> on <asset.property> causing <DS>" using STRIDE or equivalent enumeration.
+  4. "Attack Path Analysis" — for each TS, decompose into attack paths "AP-NN" with sequential attack steps, required tools, and entry points (debug ports, OBD, telematics, OTA, supply chain).
+  5. "Attack Feasibility Rating" — per attack path, rate elapsed time, expertise, knowledge, window of opportunity, equipment (per ISO 21434 Annex G or CVSS); derive feasibility (high/medium/low/very-low).
+  6. "Risk Determination" — combine impact (from DS) and feasibility (from AP) into risk value 1–5 per threat scenario; tabulate.
+  7. "Risk Treatment Decisions" — per risk: avoid / reduce / share / retain; required cybersecurity goals "CG-NN" with target residual risk; cite requirement codes that will inherit.
+  8. "Assumptions, Limitations & Open Items" — assumptions of use, environment, items deferred to cybersecurity concept; review trigger conditions.`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    cybersecurity_concept: {
+      label: "Cybersecurity Concept",
+      sectionGuide: `This is a CANONICAL Cybersecurity Concept per ISO/SAE 21434 §9. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Inputs from TARA" — restate Cybersecurity Goals with associated risk levels; cite CG codes.
+  2. "Cybersecurity Requirements (CSR)" — derive CSRs from each CG; format "CSR-NN — <shall statement>" with parent CG and target subsystem. Cover access control, authentication, integrity, confidentiality, availability, secure boot, secure update, logging.
+  3. "Allocation to Architecture" — map each CSR to an architectural element (HSM, secure element, gateway, MAC, TLS terminator, IDS); justify the placement.
+  4. "Cybersecurity Controls Catalogue" — per control: type (preventive/detective/corrective), technology, configuration baseline, expected strength.
+  5. "Key, Identity & Credential Management" — key hierarchy, generation, distribution, rotation, revocation; identity provisioning; credential storage.
+  6. "Secure Boot, Update & Diagnostics" — chain of trust, signature scheme, anti-rollback, update integrity, JTAG/UDS lockdown.
+  7. "Monitoring, Logging & Incident Response" — what is logged, where, retention, integrity protection; on-board vs off-board IDS; PSIRT escalation.
+  8. "Verification of the Concept" — methods (review, threat-model walkthrough, pen-test scope) and traceability to downstream cybersecurity specs.`,
+      minSections: 6,
+      maxSections: 9,
+    },
+    cybersecurity_case: {
+      label: "Cybersecurity Case",
+      sectionGuide: `This is a CANONICAL Cybersecurity Case per ISO/SAE 21434 §6.4.5 — an argued, evidence-backed claim of cybersecurity for the item across the lifecycle. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Top Claim" — single sentence: "The <item> achieves its cybersecurity goals to an acceptable residual risk for its intended use." State scope and version.
+  2. "Argument Strategy" — how the top claim is decomposed (by cybersecurity goal, by attack path, by lifecycle phase).
+  3. "Sub-Claims by Cybersecurity Goal" — for each CG: sub-claim, sub-arguments, evidence references (TARA, concept, design, verification, pen-test, field).
+  4. "Process Compliance Argument" — claim of conformance to ISO 21434 / 62443 process; reference Cybersecurity Plan, audits, assessor reports.
+  5. "Product Compliance Argument" — claim that the product realises the cybersecurity controls; reference verification & validation results, vulnerability scans, fuzz testing, pen-test reports.
+  6. "Operational & Post-Development Argument" — claim of continued cybersecurity through monitoring, vulnerability management, incident response, secure update.
+  7. "Residual Risk & Operational Caveats" — known unmitigated threats, accepted risks with rationale, required customer/operator actions.
+  8. "Open Issues, Caveats & Maintenance Plan" — open items with disposition, conditions that trigger reassessment, EOCS plan.`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    security_risk_assessment: {
+      label: "Security Risk Assessment",
+      sectionGuide: `This is a CANONICAL Security Risk Assessment aligned to NIST SP 800-30 / ISO 27005 / IEC 62443-3-2 — applicable when the project follows an enterprise/industrial security framework rather than ISO 21434. Produce these sections, in this order, using EXACTLY these headings:
+  1. "System Characterisation" — purpose, boundary, data classification, users, interfaces, hosting model; cite requirement codes for system context.
+  2. "Asset Inventory & Valuation" — every asset (data store, service, key material, credential) with confidentiality/integrity/availability rating.
+  3. "Threat Source Identification" — adversarial (nation-state, criminal, insider) and non-adversarial (accidental, environmental) sources with capability/intent rating.
+  4. "Vulnerability Identification" — known vulnerabilities (CWE/CVE references, mis-configurations, design weaknesses); link to assets.
+  5. "Likelihood & Impact Determination" — for each threat × vulnerability pair, rate likelihood (Very Low–Very High) and impact (Very Low–Very High) with rationale.
+  6. "Risk Ranking & Treatment" — composite risk score per threat scenario; treatment decision (mitigate / transfer / accept / avoid); residual risk after treatment.
+  7. "Recommended Controls (with framework mapping)" — per high/medium risk: control description mapped to NIST SP 800-53 / ISO 27001 Annex A / CIS controls; cite control codes.
+  8. "Assumptions, Constraints & Reassessment Triggers" — explicit assumptions, boundary conditions, schedule for periodic reassessment, change triggers.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    // ============================================================
+    // SOFTWARE ASPECTS (DO-178C / IEC 62304 / IEEE 730)
+    // ============================================================
+    psac: {
+      label: "Plan for Software Aspects of Certification (PSAC)",
+      sectionGuide: `This is a CANONICAL Plan for Software Aspects of Certification per RTCA DO-178C §11.1. Produce these sections, in this order, using EXACTLY these headings:
+  1. "System Overview" — aircraft/system, intended function, software's role; reference system safety assessment.
+  2. "Software Overview" — partitions, executables, target hardware, languages, third-party components.
+  3. "Certification Considerations" — applicable means of compliance, certification basis, software level (DAL A–E), justification for level.
+  4. "Software Lifecycle" — chosen lifecycle model, transition criteria between phases, integral processes (verification, configuration management, quality assurance).
+  5. "Software Lifecycle Data" — list every plan and standard (SDP, SVP, SCMP, SQAP, requirements, design, code, test results) with format and control category (CC1/CC2).
+  6. "Schedule & Milestones" — high-level schedule with SOI (Stage of Involvement) reviews 1–4 and certification authority engagement.
+  7. "Additional Considerations" — tool qualification (per DO-330), previously developed software, COTS/SOUP, deactivated code, parameter data items, model-based development (DO-331), object-oriented (DO-332), formal methods (DO-333).
+  8. "Compliance Substantiation" — how each DO-178C objective will be satisfied per software level; reference V&V plans and SQA plan.`,
+      minSections: 7,
+      maxSections: 9,
+    },
+    software_dev_plan: {
+      label: "Software Development Plan (SDP)",
+      sectionGuide: `This is a CANONICAL Software Development Plan per DO-178C §11.2 / IEC 62304 §5.1 / IEEE 12207. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Software Classification" — software item, intended function, safety class (DAL or IEC 62304 A/B/C), governing standards.
+  2. "Lifecycle Model & Phases" — chosen model (V-model / iterative); phases with entry/exit criteria, inputs, outputs, transition criteria.
+  3. "Development Environment" — target & host hardware, OS, compilers, debuggers, simulators with versions; tool qualification status.
+  4. "Standards & Methods" — requirements standards, design standards, coding standards (e.g., MISRA C / CERT / AUTOSAR C++), modelling notations, design methods.
+  5. "Software Architecture & Module Strategy" — high-level architectural style, partitioning approach, control/data coupling rules, module size limits.
+  6. "Reuse, COTS & SOUP Policy" — criteria for accepting reused / COTS / SOUP components; documentation expectations; risk analysis for unknown provenance items.
+  7. "Deviation, Anomaly & Problem Reporting" — process for raising and tracking problem reports, deviation handling, anomaly classification.
+  8. "Schedule, Resources & Roles" — staffing, key roles, training, milestone schedule aligned to PSAC; review and audit cadence.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    software_verification_plan: {
+      label: "Software Verification Plan (SVP)",
+      sectionGuide: `This is a CANONICAL Software Verification Plan per DO-178C §11.3 / IEC 62304 §5.6. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Verification Objectives" — software item under verification, software level / safety class, applicable objectives table reference (DO-178C Annex A or IEC 62304).
+  2. "Verification Methods" — review, analysis, test (low-level test, software integration test, hardware-software integration test); independence requirements per level.
+  3. "Reviews & Analyses" — per artefact (requirements, design, code, test cases): review checklist, analysis type (data/control coupling, WCET, stack, partition integrity, accuracy), entry/exit criteria.
+  4. "Test Environment & Tools" — target vs host, simulators, instrumentation, coverage tools; tool qualification per DO-330 if applicable.
+  5. "Test Selection & Coverage Criteria" — requirements-based test selection, equivalence/boundary, robustness; structural coverage targets (statement / decision / MC/DC) per level; data and control coupling coverage.
+  6. "Verification of Verification" — review of test cases & procedures, review of test results, structural coverage analysis & resolution of unintended functions and dead/deactivated code.
+  7. "Re-verification & Regression Strategy" — change-impact analysis, regression scope determination, automated re-run policy.
+  8. "Records, Independence & Schedule" — verification records to be produced, independence matrix, milestones aligned to SDP.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    software_qa_plan: {
+      label: "Software Quality Assurance Plan (SQAP)",
+      sectionGuide: `This is a CANONICAL Software Quality Assurance Plan per IEEE 730 / DO-178C §11.5. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Purpose, Scope & References" — software item, applicable standards, contract reference, related plans.
+  2. "SQA Organisation & Independence" — SQA roles, reporting line, independence from development, authority to escalate and stop work.
+  3. "SQA Activities & Tasks" — process audits, product audits, conformance reviews, witness of tests, transition reviews; cadence per phase.
+  4. "Standards, Practices & Conventions" — standards SQA will assess against (coding, documentation, requirements, configuration management); criteria for compliance.
+  5. "Reviews & Audits" — formal reviews to be witnessed (PDR, CDR, FCA, PCA, transition reviews); checklist availability; non-conformance handling.
+  6. "Problem Reporting, Corrective & Preventive Action" — anomaly intake, classification, root-cause analysis, CAPA cadence; trend reporting.
+  7. "Tools, Techniques & Methodologies" — SQA tools (issue tracker, audit checklist tool, metrics dashboard) and metrics tracked (defect density, review effectiveness, escape rate).
+  8. "Records, Reports & Retention" — SQA records produced, distribution, retention period, archival rules; final SQA conformity report contents.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    soup_list: {
+      label: "SOUP / Third-Party Software List",
+      sectionGuide: `This is a CANONICAL SOUP (Software of Unknown Provenance) / OTS / Third-Party Software inventory aligned to IEC 62304 §5.3.3 / §8.1.2 (also useful for DO-178C COTS handling and supply-chain compliance). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Inclusion Criteria" — what counts as SOUP/OTS in this project (binary libraries, OS components, drivers, OSS dependencies, COTS toolchains used in the product).
+  2. "SOUP Inventory" — itemised list. For EACH item provide: "SOUP-NN — <name> v<version>" with: supplier/origin, license, intended functional use, target deployment artifact, integrator owner.
+  3. "Functional & Performance Requirements per SOUP" — for each item, the functional requirements the system levies on it and the performance requirements (response time, throughput, memory, accuracy).
+  4. "Hardware & Software Operating Environment Required by Each SOUP" — OS, runtime, dependencies, ports, configuration baseline.
+  5. "Risk & Anomaly Analysis per SOUP" — known anomalies (CVEs, supplier bug lists), risk to safety/security, mitigations (wrappers, monitors, version pinning), residual risk.
+  6. "Verification & Acceptance Strategy" — what testing/evaluation each item undergoes (smoke test, functional test, fuzz, static analysis, license compliance scan); acceptance criteria.
+  7. "Vulnerability & Update Monitoring" — process for monitoring CVEs, supplier advisories, end-of-life; cadence; trigger conditions for re-qualification.
+  8. "Change Control & Re-evaluation Triggers" — when a SOUP version is bumped, what re-verification is required; link to SCMP and CI list.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    // ============================================================
+    // CONFIGURATION & QUALITY
+    // ============================================================
+    scmp: {
+      label: "Software Configuration Management Plan (SCMP)",
+      sectionGuide: `This is a CANONICAL Software Configuration Management Plan per IEEE 828 / DO-178C §11.4 / IEC 62304 §8. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & SCM Objectives" — items governed by SCM, applicable software level, governing standards.
+  2. "SCM Organisation & Authorities" — Configuration Manager, CCB composition, approval authority per change category, responsibilities matrix.
+  3. "Configuration Identification" — naming convention for CIs and baselines; identification scheme for files, modules, documents, builds; version-numbering rules.
+  4. "Baselines" — list of baselines (functional, allocated, product, release) with content, who establishes, who approves, when frozen.
+  5. "Change Control" — change request workflow, classification (cosmetic/normal/safety-impacting), impact analysis requirements, CCB cadence, emergency change handling.
+  6. "Configuration Status Accounting" — what status records are maintained, reporting cadence, traceability between change requests, problem reports, baselines, and releases.
+  7. "Configuration Audits" — Functional Configuration Audit (FCA), Physical Configuration Audit (PCA), in-process audits; independence and entry criteria.
+  8. "Tooling, Storage, Backup & Archival" — repositories, branching strategy, access control, backup cadence, retention period, archival of as-built records.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    ci_list: {
+      label: "Configuration Item List (CI List)",
+      sectionGuide: `This is a CANONICAL Configuration Item List — the formal inventory of every Configuration Item under SCM control for this project (per DO-178C SCI / IEC 62304 §8 / IEEE 828). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Baseline Reference" — release/baseline this CI list represents, effective date, related SCMP version.
+  2. "CI Categorisation Scheme" — categories used (Plans, Standards, Requirements, Design, Source code, Test cases & results, Tools & environments, Build artefacts, Documents, Data items); CC1 vs CC2 classification rules.
+  3. "Plans & Standards CIs" — list each plan/standard CI: "CI-NN — <name>" with version, category, control class, owner, repository path.
+  4. "Requirements & Design CIs" — system & software requirements specs, architecture & design docs, interface control docs.
+  5. "Source Code & Build CIs" — source modules, build scripts, makefiles, linker scripts, generated code, configuration files; include parameter data items if applicable.
+  6. "Verification & Validation CIs" — review records, test cases, test procedures, test results, coverage reports, analysis reports.
+  7. "Tools & Environment CIs" — compilers, linkers, simulators, test tools with version; tool qualification artefacts where required.
+  8. "Third-Party / SOUP / COTS CIs" — every external item with supplier, version, license; cross-reference SOUP list.
+  9. "Records, Status & Retention" — current status per CI (draft/approved/released/superseded), location, retention period.`,
+      minSections: 6,
+      maxSections: 9,
+    },
+    change_control_plan: {
+      label: "Change Control Plan",
+      sectionGuide: `This is a CANONICAL Change Control / Change Management Plan covering how changes to controlled artefacts are proposed, evaluated, approved and implemented (per IEEE 828, ISO 9001 §8.5.6, IEC 62304 §6 / §8). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope & Applicability" — what artefacts are under change control, lifecycle phase coverage, link to SCMP.
+  2. "Change Request Workflow" — states (Submitted → Triaged → Analysed → Approved/Rejected → Implemented → Verified → Closed), entry/exit criteria per state, average SLA per state.
+  3. "Roles & Authorities (CCB)" — Change Control Board composition, voting rules, quorum, escalation; emergency CCB; safety/cyber-impact veto authority.
+  4. "Change Classification" — categories (cosmetic, minor, major, safety-impacting, cyber-impacting, regulatory-impacting); decision criteria per category; required evidence per category.
+  5. "Impact Analysis Requirements" — mandatory impact analyses (requirements impact, design impact, test impact, safety re-analysis trigger, cybersecurity re-analysis trigger, schedule/cost impact); template fields.
+  6. "Implementation & Verification" — branching strategy, peer review requirement, regression-test scope determination, sign-off rules before merge to baseline.
+  7. "Emergency / Hot-Fix Process" — accelerated workflow, post-hoc review requirement, retrospective documentation.
+  8. "Records, Metrics & Audits" — change-request register, traceability to baselines and releases, metrics (cycle time, rejection rate, escape rate), audit cadence.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    vnv_plan: {
+      label: "Verification & Validation Plan (V&V)",
+      sectionGuide: `This is a CANONICAL Verification & Validation Plan per IEEE 1012 / ISO 26262-8 §9 / IEC 62304 §5.6 & §5.7. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope, Integrity Level & References" — system/software, assigned integrity level (IEEE 1012 Levels 1–4, or ASIL/SIL/DAL), applicable standards.
+  2. "V&V Strategy" — distinction between verification (built right) vs validation (built the right thing); planned methods at each lifecycle phase (requirements V&V, design V&V, implementation V&V, integration V&V, qualification, acceptance).
+  3. "V&V Tasks per Lifecycle Phase" — for each phase: inputs, V&V tasks (review, inspection, walkthrough, analysis, simulation, prototyping, test), outputs, exit criteria.
+  4. "Independence & Roles" — who performs V&V, level of independence required per IEEE 1012 (organisational / financial / managerial); IV&V authority.
+  5. "Test Strategy & Coverage" — test levels (unit, integration, system, acceptance), test selection method, coverage targets, traceability requirement (req → test → result).
+  6. "Tools, Environments & Data" — V&V tools, test environments, test-data generation strategy, simulator validity.
+  7. "Anomaly Reporting & Re-verification" — anomaly classification, regression-test selection, change-impact rules.
+  8. "Records, Metrics & Reports" — V&V records produced, dashboards, final V&V report contents, sign-off authority.`,
+      minSections: 6,
+      maxSections: 8,
+    },
+    // ============================================================
+    // RISK MANAGEMENT
+    // ============================================================
+    risk_management_plan: {
+      label: "Risk Management Plan",
+      sectionGuide: `This is a CANONICAL Risk Management Plan applicable across project, product safety (ISO 14971 for medical), and enterprise risk (ISO 31000). Produce these sections, in this order, using EXACTLY these headings:
+  1. "Scope, Context & Risk Categories" — boundaries of the risk management activity, categories considered (safety, cybersecurity, project, regulatory, supply-chain, financial), governing standard.
+  2. "Risk Management Process" — stages: identification → analysis → evaluation → treatment → monitoring → communication; cadence and triggers for re-execution.
+  3. "Roles & Responsibilities" — Risk Owner, Risk Manager, escalation authority; integration with Safety Manager and Cybersecurity Manager.
+  4. "Risk Identification Techniques" — methods used (HAZOP, FMEA, FTA, TARA, brainstorming, lessons-learned reviews, checklists); inputs per technique.
+  5. "Risk Acceptance Criteria" — quantitative or qualitative thresholds; risk-matrix legend (likelihood × consequence); ALARP / GAMAB / MEM principle if applicable.
+  6. "Risk Register Format" — required fields per risk: ID, description, category, owner, likelihood, consequence, inherent score, controls, residual score, treatment, due date, status.
+  7. "Risk Treatment & Controls" — strategies (avoid / reduce / share / retain); how controls are derived, implemented, verified; integration with CAPA.
+  8. "Monitoring, Review & Communication" — review cadence, escalation thresholds, reporting (executive risk dashboard, board), stakeholder communication policy.
+  9. "Records, Retention & Audit" — risk register storage, version control, audit trail, retention period; alignment with regulatory submission requirements.`,
       minSections: 7,
       maxSections: 9,
     },
