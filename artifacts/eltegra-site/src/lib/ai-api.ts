@@ -101,6 +101,9 @@ export type FetchCodeUrlResult = {
   language: string;
   label: string;
   truncated: boolean;
+  mode?: "file" | "tree";
+  filesIncluded?: number;
+  filesAvailable?: number;
 };
 
 export function useFetchCodeUrl() {

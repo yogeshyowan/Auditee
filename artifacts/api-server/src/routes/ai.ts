@@ -277,6 +277,7 @@ const FETCH_TIMEOUT_MS = 15_000;
 const ALLOWED_FETCH_HOSTS = new Set([
   "github.com",
   "raw.githubusercontent.com",
+  "api.github.com",
 ]);
 const LANGUAGE_BY_EXT: Record<string, string> = {
   ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
@@ -286,6 +287,31 @@ const LANGUAGE_BY_EXT: Record<string, string> = {
   cbl: "cobol", cob: "cobol", sql: "sql", sh: "bash", yml: "yaml",
   yaml: "yaml", json: "json", html: "html", css: "css",
 };
+
+// Extensions we treat as "app related" source code when scanning a tree.
+// Excludes things like .md, images, lockfiles — we only want code.
+const TREE_INCLUDE_EXTS = new Set([
+  "ts", "tsx", "js", "jsx", "mjs", "cjs",
+  "py", "java", "kt", "go", "rs", "rb", "php",
+  "cs", "cpp", "cc", "c", "h", "hpp",
+  "swift", "scala", "m", "mm",
+  "cbl", "cob", "sql", "sh", "bash",
+  "vue", "svelte", "astro",
+]);
+// Path segments that should be skipped wholesale when walking a repo.
+const TREE_EXCLUDE_DIRS = new Set([
+  "node_modules", ".git", "dist", "build", "out", ".next", ".nuxt",
+  ".turbo", ".cache", "coverage", "target", "vendor", "__pycache__",
+  ".venv", "venv", ".pnpm-store", ".yarn", ".idea", ".vscode",
+  "tmp", "temp", "logs",
+]);
+const TREE_EXCLUDE_BASENAMES = new Set([
+  "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "poetry.lock",
+  "Cargo.lock", "Gemfile.lock", "composer.lock",
+]);
+const TREE_MAX_FILES = 40;
+const TREE_PER_FILE_CHAR_CAP = 6_000;
+const TREE_TOTAL_CHAR_CAP = 30_000;
 
 // Manually follow redirects so we can re-validate the host on every hop.
 // This prevents an open-redirect on github.com from sending us to an
@@ -352,6 +378,154 @@ async function readBodyWithCap(resp: Response, maxBytes: number): Promise<{ buf:
   return { buf: out, truncated: false };
 }
 
+// Fetch+decode a single file's text via raw.githubusercontent.com.
+// Returns null on any failure (used during tree walk so one bad file
+// does not abort the whole scan).
+async function fetchRawFileText(rawUrl: string, maxBytes: number): Promise<string | null> {
+  try {
+    const r = await fetchAllowlistedFollow(rawUrl);
+    if (!r.ok) return null;
+    const { buf } = await readBodyWithCap(r, maxBytes);
+    return new TextDecoder("utf-8", { fatal: false }).decode(buf);
+  } catch {
+    return null;
+  }
+}
+
+// Score a file path so we walk source-y directories first when budgeting.
+function pathPriority(p: string): number {
+  const lower = p.toLowerCase();
+  if (lower.startsWith("src/") || lower.includes("/src/")) return 0;
+  if (lower.startsWith("lib/") || lower.includes("/lib/")) return 1;
+  if (lower.startsWith("app/") || lower.includes("/app/")) return 2;
+  if (lower.startsWith("packages/") || lower.startsWith("apps/")) return 3;
+  if (lower.startsWith("server/") || lower.startsWith("backend/")) return 4;
+  if (lower.startsWith("client/") || lower.startsWith("frontend/")) return 4;
+  if (lower.includes("/test") || lower.includes("__tests__") || lower.endsWith(".test.ts") || lower.endsWith(".spec.ts")) return 9;
+  return 5;
+}
+
+type ParsedGithubLocation =
+  | { kind: "blob"; owner: string; repo: string; ref: string; path: string }
+  | { kind: "tree"; owner: string; repo: string; ref: string | null; path: string }
+  | { kind: "repo"; owner: string; repo: string }
+  | { kind: "raw"; owner: string; repo: string; ref: string; path: string };
+
+function parseGithubUrl(u: URL): ParsedGithubLocation | null {
+  if (u.hostname === "raw.githubusercontent.com") {
+    const segs = u.pathname.split("/").filter(Boolean);
+    if (segs.length < 4) return null;
+    const [owner, repo, ref, ...rest] = segs;
+    return { kind: "raw", owner, repo, ref, path: rest.join("/") };
+  }
+  if (u.hostname !== "github.com") return null;
+  const segs = u.pathname.split("/").filter(Boolean);
+  if (segs.length < 2) return null;
+  const [owner, repo, mode, ...rest] = segs;
+  // .git suffix is sometimes pasted from clone URLs
+  const cleanRepo = repo.replace(/\.git$/i, "");
+  if (!mode) {
+    return { kind: "repo", owner, repo: cleanRepo };
+  }
+  if (mode === "blob" && rest.length >= 2) {
+    // refAndPath: rest. Most refs are single-segment; for slashy refs (e.g.
+    // "release/v1") this naive split is wrong — caller should paste the raw
+    // URL or tag without slashes. We mark a flag below for clearer error msgs.
+    const refAndPath = rest.join("/");
+    const slash = refAndPath.indexOf("/");
+    if (slash < 0) return null;
+    return {
+      kind: "blob",
+      owner,
+      repo: cleanRepo,
+      ref: refAndPath.slice(0, slash),
+      path: refAndPath.slice(slash + 1),
+    };
+  }
+  if (mode === "tree") {
+    if (rest.length === 0) {
+      return { kind: "repo", owner, repo: cleanRepo };
+    }
+    const refAndPath = rest.join("/");
+    const slash = refAndPath.indexOf("/");
+    if (slash < 0) {
+      return { kind: "tree", owner, repo: cleanRepo, ref: refAndPath, path: "" };
+    }
+    // Naive single-segment ref split. If the actual branch name has a slash,
+    // the tree-API call will 404 and we surface a friendly error.
+    return {
+      kind: "tree",
+      owner,
+      repo: cleanRepo,
+      ref: refAndPath.slice(0, slash),
+      path: refAndPath.slice(slash + 1),
+    };
+  }
+  // Bare repo URL with trailing path we don't recognize (issues, pulls, etc.)
+  return { kind: "repo", owner, repo: cleanRepo };
+}
+
+async function getDefaultBranch(owner: string, repo: string): Promise<string | null> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    let r: Response;
+    try {
+      r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+        headers: { "User-Agent": "Auditee", Accept: "application/vnd.github+json" },
+        signal: ctrl.signal,
+      });
+    } finally {
+      clearTimeout(t);
+    }
+    if (!r.ok) return null;
+    const j = await r.json() as { default_branch?: string };
+    return j.default_branch ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function listRepoTree(owner: string, repo: string, ref: string): Promise<{ files: Array<{ path: string; size: number }>; truncated: boolean } | null> {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    let r: Response;
+    try {
+      r = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`, {
+        headers: { "User-Agent": "Auditee", Accept: "application/vnd.github+json" },
+        signal: ctrl.signal,
+      });
+    } finally {
+      clearTimeout(t);
+    }
+    if (!r.ok) return null;
+    const j = await r.json() as { tree?: Array<{ path: string; type: string; size?: number }>; truncated?: boolean };
+    if (!Array.isArray(j.tree)) return null;
+    return {
+      files: j.tree.filter((e) => e.type === "blob").map((e) => ({ path: e.path, size: e.size ?? 0 })),
+      truncated: j.truncated === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function shouldIncludeFile(path: string, basePath: string): boolean {
+  if (basePath && !path.startsWith(basePath.endsWith("/") ? basePath : basePath + "/") && path !== basePath) {
+    return false;
+  }
+  const segs = path.split("/");
+  for (const s of segs.slice(0, -1)) {
+    if (TREE_EXCLUDE_DIRS.has(s)) return false;
+  }
+  const base = segs[segs.length - 1];
+  if (TREE_EXCLUDE_BASENAMES.has(base)) return false;
+  if (base.endsWith(".min.js") || base.endsWith(".map") || base.endsWith(".d.ts")) return false;
+  const ext = (base.split(".").pop() ?? "").toLowerCase();
+  return TREE_INCLUDE_EXTS.has(ext);
+}
+
 router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
   const raw = typeof req.body?.url === "string" ? req.body.url.trim() : "";
   if (!raw) {
@@ -369,81 +543,180 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
     res.status(400).json({ error: "Only https URLs are supported" });
     return;
   }
-
-  // Up-front host check (fetchAllowlistedFollow re-checks on every hop).
   if (!ALLOWED_FETCH_HOSTS.has(parsed.hostname)) {
     res.status(400).json({ error: "Only github.com and raw.githubusercontent.com URLs are supported" });
     return;
   }
 
-  // Allow github.com/{owner}/{repo}/blob/{ref}/{path} and convert to raw,
-  // or accept raw.githubusercontent.com directly.
-  // Note: branch refs may contain slashes (e.g. "feature/foo"), so we keep
-  //       the regex permissive — if the split is wrong, the raw URL will 404
-  //       and we surface a friendly error.
-  let rawUrl: string;
-  let label: string;
-  let path: string;
-  if (parsed.hostname === "github.com") {
-    const m = parsed.pathname.match(/^\/([^/]+)\/([^/]+)\/blob\/(.+)$/);
-    if (!m) {
-      res.status(400).json({ error: "Expected a github.com blob URL like https://github.com/owner/repo/blob/branch/path/to/file" });
-      return;
-    }
-    const [, owner, repo, refAndPath] = m;
-    // refAndPath is "{ref}/{path}". Most refs are single-segment; for slashy refs
-    // (release/v1/...) the user can paste the raw URL instead.
-    const slash = refAndPath.indexOf("/");
-    if (slash < 0) {
-      res.status(400).json({ error: "URL is missing a file path after the branch" });
-      return;
-    }
-    const ref = refAndPath.slice(0, slash);
-    path = refAndPath.slice(slash + 1);
-    rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
-    label = `${owner}/${repo}@${ref}:${path}`;
-  } else {
-    rawUrl = parsed.toString();
-    const segs = parsed.pathname.split("/").filter(Boolean);
-    path = segs.slice(3).join("/");
-    label = segs.length >= 4 ? `${segs[0]}/${segs[1]}@${segs[2]}:${path}` : parsed.pathname;
-  }
-
-  let response: Response;
-  try {
-    response = await fetchAllowlistedFollow(rawUrl);
-  } catch (err) {
-    res.status(502).json({ error: `Could not reach GitHub: ${(err as Error).message}` });
+  const loc = parseGithubUrl(parsed);
+  if (!loc) {
+    res.status(400).json({ error: "Could not understand that GitHub URL. Paste a repo URL (https://github.com/owner/repo), a folder URL (.../tree/branch/path), or a single file URL (.../blob/branch/path/file.ts)." });
     return;
   }
-  if (!response.ok) {
-    res.status(response.status === 404 ? 404 : 502).json({
-      error: response.status === 404
-        ? "File not found on GitHub (private repo, wrong branch, or branch name contains '/' — try the raw.githubusercontent.com URL instead)"
-        : `GitHub returned ${response.status}`,
+
+  // ---------- Single file path (existing behaviour) ----------
+  if (loc.kind === "blob" || loc.kind === "raw") {
+    const { owner, repo, ref, path } = loc;
+    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
+    const label = `${owner}/${repo}@${ref}:${path}`;
+    let response: Response;
+    try {
+      response = await fetchAllowlistedFollow(rawUrl);
+    } catch (err) {
+      res.status(502).json({ error: `Could not reach GitHub: ${(err as Error).message}` });
+      return;
+    }
+    if (!response.ok) {
+      res.status(response.status === 404 ? 404 : 502).json({
+        error: response.status === 404
+          ? "File not found on GitHub (private repo, wrong branch, or branch name contains '/' — try the raw.githubusercontent.com URL instead)"
+          : `GitHub returned ${response.status}`,
+      });
+      return;
+    }
+    let bodyResult: { buf: Uint8Array; truncated: boolean };
+    try {
+      bodyResult = await readBodyWithCap(response, RAW_FETCH_MAX_BYTES);
+    } catch (err) {
+      res.status(413).json({ error: (err as Error).message });
+      return;
+    }
+    let text: string;
+    try {
+      text = new TextDecoder("utf-8", { fatal: false }).decode(bodyResult.buf);
+    } catch {
+      res.status(415).json({ error: "File is not UTF-8 text (binary?)" });
+      return;
+    }
+    const code = text.length > TREE_TOTAL_CHAR_CAP ? text.slice(0, TREE_TOTAL_CHAR_CAP) : text;
+    const ext = (path.split(".").pop() ?? "").toLowerCase();
+    const language = LANGUAGE_BY_EXT[ext] ?? "";
+    res.json({ code, language, label, truncated: text.length > TREE_TOTAL_CHAR_CAP, mode: "file", filesIncluded: 1 });
+    return;
+  }
+
+  // ---------- Repo or directory: walk the tree ----------
+  const owner = loc.owner;
+  const repo = loc.repo;
+  let ref: string | null = loc.kind === "tree" ? loc.ref : null;
+  const basePath = loc.kind === "tree" ? loc.path : "";
+  if (!ref) {
+    ref = await getDefaultBranch(owner, repo);
+    if (!ref) {
+      res.status(404).json({ error: `Repository ${owner}/${repo} not found or private. Public repos only — for private repos, connect a GitHub source on the Project Sources page.` });
+      return;
+    }
+  }
+  const tree = await listRepoTree(owner, repo, ref);
+  if (!tree) {
+    res.status(404).json({ error: `Could not list ${owner}/${repo}@${ref}. Repo may be private, the branch name might contain a '/', or it doesn't exist. Try pasting a folder URL with the exact branch name.` });
+    return;
+  }
+  // GitHub's git/trees endpoint truncates at ~100k entries. We can still pack
+  // a useful prompt from the partial list, but we must surface this honestly.
+  const treeTruncated = tree.truncated;
+
+  const candidates = tree.files
+    .filter((e) => shouldIncludeFile(e.path, basePath))
+    .sort((a, b) => {
+      const pa = pathPriority(a.path);
+      const pb = pathPriority(b.path);
+      if (pa !== pb) return pa - pb;
+      return a.path.localeCompare(b.path);
+    })
+    .slice(0, TREE_MAX_FILES);
+
+  if (candidates.length === 0) {
+    res.status(404).json({ error: basePath
+      ? `No source files found under '${basePath}' in ${owner}/${repo}@${ref}.`
+      : `No source files found in ${owner}/${repo}@${ref}.` });
+    return;
+  }
+
+  // Concurrency-limited file fetches (5 at a time).
+  const results: Array<{ path: string; text: string }> = [];
+  const queue = [...candidates];
+  const workers: Promise<void>[] = [];
+  const CONCURRENCY = 5;
+  for (let i = 0; i < CONCURRENCY; i++) {
+    workers.push((async () => {
+      while (queue.length > 0) {
+        const item = queue.shift();
+        if (!item) break;
+        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${item.path}`;
+        const text = await fetchRawFileText(rawUrl, RAW_FETCH_MAX_BYTES);
+        if (text != null) {
+          results.push({ path: item.path, text });
+        }
+      }
+    })());
+  }
+  await Promise.all(workers);
+
+  // Re-sort results to keep priority order (parallel fetches arrive out of order).
+  results.sort((a, b) => {
+    const pa = pathPriority(a.path);
+    const pb = pathPriority(b.path);
+    if (pa !== pb) return pa - pb;
+    return a.path.localeCompare(b.path);
+  });
+
+  // Concatenate up to TREE_TOTAL_CHAR_CAP, with file headers and per-file caps.
+  const parts: string[] = [];
+  let used = 0;
+  let filesIncluded = 0;
+  let truncated = false;
+  const langCounts = new Map<string, number>();
+  for (const r of results) {
+    if (used >= TREE_TOTAL_CHAR_CAP) { truncated = true; break; }
+    const remaining = TREE_TOTAL_CHAR_CAP - used;
+    const header = `// === ${r.path} ===\n`;
+    const sliceCap = Math.min(TREE_PER_FILE_CHAR_CAP, remaining - header.length - 2);
+    if (sliceCap <= 100) { truncated = true; break; }
+    const body = r.text.length > sliceCap ? r.text.slice(0, sliceCap) + "\n// [truncated]\n" : r.text;
+    parts.push(header + body);
+    used += header.length + body.length + 2;
+    filesIncluded += 1;
+    const ext = (r.path.split(".").pop() ?? "").toLowerCase();
+    const lang = LANGUAGE_BY_EXT[ext];
+    if (lang) langCounts.set(lang, (langCounts.get(lang) ?? 0) + 1);
+  }
+  if (filesIncluded < results.length) truncated = true;
+  if (treeTruncated) truncated = true;
+
+  if (filesIncluded === 0) {
+    res.status(502).json({
+      error: results.length === 0
+        ? `Found ${candidates.length} candidate file${candidates.length === 1 ? "" : "s"} in ${owner}/${repo}@${ref}, but none could be downloaded from raw.githubusercontent.com.`
+        : `Could not pack any source from ${owner}/${repo}@${ref} into the prompt budget.`,
     });
     return;
   }
 
-  let bodyResult: { buf: Uint8Array; truncated: boolean };
-  try {
-    bodyResult = await readBodyWithCap(response, RAW_FETCH_MAX_BYTES);
-  } catch (err) {
-    res.status(413).json({ error: (err as Error).message });
-    return;
+  // Pick the most common language so the dialog auto-fills the language input.
+  let language = "";
+  let best = 0;
+  for (const [lang, n] of langCounts) {
+    if (n > best) { best = n; language = lang; }
   }
-  let text: string;
-  try {
-    text = new TextDecoder("utf-8", { fatal: false }).decode(bodyResult.buf);
-  } catch {
-    res.status(415).json({ error: "File is not UTF-8 text (binary?)" });
-    return;
-  }
-  // Hard cap to the same 30k chars the generate endpoint accepts.
-  const code = text.length > 30_000 ? text.slice(0, 30_000) : text;
-  const ext = (path.split(".").pop() ?? "").toLowerCase();
-  const language = LANGUAGE_BY_EXT[ext] ?? "";
-  res.json({ code, language, label, truncated: text.length > 30_000 });
+
+  const code = parts.join("\n\n");
+  const scope = basePath ? `${basePath}` : `(repo root)`;
+  const truncSuffix = truncated
+    ? (treeTruncated ? " (repo too large — partial scan)" : " (truncated)")
+    : "";
+  const label = `${owner}/${repo}@${ref}:${scope} — ${filesIncluded} file${filesIncluded === 1 ? "" : "s"}${truncSuffix}`;
+
+  res.json({
+    code,
+    language,
+    label,
+    truncated,
+    mode: "tree",
+    filesIncluded,
+    filesAvailable: candidates.length,
+    treeTruncated,
+  });
 }));
 
 // =============================================================

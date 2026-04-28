@@ -749,13 +749,13 @@ export default function RequirementsPage() {
 
                 <TabsContent value="github" className="space-y-3 pt-3">
                   <p className="text-sm text-slate-600">
-                    Paste a GitHub file URL (the kind shown when viewing a file on github.com). Public repos only — for private repos, connect a GitHub source on the Project Sources page first, then use the "Project source" tab.
+                    Paste any public GitHub URL — a whole repo, a folder (<code className="px-1 bg-slate-100 rounded text-[11px]">.../tree/main/lib</code>), or a single file (<code className="px-1 bg-slate-100 rounded text-[11px]">.../blob/main/src/foo.ts</code>). For repo and folder URLs, Auditee scans up to 40 source files and packs them into one prompt. For private repos, connect a GitHub source on the Project Sources page first, then use the "Project source" tab.
                   </p>
                   <div className="flex gap-2">
                     <Input
                       value={githubUrl}
                       onChange={(e) => setGithubUrl(e.target.value)}
-                      placeholder="https://github.com/owner/repo/blob/main/src/foo.ts"
+                      placeholder="https://github.com/owner/repo  or  .../tree/main/src  or  .../blob/main/src/foo.ts"
                       data-testid="input-github-url"
                     />
                     <Button
