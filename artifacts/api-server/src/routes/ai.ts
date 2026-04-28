@@ -33,6 +33,7 @@ import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 import { rateAudit, getRatingScheme } from "../lib/framework-rating";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
+import { consumeCredit } from "../middlewares/creditMiddleware";
 
 const router: IRouter = Router();
 
@@ -97,7 +98,7 @@ async function nextRequirementCode(projectId: string): Promise<string> {
 // =============================================================
 // AI: Generate Requirements from a brief
 // =============================================================
-router.post("/ai/generate-requirements", aiHandler(async (req, res) => {
+router.post("/ai/generate-requirements", consumeCredit(), aiHandler(async (req, res) => {
   const rawBrief = typeof req.body?.brief === "string" ? req.body.brief.trim() : "";
   const rawCode = typeof req.body?.code === "string" ? req.body.code.trim() : "";
   const rawLang = typeof req.body?.language === "string" ? req.body.language.trim().slice(0, 40) : "";
@@ -441,7 +442,7 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
 // =============================================================
 // AI: Analyze Code — match to requirements + create artifact + links
 // =============================================================
-router.post("/ai/analyze-code", aiHandler(async (req, res) => {
+router.post("/ai/analyze-code", consumeCredit(), aiHandler(async (req, res) => {
   const body = {
     projectId: requireString(req.body?.projectId, "projectId", { min: 1 }),
     filePath: requireString(req.body?.filePath, "filePath", { min: 1, max: 500 }),
@@ -571,7 +572,7 @@ Rules:
 // =============================================================
 // AI: Compliance Audit — analyze requirements vs framework controls
 // =============================================================
-router.post("/ai/compliance-audit", aiHandler(async (req, res) => {
+router.post("/ai/compliance-audit", consumeCredit(), aiHandler(async (req, res) => {
   const body = {
     projectId: requireString(req.body?.projectId, "projectId", { min: 1 }),
     frameworkId: requireString(req.body?.frameworkId, "frameworkId", { min: 1 }),
@@ -925,7 +926,7 @@ Rules:
 //   design  →  code  →  tests  →  test reports
 // using existing traceability_links + uploaded source files.
 // =============================================================
-router.post("/ai/traceability-audit", aiHandler(async (req, res) => {
+router.post("/ai/traceability-audit", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
   const requestedSourceIds: string[] = Array.isArray(req.body?.sourceIds)
     ? req.body.sourceIds.filter((x: unknown) => typeof x === "string" && x.length > 0)
@@ -1180,7 +1181,7 @@ Rules:
 // =============================================================
 // AI: Legacy Code Extractor — pull implicit requirements
 // =============================================================
-router.post("/ai/legacy-extract", aiHandler(async (req, res) => {
+router.post("/ai/legacy-extract", consumeCredit(), aiHandler(async (req, res) => {
   const body = {
     legacySystemId: requireString(req.body?.legacySystemId, "legacySystemId", { min: 1 }),
     code: requireString(req.body?.code, "code", { min: 20, max: 40000 }),
@@ -1277,7 +1278,7 @@ Rules:
 // =============================================================
 // AI: Ask Auditee — natural language Q&A across project data
 // =============================================================
-router.post("/ai/ask", aiHandler(async (req, res) => {
+router.post("/ai/ask", consumeCredit(), aiHandler(async (req, res) => {
   const body = {
     question: requireString(req.body?.question, "question", { min: 3, max: 2000 }),
     projectId: optionalString(req.body?.projectId),
@@ -1395,7 +1396,7 @@ router.delete("/ai/ask/history/:id", aiHandler(async (req, res) => {
 //   - conflicts (requirements that contradict each other)
 //   - improvement recommendations
 // =============================================================
-router.post("/ai/gap-analysis", aiHandler(async (req, res) => {
+router.post("/ai/gap-analysis", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
   const frameworkId = optionalString(req.body?.frameworkId);
 
@@ -1607,7 +1608,7 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
 // existing /ai/generate-requirements endpoint to extract the
 // final requirements list.
 // =============================================================
-router.post("/ai/interview/questions", aiHandler(async (req, res) => {
+router.post("/ai/interview/questions", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
   const brief = requireString(req.body?.brief, "brief", { min: 20, max: 4000 });
   // Optional list of compliance framework IDs the user marked applicable.
@@ -1741,7 +1742,7 @@ ${brief}${fwLine}`;
 // requirement in a project. Returns per-requirement estimates
 // plus a project total and complexity breakdown.
 // =============================================================
-router.post("/ai/estimate-effort", aiHandler(async (req, res) => {
+router.post("/ai/estimate-effort", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
 
   const [project] = await db

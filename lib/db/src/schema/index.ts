@@ -18,3 +18,4 @@ export * from "./recurringAudits";
 export * from "./projectSources";
 export * from "./defects";
 export * from "./workspaces";
+export * from "./anonymousTrials";

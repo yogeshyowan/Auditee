@@ -15,8 +15,8 @@ const TIERS = [
     highlight: false,
     seatLine: "1 user",
     features: [
-      "1 project",
-      "Up to 200 requirements",
+      "6 free AI generations to try (no credit card)",
+      "1 project, up to 200 requirements",
       "GitHub + ZIP source connectors",
       "AI generation from briefs and code",
       "BRDs, PRDs and exec briefings",

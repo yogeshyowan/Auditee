@@ -15,6 +15,16 @@ export const PLAN_PRICE_USD: Record<PlanTier, number> = {
   enterprise: 2599,
 };
 
+// Per-workspace lifetime AI generation credits. -1 = unlimited.
+// Anonymous (signed-out) browsers get the same Free allowance (6) tracked in
+// localStorage on the client and verified server-side via a request header.
+export const ANON_CREDIT_LIMIT = 6;
+export const PLAN_CREDITS: Record<PlanTier, number> = {
+  free: 6,
+  professional: -1,
+  enterprise: -1,
+};
+
 export const workspacesTable = pgTable(
   "workspaces",
   {
@@ -24,6 +34,7 @@ export const workspacesTable = pgTable(
     seatLimit: integer("seat_limit").notNull().default(1),
     ownerUserId: text("owner_user_id").notNull(),
     planActivatedAt: timestamp("plan_activated_at", { withTimezone: true }),
+    creditsUsed: integer("credits_used").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

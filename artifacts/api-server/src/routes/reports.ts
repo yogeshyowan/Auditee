@@ -18,6 +18,7 @@ import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 import { inArray } from "drizzle-orm";
+import { consumeCredit } from "../middlewares/creditMiddleware";
 
 const router: IRouter = Router();
 
@@ -78,7 +79,7 @@ function emptyContent(title: string): ReportContent {
   return { title, executiveSummary: "", sections: [], evidence: [] };
 }
 
-router.post("/reports/generate", asyncH(async (req, res) => {
+router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
   const b = req.body ?? {};
   const projectId = typeof b.projectId === "string" ? b.projectId : null;
   if (!projectId) {
@@ -323,7 +324,7 @@ Rules:
   res.status(201).json(saved);
 }));
 
-router.post("/reports/:id/refine", asyncH(async (req, res) => {
+router.post("/reports/:id/refine", consumeCredit(), asyncH(async (req, res) => {
   const id = req.params.id!;
   const instruction = typeof req.body?.instruction === "string" ? req.body.instruction.trim() : "";
   if (instruction.length < 3) {

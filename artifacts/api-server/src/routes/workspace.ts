@@ -9,6 +9,7 @@ import {
   workspaceMembersTable,
   PLAN_TIERS,
   PLAN_SEATS,
+  PLAN_CREDITS,
   type PlanTier,
 } from "@workspace/db";
 
@@ -123,15 +124,20 @@ router.get("/workspace/me", requireAuth, async (req, res) => {
     .from(workspaceMembersTable)
     .where(eq(workspaceMembersTable.workspaceId, workspace.id));
 
+  const planTier = workspace.plan as keyof typeof PLAN_CREDITS;
+  const creditsLimit = PLAN_CREDITS[planTier] ?? PLAN_CREDITS.free;
   res.json({
     workspace,
     role,
     seatsUsed: members.length,
     seatLimit: workspace.seatLimit,
+    creditsUsed: workspace.creditsUsed,
+    creditsLimit,
     members,
     plans: PLAN_TIERS.map((tier) => ({
       tier,
       seatLimit: PLAN_SEATS[tier],
+      creditsLimit: PLAN_CREDITS[tier],
     })),
   });
 });

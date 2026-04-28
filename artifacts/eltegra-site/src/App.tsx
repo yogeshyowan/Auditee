@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { ClerkProvider, Show, useClerk } from "@clerk/react";
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/toaster";
+import { UpsellDialog } from "@/components/UpsellDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProjectProvider } from "@/lib/project-context";
 
@@ -239,6 +240,7 @@ function ClerkProviderWithRoutes() {
         <TooltipProvider>
           <Router />
           <Toaster />
+          <UpsellDialog />
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>

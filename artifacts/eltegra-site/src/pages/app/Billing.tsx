@@ -24,10 +24,13 @@ interface WorkspaceMe {
     seatLimit: number;
     ownerUserId: string;
     planActivatedAt: string | null;
+    creditsUsed: number;
   };
   role: "owner" | "member";
   seatsUsed: number;
   seatLimit: number;
+  creditsUsed: number;
+  creditsLimit: number;
   members: MemberRow[];
 }
 
@@ -182,7 +185,7 @@ export default function BillingPage() {
             Current plan
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-3">
+        <CardContent className="grid gap-6 md:grid-cols-4">
           <div>
             <div className="text-xs uppercase tracking-wide text-slate-500">Plan</div>
             <div className="mt-1 flex items-center gap-2">
@@ -200,6 +203,19 @@ export default function BillingPage() {
             {atCap && (
               <div className="mt-1 text-xs text-amber-700">
                 Seat limit reached — upgrade to invite more members.
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-wide text-slate-500">AI credits</div>
+            <div className="mt-1 text-2xl font-semibold text-slate-900" data-testid="text-credits-usage">
+              {me.creditsLimit === -1
+                ? "Unlimited"
+                : `${me.creditsUsed} / ${me.creditsLimit} used`}
+            </div>
+            {me.creditsLimit !== -1 && me.creditsUsed >= me.creditsLimit && (
+              <div className="mt-1 text-xs text-amber-700">
+                Out of credits — upgrade for unlimited generations.
               </div>
             )}
           </div>

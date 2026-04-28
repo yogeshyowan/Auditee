@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { creditAwareFetch } from "./credits";
 
 const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
 async function aiFetch<T>(path: string, body: unknown): Promise<T> {
-  const r = await fetch(`${apiBase}${path}`, {
+  const r = await creditAwareFetch(`${apiBase}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

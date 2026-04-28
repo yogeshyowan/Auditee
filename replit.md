@@ -146,6 +146,18 @@ Auditee uses Clerk (Replit-managed white-label) for authentication and a workspa
 
 Single page that shows the current plan + seat usage, three plan cards with "Activate" buttons, an invite-by-email form (disabled at cap), and a members table with remove buttons (owner only). Uses `useAuth().getToken()` to attach a Bearer token to every API call as a defense-in-depth alongside the Clerk session cookie.
 
+### Free-trial AI credits
+
+The Free plan and unauthenticated visitors share a hard-capped 6-generation budget so prospects can experience AI generation before signing up:
+
+- **Anonymous visitors**: on first call to a credit-gated endpoint the API mints a UUID `trial_id`, stores `(trial_id, credits_used=0)` in `anonymous_trials`, and sets a signed HttpOnly `auditee_trial` cookie (HMAC over the id with `SESSION_SECRET`). Subsequent calls atomically increment `credits_used` under the global cap. After 6, the API returns `402 { requiresLogin: true, … }` and the frontend's global `<UpsellDialog>` shows a "Sign up — it's free" CTA.
+- **Signed-in Free plan**: the same atomic conditional UPDATE pattern runs against `workspaces.creditsUsed`. After 6 the API returns `402 { requiresUpgrade: true, … }` and the modal shows an "Upgrade plan" CTA pointing to `/app/billing`.
+- **Professional / Enterprise**: limit is `-1` sentinel = unlimited; the middleware skips the DB write entirely and just sets `x-credits-remaining: -1`.
+- **Reserve + refund**: `consumeCredit` increments before the route handler runs, then registers `res.on('finish')` to atomically decrement when the response status is `>=400` — so failed validations or AI outages don't burn the user's allowance.
+- **Gated endpoints**: every AI-costly route — `/ai/generate-requirements`, `/ai/compliance-audit`, `/ai/traceability-audit`, `/ai/gap-analysis`, `/ai/interview/questions`, `/ai/analyze-code`, `/ai/legacy-extract`, `/ai/ask`, `/ai/estimate-effort`, `/reports/generate`, `/reports/:id/refine` — runs the middleware.
+- **Frontend**: `creditAwareFetch` (in `lib/credits.ts`) wraps `aiFetch` and `jfetch`. It always sends `credentials: "include"` so the trial cookie + Clerk session flow with each call, and dispatches the `auditee:upsell` window event on 402. The `<UpsellDialog>` mounted in `App.tsx` listens for that event and shows the appropriate modal — no per-feature error-handling required.
+- The Billing page surfaces "AI credits: X / Y used" alongside seat usage; Free tier shows "Unlimited" for paid plans.
+
 ### Pending integrations (require user action)
 
 - **Microsoft OAuth**: Replit-managed Clerk gives Google for free; for Microsoft sign-in, the user must open the Auth pane and add their Azure AD application credentials.
