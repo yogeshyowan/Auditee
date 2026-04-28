@@ -28,6 +28,7 @@ import {
   sourceFilesTable,
   defectsTable,
   testCasesTable,
+  aiReportsTable,
 } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
@@ -2131,9 +2132,9 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
 }));
 
 // =============================================================
-// AI: Generate Test Cases — for a single requirement, draft a
-// suite of executable test cases (functional, negative, NFR)
-// and persist them in `test_cases`. Returns the inserted rows.
+// AI: Generate Test Cases (legacy single-requirement) — kept for
+// back-compat; thin wrapper that calls into the richer
+// generate-test-suite engine with sensible defaults.
 // =============================================================
 router.post("/ai/generate-test-cases", consumeCredit(), aiHandler(async (req, res) => {
   const requirementId = requireString(req.body?.requirementId, "requirementId", { min: 1 });
@@ -2148,81 +2149,588 @@ router.post("/ai/generate-test-cases", consumeCredit(), aiHandler(async (req, re
   const access = await requireProjectAccessInline(req, res, req_.projectId, "developer");
   if (access === false) return;
 
-  const [project] = await db
-    .select()
-    .from(projectsTable)
-    .where(eq(projectsTable.id, req_.projectId));
-  if (!project) {
-    res.status(404).json({ error: "Project not found" });
+  const inserted = await generateSuiteImpl({
+    projectId: req_.projectId,
+    sourceKind: "requirement",
+    sourceIds: [req_.id],
+    levels: ["unit", "system", "acceptance"],
+    disciplines: ["functional", "negative", "uat"],
+    paradigms: ["procedural"],
+    includeStatic: false,
+    includeDynamic: true,
+    targetCount: 8,
+  });
+
+  res.status(201).json({ created: inserted, count: inserted.length });
+}));
+
+// =============================================================
+// AI: Generate Test Suite — comprehensive, multi-source,
+// multi-level, multi-discipline, multi-paradigm test generation.
+//
+// body: {
+//   projectId: string,
+//   sourceKind: "requirement"|"design"|"architecture"|"code"|"report"|"project",
+//   sourceIds?: string[],          // ids of requirements / report rows
+//   sourceFileIds?: string[],      // for "code" / "design" / "architecture"
+//   levels: ("unit"|"integration"|"system"|"acceptance"|"operational")[],
+//   disciplines: (string)[],       // see TC_DISCIPLINES
+//   paradigms: (string)[],         // procedural | bdd | oo_state | functional_property | exploratory
+//   includeStatic?: boolean,       // also generate inspection/review checklist items
+//   includeDynamic?: boolean,
+//   targetCount?: number,          // 4..40 — soft cap
+// }
+// =============================================================
+router.post("/ai/generate-test-suite", consumeCredit(), aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  const access = await requireProjectAccessInline(req, res, projectId, "developer");
+  if (access === false) return;
+
+  const sourceKind = String(req.body?.sourceKind ?? "requirement");
+  if (!["requirement", "design", "architecture", "code", "report", "project"].includes(sourceKind)) {
+    res.status(400).json({ error: "Invalid sourceKind" });
     return;
   }
+  const sourceIds = Array.isArray(req.body?.sourceIds)
+    ? req.body.sourceIds.filter((s: unknown): s is string => typeof s === "string").slice(0, 30)
+    : [];
+  const sourceFileIds = Array.isArray(req.body?.sourceFileIds)
+    ? req.body.sourceFileIds.filter((s: unknown): s is string => typeof s === "string").slice(0, 30)
+    : [];
 
-  const sysPrompt = `You are Auditee's Senior QA architect. Generate a comprehensive test-case suite for ONE requirement.
+  const levels = sanitizeStringArray(req.body?.levels, ["unit", "integration", "system", "acceptance", "operational"], ["system"]);
+  const disciplines = sanitizeStringArray(
+    req.body?.disciplines,
+    ["functional", "negative", "regulatory", "performance", "security", "usability", "compatibility", "regression", "accessibility", "reliability", "uat"],
+    ["functional"],
+  );
+  const paradigms = sanitizeStringArray(
+    req.body?.paradigms,
+    ["procedural", "bdd", "oo_state", "functional_property", "exploratory"],
+    ["procedural"],
+  );
+  const includeStatic = req.body?.includeStatic !== false ? true : false; // default true
+  const includeDynamic = req.body?.includeDynamic !== false ? true : false;
+  if (!includeStatic && !includeDynamic) {
+    res.status(400).json({
+      error: "At least one of includeStatic or includeDynamic must be true.",
+    });
+    return;
+  }
+  const targetCount = Math.max(4, Math.min(40, Number(req.body?.targetCount) || 12));
+
+  const inserted = await generateSuiteImpl({
+    projectId,
+    sourceKind,
+    sourceIds,
+    sourceFileIds,
+    levels,
+    disciplines,
+    paradigms,
+    includeStatic,
+    includeDynamic,
+    targetCount,
+  });
+
+  res.status(201).json({ created: inserted, count: inserted.length });
+}));
+
+function sanitizeStringArray(input: unknown, allowed: string[], fallback: string[]): string[] {
+  if (!Array.isArray(input)) return fallback;
+  const allow = new Set(allowed);
+  const out = input.filter((v): v is string => typeof v === "string" && allow.has(v));
+  return out.length > 0 ? Array.from(new Set(out)) : fallback;
+}
+
+async function generateSuiteImpl(opts: {
+  projectId: string;
+  sourceKind: string;
+  sourceIds?: string[];
+  sourceFileIds?: string[];
+  levels: string[];
+  disciplines: string[];
+  paradigms: string[];
+  includeStatic: boolean;
+  includeDynamic: boolean;
+  targetCount: number;
+}): Promise<Array<typeof testCasesTable.$inferSelect>> {
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, opts.projectId));
+  if (!project) throw new Error("Project not found");
+
+  // Build context from chosen source(s).
+  const ctxBlocks: string[] = [];
+  const sourceRefs: Array<{ kind: string; id: string; label?: string }> = [];
+
+  if (opts.sourceKind === "requirement" || opts.sourceKind === "project") {
+    const reqRows = opts.sourceIds && opts.sourceIds.length > 0
+      ? await db.select().from(requirementsTable).where(
+          and(eq(requirementsTable.projectId, opts.projectId), inArray(requirementsTable.id, opts.sourceIds)),
+        )
+      : opts.sourceKind === "project"
+        ? await db.select().from(requirementsTable).where(eq(requirementsTable.projectId, opts.projectId)).limit(40)
+        : [];
+    for (const r of reqRows) {
+      ctxBlocks.push(
+        `[REQUIREMENT ${r.code}] type=${r.type} priority=${r.priority}\nTitle: ${r.title}\n${(r.description ?? "").slice(0, 800)}`,
+      );
+      sourceRefs.push({ kind: "requirement", id: r.id, label: r.code });
+    }
+  }
+
+  if (opts.sourceKind === "report" && opts.sourceIds && opts.sourceIds.length > 0) {
+    const reports = await db
+      .select()
+      .from(aiReportsTable)
+      .where(inArray(aiReportsTable.id, opts.sourceIds));
+    for (const rpt of reports) {
+      if (rpt.projectId !== opts.projectId) continue;
+      const sectionText = (rpt.content?.sections ?? [])
+        .map((s) => `## ${s.heading}\n${(s.body ?? "").slice(0, 1200)}`)
+        .join("\n\n");
+      ctxBlocks.push(
+        `[${rpt.kind.toUpperCase()} ${rpt.title}]\nExec summary: ${(rpt.content?.executiveSummary ?? "").slice(0, 600)}\n${sectionText.slice(0, 4000)}`,
+      );
+      sourceRefs.push({ kind: "report", id: rpt.id, label: rpt.title.slice(0, 60) });
+    }
+  }
+
+  if (opts.sourceKind === "design" || opts.sourceKind === "architecture") {
+    // Pull recent reports of matching kind as the "documents" context.
+    const targetKinds =
+      opts.sourceKind === "design"
+        ? ["hld", "lld", "design_spec", "feature_spec", "ux_spec"]
+        : ["architecture_doc", "hld", "deployment_doc"];
+    const docs = await db
+      .select()
+      .from(aiReportsTable)
+      .where(and(eq(aiReportsTable.projectId, opts.projectId), inArray(aiReportsTable.kind, targetKinds)))
+      .orderBy(desc(aiReportsTable.updatedAt))
+      .limit(5);
+    for (const rpt of docs) {
+      const sectionText = (rpt.content?.sections ?? [])
+        .map((s) => `## ${s.heading}\n${(s.body ?? "").slice(0, 1000)}`)
+        .join("\n\n");
+      ctxBlocks.push(`[${rpt.kind.toUpperCase()} ${rpt.title}]\n${sectionText.slice(0, 3500)}`);
+      sourceRefs.push({ kind: opts.sourceKind, id: rpt.id, label: rpt.title.slice(0, 60) });
+    }
+  }
+
+  if (opts.sourceKind === "code" || opts.sourceKind === "project") {
+    // Sample text source files (small, code-like). For code-only mode use
+    // the explicitly chosen sourceFileIds first — but ALWAYS scope to this
+    // project so a developer cannot reference file ids from another project.
+    let files: Array<typeof sourceFilesTable.$inferSelect> = [];
+    const projectSources = await db
+      .select({ id: projectSourcesTable.id })
+      .from(projectSourcesTable)
+      .where(eq(projectSourcesTable.projectId, opts.projectId));
+    const sids = projectSources.map((s) => s.id);
+
+    if (opts.sourceFileIds && opts.sourceFileIds.length > 0 && sids.length > 0) {
+      files = await db
+        .select()
+        .from(sourceFilesTable)
+        .where(
+          and(
+            inArray(sourceFilesTable.id, opts.sourceFileIds),
+            inArray(sourceFilesTable.sourceId, sids), // <-- project scoping (IDOR fix)
+          ),
+        )
+        .limit(20);
+    } else if ((opts.sourceKind === "code" || opts.sourceKind === "project") && sids.length > 0) {
+      files = await db
+        .select()
+        .from(sourceFilesTable)
+        .where(and(inArray(sourceFilesTable.sourceId, sids), eq(sourceFilesTable.isBinary, "false")))
+        .limit(15);
+    }
+    for (const f of files) {
+      const ext = f.path.split(".").pop()?.toLowerCase() ?? "";
+      const isCode = ["ts", "tsx", "js", "jsx", "py", "java", "go", "rs", "c", "cpp", "h", "rb", "cs", "kt", "swift"].includes(ext);
+      if (!isCode && opts.sourceKind === "code") continue;
+      const snippet = (f.content ?? "").slice(0, 1500);
+      if (!snippet.trim()) continue;
+      ctxBlocks.push(`[CODE ${f.path}] (${f.language ?? ext})\n${snippet}`);
+      sourceRefs.push({ kind: "code", id: f.id, label: f.path });
+    }
+  }
+
+  if (ctxBlocks.length === 0) {
+    throw new Error(
+      `No source material found for ${opts.sourceKind}. Make sure your project has the relevant artefacts ingested.`,
+    );
+  }
+
+  const sysPrompt = `You are Auditee's Senior QA architect, fluent in IEEE 829, ISO/IEC/IEEE 29119, ISTQB v4 syllabus, and BDD/OO/functional test design.
+
+Generate a comprehensive test suite spanning the requested LEVELS, DISCIPLINES, and PARADIGMS for the supplied project material.
 
 Return STRICT JSON of shape:
-{"testCases":[{"title":string,"type":"functional"|"negative"|"non_functional"|"acceptance","priority":"low"|"medium"|"high"|"critical","steps":string[],"expected":string}]}
+{
+  "testCases": [{
+    "title": string,
+    "level": "unit"|"integration"|"system"|"acceptance"|"operational",
+    "discipline": "functional"|"negative"|"regulatory"|"performance"|"security"|"usability"|"compatibility"|"regression"|"accessibility"|"reliability"|"uat",
+    "paradigm": "procedural"|"bdd"|"oo_state"|"functional_property"|"exploratory",
+    "mode": "static"|"dynamic",
+    "priority": "low"|"medium"|"high"|"critical",
+    "preconditions": string,
+    "steps": string[],
+    "expected": string,
+    "gherkin": string,                 // OPTIONAL — only for paradigm=bdd, must be a Given/When/Then block
+    "sourceRefLabel": string,          // OPTIONAL — short label of which source it tests (e.g. "REQ-007" or "src/auth.ts")
+    "tags": string[]                   // OPTIONAL — short kebab-case tags
+  }]
+}
 
-Rules:
-- 4-8 test cases total. Cover at least: 1 happy-path functional, 1 boundary/edge functional, 1-2 negative (invalid input / unauthorized / failure mode), and at least 1 non_functional OR acceptance.
-- title: ≤140 chars, action-first ("Reject login with empty password").
-- steps: 2-7 ordered imperative steps, each ≤200 chars. Include preconditions in step 1 if needed.
-- expected: single-paragraph observable result (≤400 chars). Concrete, testable.
-- priority: derive from requirement priority + risk; security/compliance failures are high or critical.
+Hard rules:
+- Cover EVERY requested level/discipline/paradigm at least once where the source material allows; bias quantity toward the requested target count (~${opts.targetCount}).
+- Static cases (when requested) are review/inspection/walkthrough checklists targeting documents; dynamic cases describe runtime verification.
+- BDD paradigm cases MUST include a "gherkin" block with ≥3 Given/When/Then lines.
+- OO state cases MUST include explicit state transitions in steps (e.g. "From state=IDLE → trigger LOGIN → expect state=AUTHENTICATED").
+- Functional/property cases MUST describe an invariant + an oracle ("for any input X, property P must hold; oracle: …").
+- Performance/security/regulatory cases MUST cite the standard or threshold (e.g. "p95 latency < 250ms", "OWASP A01", "GDPR Art.17").
+- title ≤140 chars, action-first.
+- steps: 2-8 imperative steps, each ≤220 chars. preconditions ≤300 chars. expected ≤400 chars.
 - Output JSON only, no commentary.`;
 
   const userPrompt = `Project: ${project.name}
-Requirement: ${req_.code} — ${req_.title}
-Type: ${req_.type}  Priority: ${req_.priority}
-Description:
-${req_.description ?? "(none)"}`;
+
+Requested LEVELS: ${opts.levels.join(", ")}
+Requested DISCIPLINES: ${opts.disciplines.join(", ")}
+Requested PARADIGMS: ${opts.paradigms.join(", ")}
+Include STATIC: ${opts.includeStatic ? "yes" : "no"}
+Include DYNAMIC: ${opts.includeDynamic ? "yes" : "no"}
+Target count: ${opts.targetCount}
+Source kind: ${opts.sourceKind}
+
+=== SOURCE MATERIAL ===
+${ctxBlocks.join("\n\n---\n\n").slice(0, 18000)}`;
 
   type GenResult = {
     testCases?: Array<{
       title: string;
-      type: string;
-      priority: string;
-      steps: string[];
-      expected: string;
+      level?: string;
+      discipline?: string;
+      paradigm?: string;
+      mode?: string;
+      priority?: string;
+      preconditions?: string;
+      steps?: string[];
+      expected?: string;
+      gherkin?: string;
+      sourceRefLabel?: string;
+      tags?: string[];
     }>;
   };
-  const result = await jsonCompletion<GenResult>(sysPrompt, userPrompt, { maxTokens: 4000 });
-  const cases = Array.isArray(result.testCases) ? result.testCases.slice(0, 12) : [];
+  const result = await jsonCompletion<GenResult>(sysPrompt, userPrompt, { maxTokens: 8000 });
+  const cases = Array.isArray(result.testCases) ? result.testCases.slice(0, opts.targetCount + 6) : [];
 
-  const VALID_TYPES = new Set(["functional", "negative", "non_functional", "acceptance"]);
+  const VALID_LEVELS = new Set(["unit", "integration", "system", "acceptance", "operational"]);
+  const VALID_DISC = new Set(["functional", "negative", "regulatory", "performance", "security", "usability", "compatibility", "regression", "accessibility", "reliability", "uat"]);
+  const VALID_PARA = new Set(["procedural", "bdd", "oo_state", "functional_property", "exploratory"]);
+  const VALID_MODE = new Set(["static", "dynamic"]);
   const VALID_PRIORITY = new Set(["low", "medium", "high", "critical"]);
 
+  const reqIdsByCode = new Map<string, string>();
+  if (sourceRefs.some((r) => r.kind === "requirement")) {
+    for (const r of sourceRefs.filter((s) => s.kind === "requirement")) {
+      if (r.label) reqIdsByCode.set(r.label, r.id);
+    }
+  }
+
+  // Build the request-allow-lists so we can enforce that the AI did not
+  // produce levels/disciplines/paradigms/modes outside what was requested.
+  const allowedLevels = new Set(opts.levels);
+  const allowedDisciplines = new Set(opts.disciplines);
+  const allowedParadigms = new Set(opts.paradigms);
+  const allowedModes = new Set<string>([
+    ...(opts.includeStatic ? ["static"] : []),
+    ...(opts.includeDynamic ? ["dynamic"] : []),
+  ]);
+
   const inserted: Array<typeof testCasesTable.$inferSelect> = [];
+  const skipped: { reason: string; title: string }[] = [];
   for (const tc of cases) {
     if (typeof tc?.title !== "string" || tc.title.trim().length < 3) continue;
+
+    // Snap the AI's value to a requested one when it strayed outside the
+    // user's selection — keeps the suite within the requested envelope.
+    let level = VALID_LEVELS.has(tc.level ?? "") ? (tc.level as string) : "system";
+    if (!allowedLevels.has(level)) level = opts.levels[0]!;
+    let discipline = VALID_DISC.has(tc.discipline ?? "") ? (tc.discipline as string) : "functional";
+    if (!allowedDisciplines.has(discipline)) discipline = opts.disciplines[0]!;
+    let paradigm = VALID_PARA.has(tc.paradigm ?? "") ? (tc.paradigm as string) : "procedural";
+    if (!allowedParadigms.has(paradigm)) paradigm = opts.paradigms[0]!;
+    let mode = VALID_MODE.has(tc.mode ?? "") ? (tc.mode as string) : "dynamic";
+    if (!allowedModes.has(mode)) {
+      // If the AI produced a mode the caller didn't ask for, skip the case
+      // rather than silently flipping it (mode materially changes meaning).
+      skipped.push({ reason: `mode=${mode} not requested`, title: tc.title });
+      continue;
+    }
+    const priority = VALID_PRIORITY.has(tc.priority ?? "") ? (tc.priority as string) : "medium";
+
+    // Map legacy "type" for back-compat consumers.
+    const legacyType =
+      discipline === "negative" ? "negative"
+      : discipline === "uat" || discipline === "usability" ? "acceptance"
+      : ["performance", "security", "reliability", "compatibility", "accessibility", "regulatory"].includes(discipline) ? "non_functional"
+      : "functional";
+
+    // Resolve specific requirement link if the AI labelled it with a known code.
+    let linkedReqId: string | null = null;
+    if (tc.sourceRefLabel && reqIdsByCode.has(tc.sourceRefLabel)) {
+      linkedReqId = reqIdsByCode.get(tc.sourceRefLabel) ?? null;
+    } else if (opts.sourceKind === "requirement" && opts.sourceIds && opts.sourceIds.length === 1) {
+      linkedReqId = opts.sourceIds[0]!;
+    }
+
+    const refsForRow: Array<{ kind: string; id: string; label?: string }> = linkedReqId
+      ? [{ kind: "requirement", id: linkedReqId, label: tc.sourceRefLabel }]
+      : sourceRefs.slice(0, 5);
+
     const row = await db
       .insert(testCasesTable)
       .values({
         id: randomUUID(),
-        projectId: req_.projectId,
-        requirementId: req_.id,
+        projectId: opts.projectId,
+        requirementId: linkedReqId,
         title: String(tc.title).slice(0, 240),
-        type: VALID_TYPES.has(tc.type) ? tc.type : "functional",
-        priority: VALID_PRIORITY.has(tc.priority) ? tc.priority : "medium",
+        type: legacyType,
+        level,
+        discipline,
+        paradigm,
+        mode,
+        sourceKind: opts.sourceKind,
+        sourceRefs: refsForRow,
+        priority,
+        preconditions: typeof tc.preconditions === "string" ? tc.preconditions.slice(0, 800) : "",
         steps: Array.isArray(tc.steps)
           ? tc.steps.filter((s): s is string => typeof s === "string").map((s) => s.slice(0, 600)).slice(0, 12)
           : [],
         expected: typeof tc.expected === "string" ? tc.expected.slice(0, 2000) : "",
+        gherkin: typeof tc.gherkin === "string" && tc.gherkin.trim().length > 0 ? tc.gherkin.slice(0, 2000) : null,
         status: "draft",
-        tags: ["ai-generated", req_.code],
+        tags: Array.from(new Set([
+          "ai-generated",
+          ...(Array.isArray(tc.tags) ? tc.tags.filter((t): t is string => typeof t === "string").slice(0, 5) : []),
+        ])),
         createdBy: "Auditee",
       })
       .returning();
     inserted.push(row[0]);
   }
 
+  // Coverage check: did we produce at least one case for every requested
+  // level / discipline / paradigm? Surface the gaps in the activity log so
+  // admins can decide whether to re-run; we deliberately do NOT throw — a
+  // partial suite is still useful.
+  const seenLevels = new Set(inserted.map((r) => r.level));
+  const seenDisciplines = new Set(inserted.map((r) => r.discipline));
+  const seenParadigms = new Set(inserted.map((r) => r.paradigm));
+  const missingLevels = opts.levels.filter((l) => !seenLevels.has(l));
+  const missingDisciplines = opts.disciplines.filter((d) => !seenDisciplines.has(d));
+  const missingParadigms = opts.paradigms.filter((p) => !seenParadigms.has(p));
+  const gapNote = [
+    missingLevels.length ? `missing levels: ${missingLevels.join(",")}` : "",
+    missingDisciplines.length ? `missing disciplines: ${missingDisciplines.join(",")}` : "",
+    missingParadigms.length ? `missing paradigms: ${missingParadigms.join(",")}` : "",
+    skipped.length ? `skipped ${skipped.length} (mode mismatch)` : "",
+  ].filter(Boolean).join("; ");
+
   await logActivity(
     "test_case",
-    `Generated ${inserted.length} test case(s) for ${req_.code}`,
+    `Generated ${inserted.length} test case(s) (${opts.sourceKind}, ${opts.levels.join("/")}, ${opts.paradigms.join("/")})${gapNote ? ` — ${gapNote}` : ""}`,
     "Auditee",
-    req_.code,
   );
 
-  res.status(201).json({ created: inserted, count: inserted.length });
+  return inserted;
+}
+
+// =============================================================
+// AI: Run Test Suite — for a chosen set of test-case ids the AI
+// reviews each case against the project's source material and
+// produces a per-case verdict + reasoning. Persists an
+// ai_reports row of kind="test_execution_report" and updates each
+// test case's lastRunVerdict / status / lastRunNote.
+//
+// body: { projectId: string, testCaseIds?: string[] }
+//   if testCaseIds omitted → runs the most recently updated 40
+//   cases for the project.
+//
+// Status mapping policy:
+//   pass         → status="passing"
+//   fail         → status="failing"
+//   inconclusive → status preserved (don't downgrade decisive prior
+//                  results); only set to "blocked" if previously "draft".
+// =============================================================
+router.post("/ai/run-test-suite", consumeCredit(), aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  const access = await requireProjectAccessInline(req, res, projectId, "developer");
+  if (access === false) return;
+
+  const ids: string[] | undefined = Array.isArray(req.body?.testCaseIds)
+    ? req.body.testCaseIds.filter((s: unknown): s is string => typeof s === "string").slice(0, 60)
+    : undefined;
+
+  const cases = ids && ids.length > 0
+    ? await db.select().from(testCasesTable).where(
+        and(eq(testCasesTable.projectId, projectId), inArray(testCasesTable.id, ids)),
+      )
+    : await db.select().from(testCasesTable).where(eq(testCasesTable.projectId, projectId)).limit(40);
+
+  if (cases.length === 0) {
+    res.status(400).json({ error: "No test cases to run" });
+    return;
+  }
+
+  // Pull a small repo context for the executor.
+  const projectSources = await db
+    .select({ id: projectSourcesTable.id })
+    .from(projectSourcesTable)
+    .where(eq(projectSourcesTable.projectId, projectId));
+  const sids = projectSources.map((s) => s.id);
+  let codeFiles: Array<{ path: string; content: string | null }> = [];
+  if (sids.length > 0) {
+    codeFiles = (await db
+      .select({ path: sourceFilesTable.path, content: sourceFilesTable.content })
+      .from(sourceFilesTable)
+      .where(and(inArray(sourceFilesTable.sourceId, sids), eq(sourceFilesTable.isBinary, "false")))
+      .limit(40)
+    ).map((f) => ({ path: f.path, content: f.content }));
+  }
+
+  const repoSummary = codeFiles.length === 0
+    ? "(no ingested source files)"
+    : codeFiles
+        .map((f) => `### ${f.path}\n${(f.content ?? "").slice(0, 800)}`)
+        .join("\n\n")
+        .slice(0, 14000);
+
+  const sysPrompt = `You are Auditee's AI test executor.
+
+For EACH supplied test case, decide a verdict by reviewing the project's source material:
+- "pass"   — the artefact (code/design/req) clearly satisfies the test case's expected outcome
+- "fail"   — there is concrete evidence the artefact violates the expectation
+- "inconclusive" — insufficient evidence in the supplied material
+
+You must also produce:
+- "evidence": short citation (file path, requirement code, or report section) supporting the verdict
+- "reasoning": 1-3 sentence justification
+
+Return STRICT JSON of shape:
+{"results":[{"id":string,"verdict":"pass"|"fail"|"inconclusive","evidence":string,"reasoning":string}]}
+
+Be conservative — prefer "inconclusive" over guessing. Output JSON only.`;
+
+  const caseList = cases
+    .map((c, i) =>
+      `[${i + 1}] id=${c.id}\nTitle: ${c.title}\nLevel/Discipline/Paradigm: ${c.level}/${c.discipline}/${c.paradigm}\nPreconditions: ${c.preconditions || "(none)"}\nSteps:\n${c.steps.map((s, n) => `  ${n + 1}. ${s}`).join("\n") || "  (none)"}\nExpected: ${c.expected}`,
+    )
+    .join("\n\n");
+
+  const userPrompt = `=== PROJECT SOURCE MATERIAL (truncated) ===
+${repoSummary}
+
+=== TEST CASES TO RUN (${cases.length}) ===
+${caseList.slice(0, 24000)}`;
+
+  type ExecResult = {
+    results?: Array<{ id: string; verdict: string; evidence?: string; reasoning?: string }>;
+  };
+  const result = await jsonCompletion<ExecResult>(sysPrompt, userPrompt, { maxTokens: 8000 });
+
+  const byId = new Map((result.results ?? []).map((r) => [r.id, r] as const));
+  const VALID_VERDICTS = new Set(["pass", "fail", "inconclusive"]);
+
+  // Build the AI report.
+  const counts = { pass: 0, fail: 0, inconclusive: 0 };
+  const detailLines: string[] = [];
+  const reportId = randomUUID();
+  const now = new Date();
+
+  for (const c of cases) {
+    const r = byId.get(c.id);
+    const verdict = r && VALID_VERDICTS.has(r.verdict) ? r.verdict : "inconclusive";
+    counts[verdict as "pass" | "fail" | "inconclusive"]++;
+
+    const note = (r?.reasoning ?? "").slice(0, 600);
+    const ev = (r?.evidence ?? "").slice(0, 240);
+    // Status mapping: pass/fail are decisive; "inconclusive" should NOT
+    // downgrade a previously-decisive outcome (passing/failing) — only flip
+    // a draft to "blocked" so reviewers see it needs more evidence.
+    const newStatus =
+      verdict === "pass" ? "passing"
+      : verdict === "fail" ? "failing"
+      : c.status === "draft" ? "blocked"
+      : c.status; // preserve prior decisive status
+
+    await db
+      .update(testCasesTable)
+      .set({
+        status: newStatus,
+        lastRunAt: now,
+        lastRunVerdict: verdict,
+        lastRunNote: note ? `${note}${ev ? ` [evidence: ${ev}]` : ""}` : ev || "",
+        lastRunReportId: reportId,
+        updatedAt: now,
+      })
+      .where(eq(testCasesTable.id, c.id));
+
+    detailLines.push(
+      `**[${verdict.toUpperCase()}] ${c.title}**  \nLevel/Discipline: ${c.level}/${c.discipline}  \nEvidence: ${ev || "—"}  \nReasoning: ${note || "—"}`,
+    );
+  }
+
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  const projectName = project?.name ?? "Project";
+  const totalRun = cases.length;
+  const passRate = totalRun > 0 ? Math.round((counts.pass / totalRun) * 100) : 0;
+
+  await db.insert(aiReportsTable).values({
+    id: reportId,
+    projectId,
+    kind: "test_execution_report",
+    tone: "technical",
+    title: `AI Test Execution — ${projectName} (${now.toISOString().slice(0, 10)})`,
+    status: "draft",
+    content: {
+      title: `AI Test Execution — ${projectName}`,
+      subtitle: `${totalRun} cases · ${counts.pass} passed · ${counts.fail} failed · ${counts.inconclusive} inconclusive`,
+      executiveSummary: `Executed ${totalRun} AI-asserted test cases against the project's ingested artefacts. Pass rate: ${passRate}%. ${counts.fail > 0 ? `${counts.fail} failing case(s) require remediation.` : ""} ${counts.inconclusive > 0 ? `${counts.inconclusive} case(s) need additional source material to verify.` : ""}`.trim(),
+      sections: [
+        {
+          id: "summary",
+          heading: "Run summary",
+          body: `- Total cases run: **${totalRun}**\n- Passed: **${counts.pass}**\n- Failed: **${counts.fail}**\n- Inconclusive: **${counts.inconclusive}**\n- Pass rate: **${passRate}%**\n- Run at: ${now.toISOString()}\n- Source artefacts scanned: ${codeFiles.length} file(s)`,
+        },
+        {
+          id: "details",
+          heading: "Per-case verdicts",
+          body: detailLines.join("\n\n"),
+        },
+      ],
+      evidence: cases.slice(0, 10).map((c, i) => ({
+        id: `tc-${i + 1}`,
+        label: c.title.slice(0, 80),
+        source: `Test case ${c.id} (${c.level}/${c.discipline}/${c.paradigm})`,
+      })),
+    },
+  });
+
+  await logActivity(
+    "test_case",
+    `AI ran ${totalRun} test case(s): ${counts.pass} pass / ${counts.fail} fail / ${counts.inconclusive} inconclusive`,
+    "Auditee",
+  );
+
+  res.status(201).json({
+    reportId,
+    counts,
+    totalRun,
+    passRate,
+  });
 }));
 
 // =============================================================

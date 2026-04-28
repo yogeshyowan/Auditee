@@ -281,6 +281,21 @@ router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
       minSections: 7,
       maxSections: 10,
     },
+    test_execution_report: {
+      label: "Test Execution Report",
+      sectionGuide: `This is a CANONICAL Test Execution Report capturing the outcome of an AI-driven test run. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Run Summary" — total cases run, pass / fail / inconclusive counts, overall pass rate, scope of source material reviewed.
+  2. "Per-Case Verdicts" — for each test case, write a sub-block in this exact format inside the section body:
+     - "[VERDICT] <Test Case Title>"
+     - Level / Discipline:
+     - Evidence:
+     - Reasoning:
+  3. "Failures & Inconclusive Cases" — group the non-passing cases; for each, give a short remediation suggestion.
+  4. "Coverage & Confidence" — narrative on how representative the run was (which levels/disciplines were exercised), and any blind spots.
+  5. "Recommendations" — top 3-6 next actions for the team (fix bugs, broaden test data, re-run after change).`,
+      minSections: 4,
+      maxSections: 6,
+    },
     test_cases: {
       label: "Test Case Suite",
       sectionGuide: `This is a CANONICAL Test Case Suite generated from the project's requirements. Produce these sections, in this order, using EXACTLY these headings:

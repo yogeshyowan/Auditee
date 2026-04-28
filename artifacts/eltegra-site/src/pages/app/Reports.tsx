@@ -44,6 +44,7 @@ const KIND_GROUPS: Array<{ label: string; kinds: Array<{ kind: string; label: st
       { kind: "hld", label: "High-Level Design (HLD, IEEE 1016)", description: "HLD per IEEE 1016 — module decomposition, component interactions, external interface design, data design, tech stack, cross-cutting concerns." },
       { kind: "lld", label: "Low-Level Design (LLD, IEEE 1016)", description: "LLD per IEEE 1016 — class/method specs, API contracts, schemas, algorithms with pseudocode, error model, concurrency & state machines." },
       { kind: "test_cases", label: "Test Case Suite", description: "Standards-grade test suite generated from requirements — functional, negative/edge, non-functional, e2e — each case linked back to its requirement code." },
+      { kind: "test_execution_report", label: "Test Execution Report", description: "AI-executed test run output — per-case verdicts (pass/fail/inconclusive) with evidence, reasoning and traceability back to the cases. Auto-saved when you run a test suite from the Test Cases page." },
       { kind: "deployment_doc", label: "Deployment Document", description: "Build, release, observability and rollback documentation — environments, infra components, CI pipeline, release strategy, runbook, DR posture." },
       { kind: "user_manual", label: "User Manual (IEEE 1063)", description: "End-user documentation per IEEE 1063 — getting started, key concepts, task-oriented procedures, screen reference, troubleshooting, glossary." },
     ],

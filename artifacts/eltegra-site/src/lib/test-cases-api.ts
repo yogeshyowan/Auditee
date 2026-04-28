@@ -3,14 +3,46 @@ import { creditAwareFetch } from "./credits";
 
 const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
+export const TC_LEVELS = ["unit", "integration", "system", "acceptance", "operational"] as const;
+export const TC_DISCIPLINES = [
+  "functional",
+  "negative",
+  "regulatory",
+  "performance",
+  "security",
+  "usability",
+  "compatibility",
+  "regression",
+  "accessibility",
+  "reliability",
+  "uat",
+] as const;
+export const TC_PARADIGMS = ["procedural", "bdd", "oo_state", "functional_property", "exploratory"] as const;
+export const TC_MODES = ["static", "dynamic"] as const;
+export const TC_SOURCE_KINDS = ["requirement", "design", "architecture", "code", "report", "project"] as const;
+
+export type TcLevel = (typeof TC_LEVELS)[number];
+export type TcDiscipline = (typeof TC_DISCIPLINES)[number];
+export type TcParadigm = (typeof TC_PARADIGMS)[number];
+export type TcMode = (typeof TC_MODES)[number];
+export type TcSourceKind = (typeof TC_SOURCE_KINDS)[number];
+
 export type TestCase = {
   id: string;
   projectId: string;
   requirementId: string | null;
   title: string;
   type: "functional" | "negative" | "non_functional" | "acceptance";
+  level: TcLevel;
+  discipline: TcDiscipline;
+  paradigm: TcParadigm;
+  mode: TcMode;
+  sourceKind: TcSourceKind;
+  sourceRefs: Array<{ kind: string; id: string; label?: string }>;
+  preconditions: string;
   steps: string[];
   expected: string;
+  gherkin: string | null;
   status: "draft" | "passing" | "failing" | "blocked";
   priority: "low" | "medium" | "high" | "critical";
   tags: string[];
@@ -19,6 +51,8 @@ export type TestCase = {
   updatedAt: string;
   lastRunAt: string | null;
   lastRunNote: string;
+  lastRunVerdict: "pass" | "fail" | "inconclusive" | null;
+  lastRunReportId: string | null;
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -107,6 +141,69 @@ export function useGenerateTestCases(projectId: string) {
       qc.invalidateQueries({ queryKey: ["test-case-counts", projectId] });
     },
   });
+}
+
+export type GenerateSuiteBody = {
+  projectId: string;
+  sourceKind: TcSourceKind;
+  sourceIds?: string[];
+  sourceFileIds?: string[];
+  levels: TcLevel[];
+  disciplines: TcDiscipline[];
+  paradigms: TcParadigm[];
+  includeStatic?: boolean;
+  includeDynamic?: boolean;
+  targetCount?: number;
+};
+
+export function useGenerateTestSuite(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: GenerateSuiteBody) => {
+      const r = await creditAwareFetch(`${apiBase}/ai/generate-test-suite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error((await r.text()) || `Request failed (${r.status})`);
+      return r.json() as Promise<{ created: TestCase[]; count: number }>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["test-cases", projectId] });
+      qc.invalidateQueries({ queryKey: ["test-case-counts", projectId] });
+    },
+  });
+}
+
+export function useRunTestSuite(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { projectId: string; testCaseIds?: string[] }) => {
+      const r = await creditAwareFetch(`${apiBase}/ai/run-test-suite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error((await r.text()) || `Request failed (${r.status})`);
+      return r.json() as Promise<{
+        reportId: string;
+        counts: { pass: number; fail: number; inconclusive: number };
+        totalRun: number;
+        passRate: number;
+      }>;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["test-cases", projectId] });
+      qc.invalidateQueries({ queryKey: ["test-case-counts", projectId] });
+      qc.invalidateQueries({ queryKey: ["ai-reports", projectId] });
+    },
+  });
+}
+
+export function exportBundleUrl(projectId: string, reportId?: string): string {
+  const q = new URLSearchParams({ projectId });
+  if (reportId) q.set("reportId", reportId);
+  return `${apiBase}/test-cases/export-bundle?${q.toString()}`;
 }
 
 export function useTestCaseCountsByRequirement(projectId: string | null, requirementIds: string[]) {
