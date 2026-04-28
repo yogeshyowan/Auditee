@@ -298,3 +298,88 @@ export function useDeleteAskConversation() {
     },
   });
 }
+
+// ============================================================
+// Gap Analysis (Missing Requirements Analysis)
+// ============================================================
+export type GapMissing = {
+  category: "security" | "compliance" | "accessibility" | "performance" | "error_handling" | "observability" | "data" | "ux" | "other" | string;
+  title: string;
+  description: string;
+  rationale: string;
+  severity: "low" | "medium" | "high" | "critical";
+  suggestedType: "BRD" | "PRD" | "FRD" | "NFR";
+  suggestedPriority: "low" | "medium" | "high" | "critical";
+};
+export type GapDuplicate = { requirementCodes: string[]; rationale: string };
+export type GapConflict = { requirementCodes: string[]; rationale: string; severity: string };
+export type GapRecommendation = { requirementCode: string; issue: string; improvement: string };
+export type GapAnalysisResult = {
+  project: { id: string; name: string };
+  framework: string | null;
+  requirementCount: number;
+  summary: string;
+  missing: GapMissing[];
+  duplicates: GapDuplicate[];
+  conflicts: GapConflict[];
+  recommendations: GapRecommendation[];
+  runAt: string;
+};
+
+export function useGapAnalysis() {
+  return useMutation({
+    mutationFn: (body: { projectId: string; frameworkId?: string }) =>
+      aiFetch<GapAnalysisResult>("/ai/gap-analysis", body),
+  });
+}
+
+export function usePromoteGapFinding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      projectId: string;
+      title: string;
+      description: string;
+      type: "BRD" | "PRD" | "FRD" | "NFR";
+      priority: "low" | "medium" | "high" | "critical";
+      category?: string;
+    }) => aiFetch<{ created: GeneratedRequirement }>("/ai/gap-analysis/promote", body),
+    onSuccess: (_data, vars) => {
+      // Only invalidate requirement-list queries for this project, plus the
+      // activity feed. Avoids re-fetching every cached query in the app.
+      qc.invalidateQueries({ queryKey: ["requirements"] });
+      qc.invalidateQueries({ queryKey: ["requirements", vars.projectId] });
+      qc.invalidateQueries({ queryKey: ["activity"] });
+    },
+  });
+}
+
+// ============================================================
+// Effort Estimation
+// ============================================================
+export type EffortEstimate = {
+  requirementCode: string;
+  hours: number;
+  complexity: "trivial" | "small" | "medium" | "large" | "epic";
+  rationale: string;
+  risks?: string[];
+};
+export type EffortEstimateResult = {
+  project: { id: string; name: string };
+  requirementCount: number;
+  estimates: EffortEstimate[];
+  totals: {
+    hours: number;
+    weeksAtOneFte: number;
+    complexityBreakdown: Record<string, number>;
+  };
+  assumptions: string[];
+  runAt: string;
+};
+
+export function useEstimateEffort() {
+  return useMutation({
+    mutationFn: (body: { projectId: string }) =>
+      aiFetch<EffortEstimateResult>("/ai/estimate-effort", body),
+  });
+}

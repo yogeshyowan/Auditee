@@ -69,10 +69,10 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Resources",
     key: "resources",
     items: [
+      { title: "Features", desc: "The complete platform feature set, end-to-end.", href: "/features" },
       { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
-      { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "#pdlc" },
       { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
-      { title: "Customer Stories", desc: "Enterprises shipping faster with full traceability.", href: "#resources" },
+      { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "#pdlc" },
     ],
   },
   {

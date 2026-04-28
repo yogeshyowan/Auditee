@@ -196,6 +196,9 @@ codegen pipeline; the frontend calls them via thin `useMutation` wrappers in
 - `POST /api/ai/ask` — natural-language Q&A across project context (UI: `/app/ask`). Conversations persist server-side in the `ai_conversations` table and are scoped by `projectId` when one is selected.
 - `GET /api/ai/ask/history?projectId=...&limit=50` — list saved Q&A history (newest first).
 - `DELETE /api/ai/ask/history/:id` — remove a saved conversation.
+- `POST /api/ai/gap-analysis` — Missing Requirements Analysis. Loads a project's full requirements set (and optionally a selected compliance framework's controls) and returns structured findings: missing requirements (categorised: security / compliance / accessibility / performance / error_handling / observability / data / ux / other), duplicates, conflicts, and improvement recommendations. UI: `/app/gaps` (sidebar: "Gap Detection").
+- `POST /api/ai/gap-analysis/promote` — turns one missing-requirement finding into a real `requirements` row with `tags = ["gap-analysis", <category>]`. Category is allowlisted server-side against the same enum the analysis prompt is permitted to emit.
+- `POST /api/ai/estimate-effort` — per-requirement man-hour estimates (with complexity classification + risks) and project-total roll-up (hours + weeks-at-1-FTE + complexity breakdown). Designed for the Requirements page bulk-estimate action.
 
 Provider client lives at `lib/integrations-openai-ai-server` (Replit AI Integrations
 proxy — no API key required). Model: `gpt-5.2` (JSON mode for structured outputs).
@@ -207,6 +210,7 @@ proxy — no API key required). Model: `gpt-5.2` (JSON mode for structured outpu
 
 ### Marketing pages
 - `/` Home — landing with NAV_GROUPS for Platform / Solutions / Resources / Company. Internal `/`-routes use Wouter `Link` (client-side); hashed deep-links (e.g. `/about#careers`) use raw `<a>` so the browser performs native anchor scrolling.
+- `/features` — comprehensive platform feature page (12 feature cards each linking to its app route, four AI-native capabilities strip, role-based outcomes for Product Owner / Business Analyst / QA & Compliance, demo CTAs).
 - `/pricing`, `/roi-calculator`, `/about`, `/contact` — full marketing pages registered in `App.tsx`. The Contact form posts to the existing `POST /api/demo-requests` endpoint with the reason prefixed into the message body.
 
 ### Notes

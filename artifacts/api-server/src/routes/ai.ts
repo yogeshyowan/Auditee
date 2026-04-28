@@ -1340,4 +1340,316 @@ router.delete("/ai/ask/history/:id", aiHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// =============================================================
+// AI: Gap Analysis (Missing Requirements Analysis)
+// Analyses an entire project's requirements set against industry
+// best practices, security, and the chosen compliance framework
+// (if any) and returns a structured set of findings:
+//   - missing requirements (categorised)
+//   - duplicates between existing requirements
+//   - conflicts (requirements that contradict each other)
+//   - improvement recommendations
+// =============================================================
+router.post("/ai/gap-analysis", aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  const frameworkId = optionalString(req.body?.frameworkId);
+
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const reqs = await db
+    .select({
+      code: requirementsTable.code,
+      title: requirementsTable.title,
+      description: requirementsTable.description,
+      type: requirementsTable.type,
+      priority: requirementsTable.priority,
+    })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, projectId));
+
+  if (reqs.length === 0) {
+    res.status(422).json({ error: "Project has no requirements yet — generate or import requirements first." });
+    return;
+  }
+
+  let frameworkContext = "";
+  let frameworkLabel = "general industry best practices";
+  if (frameworkId) {
+    const [fw] = await db
+      .select()
+      .from(complianceFrameworksTable)
+      .where(eq(complianceFrameworksTable.id, frameworkId));
+    if (fw) {
+      const controls = await db
+        .select({
+          code: complianceControlsTable.code,
+          title: complianceControlsTable.title,
+          description: complianceControlsTable.description,
+        })
+        .from(complianceControlsTable)
+        .where(eq(complianceControlsTable.frameworkId, frameworkId));
+      frameworkLabel = `${fw.code} — ${fw.name}`;
+      const controlList = controls
+        .slice(0, 60)
+        .map((c) => `- ${c.code}: ${c.title}`)
+        .join("\n");
+      frameworkContext = `\n\nThe project must satisfy this compliance framework:\n${frameworkLabel}\nKey controls:\n${controlList || "(no controls registered)"}`;
+    }
+  }
+
+  const reqList = reqs
+    .map((r) => `- ${r.code} [${r.type}/${r.priority}] ${r.title}${r.description ? ` — ${r.description.slice(0, 220)}` : ""}`)
+    .join("\n");
+
+  const system = `You are Auditee, a senior enterprise requirements analyst with 20+ years of domain expertise across regulated industries (healthcare, finance, life sciences, manufacturing).
+
+Your job is to perform a rigorous Missing Requirements Analysis on the project's existing requirements set. You must identify:
+  1. Critical requirements that are MISSING (especially security, error-handling, accessibility, regulatory, observability, data-retention, edge-cases).
+  2. DUPLICATES — requirements that overlap so much they should be merged.
+  3. CONFLICTS — requirements that contradict each other or are mutually exclusive.
+  4. RECOMMENDATIONS — meaningful improvements to existing requirements.
+
+Return STRICT JSON of shape:
+{
+  "summary": string,
+  "missing": [{"category": "security"|"compliance"|"accessibility"|"performance"|"error_handling"|"observability"|"data"|"ux"|"other", "title": string, "description": string, "rationale": string, "severity": "low"|"medium"|"high"|"critical", "suggestedType": "BRD"|"PRD"|"FRD"|"NFR", "suggestedPriority": "low"|"medium"|"high"|"critical"}],
+  "duplicates": [{"requirementCodes": string[], "rationale": string}],
+  "conflicts": [{"requirementCodes": string[], "rationale": string, "severity": "low"|"medium"|"high"|"critical"}],
+  "recommendations": [{"requirementCode": string, "issue": string, "improvement": string}]
+}
+
+Rules:
+- Be specific and actionable. Vague findings are worthless.
+- requirementCodes in duplicates/conflicts/recommendations MUST reference codes from the supplied list.
+- Aim for 4-12 missing items, but only include ones that are genuinely material to a production-quality system.
+- summary is 1-2 sentences capturing the overall posture.
+- Output JSON only, no commentary.`;
+
+  const user = `Project: ${project.name}
+Project context: ${project.description ?? "(none)"}
+Reference standard: ${frameworkLabel}${frameworkContext}
+
+Existing requirements (${reqs.length}):
+${reqList}`;
+
+  type GapResult = {
+    summary: string;
+    missing: Array<{
+      category: string;
+      title: string;
+      description: string;
+      rationale: string;
+      severity: "low" | "medium" | "high" | "critical";
+      suggestedType: "BRD" | "PRD" | "FRD" | "NFR";
+      suggestedPriority: "low" | "medium" | "high" | "critical";
+    }>;
+    duplicates: Array<{ requirementCodes: string[]; rationale: string }>;
+    conflicts: Array<{ requirementCodes: string[]; rationale: string; severity: string }>;
+    recommendations: Array<{ requirementCode: string; issue: string; improvement: string }>;
+  };
+
+  const result = await jsonCompletion<GapResult>(system, user);
+
+  await logActivity(
+    "gap_analysis",
+    `Gap analysis run on ${project.name} (${reqs.length} reqs, framework: ${frameworkLabel}) — ${result.missing?.length ?? 0} missing, ${result.duplicates?.length ?? 0} dupes, ${result.conflicts?.length ?? 0} conflicts`,
+    "Auditee",
+  );
+
+  res.json({
+    project: { id: project.id, name: project.name },
+    framework: frameworkId ? frameworkLabel : null,
+    requirementCount: reqs.length,
+    summary: result.summary || "",
+    missing: Array.isArray(result.missing) ? result.missing : [],
+    duplicates: Array.isArray(result.duplicates) ? result.duplicates : [],
+    conflicts: Array.isArray(result.conflicts) ? result.conflicts : [],
+    recommendations: Array.isArray(result.recommendations) ? result.recommendations : [],
+    runAt: new Date().toISOString(),
+  });
+}));
+
+// =============================================================
+// AI: Promote a gap-analysis "missing" finding into a real
+// requirement. Accepts a single finding payload (the same shape
+// the gap-analysis endpoint emits) and inserts it.
+// =============================================================
+router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  const title = requireString(req.body?.title, "title", { min: 4, max: 200 });
+  const description = requireString(req.body?.description, "description", { min: 4, max: 4000 });
+  const type = requireString(req.body?.type, "type", { min: 1 });
+  const priority = requireString(req.body?.priority, "priority", { min: 1 });
+  const category = optionalString(req.body?.category);
+
+  if (!["BRD", "PRD", "FRD", "NFR"].includes(type)) {
+    res.status(400).json({ error: "type must be BRD|PRD|FRD|NFR" });
+    return;
+  }
+  if (!["low", "medium", "high", "critical"].includes(priority)) {
+    res.status(400).json({ error: "priority must be low|medium|high|critical" });
+    return;
+  }
+
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const code = await nextRequirementCode(projectId);
+  // Allowlist category — only the categories the gap-analysis prompt is permitted
+  // to emit can become a tag, so we never accept arbitrary user-controlled strings
+  // into the tags column.
+  const ALLOWED_GAP_CATEGORIES = new Set([
+    "security",
+    "compliance",
+    "accessibility",
+    "performance",
+    "error_handling",
+    "observability",
+    "data",
+    "ux",
+    "other",
+  ]);
+  const tags = ["gap-analysis"];
+  if (category && ALLOWED_GAP_CATEGORIES.has(category)) tags.push(category);
+
+  const [row] = await db
+    .insert(requirementsTable)
+    .values({
+      id: randomUUID(),
+      projectId,
+      code,
+      title,
+      description,
+      type: type as "BRD" | "PRD" | "FRD" | "NFR",
+      status: "draft",
+      priority: priority as "low" | "medium" | "high" | "critical",
+      owner: "Auditee",
+      tags,
+      linkedFrameworks: [],
+      externalSystem: "auditee_ai",
+      externalId: code,
+    })
+    .returning();
+
+  await logActivity(
+    "requirement",
+    `${code} drafted by Auditee from gap analysis (${category ?? "general"})`,
+    "Auditee",
+    code,
+  );
+
+  res.status(201).json({ created: row });
+}));
+
+// =============================================================
+// AI: Effort Estimation
+// Estimates implementation effort (in man-hours) for every
+// requirement in a project. Returns per-requirement estimates
+// plus a project total and complexity breakdown.
+// =============================================================
+router.post("/ai/estimate-effort", aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const reqs = await db
+    .select({
+      code: requirementsTable.code,
+      title: requirementsTable.title,
+      description: requirementsTable.description,
+      type: requirementsTable.type,
+      priority: requirementsTable.priority,
+    })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, projectId));
+
+  if (reqs.length === 0) {
+    res.status(422).json({ error: "Project has no requirements yet." });
+    return;
+  }
+
+  const reqList = reqs
+    .map((r) => `- ${r.code} [${r.type}/${r.priority}] ${r.title}${r.description ? ` — ${r.description.slice(0, 220)}` : ""}`)
+    .join("\n");
+
+  const system = `You are Auditee, a senior delivery engineer with 20+ years estimating enterprise software work.
+
+For each requirement provided, estimate implementation effort in man-hours assuming a staff-level full-stack engineer. Include:
+  - design + implementation + tests + code review + documentation
+  - all reasonable risk buffer for the requirement's complexity
+
+Return STRICT JSON of shape:
+{
+  "estimates": [{"requirementCode": string, "hours": number, "complexity": "trivial"|"small"|"medium"|"large"|"epic", "rationale": string, "risks": string[]}],
+  "totals": {"hours": number, "weeksAtOneFte": number, "complexityBreakdown": {"trivial": number, "small": number, "medium": number, "large": number, "epic": number}},
+  "assumptions": string[]
+}
+
+Rules:
+- requirementCode MUST match a code from the input list. Cover EVERY requirement.
+- hours: number (1-400 per requirement). Be realistic, not optimistic.
+- weeksAtOneFte = round(totalHours / 40, 1).
+- assumptions: 2-5 bullet points explaining the basis.
+- Output JSON only, no commentary.`;
+
+  const user = `Project: ${project.name}
+Project context: ${project.description ?? "(none)"}
+
+Requirements (${reqs.length}):
+${reqList}`;
+
+  type EffortResult = {
+    estimates: Array<{
+      requirementCode: string;
+      hours: number;
+      complexity: "trivial" | "small" | "medium" | "large" | "epic";
+      rationale: string;
+      risks?: string[];
+    }>;
+    totals: {
+      hours: number;
+      weeksAtOneFte: number;
+      complexityBreakdown: Record<string, number>;
+    };
+    assumptions: string[];
+  };
+
+  const result = await jsonCompletion<EffortResult>(system, user);
+
+  await logActivity(
+    "effort_estimate",
+    `Effort estimate run on ${project.name} (${reqs.length} reqs) — ${result.totals?.hours ?? 0} hours total`,
+    "Auditee",
+  );
+
+  res.json({
+    project: { id: project.id, name: project.name },
+    requirementCount: reqs.length,
+    estimates: Array.isArray(result.estimates) ? result.estimates : [],
+    totals: result.totals ?? { hours: 0, weeksAtOneFte: 0, complexityBreakdown: {} },
+    assumptions: Array.isArray(result.assumptions) ? result.assumptions : [],
+    runAt: new Date().toISOString(),
+  });
+}));
+
 export default router;

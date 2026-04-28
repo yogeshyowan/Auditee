@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 const NAV_ITEMS = [
   { href: "/app/sources", label: "Project Sources", icon: FolderInput },
   { href: "/app/requirements", label: "Requirements", icon: ListChecks },
+  { href: "/app/gaps", label: "Gap Detection", icon: AlertTriangle },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/app/capa", label: "CAPA Actions", icon: AlertTriangle },
