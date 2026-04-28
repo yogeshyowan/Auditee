@@ -2,8 +2,70 @@ import { Router, type IRouter } from "express";
 import { eq, count, sql } from "drizzle-orm";
 import { db, projectsTable, requirementsTable, projectSourcesTable } from "@workspace/db";
 import { GetProjectParams } from "@workspace/api-zod";
+import { z } from "zod";
 
 const router: IRouter = Router();
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+const CreateProjectBody = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(120),
+  description: z.string().trim().max(2000).optional().default(""),
+  owner: z.string().trim().max(120).optional(),
+});
+
+router.post("/projects", async (req, res) => {
+  let body: z.infer<typeof CreateProjectBody>;
+  try {
+    body = CreateProjectBody.parse(req.body);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.issues?.[0]?.message ?? "Invalid project payload" });
+    return;
+  }
+
+  const baseSlug = slugify(body.name) || "project";
+  // Try the natural slug first, then -2, -3, ... up to 50. We prefer
+  // *insert + catch unique-violation* over check-then-insert because two
+  // concurrent requests with the same name would otherwise both pick the
+  // same slug and one would 500. PG error code 23505 = unique_violation.
+  const MAX_ATTEMPTS = 50;
+  for (let n = 1; n <= MAX_ATTEMPTS; n++) {
+    const slug = n === 1 ? baseSlug : `${baseSlug}-${n}`;
+    const id = `proj-${slug}`;
+    try {
+      const [row] = await db
+        .insert(projectsTable)
+        .values({
+          id,
+          name: body.name,
+          slug,
+          description: body.description ?? "",
+          owner: body.owner ?? null,
+        })
+        .returning();
+      res.status(201).json({
+        ...row,
+        requirementCount: 0,
+        sourceCount: 0,
+        readySourceCount: 0,
+      });
+      return;
+    } catch (err: any) {
+      // 23505 = unique_violation (slug or id collision) → try the next suffix.
+      if (err?.code === "23505" || err?.cause?.code === "23505") continue;
+      res.status(500).json({ error: err?.message ?? "Failed to create project" });
+      return;
+    }
+  }
+  res.status(409).json({ error: "Could not allocate unique slug — choose a different name" });
+});
 
 router.get("/projects", async (_req, res) => {
   // Fetch project rows + counts. We use 3 small lookup queries instead of correlated

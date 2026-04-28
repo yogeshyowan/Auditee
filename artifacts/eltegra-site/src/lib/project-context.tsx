@@ -58,18 +58,25 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     [allProjects],
   );
 
-  // Auto-select the first connected project. If the currently-selected projectId
-  // no longer matches a connected project (e.g. the source was deleted), reset.
+  // Auto-select a sensible default project. Rules:
+  // - If the currently-selected project still exists in `allProjects` (whether
+  //   connected or not — a freshly-created project starts with 0 sources and
+  //   should remain selectable), keep it.
+  // - Otherwise fall back to the first *connected* project, or null if there
+  //   are no projects at all.
   useEffect(() => {
-    if (connectedProjects.length === 0) {
+    if (allProjects.length === 0) {
       if (projectId !== null) setProjectId(null);
       return;
     }
-    const stillConnected = connectedProjects.some((p) => p.id === projectId);
-    if (!stillConnected) {
+    const stillExists = allProjects.some((p) => p.id === projectId);
+    if (stillExists) return;
+    if (connectedProjects.length > 0) {
       setProjectId(connectedProjects[0].id);
+    } else {
+      setProjectId(allProjects[0].id);
     }
-  }, [connectedProjects, projectId]);
+  }, [allProjects, connectedProjects, projectId]);
 
   return (
     <ProjectContext.Provider

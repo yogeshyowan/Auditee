@@ -15,10 +15,13 @@ import {
   Workflow,
   BarChart3,
   CalendarClock,
-  FolderInput
+  FolderInput,
+  Plus
 } from "lucide-react";
+import { useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AskMontanaFloater } from "@/components/AskMontanaFloater";
+import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useProjectContext } from "@/lib/project-context";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
@@ -47,8 +50,12 @@ const NAV_ITEMS = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { projectId, setProjectId, connectedProjects, allProjects } = useProjectContext();
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const currentProject = connectedProjects.find((p) => p.id === projectId) ?? connectedProjects[0];
+  // Look up the active project across ALL projects (connected or not) so
+  // freshly-created projects with 0 sources still appear in the switcher button.
+  const currentProject =
+    allProjects.find((p) => p.id === projectId) ?? connectedProjects[0] ?? allProjects[0];
   const unconnected = allProjects.filter((p) => p.sourceCount === 0);
 
   return (
@@ -105,9 +112,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   {unconnected.map((project) => (
                     <DropdownMenuItem
                       key={project.id}
-                      disabled
-                      className="opacity-60"
-                      title="Connect a source from the Project Sources page to enable this project"
+                      onClick={() => setProjectId(project.id)}
+                      className={`opacity-80 ${projectId === project.id ? "bg-slate-100 font-semibold" : ""}`}
+                      title="No sources yet — switch here, then connect a source from the Project Sources page."
+                      data-testid={`project-option-${project.id}`}
                     >
                       <span className="flex-1 truncate">{project.name}</span>
                       <span className="text-[10px] text-slate-400 ml-2">no sources</span>
@@ -115,8 +123,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   ))}
                 </>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setCreateOpen(true)}
+                className="text-primary font-medium"
+                data-testid="create-project-trigger"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New project
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">

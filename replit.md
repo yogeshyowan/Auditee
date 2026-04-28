@@ -63,6 +63,21 @@ columns on `requirements`: `sourceId`, `externalId`, `externalUrl`,
 `externalSystem`. ReqIF is uploaded via `POST /api/sources/upload-reqif`; all
 other RM kinds use the standard `/api/sources` + `/api/sources/:id/sync` flow.
 
+### Creating new projects from the UI
+Users create new projects directly from the project switcher in the sidebar
+— there's a "+ New project" item at the bottom of the dropdown that opens
+`components/CreateProjectDialog.tsx`. It POSTs to `/api/projects` (added in
+`routes/projects.ts`), which auto-derives a unique slug from the name
+(`slugify(name)` with `-2`, `-3` suffix on collision) and assigns id
+`proj-<slug>`. After create, the dialog awaits the projects-list refetch
+(via `getListProjectsQueryKey()` from the generated client) before calling
+`setProjectId(newId)` — this matters because the auto-select effect in
+`ProjectProvider` would otherwise see an unknown id and snap back to the
+first connected project. The provider was also updated to keep a project
+selected as long as it exists in `allProjects` (not just `connectedProjects`),
+so freshly-created projects with 0 sources stay active until the user
+connects their first source.
+
 ### Navigation order + floating Ask Montana
 The left-side app navigation is ordered around the natural workflow:
 **Project Sources** is the landing item (top of the list) because nothing
