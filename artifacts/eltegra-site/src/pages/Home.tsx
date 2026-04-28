@@ -618,9 +618,9 @@ function Capabilities() {
               title: "Requirements-to-Code Traceability",
               items: [
                 "Jira tickets ↔ functions in code",
-                "Track genuinely incomplete features",
-                "Verify regulatory requirements exist in implementation",
-                "Continuous automated auditing"
+                "Scope the live graph to one framework (SOC 2, HIPAA, GDPR, PCI, ISO 27001, FDA 21 CFR 11…)",
+                "Prove every regulatory control maps to shipping code",
+                "Continuous, framework-aware auditing"
               ]
             }
           ].map((cap, i) => (
