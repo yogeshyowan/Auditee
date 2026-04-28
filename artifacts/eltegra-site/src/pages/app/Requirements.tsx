@@ -143,6 +143,7 @@ export default function RequirementsPage() {
   const [generateCodeOpen, setGenerateCodeOpen] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [codeLanguage, setCodeLanguage] = useState("");
+  const [codeFrameworkIds, setCodeFrameworkIds] = useState<string[]>([]);
   const [codeTab, setCodeTab] = useState("paste");
   const [codeSourceLabel, setCodeSourceLabel] = useState<string>(""); // shows "loaded from foo.ts"
   const [githubUrl, setGithubUrl] = useState("");
@@ -665,11 +666,17 @@ export default function RequirementsPage() {
                 e.preventDefault();
                 if (!projectId || codeInput.trim().length < 20) return;
                 generateMut.mutate(
-                  { projectId, code: codeInput, language: codeLanguage || undefined },
+                  {
+                    projectId,
+                    code: codeInput,
+                    language: codeLanguage || undefined,
+                    applicableFrameworkIds: codeFrameworkIds,
+                  },
                   {
                     onSuccess: (data) => {
                       toast({ title: `Generated ${data.count} requirements from code` });
                       resetCodeDialog();
+                      setCodeFrameworkIds([]);
                       setGenerateCodeOpen(false);
                     },
                     onError: (err: Error) => {
@@ -835,6 +842,12 @@ export default function RequirementsPage() {
                   data-testid="input-code-language"
                 />
               </div>
+
+              <StandardsMultiSelect
+                value={codeFrameworkIds}
+                onChange={setCodeFrameworkIds}
+                helper="Auditee will draft requirements from the code that satisfy each selected standard's structure and citation rules."
+              />
 
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <span data-testid="text-code-char-count">{codeInput.length} / 30000 characters loaded</span>
