@@ -14,8 +14,8 @@ export const PLAN_SEATS: Record<PlanTier, number> = {
 
 export const PLAN_PRICE_USD: Record<PlanTier, number> = {
   free: 0,
-  professional: 499,
-  enterprise: 2599,
+  professional: 5,
+  enterprise: 25,
 };
 
 // Per-workspace lifetime AI generation credits. -1 = unlimited.

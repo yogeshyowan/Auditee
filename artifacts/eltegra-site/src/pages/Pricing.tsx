@@ -25,7 +25,7 @@ const TIERS = [
   },
   {
     name: "Professional",
-    price: "$499",
+    price: "$5",
     cadence: "per month",
     blurb: "For product, engineering and compliance teams shipping continuously.",
     cta: "Activate Professional",
@@ -46,7 +46,7 @@ const TIERS = [
   },
   {
     name: "Enterprise",
-    price: "$2,599",
+    price: "$25",
     cadence: "per month",
     blurb: "For regulated, multi-business-unit organisations with complex audit obligations.",
     cta: "Activate Enterprise",
@@ -90,13 +90,13 @@ export default function Pricing() {
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900">
       <SEO
         title="Pricing — Auditee AI Requirements & Compliance Platform"
-        description="Transparent pricing for Auditee. Free tier for solo evaluation, Professional at $499/mo for 4 users, Enterprise at $2,599/mo for 20 users. Single-tenant deployments, SOC 2 Type II, on-prem and air-gapped options available."
+        description="Transparent pricing for Auditee. Free tier for solo evaluation, Professional at $5/mo for 4 users, Enterprise at $25/mo for 20 users. Single-tenant deployments, SOC 2 Type II, on-prem and air-gapped options available."
         path="/pricing"
         keywords={["Auditee pricing", "AI requirements pricing", "compliance platform pricing", "DOORS alternative pricing"]}
         jsonLd={[
           faqLd([
             { q: "Is there a free tier?", a: "Yes. Free is forever-free for a single user with 1 project, up to 200 requirements, GitHub and ZIP source connectors, AI generation, and full BRD/PRD outputs." },
-            { q: "How many users does each paid plan support?", a: "Professional ($499/mo) includes up to 4 user seats. Enterprise ($2,599/mo) includes up to 20 user seats. Owners can invite or remove members at any time from the in-app Billing & Team page." },
+            { q: "How many users does each paid plan support?", a: "Professional ($5/mo) includes up to 4 user seats. Enterprise ($25/mo) includes up to 20 user seats. Owners can invite or remove members at any time from the in-app Billing & Team page." },
             { q: "Can I deploy Auditee on-premises or air-gapped?", a: "Yes. Enterprise plans support single-tenant cloud (your VPC), on-premises Kubernetes, and air-gapped installs for regulated industries (defence, medical, automotive)." },
             { q: "Do you train on customer data?", a: "No. Auditee never trains foundation models on customer source code, requirements or audit content. Customer data stays inside the customer's tenant." },
             { q: "Which compliance frameworks are included?", a: "All paid tiers include the full 23-framework library: SOC 2, ISO 27001, HIPAA, IEC 62304, ISO 13485, ISO 26262, ASPICE, CMMI, DO-178C, FDA 21 CFR Part 11, FDA QMSR, GDPR, PCI DSS 4.0, NIST CSF, NIST 800-53, EU AI Act, NIS2, DORA, and more." },
