@@ -13,20 +13,40 @@ const router: IRouter = Router();
 
 router.get("/traceability/graph", async (req, res) => {
   const params = GetTraceabilityGraphQueryParams.parse(req.query);
-  const reqs = await db
+
+  // 1. Pull project's requirements + code, plus the framework catalog.
+  const allReqs = await db
     .select()
     .from(requirementsTable)
     .where(eq(requirementsTable.projectId, params.projectId));
-  const code = await db
+  const allCode = await db
     .select()
     .from(codeArtifactsTable)
     .where(eq(codeArtifactsTable.projectId, params.projectId));
-  const frameworks = await db.select().from(complianceFrameworksTable);
-  const reqIds = new Set(reqs.map((r) => r.id));
-  const links = (await db.select().from(traceabilityLinksTable)).filter((l) =>
-    reqIds.has(l.requirementId),
-  );
+  const allFrameworks = await db.select().from(complianceFrameworksTable);
 
+  // 2. If a frameworkId is supplied, narrow the slice:
+  //    - requirements: only those whose linkedFrameworks includes it
+  //    - code: only artifacts traced to those requirements
+  //    - frameworks: only the selected one
+  // Otherwise fall through with the unfiltered project view.
+  const fwId = params.frameworkId;
+  const reqs = fwId
+    ? allReqs.filter((r) => (r.linkedFrameworks ?? []).includes(fwId))
+    : allReqs;
+  const reqIds = new Set(reqs.map((r) => r.id));
+
+  const allLinks = await db.select().from(traceabilityLinksTable);
+  const links = allLinks.filter((l) => reqIds.has(l.requirementId));
+  const codeIdsInGraph = new Set(links.map((l) => l.codeArtifactId));
+  const code = fwId ? allCode.filter((c) => codeIdsInGraph.has(c.id)) : allCode;
+
+  const frameworks = fwId
+    ? allFrameworks.filter((f) => f.id === fwId)
+    : allFrameworks;
+
+  // 3. Assemble nodes + edges. Node shapes are unchanged so the SVG renderer
+  //    keeps working without modification.
   const nodes = [
     ...reqs.map((r) => ({
       id: r.id,
@@ -54,9 +74,13 @@ router.get("/traceability/graph", async (req, res) => {
     kind: l.kind,
   }));
   for (const r of reqs) {
-    for (const fwId of r.linkedFrameworks ?? []) {
-      if (frameworks.some((f) => f.id === fwId)) {
-        edges.push({ from: r.id, to: fwId, kind: "covers" });
+    for (const linkedFw of r.linkedFrameworks ?? []) {
+      // When a framework filter is active we only keep the edge to the
+      // selected framework; otherwise emit edges to every framework the
+      // requirement covers.
+      if (fwId && linkedFw !== fwId) continue;
+      if (frameworks.some((f) => f.id === linkedFw)) {
+        edges.push({ from: r.id, to: linkedFw, kind: "covers" });
       }
     }
   }

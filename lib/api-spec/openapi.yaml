@@ -128,6 +128,7 @@ paths:
       tags: [traceability]
       parameters:
         - { name: projectId, in: query, required: true, schema: { type: string } }
+        - { name: frameworkId, in: query, required: false, schema: { type: string }, description: "When provided, the graph is restricted to the requirements linked to this framework, the code linked to those requirements, and the framework itself." }
       responses:
         "200":
           description: OK

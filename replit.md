@@ -128,6 +128,18 @@ param and the response is built via a left-join on
 `complianceFrameworksTable` so each row carries `frameworkName` and
 `frameworkCode`.
 
+### Per-framework Traceability filter
+The Traceability page (`/app/traceability`) has a "Standard" dropdown next
+to "Analyze code" that scopes the entire graph to a single compliance
+framework. Default is "All frameworks". When a framework is selected, the
+endpoint `GET /api/traceability/graph?projectId=…&frameworkId=…` returns
+only (a) requirements whose `linkedFrameworks` array contains that id,
+(b) code artifacts traced to those requirements via `traceability_links`,
+and (c) the single selected framework. The page subtitle updates to
+"Tracing requirements covered by <CODE> — <NAME>." and an amber empty-state
+card renders when the chosen framework has no linked requirements yet.
+Filter logic lives in `routes/traceability.ts`.
+
 ### Standard-native audit ratings
 On top of the universal `overallVerdict` (strong/adequate/weak/failing) and
 per-control `verdict` (met/partial/gap), every compliance audit now also

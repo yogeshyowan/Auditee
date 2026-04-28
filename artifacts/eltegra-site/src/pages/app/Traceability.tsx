@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { useGetTraceabilityGraph, useListRequirements } from "@workspace/api-client-react";
+import {
+  useGetTraceabilityGraph,
+  useListRequirements,
+  useListComplianceFrameworks,
+} from "@workspace/api-client-react";
 import { useProjectContext } from "@/lib/project-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,12 +62,19 @@ export default function Traceability() {
   const [language, setLanguage] = useState("TypeScript");
   const [code, setCode] = useState("");
   const analyzeMut = useAnalyzeCode();
+  const [frameworkId, setFrameworkId] = useState<string>("all");
   const { data: requirements } = useListRequirements(projectId ? ({ projectId } as any) : ({} as any));
+  const { data: frameworks } = useListComplianceFrameworks();
 
   const { data: graph, isLoading } = useGetTraceabilityGraph(
-    { projectId: projectId ?? "" },
+    {
+      projectId: projectId ?? "",
+      ...(frameworkId !== "all" ? { frameworkId } : {}),
+    } as any,
     { query: { enabled: !!projectId } as any }
   );
+
+  const selectedFramework = (frameworks ?? []).find((f) => f.id === frameworkId);
 
   const reqByCode = new Map((requirements ?? []).map((r) => [r.code, r] as const));
 
@@ -257,12 +268,44 @@ export default function Traceability() {
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950 font-[Inter_Tight]">Traceability Graph</h1>
-          <p className="text-slate-500 mt-1">Live links between requirements, code, and compliance frameworks.</p>
+          <p className="text-slate-500 mt-1">
+            {selectedFramework
+              ? `Tracing requirements covered by ${selectedFramework.code} — ${selectedFramework.name}.`
+              : "Live links between requirements, code, and compliance frameworks."}
+          </p>
         </div>
-        <Button onClick={() => setAnalyzeOpen(true)} className="gap-2" data-testid="button-analyze-code">
-          <Code2 className="h-4 w-4" /> Analyze code
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="min-w-[260px]">
+            <Label className="text-xs uppercase text-slate-500 tracking-wider">Standard</Label>
+            <Select value={frameworkId} onValueChange={setFrameworkId}>
+              <SelectTrigger className="mt-1.5" data-testid="select-framework">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All frameworks</SelectItem>
+                {(frameworks ?? []).map((f) => (
+                  <SelectItem key={f.id} value={f.id}>
+                    {f.code} — {f.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={() => setAnalyzeOpen(true)} className="gap-2 self-end" data-testid="button-analyze-code">
+            <Code2 className="h-4 w-4" /> Analyze code
+          </Button>
+        </div>
       </header>
+
+      {selectedFramework && reqs.length === 0 && (
+        <Card className="rounded-xl border-amber-200 bg-amber-50">
+          <CardContent className="py-4 text-sm text-amber-900">
+            No requirements in this project are linked to{" "}
+            <strong>{selectedFramework.code}</strong> yet. Tag a requirement
+            with this framework on the Requirements page to see it here.
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="rounded-xl border-slate-200 lg:col-span-2 overflow-hidden">
