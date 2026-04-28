@@ -75,7 +75,7 @@ const PLAN_DETAILS: Record<
   },
   professional: {
     label: "Professional",
-    price: "$5",
+    price: "$25",
     cadence: "/month",
     seats: 4,
     blurb: "For audit-ready engineering teams.",
@@ -83,7 +83,7 @@ const PLAN_DETAILS: Record<
   },
   enterprise: {
     label: "Enterprise",
-    price: "$25",
+    price: "$100",
     cadence: "/month",
     seats: 20,
     blurb: "For regulated organizations with multiple programs.",
