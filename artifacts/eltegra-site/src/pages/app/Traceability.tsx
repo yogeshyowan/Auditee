@@ -513,7 +513,7 @@ function LifecyclePanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {LIFECYCLE_STAGES.map((stage) => {
             const meta = STAGE_META[stage];
             const Icon = meta.icon;
