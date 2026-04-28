@@ -112,7 +112,10 @@ export async function ingestGithub(
   sourceId: string,
   cfg: { repoUrl: string; branch?: string; token?: string },
 ): Promise<{ count: number; bytes: number }> {
-  const m = cfg.repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/i);
+  // Repo names can legitimately contain dots (e.g. "Marketingstuffs.site",
+  // "my.app", "node.js"). Capture greedily up to the next slash, then strip
+  // an optional ".git" suffix and any trailing path (/, /tree/main, etc).
+  const m = cfg.repoUrl.match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/i);
   if (!m) throw new Error("Could not parse GitHub repoUrl. Expected https://github.com/owner/repo");
   const owner = m[1];
   const repo = m[2];
