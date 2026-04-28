@@ -6,6 +6,7 @@ import { db, projectSourcesTable, sourceFilesTable, activityEventsTable, require
 import { ingestZipBuffer, ingestGithub, ingestRemoteSystem, persistFiles, type IngestedFile } from "../lib/source-ingestion.js";
 import { ingestRequirementsTool, ingestReqifBuffer, isRmKind, RM_KINDS } from "../lib/rm-ingestion.js";
 import { ingestDefectsTool, isDefectKind, DEFECT_KINDS } from "../lib/defect-ingestion.js";
+import { requireProjectAccessInline } from "../lib/projectAccess";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100 MB
 const router: IRouter = Router();
@@ -24,11 +25,16 @@ function safeConfig(kind: string, cfg: Record<string, any>): Record<string, any>
 
 router.get("/sources", async (req, res) => {
   const projectId = typeof req.query.projectId === "string" ? req.query.projectId : undefined;
-  const conds = projectId ? [eq(projectSourcesTable.projectId, projectId)] : [];
+  if (!projectId) {
+    res.status(400).json({ error: "projectId is required" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, projectId, "auditor");
+  if (access === false) return;
   const rows = await db
     .select()
     .from(projectSourcesTable)
-    .where(conds.length ? and(...conds) : undefined)
+    .where(eq(projectSourcesTable.projectId, projectId))
     .orderBy(desc(projectSourcesTable.createdAt));
   res.json({
     sources: rows.map((r) => ({ ...r, config: safeConfig(r.kind, r.config) })),
@@ -41,6 +47,8 @@ router.post("/sources", async (req, res) => {
     res.status(400).json({ error: "projectId required" });
     return;
   }
+  const access = await requireProjectAccessInline(req, res, b.projectId, "developer");
+  if (access === false) return;
   if (!SUPPORTED_KINDS.includes(b.kind)) {
     res.status(400).json({ error: `kind must be one of ${SUPPORTED_KINDS.join(", ")}` });
     return;
@@ -68,6 +76,15 @@ router.post("/sources", async (req, res) => {
 });
 
 router.delete("/sources/:id", async (req, res) => {
+  const [src] = await db
+    .select({ projectId: projectSourcesTable.projectId })
+    .from(projectSourcesTable)
+    .where(eq(projectSourcesTable.id, req.params.id!))
+    .limit(1);
+  if (src) {
+    const access = await requireProjectAccessInline(req, res, src.projectId, "developer");
+    if (access === false) return;
+  }
   // Delete source content + manifests, and unlink any imported requirements
   // (we keep the requirements but null out the FK so the user doesn't lose
   // them if they were already in use by traceability links).
@@ -90,6 +107,8 @@ router.post("/sources/:id/sync", async (req, res) => {
     res.status(404).json({ error: "source not found" });
     return;
   }
+  const access = await requireProjectAccessInline(req, res, src.projectId, "developer");
+  if (access === false) return;
   await db.update(projectSourcesTable).set({ status: "syncing", statusMessage: "Sync started", updatedAt: new Date() }).where(eq(projectSourcesTable.id, src.id));
   try {
     let result: { count: number; bytes: number; summary?: string };
@@ -127,6 +146,8 @@ router.post("/sources/upload-zip", upload.single("file"), async (req, res) => {
     res.status(400).json({ error: "projectId and file are required" });
     return;
   }
+  const accessZip = await requireProjectAccessInline(req, res, projectId, "developer");
+  if (accessZip === false) return;
   const id = randomUUID();
   await db.insert(projectSourcesTable).values({
     id,
@@ -172,6 +193,8 @@ router.post("/sources/upload-folder", upload.array("files", 1000), async (req, r
     res.status(400).json({ error: "projectId and files are required" });
     return;
   }
+  const accessFolder = await requireProjectAccessInline(req, res, projectId, "developer");
+  if (accessFolder === false) return;
   const id = randomUUID();
   await db.insert(projectSourcesTable).values({
     id,
@@ -205,6 +228,17 @@ router.post("/sources/upload-folder", upload.array("files", 1000), async (req, r
 
 // List files for a source.
 router.get("/sources/:id/files", async (req, res) => {
+  const [src] = await db
+    .select({ projectId: projectSourcesTable.projectId })
+    .from(projectSourcesTable)
+    .where(eq(projectSourcesTable.id, req.params.id!))
+    .limit(1);
+  if (!src) {
+    res.status(404).json({ error: "source not found" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, src.projectId, "auditor");
+  if (access === false) return;
   const limit = Math.min(Number(req.query.limit) || 500, 2000);
   const rows = await db
     .select({
@@ -227,6 +261,17 @@ router.get("/sources/:id/files", async (req, res) => {
 
 // Fetch a single file's content.
 router.get("/sources/:id/files/:fileId", async (req, res) => {
+  const [src] = await db
+    .select({ projectId: projectSourcesTable.projectId })
+    .from(projectSourcesTable)
+    .where(eq(projectSourcesTable.id, req.params.id!))
+    .limit(1);
+  if (!src) {
+    res.status(404).json({ error: "source not found" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, src.projectId, "auditor");
+  if (access === false) return;
   const [row] = await db
     .select()
     .from(sourceFilesTable)
@@ -247,6 +292,8 @@ router.post("/sources/upload-reqif", upload.single("file"), async (req, res) => 
     res.status(400).json({ error: "projectId and file are required" });
     return;
   }
+  const accessReqif = await requireProjectAccessInline(req, res, projectId, "developer");
+  if (accessReqif === false) return;
   const id = randomUUID();
   await db.insert(projectSourcesTable).values({
     id,

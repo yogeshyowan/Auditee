@@ -248,13 +248,23 @@ const REQUIREMENTS: GapReq[] = [
 
 export async function bootstrapGapRequirements(): Promise<void> {
   try {
+    // Pick the oldest workspace as the home for this seeded project. If no
+    // workspaces exist yet (very first cold start), skip the bootstrap — the
+    // first user's workspace creation will run on demand and the gap project
+    // will be backfilled on the next API restart.
+    const wsRow = await pool.query(`SELECT id FROM workspaces ORDER BY created_at ASC LIMIT 1`);
+    const seedWorkspaceId: string | undefined = wsRow.rows[0]?.id;
+    if (!seedWorkspaceId) {
+      return;
+    }
     await pool.query(
-      `INSERT INTO projects (id, name, slug, description, owner, compliance_score, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6, NOW())
+      `INSERT INTO projects (id, workspace_id, name, slug, description, owner, compliance_score, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7, NOW())
        ON CONFLICT (id) DO UPDATE SET
+         workspace_id = COALESCE(projects.workspace_id, EXCLUDED.workspace_id),
          name = EXCLUDED.name,
          description = EXCLUDED.description`,
-      [PROJECT.id, PROJECT.name, PROJECT.slug, PROJECT.description, PROJECT.owner, PROJECT.complianceScore],
+      [PROJECT.id, seedWorkspaceId, PROJECT.name, PROJECT.slug, PROJECT.description, PROJECT.owner, PROJECT.complianceScore],
     );
 
     let inserted = 0;

@@ -48,6 +48,7 @@ import Interview from "@/pages/app/Interview";
 import Billing from "@/pages/app/Billing";
 import AuditLogs from "@/pages/app/AuditLogs";
 import Sso from "@/pages/app/Sso";
+import ProjectMembers from "@/pages/app/ProjectMembers";
 import Security from "@/pages/Security";
 
 const queryClient = new QueryClient();
@@ -159,6 +160,7 @@ function AppRoutes() {
           <Route path="/app/interview" component={Interview} />
           <Route path="/app/billing" component={Billing} />
           <Route path="/app/audit-logs" component={AuditLogs} />
+          <Route path="/app/members" component={ProjectMembers} />
           <Route path="/app/sso" component={Sso} />
           <Route component={NotFound} />
         </Switch>

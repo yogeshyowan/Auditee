@@ -19,6 +19,7 @@ import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/stand
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 import { inArray } from "drizzle-orm";
 import { consumeCredit } from "../middlewares/creditMiddleware";
+import { requireProjectAccessInline } from "../lib/projectAccess";
 
 const router: IRouter = Router();
 
@@ -44,10 +45,16 @@ function asyncH(fn: (req: import("express").Request, res: import("express").Resp
 
 router.get("/reports", async (req, res) => {
   const projectId = typeof req.query.projectId === "string" ? req.query.projectId : undefined;
+  if (!projectId) {
+    res.status(400).json({ error: "projectId is required" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, projectId, "auditor");
+  if (access === false) return;
   const rows = await db
     .select()
     .from(aiReportsTable)
-    .where(projectId ? eq(aiReportsTable.projectId, projectId) : undefined)
+    .where(eq(aiReportsTable.projectId, projectId))
     .orderBy(desc(aiReportsTable.updatedAt));
   res.json({ reports: rows });
 });
@@ -58,10 +65,23 @@ router.get("/reports/:id", async (req, res) => {
     res.status(404).json({ error: "Report not found" });
     return;
   }
+  if (row.projectId) {
+    const access = await requireProjectAccessInline(req, res, row.projectId, "auditor");
+    if (access === false) return;
+  }
   res.json(row);
 });
 
 router.delete("/reports/:id", async (req, res) => {
+  const [target] = await db
+    .select({ projectId: aiReportsTable.projectId })
+    .from(aiReportsTable)
+    .where(eq(aiReportsTable.id, req.params.id!))
+    .limit(1);
+  if (target?.projectId) {
+    const access = await requireProjectAccessInline(req, res, target.projectId, "developer");
+    if (access === false) return;
+  }
   await db.delete(aiReportsTable).where(eq(aiReportsTable.id, req.params.id!));
   res.status(204).end();
 });
@@ -86,6 +106,8 @@ router.post("/reports/generate", consumeCredit(), asyncH(async (req, res) => {
     res.status(400).json({ error: "projectId is required" });
     return;
   }
+  const access = await requireProjectAccessInline(req, res, projectId, "developer");
+  if (access === false) return;
   const kind: string = ["compliance_audit", "requirements_summary", "traceability", "exec_brief", "brd", "prd", "frd", "test_cases"].includes(b.kind)
     ? b.kind
     : "exec_brief";
@@ -336,6 +358,10 @@ router.post("/reports/:id/refine", consumeCredit(), asyncH(async (req, res) => {
     res.status(404).json({ error: "Report not found" });
     return;
   }
+  if (report.projectId) {
+    const access = await requireProjectAccessInline(req, res, report.projectId, "developer");
+    if (access === false) return;
+  }
   const sysPrompt = `You are Auditee refining an existing report. Apply the user's instruction PRECISELY without re-writing untouched sections.
 ${TONE_SYSTEM[report.tone] ?? TONE_SYSTEM.executive}
 
@@ -378,6 +404,20 @@ Rules:
 
 router.patch("/reports/:id", async (req, res) => {
   const id = req.params.id!;
+  const [target] = await db
+    .select({ projectId: aiReportsTable.projectId, status: aiReportsTable.status })
+    .from(aiReportsTable)
+    .where(eq(aiReportsTable.id, id))
+    .limit(1);
+  if (target?.projectId) {
+    // Approval / sign-off (status changes only) → reviewer+ is enough.
+    // Editing title/content → developer+.
+    const editingContent =
+      typeof req.body?.title === "string" || (req.body?.content && typeof req.body.content === "object");
+    const minRole = editingContent ? "developer" : "reviewer";
+    const access = await requireProjectAccessInline(req, res, target.projectId, minRole);
+    if (access === false) return;
+  }
   const updates: Partial<typeof aiReportsTable.$inferInsert> = { updatedAt: new Date() };
   if (typeof req.body?.title === "string") updates.title = req.body.title.slice(0, 200);
   if (typeof req.body?.status === "string") updates.status = req.body.status;
@@ -540,6 +580,10 @@ router.get("/reports/:id/export", asyncH(async (req, res) => {
   if (!report) {
     res.status(404).json({ error: "Report not found" });
     return;
+  }
+  if (report.projectId) {
+    const access = await requireProjectAccessInline(req, res, report.projectId, "auditor");
+    if (access === false) return;
   }
   const baseName = report.title.replace(/[^\w\d-]+/g, "-").slice(0, 80) || "report";
   if (format === "html") {

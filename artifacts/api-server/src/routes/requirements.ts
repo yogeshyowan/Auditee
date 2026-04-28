@@ -17,6 +17,7 @@ import {
   UpdateRequirementBody,
   DeleteRequirementParams,
 } from "@workspace/api-zod";
+import { requireProjectAccessInline } from "../lib/projectAccess";
 
 const router: IRouter = Router();
 
@@ -45,6 +46,15 @@ async function withCounts(rows: typeof requirementsTable.$inferSelect[]) {
 
 router.get("/requirements", async (req, res) => {
   const params = ListRequirementsQueryParams.parse(req.query);
+  // Listing requirements is project-scoped — require an explicit projectId
+  // and verify the caller has at least auditor access on it. This prevents
+  // cross-workspace enumeration when no filter is supplied.
+  if (!params.projectId) {
+    res.status(400).json({ error: "projectId is required" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, params.projectId, "auditor");
+  if (access === false) return;
   // Extra filters not in the generated zod schema (extension fields):
   const sourceId = typeof req.query.sourceId === "string" ? req.query.sourceId : undefined;
   const externalSystem = typeof req.query.externalSystem === "string" ? req.query.externalSystem : undefined;
@@ -82,6 +92,8 @@ router.get("/requirements/:requirementId", async (req, res) => {
     res.status(404).json({ error: "Requirement not found" });
     return;
   }
+  const access = await requireProjectAccessInline(req, res, row.projectId, "auditor");
+  if (access === false) return;
   const linkedCodeRows = await db
     .select({
       id: codeArtifactsTable.id,
@@ -111,6 +123,8 @@ router.get("/requirements/:requirementId", async (req, res) => {
 
 router.post("/requirements", async (req, res) => {
   const body = CreateRequirementBody.parse(req.body);
+  const access = await requireProjectAccessInline(req, res, body.projectId, "developer");
+  if (access === false) return;
   const id = randomUUID();
   const prefix = await projectPrefix(body.projectId);
   const [{ value: existingCount }] = await db
@@ -151,6 +165,18 @@ router.post("/requirements", async (req, res) => {
 router.patch("/requirements/:requirementId", async (req, res) => {
   const params = UpdateRequirementParams.parse(req.params);
   const body = UpdateRequirementBody.parse(req.body);
+  // Resolve the requirement's project for the access check.
+  const [target] = await db
+    .select({ projectId: requirementsTable.projectId })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.id, params.requirementId))
+    .limit(1);
+  if (!target) {
+    res.status(404).json({ error: "Requirement not found" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, target.projectId, "developer");
+  if (access === false) return;
   const updates: Partial<typeof requirementsTable.$inferInsert> = { updatedAt: new Date() };
   if (body.title !== undefined) updates.title = body.title;
   if (body.description !== undefined) updates.description = body.description;
@@ -183,6 +209,18 @@ router.patch("/requirements/:requirementId", async (req, res) => {
 
 router.delete("/requirements/:requirementId", async (req, res) => {
   const params = DeleteRequirementParams.parse(req.params);
+  const [target] = await db
+    .select({ projectId: requirementsTable.projectId })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.id, params.requirementId))
+    .limit(1);
+  if (!target) {
+    // Already gone — treat as success for idempotency.
+    res.status(204).end();
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, target.projectId, "developer");
+  if (access === false) return;
   await db
     .delete(traceabilityLinksTable)
     .where(eq(traceabilityLinksTable.requirementId, params.requirementId));

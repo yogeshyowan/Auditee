@@ -1,7 +1,6 @@
-import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { getAuth, clerkClient } from "@clerk/express";
 import { z } from "zod";
 import {
   db,
@@ -13,119 +12,17 @@ import {
   PLAN_CREDITS,
   WORKSPACE_ROLES,
   type PlanTier,
-  type WorkspaceRole,
-  type Workspace,
 } from "@workspace/db";
 import { permissionsFor, planAllows, isAtLeast } from "../lib/permissions";
 import { auditLog } from "../lib/auditLog";
+import {
+  requireAuth,
+  requireWorkspace,
+  canonicalRole,
+  type WorkspaceCtx,
+} from "../lib/authContext";
 
 const router: IRouter = Router();
-
-interface AuthCtx {
-  userId: string;
-  email: string | null;
-}
-
-interface WorkspaceCtx extends AuthCtx {
-  workspace: Workspace;
-  role: string;
-}
-
-async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const { userId } = getAuth(req);
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  let email: string | null = null;
-  try {
-    const user = await clerkClient.users.getUser(userId);
-    email = user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress ?? null;
-  } catch {
-    email = null;
-  }
-  (req as Request & { auth_ctx?: AuthCtx }).auth_ctx = { userId, email };
-  next();
-}
-
-/**
- * Normalize legacy "member" role rows to "editor" semantics so the new RBAC
- * matrix evaluates correctly without a destructive data migration.
- */
-function canonicalRole(role: string | null | undefined): WorkspaceRole {
-  if (role === "member") return "editor";
-  if (role && (WORKSPACE_ROLES as readonly string[]).includes(role)) return role as WorkspaceRole;
-  return "viewer";
-}
-
-async function reconcilePendingInvites(userId: string, email: string | null) {
-  if (!email) return;
-  const pendingId = `pending:${email}`;
-  await db
-    .update(workspaceMembersTable)
-    .set({ userId })
-    .where(eq(workspaceMembersTable.userId, pendingId));
-}
-
-async function getOrCreateWorkspace(userId: string, email: string | null) {
-  await reconcilePendingInvites(userId, email);
-
-  const lookup = async () => {
-    const rows = await db
-      .select({ workspace: workspacesTable, role: workspaceMembersTable.role })
-      .from(workspaceMembersTable)
-      .innerJoin(workspacesTable, eq(workspaceMembersTable.workspaceId, workspacesTable.id))
-      .where(eq(workspaceMembersTable.userId, userId))
-      .limit(1);
-    return rows[0] ?? null;
-  };
-
-  const existing = await lookup();
-  if (existing) return { workspace: existing.workspace, role: existing.role };
-
-  const workspaceId = randomUUID();
-  const insertedWorkspaces = await db
-    .insert(workspacesTable)
-    .values({
-      id: workspaceId,
-      name: email ? `${email.split("@")[0]}'s workspace` : "My workspace",
-      plan: "free",
-      seatLimit: PLAN_SEATS.free,
-      ownerUserId: userId,
-    })
-    .onConflictDoNothing({ target: workspacesTable.ownerUserId })
-    .returning();
-
-  if (insertedWorkspaces.length === 0) {
-    const after = await lookup();
-    if (after) return { workspace: after.workspace, role: after.role };
-    throw new Error("workspace_bootstrap_inconsistent_state");
-  }
-
-  const workspace = insertedWorkspaces[0];
-  await db
-    .insert(workspaceMembersTable)
-    .values({
-      id: randomUUID(),
-      workspaceId,
-      userId,
-      email,
-      role: "owner",
-      invitedBy: userId,
-    })
-    .onConflictDoNothing({
-      target: [workspaceMembersTable.workspaceId, workspaceMembersTable.userId],
-    });
-
-  return { workspace, role: "owner" as const };
-}
-
-async function requireWorkspace(req: Request, res: Response, next: NextFunction) {
-  const ctx = (req as Request & { auth_ctx: AuthCtx }).auth_ctx;
-  const { workspace, role } = await getOrCreateWorkspace(ctx.userId, ctx.email);
-  (req as Request & { ws_ctx?: WorkspaceCtx }).ws_ctx = { ...ctx, workspace, role };
-  next();
-}
 
 router.get("/workspace/me", requireAuth, requireWorkspace, async (req, res) => {
   const ctx = (req as Request & { ws_ctx: WorkspaceCtx }).ws_ctx;

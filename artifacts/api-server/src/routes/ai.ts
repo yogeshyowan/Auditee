@@ -34,6 +34,7 @@ import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 import { rateAudit, getRatingScheme } from "../lib/framework-rating";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 import { consumeCredit } from "../middlewares/creditMiddleware";
+import { assertProjectAccessIfAuthed, requireProjectAccessInline } from "../lib/projectAccess";
 
 const router: IRouter = Router();
 
@@ -121,6 +122,10 @@ router.post("/ai/generate-requirements", consumeCredit(), aiHandler(async (req, 
     code: mode === "code" ? requireString(rawCode, "code", { min: 20, max: 30000 }) : "",
     language,
   };
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, body.projectId, "developer");
+    if (access === false) return;
+  }
   const [project] = await db
     .select()
     .from(projectsTable)
@@ -450,6 +455,10 @@ router.post("/ai/analyze-code", consumeCredit(), aiHandler(async (req, res) => {
     language: requireString(req.body?.language, "language", { min: 1, max: 40 }),
     code: requireString(req.body?.code, "code", { min: 10, max: 20000 }),
   };
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, body.projectId, "developer");
+    if (access === false) return;
+  }
   const [project] = await db
     .select()
     .from(projectsTable)
@@ -578,6 +587,10 @@ router.post("/ai/compliance-audit", consumeCredit(), aiHandler(async (req, res) 
     frameworkId: requireString(req.body?.frameworkId, "frameworkId", { min: 1 }),
     sourceIds: Array.isArray(req.body?.sourceIds) ? (req.body.sourceIds as string[]).filter(Boolean) : undefined,
   };
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, body.projectId, "developer");
+    if (access === false) return;
+  }
   const [framework] = await db
     .select()
     .from(complianceFrameworksTable)
@@ -928,6 +941,10 @@ Rules:
 // =============================================================
 router.post("/ai/traceability-audit", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, projectId, "developer");
+    if (access === false) return;
+  }
   const requestedSourceIds: string[] = Array.isArray(req.body?.sourceIds)
     ? req.body.sourceIds.filter((x: unknown) => typeof x === "string" && x.length > 0)
     : [];
@@ -1187,6 +1204,10 @@ router.post("/ai/legacy-extract", consumeCredit(), aiHandler(async (req, res) =>
     code: requireString(req.body?.code, "code", { min: 20, max: 40000 }),
     projectId: optionalString(req.body?.projectId),
   };
+  if (body.projectId) {
+    const access = await assertProjectAccessIfAuthed(req, res, body.projectId, "developer");
+    if (access === false) return;
+  }
   const [system] = await db
     .select()
     .from(legacySystemsTable)
@@ -1283,14 +1304,27 @@ router.post("/ai/ask", consumeCredit(), aiHandler(async (req, res) => {
     question: requireString(req.body?.question, "question", { min: 3, max: 2000 }),
     projectId: optionalString(req.body?.projectId),
   };
+  if (body.projectId) {
+    // Reading the project Q&A requires real access (auditor+). Anonymous
+    // callers cannot pass a projectId — they are restricted to the
+    // unscoped catalog-only fallback below.
+    const access = await requireProjectAccessInline(req, res, body.projectId, "auditor");
+    if (access === false) return;
+  }
 
-  const projects = await db.select().from(projectsTable);
+  // For project-scoped questions, only feed the model data from that
+  // project. For unscoped (anon trial / catalog) questions, do not leak
+  // requirement rows — only return public catalog metadata (frameworks,
+  // controls, legacy systems summaries).
+  const projects = body.projectId
+    ? await db.select().from(projectsTable).where(eq(projectsTable.id, body.projectId))
+    : [];
   const requirements = body.projectId
     ? await db
         .select()
         .from(requirementsTable)
         .where(eq(requirementsTable.projectId, body.projectId))
-    : await db.select().from(requirementsTable).limit(60);
+    : [];
   const frameworks = await db.select().from(complianceFrameworksTable);
   const controls = await db.select().from(complianceControlsTable);
   const legacy = await db.select().from(legacySystemsTable);
@@ -1363,25 +1397,44 @@ Return strict JSON:
 
 router.get("/ai/ask/history", aiHandler(async (req, res) => {
   const projectId = optionalString(req.query.projectId);
+  if (!projectId) {
+    res.status(400).json({ error: "projectId is required" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, projectId, "auditor");
+  if (access === false) return;
   const limitRaw = Number(req.query.limit ?? 50);
   const limit = Math.max(1, Math.min(200, Number.isFinite(limitRaw) ? limitRaw : 50));
-  const rows = projectId
-    ? await db
-        .select()
-        .from(aiConversationsTable)
-        .where(eq(aiConversationsTable.projectId, projectId))
-        .orderBy(desc(aiConversationsTable.createdAt))
-        .limit(limit)
-    : await db
-        .select()
-        .from(aiConversationsTable)
-        .orderBy(desc(aiConversationsTable.createdAt))
-        .limit(limit);
+  const rows = await db
+    .select()
+    .from(aiConversationsTable)
+    .where(eq(aiConversationsTable.projectId, projectId))
+    .orderBy(desc(aiConversationsTable.createdAt))
+    .limit(limit);
   res.json({ conversations: rows });
 }));
 
 router.delete("/ai/ask/history/:id", aiHandler(async (req, res) => {
   const id = requireString(req.params.id, "id", { min: 1 });
+  const [target] = await db
+    .select({ projectId: aiConversationsTable.projectId })
+    .from(aiConversationsTable)
+    .where(eq(aiConversationsTable.id, id))
+    .limit(1);
+  if (!target) {
+    res.json({ ok: true });
+    return;
+  }
+  if (target.projectId) {
+    // Authors of a Q&A live inside a project — only project members
+    // (developer+) can prune that history.
+    const access = await requireProjectAccessInline(req, res, target.projectId, "developer");
+    if (access === false) return;
+  } else {
+    // Legacy unscoped conversations cannot be deleted via this endpoint.
+    res.status(403).json({ error: "Conversation is not project-scoped and cannot be deleted via this endpoint" });
+    return;
+  }
   await db.delete(aiConversationsTable).where(eq(aiConversationsTable.id, id));
   res.json({ ok: true });
 }));
@@ -1399,6 +1452,13 @@ router.delete("/ai/ask/history/:id", aiHandler(async (req, res) => {
 router.post("/ai/gap-analysis", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
   const frameworkId = optionalString(req.body?.frameworkId);
+
+  // Gap analysis reads every requirement in the project — guard with
+  // strict auditor+ access so anon/cross-workspace callers can't enumerate.
+  {
+    const access = await requireProjectAccessInline(req, res, projectId, "auditor");
+    if (access === false) return;
+  }
 
   const [project] = await db
     .select()
@@ -1529,6 +1589,10 @@ ${reqList}`;
 // =============================================================
 router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  {
+    const access = await requireProjectAccessInline(req, res, projectId, "developer");
+    if (access === false) return;
+  }
   const title = requireString(req.body?.title, "title", { min: 4, max: 200 });
   const description = requireString(req.body?.description, "description", { min: 4, max: 4000 });
   const type = requireString(req.body?.type, "type", { min: 1 });
@@ -1610,6 +1674,10 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
 // =============================================================
 router.post("/ai/interview/questions", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, projectId, "developer");
+    if (access === false) return;
+  }
   const brief = requireString(req.body?.brief, "brief", { min: 20, max: 4000 });
   // Optional list of compliance framework IDs the user marked applicable.
   // We use them to (a) load the matching frameworks for prompt context and
@@ -1744,6 +1812,10 @@ ${brief}${fwLine}`;
 // =============================================================
 router.post("/ai/estimate-effort", consumeCredit(), aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, projectId, "developer");
+    if (access === false) return;
+  }
 
   const [project] = await db
     .select()

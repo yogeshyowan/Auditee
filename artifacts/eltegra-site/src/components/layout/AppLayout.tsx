@@ -21,7 +21,8 @@ import {
   CreditCard,
   KeyRound,
   FileSearch,
-  Plus
+  Plus,
+  Users
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -54,13 +55,14 @@ const NAV_ITEMS = [
   { href: "/app/activity", label: "Activity", icon: Activity },
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/billing", label: "Billing & Team", icon: CreditCard },
+  { href: "/app/members", label: "Project Members", icon: Users },
   { href: "/app/audit-logs", label: "Audit Log", icon: FileSearch },
   { href: "/app/sso", label: "SSO & Security", icon: KeyRound },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { projectId, setProjectId, connectedProjects, allProjects } = useProjectContext();
+  const { projectId, setProjectId, connectedProjects, allProjects, effectiveRole } = useProjectContext();
   const [createOpen, setCreateOpen] = useState(false);
 
   // Tell search engines never to index the signed-in app — these pages are
@@ -158,6 +160,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {effectiveRole && (
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <Badge
+                className={
+                  "text-[10px] uppercase tracking-wide " +
+                  (effectiveRole === "manager"
+                    ? "bg-violet-100 text-violet-800"
+                    : effectiveRole === "developer"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : effectiveRole === "reviewer"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-slate-200 text-slate-800")
+                }
+                data-testid="effective-role-badge"
+              >
+                {effectiveRole}
+              </Badge>
+              <span className="text-[10px] text-slate-500">your role</span>
+            </div>
+          )}
           <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
         </div>
 
