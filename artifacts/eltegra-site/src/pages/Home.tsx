@@ -34,6 +34,58 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateDemoRequest } from "@workspace/api-client-react";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+
+type NavGroup = { label: string; key: string; items: { title: string; desc: string; href: string }[] };
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Platform",
+    key: "platform",
+    items: [
+      { title: "Living Knowledge Graph", desc: "Unified semantic graph linking specs, code and audits.", href: "#platform" },
+      { title: "Agentic Product AI", desc: "Capture intent, draft BRDs, PRDs and FRDs in minutes.", href: "#platform" },
+      { title: "Bidirectional Traceability", desc: "Map every requirement to the function that ships it.", href: "#capabilities" },
+      { title: "Compliance Autopilot", desc: "Continuous evidence across 23+ frameworks.", href: "#capabilities" },
+    ],
+  },
+  {
+    label: "Solutions",
+    key: "solutions",
+    items: [
+      { title: "Product Teams", desc: "From idea to PRD without the doc-juggling.", href: "#solutions" },
+      { title: "Engineering", desc: "Find the function that owns any requirement.", href: "#solutions" },
+      { title: "Compliance & Audit", desc: "Always-fresh evidence for SOC2, HIPAA, FDA, ISO.", href: "#solutions" },
+      { title: "Legacy Modernization", desc: "Reverse-engineer Angular, C#, C++ and SQL estates.", href: "#solutions" },
+    ],
+  },
+  {
+    label: "Resources",
+    key: "resources",
+    items: [
+      { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "#roi" },
+      { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "#pdlc" },
+      { title: "Customer Stories", desc: "Enterprises shipping faster with full traceability.", href: "#resources" },
+      { title: "Documentation", desc: "Connectors, ingestion, the graph API.", href: "#resources" },
+    ],
+  },
+  {
+    label: "Company",
+    key: "company",
+    items: [
+      { title: "About", desc: "The team rebuilding the PDLC for the AI era.", href: "#company" },
+      { title: "Careers", desc: "Join us. Remote-first, mission-led.", href: "#company" },
+      { title: "Press", desc: "News, releases and brand assets.", href: "#company" },
+      { title: "Contact", desc: "Talk to sales, partnerships or support.", href: "#company" },
+    ],
+  },
+];
 
 const demoSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -154,6 +206,7 @@ function Logo() {
 function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openMobileGroup, setOpenMobileGroup] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -173,42 +226,109 @@ function Navigation() {
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
         <Logo />
-        
-        <nav className="hidden md:flex items-center gap-8">
-          <a href="#platform" className="text-sm font-medium text-slate-600 hover:text-primary transition-colors">Platform</a>
-          <a href="#solutions" className="text-sm font-medium text-slate-600 hover:text-primary transition-colors">Solutions</a>
-          <a href="#resources" className="text-sm font-medium text-slate-600 hover:text-primary transition-colors">Resources</a>
-          <a href="#company" className="text-sm font-medium text-slate-600 hover:text-primary transition-colors">Company</a>
-        </nav>
+
+        {/* Desktop cascading dropdown nav */}
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList>
+            {NAV_GROUPS.map((group) => (
+              <NavigationMenuItem key={group.key}>
+                <NavigationMenuTrigger
+                  className="bg-transparent text-slate-600 hover:text-primary data-[state=open]:text-primary"
+                  data-testid={`nav-trigger-${group.key}`}
+                >
+                  {group.label}
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid gap-2 p-4 w-[440px] md:w-[520px] grid-cols-2">
+                    {group.items.map((item) => (
+                      <li key={item.title}>
+                        <NavigationMenuLink asChild>
+                          <a
+                            href={item.href}
+                            className="block rounded-md p-3 hover:bg-slate-100 transition-colors group"
+                            data-testid={`nav-item-${group.key}-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                          >
+                            <div className="text-sm font-semibold text-slate-900 group-hover:text-primary mb-1">
+                              {item.title}
+                            </div>
+                            <p className="text-xs text-slate-500 leading-snug">{item.desc}</p>
+                          </a>
+                        </NavigationMenuLink>
+                      </li>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            ))}
+          </NavigationMenuList>
+        </NavigationMenu>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/app" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors">Launch Platform</Link>
+          <Link href="/app" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors" data-testid="link-launch-app-top">Launch Platform</Link>
           <DemoDialog>
-            <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6">
+            <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6" data-testid="button-book-demo-top">
               Book a demo
             </Button>
           </DemoDialog>
         </div>
 
-        <button 
+        <button
           className="md:hidden z-50 relative text-slate-900"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          data-testid="button-toggle-mobile-menu"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu — accordion-style cascading groups */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-white z-40 pt-24 px-6 pb-6 flex flex-col h-screen">
-          <nav className="flex flex-col gap-6 text-xl font-medium">
-            <a href="#platform" onClick={() => setMobileMenuOpen(false)}>Platform</a>
-            <a href="#solutions" onClick={() => setMobileMenuOpen(false)}>Solutions</a>
-            <a href="#resources" onClick={() => setMobileMenuOpen(false)}>Resources</a>
-            <a href="#company" onClick={() => setMobileMenuOpen(false)}>Company</a>
+        <div className="fixed inset-0 bg-white z-40 pt-24 px-6 pb-6 flex flex-col h-screen overflow-y-auto">
+          <nav className="flex flex-col gap-2 text-base font-medium">
+            {NAV_GROUPS.map((group) => {
+              const isOpen = openMobileGroup === group.key;
+              return (
+                <div key={group.key} className="border-b border-slate-100 pb-2">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between py-3 text-lg font-semibold text-slate-900"
+                    onClick={() => setOpenMobileGroup(isOpen ? null : group.key)}
+                    data-testid={`mobile-nav-trigger-${group.key}`}
+                  >
+                    {group.label}
+                    <ChevronRight
+                      size={20}
+                      className={`transition-transform ${isOpen ? "rotate-90 text-primary" : "text-slate-400"}`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <ul className="pl-2 pb-2 space-y-2">
+                      {group.items.map((item) => (
+                        <li key={item.title}>
+                          <a
+                            href={item.href}
+                            onClick={() => { setMobileMenuOpen(false); setOpenMobileGroup(null); }}
+                            className="block py-2 text-sm text-slate-600 hover:text-primary"
+                          >
+                            <span className="font-medium text-slate-800">{item.title}</span>
+                            <span className="block text-xs text-slate-500">{item.desc}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
           </nav>
-          <div className="mt-auto flex flex-col gap-4">
-            <Link href="/app" className="w-full text-center py-3 border border-primary text-primary rounded-lg font-medium">Launch Platform</Link>
+          <div className="mt-8 flex flex-col gap-4">
+            <Link
+              href="/app"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-center py-3 border border-primary text-primary rounded-lg font-medium"
+            >
+              Launch Platform
+            </Link>
             <DemoDialog>
               <Button className="w-full py-6 text-lg bg-primary hover:bg-primary/90 text-white rounded-lg">
                 Book a demo
@@ -223,7 +343,7 @@ function Navigation() {
 
 function Hero() {
   return (
-    <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden bg-slate-50">
+    <section id="hero" className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden bg-slate-50">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/40 via-background to-background"></div>
         <img 
@@ -243,13 +363,13 @@ function Hero() {
           >
             <motion.div variants={fadeIn} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6 border border-primary/20">
               <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
-              The unified PDLC platform
+              One PDLC platform. Every lifecycle stage.
             </motion.div>
             <motion.h1 variants={fadeIn} className="text-5xl md:text-6xl lg:text-7xl font-bold font-display leading-[1.1] tracking-tight text-slate-950 mb-6">
-              Complete AI-Native Platform for <span className="text-primary">Every Stage</span> of Product Development.
+              Ship enterprise software with <span className="text-primary">total clarity</span> — from idea to audit.
             </motion.h1>
             <motion.p variants={fadeIn} className="text-lg md:text-xl text-slate-600 mb-8 leading-relaxed max-w-xl">
-              From initial idea to post-launch optimization, Auditee covers the entire PDLC with intelligence, automation, and built-in compliance. Turn fragmented requirements, legacy code, and audit chaos into a single living knowledge graph.
+              Auditee is the AI-native control plane for the Product Development Lifecycle. It turns scattered requirements, legacy code and last-minute audit scrambles into one living knowledge graph the whole org can trust.
             </motion.p>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4">
               <DemoDialog>
@@ -342,7 +462,7 @@ function StatStrip() {
 
 function ProblemSection() {
   return (
-    <section className="py-24 bg-slate-950 text-white overflow-hidden relative">
+    <section id="problem" className="py-24 bg-slate-950 text-white overflow-hidden relative">
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent"></div>
         <svg className="absolute w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -473,7 +593,7 @@ function PillarsSection() {
   ];
 
   return (
-    <section className="py-24 bg-white relative">
+    <section id="platform" className="py-24 bg-white relative scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <motion.div
           initial="hidden"
@@ -483,10 +603,10 @@ function PillarsSection() {
           className="text-center max-w-3xl mx-auto mb-16"
         >
           <h2 className="text-3xl md:text-5xl font-display font-bold text-slate-950 mb-6">
-            What Powers the <span className="text-primary">Living Knowledge Graph</span>
+            Inside the <span className="text-primary">Living Knowledge Graph</span>
           </h2>
           <p className="text-lg text-slate-600">
-            Four pillars of intelligence that transform how enterprise software is planned, built, and verified.
+            Four intelligence pillars that reshape how enterprise software gets planned, built and signed off.
           </p>
         </motion.div>
 
@@ -527,7 +647,7 @@ function PdlcCoverage() {
   ];
 
   return (
-    <section className="py-24 bg-slate-50 border-y border-slate-200">
+    <section id="pdlc" className="py-24 bg-slate-50 border-y border-slate-200 scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <motion.div
           initial="hidden"
@@ -537,10 +657,10 @@ function PdlcCoverage() {
           className="mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-950 mb-4">
-            Complete PDLC Coverage
+            End-to-end PDLC coverage
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl">
-            From the first spark of an idea to post-launch governance, Auditee connects every phase of the lifecycle.
+            From the first whiteboard sketch to post-launch governance, Auditee threads context through every stage of the lifecycle — no handoff loses the plot.
           </p>
         </motion.div>
 
@@ -577,7 +697,7 @@ function PdlcCoverage() {
 
 function Capabilities() {
   return (
-    <section className="py-24 bg-white relative overflow-hidden">
+    <section id="capabilities" className="py-24 bg-white relative overflow-hidden scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <motion.div
           initial="hidden"
@@ -587,10 +707,10 @@ function Capabilities() {
           className="mb-16 md:w-2/3"
         >
           <h2 className="text-3xl md:text-5xl font-display font-bold text-slate-950 mb-6">
-            Complete <span className="text-primary">Product Intelligence</span>
+            Deep <span className="text-primary">product intelligence</span>, end to end.
           </h2>
           <p className="text-lg text-slate-600">
-            Deep technical capabilities that bridge the gap between business intent and engineering reality.
+            Capabilities engineered to close the gap between business intent and the code that actually ships.
           </p>
         </motion.div>
 
@@ -651,7 +771,7 @@ function Capabilities() {
 
 function RoiSection() {
   return (
-    <section className="py-24 relative overflow-hidden bg-slate-950 text-white">
+    <section id="roi" className="py-24 relative overflow-hidden bg-slate-950 text-white scroll-mt-24">
       <div className="absolute inset-0 z-0">
         <img 
           src="/roi-bg.png" 
@@ -673,15 +793,17 @@ function RoiSection() {
             The ROI of Traceability
           </div>
           <h2 className="text-4xl md:text-6xl font-display font-bold mb-8">
-            The <span className="text-primary">$400,000</span> Question.
+            The <span className="text-primary">$400,000</span> question.
           </h2>
           <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-            That's the average cost of a failed compliance audit or a delayed enterprise release due to misaligned requirements. Stop paying the chaos tax.
+            That's the average price tag of a failed compliance audit or a slipped enterprise release caused by misaligned requirements. Stop paying the chaos tax.
           </p>
-          <Button size="lg" className="h-14 px-8 bg-white hover:bg-slate-100 text-slate-950 rounded-full text-base font-semibold">
-            Calculate your savings
-            <ArrowUpRight className="ml-2 h-5 w-5 text-slate-500" />
-          </Button>
+          <DemoDialog>
+            <Button size="lg" className="h-14 px-8 bg-white hover:bg-slate-100 text-slate-950 rounded-full text-base font-semibold" data-testid="button-roi-cta">
+              Calculate your savings
+              <ArrowUpRight className="ml-2 h-5 w-5 text-slate-500" />
+            </Button>
+          </DemoDialog>
         </motion.div>
       </div>
     </section>
@@ -690,7 +812,7 @@ function RoiSection() {
 
 function FinalCta() {
   return (
-    <section className="py-32 bg-secondary/20 relative">
+    <section id="cta" className="py-32 bg-secondary/30 relative scroll-mt-24">
       <div className="max-w-4xl mx-auto px-6 text-center">
         <motion.div
           initial="hidden"
@@ -699,21 +821,107 @@ function FinalCta() {
           variants={fadeIn}
         >
           <h2 className="text-5xl md:text-7xl font-display font-bold text-slate-950 mb-6 tracking-tight">
-            End requirements chaos.
+            End the requirements chaos.
           </h2>
           <p className="text-xl text-slate-600 mb-10">
-            Join the enterprise teams using Auditee to build faster, safer, and with perfect clarity.
+            Join the enterprise teams shipping faster, safer and with full provenance — powered by Auditee.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button size="lg" className="h-16 px-10 bg-primary hover:bg-primary/90 text-white rounded-full text-lg font-semibold shadow-xl shadow-primary/20">
-              Book a demo
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button size="lg" variant="outline" className="h-16 px-10 rounded-full text-lg font-semibold border-primary/20 hover:bg-primary/5 text-primary bg-white">
-              Get live demo access
-            </Button>
+            <DemoDialog>
+              <Button size="lg" className="h-16 px-10 bg-primary hover:bg-primary/90 text-white rounded-full text-lg font-semibold shadow-xl shadow-primary/20" data-testid="button-final-book-demo">
+                Book a demo
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </DemoDialog>
+            <Link href="/app">
+              <Button size="lg" variant="outline" className="h-16 px-10 rounded-full text-lg font-semibold border-primary/20 hover:bg-primary/5 text-primary bg-white" data-testid="button-final-launch-app">
+                Get live demo access
+              </Button>
+            </Link>
           </div>
         </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// Anchor stubs for the dropdown links that don't yet have rich sections of
+// their own. Keeps in-page navigation clickable and gives the marketing
+// pages a clear scroll target.
+function ResourcesAnchor() {
+  return (
+    <section id="resources" className="py-20 bg-slate-50 scroll-mt-24">
+      <div className="max-w-7xl mx-auto px-6 md:px-12 grid md:grid-cols-3 gap-8">
+        {[
+          { title: "Customer stories", desc: "How regulated enterprises moved from spreadsheet audits to a continuous knowledge graph.", cta: "Read case studies" },
+          { title: "Documentation", desc: "Connector reference, ingestion limits, the graph query API and SDKs.", cta: "Open docs" },
+          { title: "Webinars & guides", desc: "Practical sessions on PDLC modernisation and audit automation.", cta: "Browse library" },
+        ].map((r) => (
+          <div key={r.title} className="rounded-2xl bg-white border border-slate-200 p-8">
+            <h3 className="text-xl font-bold font-display text-slate-900 mb-3">{r.title}</h3>
+            <p className="text-slate-600 mb-6 leading-relaxed">{r.desc}</p>
+            <DemoDialog>
+              <Button variant="outline" className="rounded-full text-primary border-primary/30 hover:bg-primary/5">
+                {r.cta}
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Button>
+            </DemoDialog>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SolutionsAnchor() {
+  return (
+    <section id="solutions" className="py-20 bg-white scroll-mt-24">
+      <div className="max-w-7xl mx-auto px-6 md:px-12">
+        <motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn} className="text-3xl md:text-5xl font-display font-bold text-slate-950 mb-4">
+          Built for the teams under pressure.
+        </motion.h2>
+        <p className="text-lg text-slate-600 max-w-2xl mb-12">
+          Whether you're shipping the next release, modernising a 20-year codebase or preparing the next audit, Auditee speaks your team's language.
+        </p>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { title: "Product Teams", desc: "Capture intent in conversation, leave with a fully-formed PRD.", icon: Lightbulb },
+            { title: "Engineering", desc: "Trace any requirement to the function (and PR) that owns it.", icon: Code2 },
+            { title: "Compliance & Audit", desc: "Continuous SOC2, HIPAA, FDA and ISO evidence — never scrambled.", icon: ShieldCheck },
+            { title: "Legacy Modernisation", desc: "Reverse-engineer Angular, C#, C++ and SQL into living specs.", icon: Database },
+          ].map((s) => (
+            <div key={s.title} className="rounded-2xl border border-slate-200 p-6 hover:border-primary/30 hover:shadow-md transition-all">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                <s.icon size={22} />
+              </div>
+              <h3 className="font-bold font-display text-slate-900 mb-2">{s.title}</h3>
+              <p className="text-sm text-slate-600 leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CompanyAnchor() {
+  return (
+    <section id="company" className="py-20 bg-slate-50 scroll-mt-24">
+      <div className="max-w-5xl mx-auto px-6 md:px-12 text-center">
+        <h2 className="text-3xl md:text-5xl font-display font-bold text-slate-950 mb-6">
+          About Auditee.
+        </h2>
+        <p className="text-lg text-slate-600 mb-8 max-w-3xl mx-auto">
+          We're an AI-native team rebuilding the Product Development Lifecycle for the era where requirements, code and audit evidence have to live as one connected graph. Headquartered remote-first, with engineers and domain experts spread across three continents.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <DemoDialog>
+            <Button variant="outline" className="rounded-full border-primary/30 text-primary hover:bg-primary/5">Talk to the team</Button>
+          </DemoDialog>
+          <a href="#resources">
+            <Button variant="ghost" className="rounded-full text-slate-700 hover:bg-slate-100">See our work</Button>
+          </a>
+        </div>
       </div>
     </section>
   );
@@ -778,16 +986,19 @@ function Footer() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-primary/20 selection:text-primary">
+    <div className="theme-landing min-h-screen bg-white font-sans text-slate-900 selection:bg-primary/20 selection:text-primary">
       <Navigation />
       <main>
         <Hero />
         <StatStrip />
         <ProblemSection />
         <PillarsSection />
+        <SolutionsAnchor />
         <PdlcCoverage />
         <Capabilities />
         <RoiSection />
+        <ResourcesAnchor />
+        <CompanyAnchor />
         <FinalCta />
       </main>
       <Footer />

@@ -170,6 +170,29 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+/* =====================================================================
+   Marketing landing-page palette — intentionally distinct from the
+   internal app's green theme so visitors land on a different
+   visual identity. Indigo / violet primary with warm amber accents.
+   ===================================================================== */
+.theme-landing {
+  --primary: 246 70% 52%;            /* deep indigo */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 41 92% 90%;           /* warm sand */
+  --secondary-foreground: 246 70% 28%;
+
+  --accent: 280 70% 56%;             /* magenta-violet accent */
+  --accent-foreground: 0 0% 100%;
+
+  --ring: 246 70% 52%;
+  --chart-1: 246 70% 52%;
+  --chart-2: 280 70% 56%;
+  --chart-3: 41 92% 75%;
+  --chart-4: 220 19% 14%;
+  --chart-5: 220 14% 90%;
+}
+
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
