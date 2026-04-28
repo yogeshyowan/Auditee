@@ -1,4 +1,7 @@
-import { pgTable, text, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, uniqueIndex, boolean } from "drizzle-orm/pg-core";
+
+export const WORKSPACE_ROLES = ["owner", "admin", "editor", "viewer"] as const;
+export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
 
 export const PLAN_TIERS = ["free", "professional", "enterprise"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
@@ -35,6 +38,8 @@ export const workspacesTable = pgTable(
     ownerUserId: text("owner_user_id").notNull(),
     planActivatedAt: timestamp("plan_activated_at", { withTimezone: true }),
     creditsUsed: integer("credits_used").notNull().default(0),
+    ssoEnabled: boolean("sso_enabled").notNull().default(false),
+    ssoDomain: text("sso_domain"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

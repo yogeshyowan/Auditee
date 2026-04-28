@@ -60,6 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Features", desc: "The complete platform feature set, end-to-end.", href: "/features" },
       { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
       { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
+      { title: "Security & Trust", desc: "Encryption, SSO, audit logs, SOC 2 / ISO 27001 / GDPR posture.", href: "/security" },
       { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "/#pdlc" },
     ],
   },
@@ -413,6 +414,7 @@ export function SiteFooter() {
               <li><Link href="/features" className="hover:text-primary transition-colors" data-testid="link-footer-features">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-primary transition-colors" data-testid="link-footer-pricing">Pricing</Link></li>
               <li><Link href="/roi-calculator" className="hover:text-primary transition-colors" data-testid="link-footer-roi">ROI Calculator</Link></li>
+              <li><Link href="/security" className="hover:text-primary transition-colors" data-testid="link-footer-security">Security & Trust</Link></li>
             </ul>
           </div>
 

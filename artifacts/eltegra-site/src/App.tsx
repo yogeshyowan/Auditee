@@ -46,6 +46,9 @@ import Defects from "@/pages/app/Defects";
 import Gaps from "@/pages/app/Gaps";
 import Interview from "@/pages/app/Interview";
 import Billing from "@/pages/app/Billing";
+import AuditLogs from "@/pages/app/AuditLogs";
+import Sso from "@/pages/app/Sso";
+import Security from "@/pages/Security";
 
 const queryClient = new QueryClient();
 
@@ -155,6 +158,8 @@ function AppRoutes() {
           <Route path="/app/gaps" component={Gaps} />
           <Route path="/app/interview" component={Interview} />
           <Route path="/app/billing" component={Billing} />
+          <Route path="/app/audit-logs" component={AuditLogs} />
+          <Route path="/app/sso" component={Sso} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>
@@ -189,6 +194,7 @@ function Router() {
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/sign-in/*?" component={SignInPage} />

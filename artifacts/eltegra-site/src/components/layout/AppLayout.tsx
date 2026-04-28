@@ -19,6 +19,8 @@ import {
   FolderInput,
   MessagesSquare,
   CreditCard,
+  KeyRound,
+  FileSearch,
   Plus
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -52,6 +54,8 @@ const NAV_ITEMS = [
   { href: "/app/activity", label: "Activity", icon: Activity },
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/billing", label: "Billing & Team", icon: CreditCard },
+  { href: "/app/audit-logs", label: "Audit Log", icon: FileSearch },
+  { href: "/app/sso", label: "SSO & Security", icon: KeyRound },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
