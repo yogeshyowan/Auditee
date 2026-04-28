@@ -63,6 +63,18 @@ columns on `requirements`: `sourceId`, `externalId`, `externalUrl`,
 `externalSystem`. ReqIF is uploaded via `POST /api/sources/upload-reqif`; all
 other RM kinds use the standard `/api/sources` + `/api/sources/:id/sync` flow.
 
+### Navigation order + floating Ask Montana
+The left-side app navigation is ordered around the natural workflow:
+**Project Sources** is the landing item (top of the list) because nothing
+else works without sources connected, and **Dashboard** is the last item
+since it's a roll-up view that only becomes meaningful after data has been
+ingested. **Ask Montana** is intentionally removed from the sidebar and
+lives instead as a floating pill button (bottom-right of every app page)
+implemented in `components/AskMontanaFloater.tsx`. Clicking the floater
+opens a right-side Sheet with a minimal quick-chat — uses the same
+`useAskMontana` hook as the full page, shows confidence badge + citations
+per answer, and links out to `/app/ask` for the full multi-turn experience.
+
 ### Source-aware Requirements + standard-aware CAPA filters
 The Requirements page (`/app/requirements`) has a "Source" dropdown that
 aggregates and filters requirements by where they came from (Manual entries

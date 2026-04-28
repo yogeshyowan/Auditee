@@ -32,7 +32,7 @@ function AppRoutes() {
     <ProjectProvider>
       <AppLayout>
         <Switch>
-          <Route path="/app" component={() => <Redirect to="/app/dashboard" />} />
+          <Route path="/app" component={() => <Redirect to="/app/sources" />} />
           <Route path="/app/dashboard" component={Dashboard} />
           <Route path="/app/requirements" component={Requirements} />
           <Route path="/app/traceability" component={Traceability} />
@@ -59,7 +59,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/app" component={() => <Redirect to="/app/dashboard" />} />
+      <Route path="/app" component={() => <Redirect to="/app/sources" />} />
       <Route path="/app/*" component={AppRoutes} />
       <Route component={NotFound} />
     </Switch>
