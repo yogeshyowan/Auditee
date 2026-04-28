@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import {
   ShieldCheck,
   CalendarClock,
@@ -116,6 +117,12 @@ const INDUSTRIES = [
 export default function AutomatedCompliancePage() {
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="Automated Compliance — 23+ Frameworks (SOC 2, HIPAA, IEC 62304, ASPICE, FDA) | Auditee"
+        description="Auditee automates continuous compliance evidence collection across 23+ frameworks: SOC 2, ISO 27001, HIPAA, IEC 62304, ISO 13485, ISO 26262, ASPICE, CMMI, DO-178C, FDA 21 CFR Part 11, FDA QMSR, GDPR, PCI DSS, NIST, EU AI Act, NIS2, DORA, FedRAMP, CMMC."
+        path="/automated-compliance"
+        keywords={["automated compliance", "SOC 2 automation", "HIPAA automation", "IEC 62304", "ASPICE automation", "ISO 26262", "FDA QMSR", "compliance evidence"]}
+      />
       {/* Header */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">

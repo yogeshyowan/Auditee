@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import {
   Sparkles,
   MessagesSquare,
@@ -106,6 +107,12 @@ const OUTCOMES = [
 export default function AiProductDevelopmentPage() {
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="AI Product Development — From Idea to Shipped Feature | Auditee"
+        description="Auditee's AI Product Development takes you from idea to shipped feature with Smart Interview, BRD/PRD generation, traceability matrices, automated test cases, and compliance evidence — all in one knowledge graph."
+        path="/ai-product-development"
+        keywords={["AI product development", "AI PRD generation", "AI BRD", "AI product manager", "Smart Interview", "AI requirements"]}
+      />
       {/* Header */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">

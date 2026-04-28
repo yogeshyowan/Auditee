@@ -1,17 +1,114 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemap.org/schemas/sitemap/0.9"
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://auditee.eltegra.ai/</loc>
+    <lastmod>2026-04-28</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
-    <image:image>
-      <image:loc>https://auditee.eltegra.ai/opengraph.jpg</image:loc>
-      <image:title>Auditee — AI-native enterprise PDLC platform</image:title>
-    </image:image>
-    <image:image>
-      <image:loc>https://auditee.eltegra.ai/hero-network.png</image:loc>
-      <image:title>Auditee living knowledge graph</image:title>
-    </image:image>
+    <priority>1.00</priority>
+    <image:image><image:loc>https://auditee.eltegra.ai/opengraph.jpg</image:loc><image:title>Auditee — AI-native enterprise PDLC platform</image:title></image:image>
+    <image:image><image:loc>https://auditee.eltegra.ai/hero-network.png</image:loc><image:title>Auditee living knowledge graph</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/features</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/ai-product-development</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/automated-compliance</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/ai-requirements-management</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/missing-requirements-analysis</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/test-case-generation</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/pricing</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/roi-calculator</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.80</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/about</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.60</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/contact</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/blog</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/blog/ai-requirements-management-buyers-guide-2026</loc>
+    <lastmod>2026-04-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/blog/iec-62304-medical-device-software-lifecycle-guide</loc>
+    <lastmod>2026-04-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/blog/soc-2-vs-iso-27001-which-framework-should-you-choose</loc>
+    <lastmod>2026-04-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/blog/generating-requirements-from-legacy-code</loc>
+    <lastmod>2026-04-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/blog/top-10-ibm-doors-alternatives-2026</loc>
+    <lastmod>2026-03-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
+  </url>
+  <url>
+    <loc>https://auditee.eltegra.ai/blog/hipaa-software-compliance-requirements-checklist</loc>
+    <lastmod>2026-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.70</priority>
   </url>
 </urlset>

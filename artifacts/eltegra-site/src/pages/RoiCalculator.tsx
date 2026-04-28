@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -69,6 +70,12 @@ export default function RoiCalculator() {
 
   return (
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900">
+      <SEO
+        title="ROI Calculator — Quantify Auditee's Business Impact"
+        description="Calculate your return on investment from Auditee. Input your engineering team size, audit cadence, and average finding cost — get an instant model of hours saved, audit cycle compression, and dollars recovered."
+        path="/roi-calculator"
+        keywords={["AI requirements ROI", "compliance ROI calculator", "audit automation savings"]}
+      />
       <header className="border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
           <Link href="/" className="font-display font-bold text-2xl text-slate-950">

@@ -1,13 +1,7 @@
-import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
   ArrowRight,
-  Menu,
-  X,
   PlayCircle,
   BrainCircuit,
   Database,
@@ -25,341 +19,22 @@ import {
   AlertTriangle,
   Layers,
   ArrowUpRight,
-  ChevronRight
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { useCreateDemoRequest } from "@workspace/api-client-react";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
-
-type NavGroup = { label: string; key: string; items: { title: string; desc: string; href: string }[] };
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Platform",
-    key: "platform",
-    items: [
-      { title: "AI Product Development", desc: "From idea to shipped feature — Smart Interview, BRDs, traceability and tests.", href: "/ai-product-development" },
-      { title: "AI Requirements Management", desc: "Unify DOORS, Jama, Jira + AI generation in one knowledge graph.", href: "/ai-requirements-management" },
-      { title: "Missing Requirements Analysis", desc: "AI Gap Detection finds the requirements you forgot to write.", href: "/missing-requirements-analysis" },
-      { title: "Test Case Generation", desc: "Auto-generate structured test suites from every requirement.", href: "/test-case-generation" },
-      { title: "Automated Compliance", desc: "Continuous control-by-control evidence across 23+ frameworks.", href: "/automated-compliance" },
-    ],
-  },
-  {
-    label: "Solutions",
-    key: "solutions",
-    items: [
-      { title: "Product Teams", desc: "From idea to PRD without the doc-juggling.", href: "#solutions" },
-      { title: "Engineering", desc: "Find the function that owns any requirement.", href: "#solutions" },
-      { title: "Compliance & Audit", desc: "Always-fresh evidence for SOC2, HIPAA, FDA, ISO.", href: "#solutions" },
-      { title: "Legacy Modernization", desc: "Reverse-engineer Angular, C#, C++ and SQL estates.", href: "#solutions" },
-    ],
-  },
-  {
-    label: "Resources",
-    key: "resources",
-    items: [
-      { title: "Features", desc: "The complete platform feature set, end-to-end.", href: "/features" },
-      { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
-      { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
-      { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "#pdlc" },
-    ],
-  },
-  {
-    label: "Company",
-    key: "company",
-    items: [
-      { title: "About", desc: "The team rebuilding the PDLC for the AI era.", href: "/about" },
-      { title: "Careers", desc: "Join us. Remote-first, mission-led.", href: "/about#careers" },
-      { title: "Press", desc: "News, releases and brand assets.", href: "/about#press" },
-      { title: "Contact", desc: "Talk to sales, partnerships or support.", href: "/contact" },
-    ],
-  },
-];
-
-function isInternalRoute(href: string): boolean {
-  // Only client-side route when it's an internal path WITHOUT a hash —
-  // hashed paths (e.g. /about#careers) need a real <a> so the browser
-  // performs native anchor scrolling on navigation.
-  return href.startsWith("/") && !href.startsWith("//") && !href.includes("#");
-}
-
-const demoSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  company: z.string().optional(),
-  message: z.string().optional()
-});
-
-function DemoDialog({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const { toast } = useToast();
-  const createDemo = useCreateDemoRequest();
-  const [success, setSuccess] = useState(false);
-
-  const form = useForm<z.infer<typeof demoSchema>>({
-    resolver: zodResolver(demoSchema),
-    defaultValues: { name: "", email: "", company: "", message: "" }
-  });
-
-  const onSubmit = async (values: z.infer<typeof demoSchema>) => {
-    try {
-      await createDemo.mutateAsync({ data: values });
-      setSuccess(true);
-      form.reset();
-    } catch (e) {
-      toast({ title: "Error", description: "Could not submit request. Please try again.", variant: "destructive" });
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) setTimeout(() => setSuccess(false), 300); }}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        {success ? (
-          <div className="py-12 text-center space-y-4">
-            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
-              <ShieldCheck size={32} />
-            </div>
-            <h3 className="text-2xl font-bold font-display text-slate-900">Request Received</h3>
-            <p className="text-slate-500">We'll be in touch shortly to schedule your personalized demo of Auditee.</p>
-            <Button onClick={() => setOpen(false)} className="mt-4 w-full">Done</Button>
-          </div>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-display">See Auditee in action</DialogTitle>
-              <DialogDescription>
-                Schedule a personalized walkthrough of the platform.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl><Input placeholder="Jane Doe" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Work Email</FormLabel>
-                    <FormControl><Input placeholder="jane@company.com" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="company" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company</FormLabel>
-                    <FormControl><Input placeholder="Acme Corp" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="message" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>What are you looking to solve?</FormLabel>
-                    <FormControl><Textarea placeholder="Tell us about your current challenges..." className="resize-none" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <Button type="submit" className="w-full h-12 text-base mt-2" disabled={createDemo.isPending}>
-                  {createDemo.isPending ? "Submitting..." : "Request Demo"}
-                </Button>
-              </form>
-            </Form>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
+import { Navigation, SiteFooter, DemoDialog } from "@/components/site/Chrome";
+import { SEO } from "@/components/SEO";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
 const staggerContainer = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
-
-function Logo() {
-  return (
-    <Link href="/" className="flex items-center gap-1.5 z-50 relative font-display font-bold text-2xl tracking-tight text-slate-950">
-      <span className="text-primary">Auditee</span>
-    </Link>
-  );
-}
-
-function Navigation() {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [openMobileGroup, setOpenMobileGroup] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
-        isScrolled
-          ? "bg-white/80 backdrop-blur-md border-slate-200 py-3 shadow-sm"
-          : "bg-transparent border-transparent py-5"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
-        <Logo />
-
-        {/* Desktop cascading dropdown nav */}
-        <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList>
-            {NAV_GROUPS.map((group) => (
-              <NavigationMenuItem key={group.key}>
-                <NavigationMenuTrigger
-                  className="bg-transparent text-slate-600 hover:text-primary data-[state=open]:text-primary"
-                  data-testid={`nav-trigger-${group.key}`}
-                >
-                  {group.label}
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid gap-2 p-4 w-[440px] md:w-[520px] grid-cols-2">
-                    {group.items.map((item) => {
-                      const inner = (
-                        <>
-                          <div className="text-sm font-semibold text-slate-900 group-hover:text-primary mb-1">
-                            {item.title}
-                          </div>
-                          <p className="text-xs text-slate-500 leading-snug">{item.desc}</p>
-                        </>
-                      );
-                      const className = "block rounded-md p-3 hover:bg-slate-100 transition-colors group";
-                      const testId = `nav-item-${group.key}-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-                      return (
-                        <li key={item.title}>
-                          <NavigationMenuLink asChild>
-                            {isInternalRoute(item.href) ? (
-                              <Link href={item.href} className={className} data-testid={testId}>
-                                {inner}
-                              </Link>
-                            ) : (
-                              <a href={item.href} className={className} data-testid={testId}>
-                                {inner}
-                              </a>
-                            )}
-                          </NavigationMenuLink>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            ))}
-          </NavigationMenuList>
-        </NavigationMenu>
-
-        <div className="hidden md:flex items-center gap-4">
-          <Link href="/pricing" className="text-sm font-medium text-slate-700 hover:text-primary transition-colors" data-testid="link-pricing-top">Pricing</Link>
-          <Link href="/app" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors" data-testid="link-launch-app-top">Launch Platform</Link>
-          <DemoDialog>
-            <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6" data-testid="button-book-demo-top">
-              Book a demo
-            </Button>
-          </DemoDialog>
-        </div>
-
-        <button
-          className="md:hidden z-50 relative text-slate-900"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          data-testid="button-toggle-mobile-menu"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {/* Mobile Menu — accordion-style cascading groups */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-white z-40 pt-24 px-6 pb-6 flex flex-col h-screen overflow-y-auto">
-          <nav className="flex flex-col gap-2 text-base font-medium">
-            {NAV_GROUPS.map((group) => {
-              const isOpen = openMobileGroup === group.key;
-              return (
-                <div key={group.key} className="border-b border-slate-100 pb-2">
-                  <button
-                    type="button"
-                    className="w-full flex items-center justify-between py-3 text-lg font-semibold text-slate-900"
-                    onClick={() => setOpenMobileGroup(isOpen ? null : group.key)}
-                    data-testid={`mobile-nav-trigger-${group.key}`}
-                  >
-                    {group.label}
-                    <ChevronRight
-                      size={20}
-                      className={`transition-transform ${isOpen ? "rotate-90 text-primary" : "text-slate-400"}`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <ul className="pl-2 pb-2 space-y-2">
-                      {group.items.map((item) => (
-                        <li key={item.title}>
-                          <a
-                            href={item.href}
-                            onClick={() => { setMobileMenuOpen(false); setOpenMobileGroup(null); }}
-                            className="block py-2 text-sm text-slate-600 hover:text-primary"
-                          >
-                            <span className="font-medium text-slate-800">{item.title}</span>
-                            <span className="block text-xs text-slate-500">{item.desc}</span>
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-          <div className="mt-8 flex flex-col gap-4">
-            <Link
-              href="/app"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-3 border border-primary text-primary rounded-lg font-medium"
-            >
-              Launch Platform
-            </Link>
-            <DemoDialog>
-              <Button className="w-full py-6 text-lg bg-primary hover:bg-primary/90 text-white rounded-lg">
-                Book a demo
-              </Button>
-            </DemoDialog>
-          </div>
-        </div>
-      )}
-    </header>
-  );
-}
 
 function Hero() {
   return (
@@ -947,66 +622,71 @@ function CompanyAnchor() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className="bg-slate-950 py-16 border-t border-slate-900 text-slate-400">
-      <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-16">
-          <div className="col-span-2 md:col-span-2">
-            <Link href="/" className="inline-flex items-center gap-1.5 font-display font-bold text-2xl tracking-tight text-white mb-6">
-              <span className="text-primary">Auditee</span>
-            </Link>
-            <p className="text-slate-400 max-w-sm">
-              The AI-native platform for the entire Product Development Lifecycle. Turn chaos into a living knowledge graph.
-            </p>
-          </div>
-          
-          <div>
-            <h4 className="text-white font-semibold mb-6">Platform</h4>
-            <ul className="space-y-4">
-              <li><a href="#" className="hover:text-primary transition-colors">Agentic AI</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Knowledge Graph</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Traceability</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Compliance</a></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="text-white font-semibold mb-6">Solutions</h4>
-            <ul className="space-y-4">
-              <li><a href="#" className="hover:text-primary transition-colors">For Product Teams</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">For Engineering</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">For Compliance</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Legacy Modernization</a></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h4 className="text-white font-semibold mb-6">Company</h4>
-            <ul className="space-y-4">
-              <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
-            </ul>
-          </div>
-        </div>
-        
-        <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
-          <p>© {new Date().getFullYear()} Auditee. All rights reserved.</p>
-          <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-}
+
+const HOME_FAQ_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is Auditee?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Auditee is an AI-native enterprise platform for the Product Development Lifecycle (PDLC). It unifies requirements management, source code, compliance audits, and CAPA workflows into a single living knowledge graph, with built-in support for ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, ISO 27001, HIPAA, FDA QMSR, GDPR, PCI DSS, NIST, EU AI Act, NIS2, and DORA.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Which standards does Auditee support?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Auditee includes standards-aware generation for HIPAA, IEC 62304, IEC 61508, ISO 13485, ISO 26262, ISO 27001, SOC 2, ASPICE, CMMI, DO-178C, FDA 21 CFR Part 11, FDA QMSR, GDPR, PCI DSS, NIST CSF, NIST 800-53, EU AI Act, NIS2, DORA, and IEC 62443. Each framework drives required document sections, requirement coverage topics, and inline citation hints.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can Auditee import from IBM DOORS, Jama, Polarion, or Jira?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Auditee includes first-party connectors for IBM DOORS, IBM DOORS Next (OSLC), Jama Connect, Siemens Polarion, PTC codeBeamer, Perforce Helix RM, Visure Requirements ALM, Microsoft Azure DevOps Boards, Atlassian Jira, plus a generic ReqIF importer and code sources via GitHub, ZIP and folder uploads.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can Auditee generate requirements from existing code?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Auditee reads source code (TypeScript, JavaScript, Python, Java, Kotlin, C#, C/C++, Go, Rust, COBOL, SQL, and more) and generates structured, standards-conformant requirements with traceability links back to specific files, classes or routes. Standards selected by the user (HIPAA, IEC 62304, SOC 2, etc.) shape the generated set's coverage and citations.",
+      },
+    },
+  ],
+};
 
 export default function Home() {
   return (
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900 selection:bg-primary/20 selection:text-primary">
+      <SEO
+        title="Auditee — AI Platform for Requirements, Compliance & Audit Automation"
+        description="Auditee is the AI-native PDLC platform. Unify requirements, code, audits and compliance into one living knowledge graph. Automate HIPAA, IEC 62304, ASPICE, ISO 26262, CMMI, SOC 2, ISO 27001, FDA QMSR, GDPR, PCI DSS audits."
+        path="/"
+        keywords={[
+          "AI requirements management",
+          "AI compliance automation",
+          "PDLC platform",
+          "audit automation",
+          "requirements traceability",
+          "ASPICE automation",
+          "ISO 26262 compliance",
+          "IEC 62304",
+          "SOC 2 automation",
+          "HIPAA compliance",
+          "FDA QMSR",
+          "DOORS alternative",
+          "Jama alternative",
+          "Polarion alternative",
+        ]}
+        jsonLd={[HOME_FAQ_LD]}
+      />
       <Navigation />
       <main>
         <Hero />
@@ -1021,7 +701,7 @@ export default function Home() {
         <CompanyAnchor />
         <FinalCta />
       </main>
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

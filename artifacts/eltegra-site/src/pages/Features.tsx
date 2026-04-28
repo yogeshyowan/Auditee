@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import {
   Sparkles,
   ShieldCheck,
@@ -231,6 +232,12 @@ const ROLES = [
 export default function FeaturesPage() {
   return (
     <div className="min-h-[100dvh] bg-white">
+      <SEO
+        title="Features — AI Requirements, Compliance, Traceability & Test Generation | Auditee"
+        description="Explore Auditee's complete feature set: AI requirements generation, missing requirements detection, automated test case generation, end-to-end traceability, knowledge graph, and 23+ compliance frameworks (HIPAA, IEC 62304, ASPICE, ISO 26262, SOC 2, ISO 27001, FDA QMSR)."
+        path="/features"
+        keywords={["AI requirements features", "compliance automation features", "traceability matrix", "AI test generation", "knowledge graph", "audit automation"]}
+      />
       {/* Header */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">

@@ -59,6 +59,17 @@ The application's left-side navigation is structured for natural workflow, start
 - **Standard-native Audit Ratings**: Compliance audits return `nativeRating` blocks expressed in the audited framework's vocabulary, derived deterministically from `compliancePercentage` and per-control verdicts.
 - **Marketing site**: `/` Home, `/features`, plus five capability deep-link pages — `/ai-product-development` (PDLC pipeline with stage cards), `/automated-compliance` (continuous evidence + 23-framework grid + 5-step "how it works"), `/ai-requirements-management` (9-capability grid + 10 RM-tool connector cards + 5-step flow), `/missing-requirements-analysis` (4 finding-type cards + 8-category scan + Gap-Detection deep dive), `/test-case-generation` (TC anatomy table + 6-capability grid + 4-step QA flow). Plus `/pricing`, `/roi-calculator`, `/about`, `/contact`. All five capability pages are surfaced from the Home page Platform nav dropdown.
 
+## SEO (eltegra-site)
+
+The marketing site has comprehensive per-page SEO:
+
+- **`src/components/SEO.tsx`** — declarative `<SEO>` component (no react-helmet, uses a useEffect-based head manager). Each page passes `title`, `description`, `path`, `keywords`, optional `jsonLd`, `breadcrumbs`, `article`. Helpers: `breadcrumbsLd`, `faqLd`, `articleLd`. `SITE_URL` is the canonical origin.
+- **Per-page SEO** is wired on Home, Features, Pricing (with FAQPage JSON-LD), RoiCalculator, About, Contact, AiProductDevelopment, AutomatedCompliance, AiRequirementsManagement, MissingRequirementsAnalysis, TestCaseGeneration, Blog index, and individual blog posts.
+- **Blog system** lives at `src/content/blog/` (markdown-as-string TS modules + `index.ts` catalogue). Routes: `/blog` (`pages/Blog.tsx`) and `/blog/:slug` (`pages/BlogPost.tsx` rendering with `react-markdown` + `remark-gfm` and Article + Breadcrumb JSON-LD).
+- **Sitemap**: `scripts/generate-sitemap.mjs` enumerates static routes + blog posts and writes `public/sitemap.xml`. Wired as a `prebuild` step in `package.json` and also exposed as `pnpm --filter @workspace/eltegra-site sitemap`.
+- **Shared chrome**: `src/components/site/Chrome.tsx` exports `Navigation`, `SiteFooter`, `DemoDialog`, `NAV_GROUPS`. Navigation includes Blog under Resources; Footer has real internal links + sitemap link.
+- **`public/robots.txt`** points to the sitemap and disallows `/app` plus common LLM training scrapers.
+
 ## External Dependencies
 
 - **OpenAI**: Used for all AI features via Replit AI Integrations proxy, specifically `gpt-5.2` in JSON mode.

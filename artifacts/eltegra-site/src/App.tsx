@@ -16,6 +16,8 @@ import AutomatedCompliance from "@/pages/AutomatedCompliance";
 import MissingRequirementsAnalysis from "@/pages/MissingRequirementsAnalysis";
 import TestCaseGeneration from "@/pages/TestCaseGeneration";
 import AiRequirementsManagement from "@/pages/AiRequirementsManagement";
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 // App Pages
@@ -85,6 +87,8 @@ function Router() {
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/app" component={() => <Redirect to="/app/sources" />} />
       <Route path="/app/*" component={AppRoutes} />
       <Route component={NotFound} />

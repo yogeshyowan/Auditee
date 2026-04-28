@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import {
   TestTube2,
   CheckCircle2,
@@ -76,6 +77,12 @@ const OUTCOMES = [
 export default function TestCaseGenerationPage() {
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="AI Test Case Generation — Auto-Generated from Requirements | Auditee"
+        description="Auditee auto-generates structured, executable test suites from every requirement. Each test case includes preconditions, numbered steps, expected results, and bidirectional traceability to source requirements."
+        path="/test-case-generation"
+        keywords={["AI test case generation", "automated test generation", "requirements-based testing", "test traceability", "AI testing"]}
+      />
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="text-lg font-display font-bold text-primary">Auditee</Link>

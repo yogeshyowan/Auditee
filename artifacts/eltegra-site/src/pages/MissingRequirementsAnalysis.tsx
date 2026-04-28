@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import {
   AlertTriangle,
   ShieldCheck,
@@ -75,6 +76,12 @@ const OUTCOMES = [
 export default function MissingRequirementsAnalysisPage() {
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="Missing Requirements Analysis — AI Gap Detection | Auditee"
+        description="Auditee's AI Gap Detection finds the requirements you forgot to write. Catches missing security, accessibility, performance, error-handling, and edge-case requirements before they become production defects or audit findings."
+        path="/missing-requirements-analysis"
+        keywords={["missing requirements", "requirements gap analysis", "AI gap detection", "requirements coverage", "audit findings prevention"]}
+      />
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="text-lg font-display font-bold text-primary">Auditee</Link>

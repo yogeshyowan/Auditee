@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +81,12 @@ export default function Contact() {
 
   return (
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900">
+      <SEO
+        title="Contact Auditee — Sales, Demos, Press & Support"
+        description="Get in touch with Auditee. Talk to sales, book a personalized product demo, contact press, or reach customer support. Response within one business day."
+        path="/contact"
+        keywords={["contact Auditee", "Auditee demo", "Auditee sales", "Auditee support"]}
+      />
       <header className="border-b border-slate-200 sticky top-0 bg-white/90 backdrop-blur z-10">
         <div className="max-w-7xl mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
           <Link href="/" className="font-display font-bold text-2xl text-slate-950">Auditee</Link>

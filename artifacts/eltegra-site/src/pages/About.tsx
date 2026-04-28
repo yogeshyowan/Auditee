@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Globe2, Users, Newspaper, Briefcase, Target, Heart, ShieldCheck } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 const PRINCIPLES = [
   {
@@ -39,6 +40,12 @@ const PRESS = [
 export default function About() {
   return (
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900">
+      <SEO
+        title="About Auditee — The AI-Native Platform for the Product Development Lifecycle"
+        description="Meet the team building Auditee, the AI-native platform replacing DOORS, Jama and Polarion for the next generation of regulated software. Founded by engineers and former auditors. Open roles in engineering, product, GTM."
+        path="/about"
+        keywords={["Auditee team", "AI requirements company", "Auditee careers", "compliance engineering jobs"]}
+      />
       <header className="border-b border-slate-200 sticky top-0 bg-white/90 backdrop-blur z-10">
         <div className="max-w-7xl mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
           <Link href="/" className="font-display font-bold text-2xl text-slate-950">Auditee</Link>

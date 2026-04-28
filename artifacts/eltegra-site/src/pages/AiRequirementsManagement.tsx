@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { SEO } from "@/components/SEO";
 import {
   ListChecks,
   Sparkles,
@@ -124,6 +125,12 @@ const OUTCOMES = [
 export default function AiRequirementsManagementPage() {
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="AI Requirements Management — Unify DOORS, Jama, Polarion, Jira | Auditee"
+        description="Auditee's AI Requirements Management unifies IBM DOORS, DOORS Next, Jama, Polarion, codeBeamer, Helix RM, Visure, Azure DevOps, and Jira into one knowledge graph with AI generation, gap detection, and end-to-end traceability."
+        path="/ai-requirements-management"
+        keywords={["AI requirements management", "DOORS alternative", "Jama alternative", "Polarion alternative", "requirements traceability", "OSLC", "ReqIF"]}
+      />
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="text-lg font-display font-bold text-primary">Auditee</Link>
