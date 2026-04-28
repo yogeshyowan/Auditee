@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Search, FileText, Sparkles, Loader2, Code2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateRequirements } from "@/lib/ai-api";
 import { Comments } from "@/components/Comments";
@@ -79,6 +79,7 @@ const RM_SYSTEM_LABEL: Record<string, string> = {
   azure_devops: "Azure DevOps",
   jira_reqs: "Jira",
   reqif: "ReqIF",
+  auditee_ai: "Auditee AI",
 };
 
 // Defence-in-depth: only allow http(s) links to be rendered. Anything else
@@ -133,6 +134,9 @@ export default function RequirementsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [brief, setBrief] = useState("");
+  const [generateCodeOpen, setGenerateCodeOpen] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeLanguage, setCodeLanguage] = useState("");
   const { toast } = useToast();
   const generateMut = useGenerateRequirements();
 
@@ -233,6 +237,15 @@ export default function RequirementsPage() {
           >
             <Sparkles className="h-4 w-4" /> Generate from brief
           </Button>
+          <Button
+            onClick={() => setGenerateCodeOpen(true)}
+            variant="outline"
+            className="gap-2"
+            disabled={!projectId}
+            data-testid="button-generate-from-code"
+          >
+            <Code2 className="h-4 w-4" /> Generate from code
+          </Button>
           <Button onClick={() => setCreateOpen(true)} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" /> New Requirement
           </Button>
@@ -285,6 +298,82 @@ export default function RequirementsPage() {
                 <Button type="button" variant="outline" onClick={() => setGenerateOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={brief.length < 20 || !projectId} className="gap-2">
                   <Sparkles className="h-4 w-4" /> Generate
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={generateCodeOpen} onOpenChange={(open) => { if (!generateMut.isPending) setGenerateCodeOpen(open); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-[Inter_Tight] text-2xl flex items-center gap-2">
+              <Code2 className="h-5 w-5 text-primary" /> Generate from code
+            </DialogTitle>
+            <DialogDescription>
+              No requirements management tool connected? Paste source code (a route, function, class, or stored procedure) and Auditee will reverse-engineer structured requirements with full fields — same shape as a DOORS or Jama import.
+            </DialogDescription>
+          </DialogHeader>
+          {generateMut.isPending ? (
+            <div className="py-10 flex flex-col items-center gap-3 text-slate-600">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm">Auditee is reading the code and drafting requirements...</p>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!projectId || codeInput.trim().length < 20) return;
+                generateMut.mutate(
+                  { projectId, code: codeInput, language: codeLanguage || undefined },
+                  {
+                    onSuccess: (data) => {
+                      toast({ title: `Generated ${data.count} requirements from code` });
+                      setCodeInput("");
+                      setCodeLanguage("");
+                      setGenerateCodeOpen(false);
+                    },
+                    onError: (err: Error) => {
+                      toast({ title: "Generation failed", description: err.message, variant: "destructive" });
+                    },
+                  },
+                );
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="code-language">Language (optional)</Label>
+                <Input
+                  id="code-language"
+                  value={codeLanguage}
+                  onChange={(e) => setCodeLanguage(e.target.value)}
+                  placeholder="e.g. typescript, python, java, cobol, sql"
+                  data-testid="input-code-language"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="code-input">Source code</Label>
+                <Textarea
+                  id="code-input"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value)}
+                  rows={14}
+                  placeholder="// Paste the function, route, class, or stored procedure you want to derive requirements from."
+                  className="resize-none font-mono text-xs"
+                  data-testid="textarea-code"
+                />
+                <p className="text-xs text-slate-500">{codeInput.length} / 30000 characters</p>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setGenerateCodeOpen(false)}>Cancel</Button>
+                <Button
+                  type="submit"
+                  disabled={codeInput.trim().length < 20 || !projectId}
+                  className="gap-2"
+                  data-testid="button-submit-code"
+                >
+                  <Code2 className="h-4 w-4" /> Generate
                 </Button>
               </DialogFooter>
             </form>

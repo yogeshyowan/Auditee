@@ -97,9 +97,27 @@ async function nextRequirementCode(projectId: string): Promise<string> {
 // AI: Generate Requirements from a brief
 // =============================================================
 router.post("/ai/generate-requirements", aiHandler(async (req, res) => {
+  const rawBrief = typeof req.body?.brief === "string" ? req.body.brief.trim() : "";
+  const rawCode = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+  const rawLang = typeof req.body?.language === "string" ? req.body.language.trim().slice(0, 40) : "";
+  // Allowlist: alphanumerics + a few harmless punctuation chars used in language
+  // names ("c++", "c#", "f#", "objective-c"). Anything else is dropped to avoid
+  // smuggling backticks / control chars into the prompt fence.
+  const language = /^[a-zA-Z0-9_+.#-]{1,40}$/.test(rawLang) ? rawLang : "";
+  if (!rawBrief && !rawCode) {
+    res.status(400).json({ error: "Provide either 'brief' or 'code'" });
+    return;
+  }
+  if (rawBrief && rawCode) {
+    res.status(400).json({ error: "Provide 'brief' or 'code', not both" });
+    return;
+  }
+  const mode: "brief" | "code" = rawCode ? "code" : "brief";
   const body = {
     projectId: requireString(req.body?.projectId, "projectId", { min: 1 }),
-    brief: requireString(req.body?.brief, "brief", { min: 20, max: 8000 }),
+    brief: mode === "brief" ? requireString(rawBrief, "brief", { min: 20, max: 8000 }) : "",
+    code: mode === "code" ? requireString(rawCode, "code", { min: 20, max: 30000 }) : "",
+    language,
   };
   const [project] = await db
     .select()
@@ -118,16 +136,29 @@ router.post("/ai/generate-requirements", aiHandler(async (req, res) => {
     })
     .from(complianceFrameworksTable);
 
-  const system = `You are Auditee, an enterprise requirements analyst. From a product brief, extract a small, well-formed set of requirements (3-8). Return strict JSON of shape:
+  const fwCodes = frameworks.map((f) => f.code).join(", ") || "(none)";
+  const system = mode === "code"
+    ? `You are Auditee, an enterprise requirements analyst. Reverse-engineer a well-formed set of requirements (4-12) from the supplied source code. Return strict JSON of shape:
+{"requirements":[{"title":string,"description":string,"type":"BRD"|"PRD"|"FRD"|"NFR","priority":"low"|"medium"|"high"|"critical","tags":string[],"linkedFrameworkCodes":string[]}]}
+Rules:
+- title: <=90 chars, action-oriented, derived from observable behaviour in the code.
+- description: 1-3 sentences, testable; reference the function/route/class that establishes it.
+- type: BRD=business goal, PRD=product capability, FRD=functional behaviour, NFR=non-functional (performance, security, compliance, validation, error-handling).
+- Cover happy paths AND validation/error-handling/security behaviours visible in the code.
+- linkedFrameworkCodes must be a subset of these codes: ${fwCodes}. Only include when truly relevant.
+- Output JSON only, no commentary.`
+    : `You are Auditee, an enterprise requirements analyst. From a product brief, extract a small, well-formed set of requirements (3-8). Return strict JSON of shape:
 {"requirements":[{"title":string,"description":string,"type":"BRD"|"PRD"|"FRD"|"NFR","priority":"low"|"medium"|"high"|"critical","tags":string[],"linkedFrameworkCodes":string[]}]}
 Rules:
 - title: <=90 chars, action-oriented.
 - description: 1-3 sentences, testable.
 - type: BRD=business goal, PRD=product capability, FRD=functional behaviour, NFR=non-functional (performance, security, compliance).
-- linkedFrameworkCodes must be a subset of these codes: ${frameworks.map((f) => f.code).join(", ") || "(none)"}. Only include when truly relevant.
+- linkedFrameworkCodes must be a subset of these codes: ${fwCodes}. Only include when truly relevant.
 - Output JSON only, no commentary.`;
 
-  const user = `Project: ${project.name}\nProject context: ${project.description ?? ""}\n\nBrief:\n${body.brief}`;
+  const user = mode === "code"
+    ? `Project: ${project.name}\nProject context: ${project.description ?? ""}\n\nSource code${body.language ? ` (${body.language})` : ""}:\n\`\`\`${body.language || ""}\n${body.code}\n\`\`\``
+    : `Project: ${project.name}\nProject context: ${project.description ?? ""}\n\nBrief:\n${body.brief}`;
 
   type GenResult = {
     requirements: Array<{
@@ -166,12 +197,14 @@ Rules:
         owner: "Auditee",
         tags: r.tags ?? [],
         linkedFrameworks,
+        externalSystem: "auditee_ai",
+        externalId: code,
       })
       .returning();
     created.push(row);
     await logActivity(
       "requirement",
-      `${code} drafted by Auditee from brief`,
+      `${code} drafted by Auditee from ${mode}`,
       "Auditee",
       code,
     );

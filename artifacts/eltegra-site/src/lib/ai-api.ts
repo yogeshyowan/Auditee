@@ -40,8 +40,12 @@ export type GenerateRequirementsResult = {
 export function useGenerateRequirements() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { projectId: string; brief: string }) =>
-      aiFetch<GenerateRequirementsResult>("/ai/generate-requirements", body),
+    mutationFn: (body: {
+      projectId: string;
+      brief?: string;
+      code?: string;
+      language?: string;
+    }) => aiFetch<GenerateRequirementsResult>("/ai/generate-requirements", body),
     onSuccess: () => {
       qc.invalidateQueries();
     },
