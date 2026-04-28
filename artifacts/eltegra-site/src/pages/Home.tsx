@@ -544,23 +544,46 @@ function FinalCta() {
 // their own. Keeps in-page navigation clickable and gives the marketing
 // pages a clear scroll target.
 function ResourcesAnchor() {
+  const cards: { title: string; desc: string; cta: string; href: string; testId: string }[] = [
+    {
+      title: "Customer stories",
+      desc: "How regulated enterprises moved from spreadsheet audits to a continuous knowledge graph.",
+      cta: "Read case studies",
+      href: "/about",
+      testId: "link-resources-customer-stories",
+    },
+    {
+      title: "Documentation",
+      desc: "Connector reference, ingestion limits, the graph query API and the full platform feature set.",
+      cta: "Open docs",
+      href: "/features",
+      testId: "link-resources-docs",
+    },
+    {
+      title: "Webinars & guides",
+      desc: "Practitioner research, buyer's guides and standards walkthroughs from the Auditee team.",
+      cta: "Browse library",
+      href: "/blog",
+      testId: "link-resources-blog",
+    },
+  ];
   return (
     <section id="resources" className="py-20 bg-slate-50 scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 md:px-12 grid md:grid-cols-3 gap-8">
-        {[
-          { title: "Customer stories", desc: "How regulated enterprises moved from spreadsheet audits to a continuous knowledge graph.", cta: "Read case studies" },
-          { title: "Documentation", desc: "Connector reference, ingestion limits, the graph query API and SDKs.", cta: "Open docs" },
-          { title: "Webinars & guides", desc: "Practical sessions on PDLC modernisation and audit automation.", cta: "Browse library" },
-        ].map((r) => (
+        {cards.map((r) => (
           <div key={r.title} className="rounded-2xl bg-white border border-slate-200 p-8">
             <h3 className="text-xl font-bold font-display text-slate-900 mb-3">{r.title}</h3>
             <p className="text-slate-600 mb-6 leading-relaxed">{r.desc}</p>
-            <DemoDialog>
-              <Button variant="outline" className="rounded-full text-primary border-primary/30 hover:bg-primary/5">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-full text-primary border-primary/30 hover:bg-primary/5"
+            >
+              <Link href={r.href} data-testid={r.testId}>
                 {r.cta}
                 <ArrowUpRight className="ml-2 h-4 w-4" />
-              </Button>
-            </DemoDialog>
+              </Link>
+            </Button>
           </div>
         ))}
       </div>

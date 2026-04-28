@@ -339,7 +339,7 @@ export function SiteFooter() {
   return (
     <footer className="bg-slate-950 py-16 border-t border-slate-900 text-slate-400" data-testid="site-footer">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-16">
           <div className="col-span-2 md:col-span-2">
             <Link href="/" className="inline-flex items-center gap-1.5 font-display font-bold text-2xl tracking-tight text-white mb-6">
               <span className="text-primary">Auditee</span>
@@ -359,11 +359,21 @@ export function SiteFooter() {
           <div>
             <h4 className="text-white font-semibold mb-6">Platform</h4>
             <ul className="space-y-4">
-              <li><Link href="/ai-product-development" className="hover:text-primary transition-colors">AI Product Development</Link></li>
-              <li><Link href="/ai-requirements-management" className="hover:text-primary transition-colors">AI Requirements</Link></li>
-              <li><Link href="/missing-requirements-analysis" className="hover:text-primary transition-colors">Gap Analysis</Link></li>
-              <li><Link href="/test-case-generation" className="hover:text-primary transition-colors">Test Generation</Link></li>
-              <li><Link href="/automated-compliance" className="hover:text-primary transition-colors">Automated Compliance</Link></li>
+              <li><Link href="/ai-product-development" className="hover:text-primary transition-colors" data-testid="link-footer-ai-product-development">AI Product Development</Link></li>
+              <li><Link href="/ai-requirements-management" className="hover:text-primary transition-colors" data-testid="link-footer-ai-requirements">AI Requirements</Link></li>
+              <li><Link href="/missing-requirements-analysis" className="hover:text-primary transition-colors" data-testid="link-footer-gap-analysis">Gap Analysis</Link></li>
+              <li><Link href="/test-case-generation" className="hover:text-primary transition-colors" data-testid="link-footer-test-generation">Test Generation</Link></li>
+              <li><Link href="/automated-compliance" className="hover:text-primary transition-colors" data-testid="link-footer-automated-compliance">Automated Compliance</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-white font-semibold mb-6">Solutions</h4>
+            <ul className="space-y-4">
+              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-product-teams">For Product Teams</a></li>
+              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-engineering">For Engineering</a></li>
+              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-compliance">For Compliance</a></li>
+              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-legacy">Legacy Modernization</a></li>
             </ul>
           </div>
 
@@ -371,18 +381,19 @@ export function SiteFooter() {
             <h4 className="text-white font-semibold mb-6">Resources</h4>
             <ul className="space-y-4">
               <li><Link href="/blog" className="hover:text-primary transition-colors" data-testid="link-footer-blog">Blog</Link></li>
-              <li><Link href="/features" className="hover:text-primary transition-colors">Features</Link></li>
-              <li><Link href="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-              <li><Link href="/roi-calculator" className="hover:text-primary transition-colors">ROI Calculator</Link></li>
+              <li><Link href="/features" className="hover:text-primary transition-colors" data-testid="link-footer-features">Features</Link></li>
+              <li><Link href="/pricing" className="hover:text-primary transition-colors" data-testid="link-footer-pricing">Pricing</Link></li>
+              <li><Link href="/roi-calculator" className="hover:text-primary transition-colors" data-testid="link-footer-roi">ROI Calculator</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-white font-semibold mb-6">Company</h4>
             <ul className="space-y-4">
-              <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
-              <li><Link href="/app" className="hover:text-primary transition-colors">Launch Platform</Link></li>
+              <li><Link href="/about" className="hover:text-primary transition-colors" data-testid="link-footer-about">About Us</Link></li>
+              <li><a href="/about#careers" className="hover:text-primary transition-colors" data-testid="link-footer-careers">Careers</a></li>
+              <li><Link href="/contact" className="hover:text-primary transition-colors" data-testid="link-footer-contact">Contact</Link></li>
+              <li><Link href="/app" className="hover:text-primary transition-colors" data-testid="link-footer-launch">Launch Platform</Link></li>
             </ul>
           </div>
         </div>
