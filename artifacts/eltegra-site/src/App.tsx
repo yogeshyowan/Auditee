@@ -47,6 +47,7 @@ import Defects from "@/pages/app/Defects";
 import Gaps from "@/pages/app/Gaps";
 import Interview from "@/pages/app/Interview";
 import Billing from "@/pages/app/Billing";
+import Templates from "@/pages/app/Templates";
 import AuditLogs from "@/pages/app/AuditLogs";
 import Sso from "@/pages/app/Sso";
 import ProjectMembers from "@/pages/app/ProjectMembers";
@@ -161,6 +162,7 @@ function AppRoutes() {
           <Route path="/app/gaps" component={Gaps} />
           <Route path="/app/interview" component={Interview} />
           <Route path="/app/billing" component={Billing} />
+          <Route path="/app/templates" component={Templates} />
           <Route path="/app/audit-logs" component={AuditLogs} />
           <Route path="/app/members" component={ProjectMembers} />
           <Route path="/app/sso" component={Sso} />

@@ -21,6 +21,7 @@ import analyticsRouter from "./analytics";
 import sourcesRouter from "./sources";
 import defectsRouter from "./defects";
 import workspaceRouter from "./workspace";
+import workspaceTemplateRouter from "./workspaceTemplate";
 import testCasesRouter from "./testCases";
 
 const router: IRouter = Router();
@@ -47,6 +48,7 @@ router.use(analyticsRouter);
 router.use(sourcesRouter);
 router.use(defectsRouter);
 router.use(workspaceRouter);
+router.use(workspaceTemplateRouter);
 router.use(testCasesRouter);
 
 export default router;

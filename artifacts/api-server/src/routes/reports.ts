@@ -20,6 +20,7 @@ import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 import { inArray } from "drizzle-orm";
 import { consumeCredit } from "../middlewares/creditMiddleware";
 import { requireProjectAccessInline } from "../lib/projectAccess";
+import { renderWithCompanyTemplate } from "../lib/companyTemplate";
 
 const router: IRouter = Router();
 
@@ -1072,8 +1073,42 @@ router.get("/reports/:id/export", asyncH(async (req, res) => {
     return;
   }
   if (format === "docx") {
-    const doc = buildDocx(report);
-    const buf = await Packer.toBuffer(doc);
+    // If the workspace owning this report's project has a company template
+    // uploaded, render through the template (preserves header, footer, logo,
+    // styles). Otherwise fall back to the standard builder. The query string
+    // ?template=skip lets users explicitly bypass the template (useful for
+    // debugging or when the template is broken).
+    const skipTemplate = String(req.query.template ?? "").toLowerCase() === "skip";
+    let buf: Buffer | null = null;
+    if (!skipTemplate && report.projectId) {
+      const [proj] = await db
+        .select({ workspaceId: projectsTable.workspaceId })
+        .from(projectsTable)
+        .where(eq(projectsTable.id, report.projectId));
+      if (proj?.workspaceId) {
+        try {
+          buf = await renderWithCompanyTemplate(proj.workspaceId, {
+            title: report.title,
+            subtitle: report.content.subtitle ?? null,
+            tone: report.tone,
+            updatedAt: report.updatedAt,
+            content: report.content,
+          });
+        } catch (err: any) {
+          res.status(500).json({
+            error:
+              "Company template failed to render. Re-upload a valid .docx with the standard placeholders, " +
+              "or append ?template=skip to the export URL to bypass it. Detail: " +
+              (err?.message ?? String(err)),
+          });
+          return;
+        }
+      }
+    }
+    if (!buf) {
+      const doc = buildDocx(report);
+      buf = await Packer.toBuffer(doc);
+    }
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     res.setHeader("Content-Disposition", `attachment; filename="${baseName}.docx"`);
     res.send(buf);

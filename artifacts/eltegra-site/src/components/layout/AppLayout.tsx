@@ -23,7 +23,8 @@ import {
   FileSearch,
   Plus,
   Users,
-  Beaker
+  Beaker,
+  FileBadge2
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -57,6 +58,7 @@ const NAV_ITEMS = [
   { href: "/app/activity", label: "Activity", icon: Activity },
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/app/billing", label: "Billing & Team", icon: CreditCard },
+  { href: "/app/templates", label: "Company Template", icon: FileBadge2 },
   { href: "/app/members", label: "Project Members", icon: Users },
   { href: "/app/audit-logs", label: "Audit Log", icon: FileSearch },
   { href: "/app/sso", label: "SSO & Security", icon: KeyRound },

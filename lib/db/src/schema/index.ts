@@ -22,4 +22,5 @@ export * from "./workspaces";
 export * from "./anonymousTrials";
 export * from "./auditLogs";
 export * from "./projectMembers";
+export * from "./workspaceTemplates";
 export * from "./testCases";
