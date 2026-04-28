@@ -383,3 +383,25 @@ export function useEstimateEffort() {
       aiFetch<EffortEstimateResult>("/ai/estimate-effort", body),
   });
 }
+
+// ============================================================
+// Smart Interview
+// ============================================================
+export type InterviewQuestion = {
+  id: string;
+  category: "users" | "functional" | "data" | "integration" | "non_functional" | "compliance" | "constraints" | "success" | string;
+  prompt: string;
+  hint: string;
+};
+export type InterviewQuestionsResult = {
+  project: { id: string; name: string };
+  brief: string;
+  questions: InterviewQuestion[];
+};
+
+export function useInterviewQuestions() {
+  return useMutation({
+    mutationFn: (body: { projectId: string; brief: string }) =>
+      aiFetch<InterviewQuestionsResult>("/ai/interview/questions", body),
+  });
+}

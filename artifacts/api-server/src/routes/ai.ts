@@ -1555,6 +1555,116 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
 }));
 
 // =============================================================
+// AI: Smart Interview — given a brief, generate 5-7 tailored
+// follow-up questions that, when answered, will produce a far
+// more complete requirements set than the brief alone. The
+// frontend then concatenates the brief + Q&A and re-uses the
+// existing /ai/generate-requirements endpoint to extract the
+// final requirements list.
+// =============================================================
+router.post("/ai/interview/questions", aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  const brief = requireString(req.body?.brief, "brief", { min: 20, max: 4000 });
+
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const system = `You are Auditee, a senior business analyst conducting a structured discovery interview to extract complete requirements from a stakeholder.
+
+Given a project brief, generate 5-7 sharply targeted follow-up questions. The answers, taken together, should be enough to draft a complete BRD/PRD-quality requirements set.
+
+Return STRICT JSON of shape:
+{"questions":[{"id":string,"category":"users"|"functional"|"data"|"integration"|"non_functional"|"compliance"|"constraints"|"success","prompt":string,"hint":string}]}
+
+Rules:
+- id: a short kebab-case identifier ("primary-users", "auth-method", etc.).
+- category: one of the listed values; cover at least 4 different categories across the question set.
+- prompt: a single direct question (<=200 chars). Plain English. No multi-part compound questions.
+- hint: a one-sentence example or clarification (<=160 chars) showing what a good answer looks like.
+- Order: start with users/scope, then functional, then non-functional/compliance, then constraints/success criteria.
+- Output JSON only, no commentary.`;
+
+  const user = `Project: ${project.name}
+Project context: ${project.description ?? "(none)"}
+
+Brief:
+${brief}`;
+
+  type InterviewResult = {
+    questions: Array<{
+      id: string;
+      category: string;
+      prompt: string;
+      hint: string;
+    }>;
+  };
+
+  const ALLOWED_INTERVIEW_CATEGORIES = new Set([
+    "users",
+    "functional",
+    "data",
+    "integration",
+    "non_functional",
+    "compliance",
+    "constraints",
+    "success",
+  ]);
+
+  const raw = await jsonCompletion<InterviewResult>(system, user);
+  if (!Array.isArray(raw.questions) || raw.questions.length === 0) {
+    res.status(422).json({ error: "Model returned no questions" });
+    return;
+  }
+
+  // Normalise + validate every question. Drop malformed ones, dedup ids, and
+  // cap counts/lengths so the UI can never be fed garbage from the LLM.
+  const seenIds = new Set<string>();
+  const questions = raw.questions
+    .filter((q): q is { id: string; category: string; prompt: string; hint: string } =>
+      !!q
+      && typeof q.id === "string"
+      && typeof q.prompt === "string"
+      && q.prompt.trim().length > 0
+    )
+    .map((q, idx) => {
+      let id = q.id.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+      if (!id || seenIds.has(id)) id = `q-${idx + 1}`;
+      seenIds.add(id);
+      const category = ALLOWED_INTERVIEW_CATEGORIES.has(q.category) ? q.category : "functional";
+      return {
+        id,
+        category,
+        prompt: q.prompt.trim().slice(0, 240),
+        hint: typeof q.hint === "string" ? q.hint.trim().slice(0, 200) : "",
+      };
+    })
+    .slice(0, 10);
+
+  if (questions.length === 0) {
+    res.status(422).json({ error: "Model returned no usable questions" });
+    return;
+  }
+
+  await logActivity(
+    "smart_interview",
+    `Smart interview started on ${project.name} (${questions.length} questions)`,
+    "Auditee",
+  );
+
+  res.json({
+    project: { id: project.id, name: project.name },
+    brief,
+    questions,
+  });
+}));
+
+// =============================================================
 // AI: Effort Estimation
 // Estimates implementation effort (in man-hours) for every
 // requirement in a project. Returns per-requirement estimates

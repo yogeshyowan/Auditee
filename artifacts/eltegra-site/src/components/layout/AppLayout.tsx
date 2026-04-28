@@ -17,6 +17,7 @@ import {
   BarChart3,
   CalendarClock,
   FolderInput,
+  MessagesSquare,
   Plus
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 // so it's intentionally not in the sidebar list.
 const NAV_ITEMS = [
   { href: "/app/sources", label: "Project Sources", icon: FolderInput },
+  { href: "/app/interview", label: "Smart Interview", icon: MessagesSquare },
   { href: "/app/requirements", label: "Requirements", icon: ListChecks },
   { href: "/app/gaps", label: "Gap Detection", icon: AlertTriangle },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },

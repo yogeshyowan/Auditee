@@ -39,10 +39,10 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen, ChevronDown, FileType, FileCog, TestTube2 } from "lucide-react";
+import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen, ChevronDown, FileType, FileCog, TestTube2, Clock, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGenerateRequirements, useFetchCodeUrl } from "@/lib/ai-api";
+import { useGenerateRequirements, useFetchCodeUrl, useEstimateEffort, type EffortEstimateResult } from "@/lib/ai-api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSources, useSourceFiles, useSourceFileContent, useGenerateReport } from "@/lib/wave1-api";
 import { Comments } from "@/components/Comments";
@@ -302,6 +302,34 @@ export default function RequirementsPage() {
   });
   const [, navigate] = useLocation();
   const generateDoc = useGenerateReport();
+  const estimateEffort = useEstimateEffort();
+  const [estimateOpen, setEstimateOpen] = useState(false);
+  const [estimateData, setEstimateData] = useState<EffortEstimateResult | null>(null);
+
+  const handleEstimateEffort = () => {
+    if (!projectId || estimateEffort.isPending) return;
+    const reqs = allProjectReqs ?? [];
+    if (reqs.length === 0) {
+      toast({
+        title: "No requirements yet",
+        description: "Generate or import at least a few requirements first — effort estimation needs source material.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEstimateOpen(true);
+    setEstimateData(null);
+    estimateEffort.mutate(
+      { projectId },
+      {
+        onSuccess: (data) => setEstimateData(data),
+        onError: (err: Error) => {
+          toast({ title: "Estimation failed", description: err.message, variant: "destructive" });
+          setEstimateOpen(false);
+        },
+      },
+    );
+  };
 
   type DocKind = { kind: "brd" | "prd" | "frd" | "test_cases"; label: string; tone: "executive" | "technical"; instructions: string };
   const DOC_KINDS: DocKind[] = [
@@ -413,11 +441,140 @@ export default function RequirementsPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            onClick={handleEstimateEffort}
+            variant="outline"
+            className="gap-2"
+            disabled={!projectId || estimateEffort.isPending}
+            data-testid="button-estimate-effort"
+          >
+            {estimateEffort.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Clock className="h-4 w-4" />
+            )}
+            {estimateEffort.isPending ? "Estimating…" : "Estimate effort"}
+          </Button>
           <Button onClick={() => setCreateOpen(true)} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" /> New Requirement
           </Button>
         </div>
       </header>
+
+      <Sheet open={estimateOpen} onOpenChange={setEstimateOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="font-[Inter_Tight] text-2xl flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" /> Effort Estimation
+            </SheetTitle>
+            <SheetDescription>
+              AI-generated implementation effort across every requirement in this project.
+              Estimates assume one mid-level engineer; adjust your team size accordingly.
+            </SheetDescription>
+          </SheetHeader>
+
+          {estimateEffort.isPending || !estimateData ? (
+            <div className="py-16 flex flex-col items-center gap-3 text-slate-500">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm">Auditee is sizing each requirement…</p>
+            </div>
+          ) : (
+            <div className="space-y-5 mt-6">
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="p-4">
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Total hours</div>
+                  <div className="mt-1 text-3xl font-bold text-slate-900" data-testid="stat-total-hours">
+                    {Math.round(estimateData.totals.hours)}
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Weeks @ 1 FTE</div>
+                  <div className="mt-1 text-3xl font-bold text-slate-900">
+                    {estimateData.totals.weeksAtOneFte.toFixed(1)}
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Requirements</div>
+                  <div className="mt-1 text-3xl font-bold text-slate-900">
+                    {estimateData.estimates.length}
+                  </div>
+                </Card>
+              </div>
+
+              <Card className="p-4">
+                <div className="text-xs uppercase tracking-wide text-slate-500 mb-2">Complexity breakdown</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {(["trivial", "small", "medium", "large", "epic"] as const).map((c) => {
+                    const count = estimateData.totals.complexityBreakdown?.[c] ?? 0;
+                    if (!count) return null;
+                    const colorMap: Record<typeof c, string> = {
+                      trivial: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                      small: "bg-sky-50 text-sky-700 border-sky-200",
+                      medium: "bg-amber-50 text-amber-700 border-amber-200",
+                      large: "bg-orange-50 text-orange-700 border-orange-200",
+                      epic: "bg-rose-50 text-rose-700 border-rose-200",
+                    };
+                    return (
+                      <Badge key={c} variant="outline" className={`gap-1 ${colorMap[c]}`}>
+                        {c} · {count}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </Card>
+
+              {estimateData.assumptions?.length > 0 && (
+                <Card className="p-4 bg-amber-50/40 border-amber-200">
+                  <div className="text-xs uppercase tracking-wide text-amber-800 mb-2 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5" /> Assumptions
+                  </div>
+                  <ul className="space-y-1 text-sm text-slate-700 list-disc list-inside">
+                    {estimateData.assumptions.map((a, i) => (
+                      <li key={i}>{a}</li>
+                    ))}
+                  </ul>
+                </Card>
+              )}
+
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">Per-requirement estimates</h4>
+                <div className="space-y-2">
+                  {estimateData.estimates.map((e) => {
+                    const matched = (allProjectReqs ?? []).find((r) => r.code === e.requirementCode);
+                    const title = matched?.title ?? "(requirement removed)";
+                    return (
+                      <Card key={e.requirementCode} className="p-3" data-testid={`estimate-row-${e.requirementCode}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-xs text-slate-500">{e.requirementCode}</span>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {e.complexity}
+                              </Badge>
+                            </div>
+                            <div className="font-medium text-sm text-slate-900 mt-0.5 truncate">{title}</div>
+                            {e.rationale && (
+                              <div className="text-xs text-slate-600 mt-1">{e.rationale}</div>
+                            )}
+                            {e.risks?.length > 0 && (
+                              <div className="text-xs text-rose-700 mt-1">
+                                <span className="font-semibold">Risks:</span> {e.risks.join("; ")}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-lg font-bold text-slate-900">{e.hours}h</div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={generateOpen} onOpenChange={(open) => { if (!generateMut.isPending) setGenerateOpen(open); }}>
         <DialogContent className="sm:max-w-lg">
