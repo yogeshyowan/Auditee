@@ -56,6 +56,7 @@ The application's left-side navigation is structured for natural workflow, start
 - **Standard-aware CAPA Filters**: The CAPA page filters actions by compliance framework.
 - **Per-framework Traceability Filter**: The Traceability page scopes the graph to a single compliance framework.
 - **Standard-native Audit Ratings**: Compliance audits return `nativeRating` blocks expressed in the audited framework's vocabulary, derived deterministically from `compliancePercentage` and per-control verdicts.
+- **Marketing site**: `/` Home, `/features`, `/ai-product-development` (capability deep-link covering the full PDLC pipeline with stage cards), `/automated-compliance` (capability deep-link covering continuous evidence + 23-framework grid + 5-step "how it works"), `/pricing`, `/roi-calculator`, `/about`, `/contact`. Capability deep-links are surfaced from the Home page Platform nav dropdown.
 
 ## External Dependencies
 

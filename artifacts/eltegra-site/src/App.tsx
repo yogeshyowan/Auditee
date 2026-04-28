@@ -11,6 +11,8 @@ import RoiCalculator from "@/pages/RoiCalculator";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Features from "@/pages/Features";
+import AiProductDevelopment from "@/pages/AiProductDevelopment";
+import AutomatedCompliance from "@/pages/AutomatedCompliance";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 // App Pages
@@ -71,6 +73,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/features" component={Features} />
+      <Route path="/ai-product-development" component={AiProductDevelopment} />
+      <Route path="/automated-compliance" component={AutomatedCompliance} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />

@@ -49,10 +49,10 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Platform",
     key: "platform",
     items: [
+      { title: "AI Product Development", desc: "From idea to shipped feature — Smart Interview, BRDs, traceability and tests.", href: "/ai-product-development" },
+      { title: "Automated Compliance", desc: "Continuous control-by-control evidence across 23+ frameworks.", href: "/automated-compliance" },
       { title: "Living Knowledge Graph", desc: "Unified semantic graph linking specs, code and audits.", href: "#platform" },
-      { title: "Agentic Product AI", desc: "Capture intent, draft BRDs, PRDs and FRDs in minutes.", href: "#platform" },
       { title: "Bidirectional Traceability", desc: "Map every requirement to the function that ships it.", href: "#capabilities" },
-      { title: "Compliance Autopilot", desc: "Continuous evidence across 23+ frameworks.", href: "#capabilities" },
     ],
   },
   {
