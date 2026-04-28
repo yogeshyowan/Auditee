@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq, count } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, capaActionsTable, projectsTable, activityEventsTable } from "@workspace/db";
+import { db, capaActionsTable, projectsTable, activityEventsTable, complianceFrameworksTable } from "@workspace/db";
 import { notify } from "../lib/notify.js";
 
 const router: IRouter = Router();
@@ -16,12 +16,36 @@ async function nextCapaCode(projectId: string): Promise<string> {
 router.get("/capa", async (req, res) => {
   const projectId = typeof req.query.projectId === "string" ? req.query.projectId : undefined;
   const status = typeof req.query.status === "string" ? req.query.status : undefined;
+  const frameworkId = typeof req.query.frameworkId === "string" ? req.query.frameworkId : undefined;
   const conds = [];
   if (projectId) conds.push(eq(capaActionsTable.projectId, projectId));
   if (status) conds.push(eq(capaActionsTable.status, status));
+  if (frameworkId) conds.push(eq(capaActionsTable.frameworkId, frameworkId));
   const rows = await db
-    .select()
+    .select({
+      id: capaActionsTable.id,
+      code: capaActionsTable.code,
+      projectId: capaActionsTable.projectId,
+      frameworkId: capaActionsTable.frameworkId,
+      controlId: capaActionsTable.controlId,
+      controlCode: capaActionsTable.controlCode,
+      title: capaActionsTable.title,
+      description: capaActionsTable.description,
+      severity: capaActionsTable.severity,
+      status: capaActionsTable.status,
+      owner: capaActionsTable.owner,
+      source: capaActionsTable.source,
+      evidenceCount: capaActionsTable.evidenceCount,
+      tags: capaActionsTable.tags,
+      dueAt: capaActionsTable.dueAt,
+      closedAt: capaActionsTable.closedAt,
+      createdAt: capaActionsTable.createdAt,
+      updatedAt: capaActionsTable.updatedAt,
+      frameworkName: complianceFrameworksTable.name,
+      frameworkCode: complianceFrameworksTable.code,
+    })
     .from(capaActionsTable)
+    .leftJoin(complianceFrameworksTable, eq(complianceFrameworksTable.id, capaActionsTable.frameworkId))
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(desc(capaActionsTable.updatedAt));
   res.json({ actions: rows });

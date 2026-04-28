@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useProjectContext } from "@/lib/project-context";
-import { useCapas, useCreateCapa, useUpdateCapa, useDeleteCapa, type CapaRow } from "@/lib/wave1-api";
+import { useCapas, useCreateCapa, useUpdateCapa, useDeleteCapa, useFrameworksList, type CapaRow } from "@/lib/wave1-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,13 +29,24 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function Capa() {
   const { projectId } = useProjectContext();
-  const { data, isLoading } = useCapas(projectId);
+  const [frameworkFilter, setFrameworkFilter] = useState<string>("all");
+  const { data, isLoading } = useCapas(
+    projectId,
+    undefined,
+    frameworkFilter === "all" ? undefined : frameworkFilter,
+  );
+  const { data: frameworks } = useFrameworksList();
   const create = useCreateCapa();
   const update = useUpdateCapa();
   const del = useDeleteCapa();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<CapaRow | null>(null);
   const [form, setForm] = useState({ title: "", description: "", severity: "medium", owner: "", dueAt: "" });
+
+  // Frameworks that actually have CAPAs in this project (computed from unfiltered queries
+  // would be ideal, but we expose the full list as the dropdown source so users can pick
+  // any standard even if no CAPAs exist for it yet).
+  const frameworkOptions = (frameworks ?? []).slice().sort((a, b) => a.name.localeCompare(b.name));
 
   const counts = (data?.actions ?? []).reduce(
     (acc, a) => {
@@ -150,7 +161,25 @@ export default function Capa() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Action register</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+            <CardTitle>Action register</CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Standard</span>
+              <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+                <SelectTrigger className="w-[260px] h-8 text-xs" data-testid="capa-framework-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All standards</SelectItem>
+                  {frameworkOptions.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
           <CardContent>
             {isLoading && <div className="text-sm text-slate-500">Loading…</div>}
             {data?.actions.length === 0 && (
@@ -168,6 +197,11 @@ export default function Capa() {
                       <span className={`text-[10px] uppercase px-2 py-0.5 rounded ${SEVERITY_COLORS[a.severity]}`}>{a.severity}</span>
                       <span className={`text-[10px] uppercase px-2 py-0.5 rounded ${STATUS_COLORS[a.status]}`}>{a.status.replace("_", " ")}</span>
                       {a.controlCode && <Badge variant="outline" className="text-[10px]">{a.controlCode}</Badge>}
+                      {a.frameworkName && (
+                        <Badge variant="outline" className="text-[10px] border-indigo-200 bg-indigo-50 text-indigo-700">
+                          {a.frameworkName}
+                        </Badge>
+                      )}
                     </div>
                     <button className="text-left font-medium text-slate-900 hover:text-primary" onClick={() => setActive(a)}>
                       {a.title}

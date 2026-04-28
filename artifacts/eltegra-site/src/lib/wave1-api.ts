@@ -58,6 +58,23 @@ export function useDeleteComment() {
   });
 }
 
+// ───────── Compliance frameworks (lightweight list) ─────────
+export type FrameworkRow = {
+  id: string;
+  code: string;
+  name: string;
+  category?: string | null;
+  controlsMet?: number;
+};
+
+export function useFrameworksList() {
+  return useQuery({
+    queryKey: ["frameworks-list"],
+    queryFn: () => jfetch<FrameworkRow[]>(`/compliance/frameworks`),
+    staleTime: 60_000,
+  });
+}
+
 // ───────── CAPA ─────────
 export type CapaRow = {
   id: string;
@@ -78,16 +95,19 @@ export type CapaRow = {
   closedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  frameworkName?: string | null;
+  frameworkCode?: string | null;
 };
 
-export function useCapas(projectId: string | undefined, status?: string) {
+export function useCapas(projectId: string | undefined, status?: string, frameworkId?: string) {
   return useQuery({
-    queryKey: ["capa", projectId, status],
+    queryKey: ["capa", projectId, status, frameworkId],
     enabled: Boolean(projectId),
     queryFn: () => {
       const qs = new URLSearchParams();
       if (projectId) qs.set("projectId", projectId);
       if (status) qs.set("status", status);
+      if (frameworkId) qs.set("frameworkId", frameworkId);
       return jfetch<{ actions: CapaRow[] }>(`/capa?${qs.toString()}`);
     },
   });

@@ -128,6 +128,7 @@ export default function RequirementsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Requirement | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -135,16 +136,70 @@ export default function RequirementsPage() {
   const { toast } = useToast();
   const generateMut = useGenerateRequirements();
 
+  // The source-filter dropdown narrows the API request. We always also fetch the
+  // unfiltered set (per project) so we can populate the dropdown with the actual
+  // sources/origins present in this project.
   const params = useMemo(() => {
     const p: Record<string, string> = {};
     if (projectId) p.projectId = projectId;
     if (statusFilter !== "all") p.status = statusFilter;
     if (typeFilter !== "all") p.type = typeFilter;
     if (search) p.search = search;
+    if (sourceFilter === "manual") {
+      p.origin = "manual";
+    } else if (sourceFilter !== "all" && sourceFilter !== "__other_imported__") {
+      // Source-filter values that are not "all"/"manual"/"__other_imported__"
+      // are externalSystem codes (doors/jama/azure_devops/...).
+      p.externalSystem = sourceFilter;
+    }
+    // "__other_imported__" has no usable backend predicate yet — fall through
+    // to the project-only filter; the count chip still shows the actual size.
     return p as any;
-  }, [projectId, statusFilter, typeFilter, search]);
+  }, [projectId, statusFilter, typeFilter, search, sourceFilter]);
 
   const { data: requirements, isLoading } = useListRequirements(params);
+
+  // Unfiltered project requirements — used solely to compute which sources to
+  // show in the filter dropdown and the source-counter chips.
+  const projectAllParams = useMemo(() => (projectId ? ({ projectId } as any) : ({} as any)), [projectId]);
+  const { data: allProjectReqs } = useListRequirements(projectAllParams);
+
+  // Build a list of source options for the dropdown from the unfiltered set:
+  //   {value: "manual", label: "Manual entries", count: N}
+  //   {value: "doors",  label: "DOORS",         count: N}
+  //   ...
+  const sourceOptions = useMemo(() => {
+    // Canonical discriminator: a requirement is "manual" iff sourceId is null.
+    // This matches the backend `origin=manual` filter (which uses isNull(sourceId))
+    // so dropdown counts and filtered results stay consistent even if an imported
+    // row is missing an externalSystem label.
+    const counts = new Map<string, number>();
+    let manualCount = 0;
+    let importedNoSystem = 0;
+    (allProjectReqs ?? []).forEach((r) => {
+      const x = r as Requirement & { externalSystem?: string | null; sourceId?: string | null };
+      if (!x.sourceId) {
+        manualCount++;
+        return;
+      }
+      if (x.externalSystem) {
+        counts.set(x.externalSystem, (counts.get(x.externalSystem) ?? 0) + 1);
+      } else {
+        importedNoSystem++;
+      }
+    });
+    const items: Array<{ value: string; label: string; count: number }> = [];
+    if (manualCount > 0) items.push({ value: "manual", label: "Manual entries", count: manualCount });
+    Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([sys, n]) => {
+        items.push({ value: sys, label: RM_SYSTEM_LABEL[sys] ?? sys, count: n });
+      });
+    if (importedNoSystem > 0) {
+      items.push({ value: "__other_imported__", label: "Other connected source", count: importedNoSystem });
+    }
+    return items;
+  }, [allProjectReqs]);
   const queryClient = useQueryClient();
   const updateMut = useUpdateRequirement({
     mutation: {
@@ -266,7 +321,40 @@ export default function RequirementsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-[220px]" data-testid="requirements-source-filter">
+              <SelectValue placeholder="Source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources ({(allProjectReqs ?? []).length})</SelectItem>
+              {sourceOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label} ({opt.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+        {sourceOptions.length > 1 && (
+          <div className="mt-3 flex items-center gap-2 flex-wrap text-xs text-slate-500">
+            <span>Sources contributing to this project:</span>
+            {sourceOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setSourceFilter(opt.value === sourceFilter ? "all" : opt.value)}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11px] transition-colors ${
+                  sourceFilter === opt.value
+                    ? "bg-emerald-100 border-emerald-300 text-emerald-800"
+                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+                data-testid={`requirements-source-chip-${opt.value}`}
+              >
+                <span>{opt.label}</span>
+                <span className="font-medium">{opt.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Card className="rounded-xl border-slate-200 overflow-hidden">

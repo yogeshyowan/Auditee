@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, ilike, or, inArray, desc, count } from "drizzle-orm";
+import { and, eq, ilike, or, inArray, desc, count, isNull } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   db,
@@ -45,6 +45,10 @@ async function withCounts(rows: typeof requirementsTable.$inferSelect[]) {
 
 router.get("/requirements", async (req, res) => {
   const params = ListRequirementsQueryParams.parse(req.query);
+  // Extra filters not in the generated zod schema (extension fields):
+  const sourceId = typeof req.query.sourceId === "string" ? req.query.sourceId : undefined;
+  const externalSystem = typeof req.query.externalSystem === "string" ? req.query.externalSystem : undefined;
+  const origin = typeof req.query.origin === "string" ? req.query.origin : undefined; // "manual" | "imported"
   const conds = [];
   if (params.projectId) conds.push(eq(requirementsTable.projectId, params.projectId));
   if (params.type) conds.push(eq(requirementsTable.type, params.type));
@@ -52,6 +56,12 @@ router.get("/requirements", async (req, res) => {
   if (params.search) {
     const s = `%${params.search}%`;
     conds.push(or(ilike(requirementsTable.title, s), ilike(requirementsTable.code, s))!);
+  }
+  if (sourceId) conds.push(eq(requirementsTable.sourceId, sourceId));
+  if (externalSystem) conds.push(eq(requirementsTable.externalSystem, externalSystem));
+  if (origin === "manual") {
+    // Manual requirements have no source linkage.
+    conds.push(isNull(requirementsTable.sourceId));
   }
   const where = conds.length ? and(...conds) : undefined;
   const rows = await db

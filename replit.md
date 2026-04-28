@@ -63,6 +63,24 @@ columns on `requirements`: `sourceId`, `externalId`, `externalUrl`,
 `externalSystem`. ReqIF is uploaded via `POST /api/sources/upload-reqif`; all
 other RM kinds use the standard `/api/sources` + `/api/sources/:id/sync` flow.
 
+### Source-aware Requirements + standard-aware CAPA filters
+The Requirements page (`/app/requirements`) has a "Source" dropdown that
+aggregates and filters requirements by where they came from (Manual entries
+vs imported from any RM tool — DOORS, Jama, ReqIF, etc.). The options are
+populated from a parallel unfiltered query of the project's requirements so
+the dropdown always reflects the actual sources present. When more than one
+source exists, a chip strip appears below the filters that toggles each
+source on/off. Backend: `GET /api/requirements` accepts `sourceId`,
+`externalSystem`, and `origin=manual` query params.
+
+The CAPA page (`/app/capa`) has a "Standard" dropdown in the Action
+register card that filters CAPAs by their framework (ISO 27001, ASPICE,
+CMMI, NIST CSF, etc.). Each row also shows an indigo badge with the
+framework name. Backend: `GET /api/capa` accepts a `frameworkId` query
+param and the response is built via a left-join on
+`complianceFrameworksTable` so each row carries `frameworkName` and
+`frameworkCode`.
+
 ### Standard-native audit ratings
 On top of the universal `overallVerdict` (strong/adequate/weak/failing) and
 per-control `verdict` (met/partial/gap), every compliance audit now also
