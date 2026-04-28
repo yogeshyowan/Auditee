@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   useListRequirements,
   useCreateRequirement,
@@ -39,9 +39,11 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, FileText, Sparkles, Loader2, Code2 } from "lucide-react";
+import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGenerateRequirements } from "@/lib/ai-api";
+import { useGenerateRequirements, useFetchCodeUrl } from "@/lib/ai-api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSources, useSourceFiles, useSourceFileContent } from "@/lib/wave1-api";
 import { Comments } from "@/components/Comments";
 import { useToast } from "@/hooks/use-toast";
 
@@ -137,8 +139,84 @@ export default function RequirementsPage() {
   const [generateCodeOpen, setGenerateCodeOpen] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [codeLanguage, setCodeLanguage] = useState("");
+  const [codeTab, setCodeTab] = useState("paste");
+  const [codeSourceLabel, setCodeSourceLabel] = useState<string>(""); // shows "loaded from foo.ts"
+  const [githubUrl, setGithubUrl] = useState("");
+  const [pickedSourceId, setPickedSourceId] = useState<string>("");
+  const [pickedFileId, setPickedFileId] = useState<string>("");
   const { toast } = useToast();
   const generateMut = useGenerateRequirements();
+  const fetchUrlMut = useFetchCodeUrl();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const sourcesQuery = useSources(projectId);
+  const sourceFilesQuery = useSourceFiles(pickedSourceId || undefined);
+  const sourceFileContent = useSourceFileContent(
+    pickedSourceId || undefined,
+    pickedFileId || undefined,
+  );
+
+  // When the user picks a source file, copy its content into codeInput.
+  useEffect(() => {
+    const data = sourceFileContent.data;
+    if (data && pickedFileId) {
+      if (data.content) {
+        const truncated = data.content.length > 30000;
+        setCodeInput(truncated ? data.content.slice(0, 30000) : data.content);
+        setCodeLanguage(data.language ?? "");
+        setCodeSourceLabel(`${data.path}${truncated ? " (truncated to 30k chars)" : ""}`);
+      } else {
+        toast({ title: "File has no readable content", variant: "destructive" });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceFileContent.data, pickedFileId]);
+
+  function resetCodeDialog() {
+    setCodeInput("");
+    setCodeLanguage("");
+    setCodeSourceLabel("");
+    setCodeTab("paste");
+    setGithubUrl("");
+    setPickedSourceId("");
+    setPickedFileId("");
+    fetchUrlMut.reset();
+  }
+
+  async function handleLocalFile(file: File) {
+    if (file.size > 600_000) {
+      toast({ title: "File too large", description: "Pick a file under 600 KB.", variant: "destructive" });
+      return;
+    }
+    const text = await file.text();
+    const truncated = text.length > 30000;
+    setCodeInput(truncated ? text.slice(0, 30000) : text);
+    const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+    const langGuess: Record<string, string> = {
+      ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
+      py: "python", java: "java", go: "go", rs: "rust", rb: "ruby", php: "php",
+      cs: "csharp", cpp: "cpp", c: "c", swift: "swift", kt: "kotlin",
+      cbl: "cobol", cob: "cobol", sql: "sql", sh: "bash",
+    };
+    setCodeLanguage(langGuess[ext] ?? "");
+    setCodeSourceLabel(`${file.name}${truncated ? " (truncated to 30k chars)" : ""}`);
+  }
+
+  function handleFetchGithub() {
+    if (!githubUrl.trim()) return;
+    fetchUrlMut.mutate(
+      { url: githubUrl.trim() },
+      {
+        onSuccess: (data) => {
+          setCodeInput(data.code);
+          setCodeLanguage(data.language);
+          setCodeSourceLabel(`${data.label}${data.truncated ? " (truncated to 30k chars)" : ""}`);
+        },
+        onError: (err: Error) => {
+          toast({ title: "Could not fetch", description: err.message, variant: "destructive" });
+        },
+      },
+    );
+  }
 
   // The source-filter dropdown narrows the API request. We always also fetch the
   // unfiltered set (per project) so we can populate the dropdown with the actual
@@ -305,14 +383,21 @@ export default function RequirementsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={generateCodeOpen} onOpenChange={(open) => { if (!generateMut.isPending) setGenerateCodeOpen(open); }}>
+      <Dialog
+        open={generateCodeOpen}
+        onOpenChange={(open) => {
+          if (generateMut.isPending) return;
+          if (!open) resetCodeDialog();
+          setGenerateCodeOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="font-[Inter_Tight] text-2xl flex items-center gap-2">
               <Code2 className="h-5 w-5 text-primary" /> Generate from code
             </DialogTitle>
             <DialogDescription>
-              No requirements management tool connected? Paste source code (a route, function, class, or stored procedure) and Auditee will reverse-engineer structured requirements with full fields — same shape as a DOORS or Jama import.
+              No requirements management tool connected? Pull source code from any of the inputs below and Auditee will reverse-engineer structured requirements with full fields — same shape as a DOORS or Jama import.
             </DialogDescription>
           </DialogHeader>
           {generateMut.isPending ? (
@@ -330,8 +415,7 @@ export default function RequirementsPage() {
                   {
                     onSuccess: (data) => {
                       toast({ title: `Generated ${data.count} requirements from code` });
-                      setCodeInput("");
-                      setCodeLanguage("");
+                      resetCodeDialog();
                       setGenerateCodeOpen(false);
                     },
                     onError: (err: Error) => {
@@ -342,8 +426,153 @@ export default function RequirementsPage() {
               }}
               className="space-y-4"
             >
+              <Tabs value={codeTab} onValueChange={setCodeTab}>
+                <TabsList className="grid grid-cols-4 w-full">
+                  <TabsTrigger value="paste" data-testid="tab-paste">
+                    <Code2 className="h-3.5 w-3.5 mr-1" /> Paste
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" data-testid="tab-upload">
+                    <Upload className="h-3.5 w-3.5 mr-1" /> Local file
+                  </TabsTrigger>
+                  <TabsTrigger value="github" data-testid="tab-github">
+                    <Github className="h-3.5 w-3.5 mr-1" /> GitHub URL
+                  </TabsTrigger>
+                  <TabsTrigger value="source" data-testid="tab-source">
+                    <FolderOpen className="h-3.5 w-3.5 mr-1" /> Project source
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="paste" className="space-y-2 pt-3">
+                  <Textarea
+                    value={codeInput}
+                    onChange={(e) => { setCodeInput(e.target.value); setCodeSourceLabel(""); }}
+                    rows={12}
+                    placeholder="// Paste the function, route, class, or stored procedure you want to derive requirements from."
+                    className="resize-none font-mono text-xs"
+                    data-testid="textarea-code"
+                  />
+                </TabsContent>
+
+                <TabsContent value="upload" className="space-y-3 pt-3">
+                  <p className="text-sm text-slate-600">
+                    Pick a single text-based source file from your computer (under 600 KB).
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    hidden
+                    accept=".ts,.tsx,.js,.jsx,.py,.java,.kt,.go,.rs,.rb,.php,.cs,.cpp,.c,.h,.hpp,.swift,.scala,.m,.cbl,.cob,.sql,.sh,.yml,.yaml,.json,.html,.css,.txt"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (f) await handleLocalFile(f);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    data-testid="input-file"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2"
+                    data-testid="button-pick-file"
+                  >
+                    <Upload className="h-4 w-4" /> Choose file
+                  </Button>
+                  {codeSourceLabel && codeTab === "upload" && (
+                    <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1.5">
+                      Loaded: {codeSourceLabel}
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="github" className="space-y-3 pt-3">
+                  <p className="text-sm text-slate-600">
+                    Paste a GitHub file URL (the kind shown when viewing a file on github.com). Public repos only — for private repos, connect a GitHub source on the Project Sources page first, then use the "Project source" tab.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      placeholder="https://github.com/owner/repo/blob/main/src/foo.ts"
+                      data-testid="input-github-url"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleFetchGithub}
+                      disabled={!githubUrl.trim() || fetchUrlMut.isPending}
+                      className="gap-2"
+                      data-testid="button-fetch-github"
+                    >
+                      {fetchUrlMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Github className="h-4 w-4" />}
+                      Fetch
+                    </Button>
+                  </div>
+                  {codeSourceLabel && codeTab === "github" && (
+                    <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1.5">
+                      Loaded: {codeSourceLabel}
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="source" className="space-y-3 pt-3">
+                  <p className="text-sm text-slate-600">
+                    Pick a file from any source already imported on the Project Sources page (GitHub, ZIP, folder, Google Drive, etc.).
+                  </p>
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <Select
+                      value={pickedSourceId}
+                      onValueChange={(v) => { setPickedSourceId(v); setPickedFileId(""); setCodeSourceLabel(""); }}
+                    >
+                      <SelectTrigger data-testid="select-source"><SelectValue placeholder={sourcesQuery.isLoading ? "Loading..." : "Select a source"} /></SelectTrigger>
+                      <SelectContent>
+                        {(sourcesQuery.data?.sources ?? [])
+                          .filter((s) => s.fileCount > 0)
+                          .map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.label} <span className="text-slate-400">({s.kind} · {s.fileCount} files)</span>
+                            </SelectItem>
+                          ))}
+                        {(sourcesQuery.data?.sources ?? []).filter((s) => s.fileCount > 0).length === 0 && !sourcesQuery.isLoading && (
+                          <div className="px-2 py-1.5 text-sm text-slate-500">No sources with files in this project. Add one from Project Sources.</div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {pickedSourceId && (
+                    <div className="space-y-2">
+                      <Label>File</Label>
+                      <Select
+                        value={pickedFileId}
+                        onValueChange={setPickedFileId}
+                      >
+                        <SelectTrigger data-testid="select-source-file"><SelectValue placeholder={sourceFilesQuery.isLoading ? "Loading files..." : "Select a file"} /></SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {(sourceFilesQuery.data?.files ?? [])
+                            .filter((f) => f.isBinary !== "true")
+                            .slice(0, 500)
+                            .map((f) => (
+                              <SelectItem key={f.id} value={f.id}>
+                                {f.path} <span className="text-slate-400">({Math.round(f.size / 1024)} KB)</span>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {sourceFileContent.isLoading && pickedFileId && (
+                    <p className="text-xs text-slate-500 flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Loading file contents...</p>
+                  )}
+                  {codeSourceLabel && codeTab === "source" && (
+                    <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1.5">
+                      Loaded: {codeSourceLabel}
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
+
               <div className="space-y-2">
-                <Label htmlFor="code-language">Language (optional)</Label>
+                <Label htmlFor="code-language">Language (auto-detected — edit if wrong)</Label>
                 <Input
                   id="code-language"
                   value={codeLanguage}
@@ -352,21 +581,14 @@ export default function RequirementsPage() {
                   data-testid="input-code-language"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="code-input">Source code</Label>
-                <Textarea
-                  id="code-input"
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value)}
-                  rows={14}
-                  placeholder="// Paste the function, route, class, or stored procedure you want to derive requirements from."
-                  className="resize-none font-mono text-xs"
-                  data-testid="textarea-code"
-                />
-                <p className="text-xs text-slate-500">{codeInput.length} / 30000 characters</p>
+
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span data-testid="text-code-char-count">{codeInput.length} / 30000 characters loaded</span>
+                {codeInput.length >= 20 && <span className="text-emerald-700">Ready to generate</span>}
               </div>
+
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setGenerateCodeOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => { resetCodeDialog(); setGenerateCodeOpen(false); }}>Cancel</Button>
                 <Button
                   type="submit"
                   disabled={codeInput.trim().length < 20 || !projectId}

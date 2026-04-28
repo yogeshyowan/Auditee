@@ -214,6 +214,186 @@ Rules:
 }));
 
 // =============================================================
+// AI: Fetch source code from a URL (currently GitHub blob/raw)
+// Used by the "Generate from code" dialog so users can paste a
+// GitHub link instead of pasting raw code. Server-side because
+// raw.githubusercontent.com does not allow browser CORS.
+// =============================================================
+const RAW_FETCH_MAX_BYTES = 600_000; // ~30k chars after slicing
+const FETCH_TIMEOUT_MS = 15_000;
+const ALLOWED_FETCH_HOSTS = new Set([
+  "github.com",
+  "raw.githubusercontent.com",
+]);
+const LANGUAGE_BY_EXT: Record<string, string> = {
+  ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
+  py: "python", java: "java", kt: "kotlin", go: "go", rs: "rust",
+  rb: "ruby", php: "php", cs: "csharp", cpp: "cpp", cc: "cpp", c: "c",
+  h: "c", hpp: "cpp", swift: "swift", scala: "scala", m: "objective-c",
+  cbl: "cobol", cob: "cobol", sql: "sql", sh: "bash", yml: "yaml",
+  yaml: "yaml", json: "json", html: "html", css: "css",
+};
+
+// Manually follow redirects so we can re-validate the host on every hop.
+// This prevents an open-redirect on github.com from sending us to an
+// arbitrary backend host.
+async function fetchAllowlistedFollow(startUrl: string, maxHops = 5): Promise<Response> {
+  let current = startUrl;
+  for (let hop = 0; hop <= maxHops; hop++) {
+    const u = new URL(current);
+    if (u.protocol !== "https:") {
+      throw new Error(`Refusing redirect to non-https URL`);
+    }
+    if (!ALLOWED_FETCH_HOSTS.has(u.hostname)) {
+      throw new Error(`Refusing redirect to non-allowlisted host '${u.hostname}'`);
+    }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    let resp: Response;
+    try {
+      resp = await fetch(current, { redirect: "manual", signal: ctrl.signal });
+    } finally {
+      clearTimeout(t);
+    }
+    if (resp.status >= 300 && resp.status < 400) {
+      const next = resp.headers.get("location");
+      if (!next) throw new Error(`Redirect ${resp.status} with no Location header`);
+      current = new URL(next, current).toString(); // resolve relative
+      continue;
+    }
+    return resp;
+  }
+  throw new Error(`Exceeded ${maxHops} redirects`);
+}
+
+// Stream the body and abort once we exceed the byte cap, so we never
+// allocate an unbounded buffer for a malicious or oversized file.
+async function readBodyWithCap(resp: Response, maxBytes: number): Promise<{ buf: Uint8Array; truncated: boolean }> {
+  if (!resp.body) {
+    const ab = await resp.arrayBuffer();
+    if (ab.byteLength > maxBytes) {
+      throw new Error(`File too large (${ab.byteLength} bytes; max ${maxBytes})`);
+    }
+    return { buf: new Uint8Array(ab), truncated: false };
+  }
+  const reader = resp.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        try { await reader.cancel(); } catch { /* ignore */ }
+        throw new Error(`File too large (>${maxBytes} bytes). Pick a smaller file.`);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    try { reader.releaseLock(); } catch { /* ignore */ }
+  }
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) { out.set(c, off); off += c.byteLength; }
+  return { buf: out, truncated: false };
+}
+
+router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
+  const raw = typeof req.body?.url === "string" ? req.body.url.trim() : "";
+  if (!raw) {
+    res.status(400).json({ error: "Provide 'url'" });
+    return;
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    res.status(400).json({ error: "Invalid URL" });
+    return;
+  }
+  if (parsed.protocol !== "https:") {
+    res.status(400).json({ error: "Only https URLs are supported" });
+    return;
+  }
+
+  // Up-front host check (fetchAllowlistedFollow re-checks on every hop).
+  if (!ALLOWED_FETCH_HOSTS.has(parsed.hostname)) {
+    res.status(400).json({ error: "Only github.com and raw.githubusercontent.com URLs are supported" });
+    return;
+  }
+
+  // Allow github.com/{owner}/{repo}/blob/{ref}/{path} and convert to raw,
+  // or accept raw.githubusercontent.com directly.
+  // Note: branch refs may contain slashes (e.g. "feature/foo"), so we keep
+  //       the regex permissive — if the split is wrong, the raw URL will 404
+  //       and we surface a friendly error.
+  let rawUrl: string;
+  let label: string;
+  let path: string;
+  if (parsed.hostname === "github.com") {
+    const m = parsed.pathname.match(/^\/([^/]+)\/([^/]+)\/blob\/(.+)$/);
+    if (!m) {
+      res.status(400).json({ error: "Expected a github.com blob URL like https://github.com/owner/repo/blob/branch/path/to/file" });
+      return;
+    }
+    const [, owner, repo, refAndPath] = m;
+    // refAndPath is "{ref}/{path}". Most refs are single-segment; for slashy refs
+    // (release/v1/...) the user can paste the raw URL instead.
+    const slash = refAndPath.indexOf("/");
+    if (slash < 0) {
+      res.status(400).json({ error: "URL is missing a file path after the branch" });
+      return;
+    }
+    const ref = refAndPath.slice(0, slash);
+    path = refAndPath.slice(slash + 1);
+    rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
+    label = `${owner}/${repo}@${ref}:${path}`;
+  } else {
+    rawUrl = parsed.toString();
+    const segs = parsed.pathname.split("/").filter(Boolean);
+    path = segs.slice(3).join("/");
+    label = segs.length >= 4 ? `${segs[0]}/${segs[1]}@${segs[2]}:${path}` : parsed.pathname;
+  }
+
+  let response: Response;
+  try {
+    response = await fetchAllowlistedFollow(rawUrl);
+  } catch (err) {
+    res.status(502).json({ error: `Could not reach GitHub: ${(err as Error).message}` });
+    return;
+  }
+  if (!response.ok) {
+    res.status(response.status === 404 ? 404 : 502).json({
+      error: response.status === 404
+        ? "File not found on GitHub (private repo, wrong branch, or branch name contains '/' — try the raw.githubusercontent.com URL instead)"
+        : `GitHub returned ${response.status}`,
+    });
+    return;
+  }
+
+  let bodyResult: { buf: Uint8Array; truncated: boolean };
+  try {
+    bodyResult = await readBodyWithCap(response, RAW_FETCH_MAX_BYTES);
+  } catch (err) {
+    res.status(413).json({ error: (err as Error).message });
+    return;
+  }
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: false }).decode(bodyResult.buf);
+  } catch {
+    res.status(415).json({ error: "File is not UTF-8 text (binary?)" });
+    return;
+  }
+  // Hard cap to the same 30k chars the generate endpoint accepts.
+  const code = text.length > 30_000 ? text.slice(0, 30_000) : text;
+  const ext = (path.split(".").pop() ?? "").toLowerCase();
+  const language = LANGUAGE_BY_EXT[ext] ?? "";
+  res.json({ code, language, label, truncated: text.length > 30_000 });
+}));
+
+// =============================================================
 // AI: Analyze Code — match to requirements + create artifact + links
 // =============================================================
 router.post("/ai/analyze-code", aiHandler(async (req, res) => {

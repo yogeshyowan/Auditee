@@ -52,6 +52,20 @@ export function useGenerateRequirements() {
   });
 }
 
+export type FetchCodeUrlResult = {
+  code: string;
+  language: string;
+  label: string;
+  truncated: boolean;
+};
+
+export function useFetchCodeUrl() {
+  return useMutation({
+    mutationFn: (body: { url: string }) =>
+      aiFetch<FetchCodeUrlResult>("/ai/fetch-code-url", body),
+  });
+}
+
 export type AnalyzeCodeMatch = {
   requirementCode: string;
   requirementId: string | null;
