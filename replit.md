@@ -63,6 +63,26 @@ columns on `requirements`: `sourceId`, `externalId`, `externalUrl`,
 `externalSystem`. ReqIF is uploaded via `POST /api/sources/upload-reqif`; all
 other RM kinds use the standard `/api/sources` + `/api/sources/:id/sync` flow.
 
+### SEO
+The marketing site (`/`) is fully optimised for search and social:
+- `index.html` carries a long-form `<title>`, comprehensive `<meta description>`,
+  keyword list, canonical link, theme color, mobile-app meta, and a `<noscript>`
+  block with crawlable copy.
+- Open Graph + Twitter Card tags reference `/opengraph.jpg` (1200×630).
+- Three JSON-LD blocks (`SoftwareApplication`, `Organization`, `WebSite`)
+  describe the product, features, and offer to search engines.
+- `public/robots.txt` allows crawling of marketing pages, disallows `/app/*`,
+  blocks the major LLM training scrapers (GPTBot, ClaudeBot, anthropic-ai,
+  CCBot, Google-Extended), and points to the sitemap.
+- `public/sitemap.xml` lists the canonical homepage with image entries.
+- The signed-in app (`AppLayout`) injects a `<meta name="robots"
+  content="noindex, nofollow, noarchive, nosnippet">` while mounted, so even
+  if a crawler ignores robots.txt the per-page directive still suppresses it.
+- Canonical hostname is set to `https://montana.eltegra.ai/`. **When the real
+  production domain is decided, search-and-replace this URL across
+  `index.html`, `robots.txt`, and `sitemap.xml`** — that's the only site-wide
+  change needed.
+
 ### Creating new projects from the UI
 Users create new projects directly from the project switcher in the sidebar
 — there's a "+ New project" item at the bottom of the dropdown that opens

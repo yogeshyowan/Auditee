@@ -1,0 +1,40 @@
+# Montana — robots.txt
+# Marketing site is fully indexable. The signed-in app at /app/* is private and
+# should never be indexed (no useful content for search and risks leaking
+# project names in URLs).
+
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+# Common crawler-specific rules — keep behavior identical, but explicit so
+# Googlebot/Bingbot don't fall back to a more permissive default.
+User-agent: Googlebot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+# Block known LLM training scrapers from the marketing site by default.
+# (We're happy to be cited; we'd rather not be wholesale-trained on.)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+Sitemap: https://montana.eltegra.ai/sitemap.xml

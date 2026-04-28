@@ -3,15 +3,151 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Montana — AI-Native Platform for Product Development</title>
-    <meta name="description" content="Montana is an enterprise AI-native platform for the entire Product Development Lifecycle (PDLC). Turn fragmented requirements, legacy code, and audit chaos into a single living knowledge graph." />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- Primary SEO -->
+    <title>Montana — AI Platform for Requirements, Compliance & Audit Automation | Enterprise PDLC</title>
+    <meta
+      name="description"
+      content="Montana is the AI-native platform for the Product Development Lifecycle (PDLC). Connect requirements, code, audits and compliance into one living knowledge graph. Automate ISO 26262, ASPICE, CMMI, IEC 62304, SOC 2, HIPAA, FDA QMSR audits and CAPA workflows. Trusted by enterprise engineering and quality teams."
+    />
+    <meta
+      name="keywords"
+      content="AI requirements management, AI compliance automation, PDLC platform, audit automation, requirements traceability, ALM AI, ASPICE automation, ISO 26262 compliance, CMMI audit, SOC 2 automation, HIPAA compliance, FDA QMSR, IEC 62304, CAPA management, requirements engineering AI, DOORS alternative, Jama alternative, Polarion alternative, codebase auditing, legacy modernization, software compliance AI, regulatory traceability"
+    />
+    <meta name="author" content="Montana" />
+    <meta name="application-name" content="Montana" />
+    <meta name="apple-mobile-web-app-title" content="Montana" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Robots: index marketing, but app routes are blocked via robots.txt + per-page noindex -->
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+
+    <link rel="canonical" href="https://montana.eltegra.ai/" />
+    <link rel="alternate" hreflang="en" href="https://montana.eltegra.ai/" />
+    <link rel="alternate" hreflang="x-default" href="https://montana.eltegra.ai/" />
+
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#0f172a" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Montana" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Montana — AI Platform for Requirements, Compliance & Audit Automation" />
+    <meta property="og:description" content="The AI-native PDLC platform. Unify requirements, code, audits and compliance into a single living knowledge graph. Automate ASPICE, ISO 26262, CMMI, SOC 2, HIPAA, FDA QMSR." />
+    <meta property="og:url" content="https://montana.eltegra.ai/" />
+    <meta property="og:image" content="https://montana.eltegra.ai/opengraph.jpg" />
+    <meta property="og:image:secure_url" content="https://montana.eltegra.ai/opengraph.jpg" />
+    <meta property="og:image:alt" content="Montana — AI-native enterprise PDLC platform" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Montana — AI Platform for Requirements, Compliance & Audit Automation" />
+    <meta name="twitter:description" content="The AI-native PDLC platform. Unify requirements, code, audits and compliance into a single living knowledge graph." />
+    <meta name="twitter:image" content="https://montana.eltegra.ai/opengraph.jpg" />
+    <meta name="twitter:image:alt" content="Montana — AI-native enterprise PDLC platform" />
+
+    <!-- Performance hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <link rel="preload" as="image" href="/hero-network.png" fetchpriority="high" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Structured data: SoftwareApplication -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Montana",
+        "alternateName": ["Montana AI", "Montana PDLC Platform"],
+        "applicationCategory": "BusinessApplication",
+        "applicationSubCategory": "Enterprise Application Lifecycle Management",
+        "operatingSystem": "Web",
+        "url": "https://montana.eltegra.ai/",
+        "description": "AI-native enterprise platform for the Product Development Lifecycle. Unifies requirements, code, audits, and compliance across ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, HIPAA, and FDA QMSR.",
+        "image": "https://montana.eltegra.ai/opengraph.jpg",
+        "featureList": [
+          "AI requirements management with traceability",
+          "Automated compliance audits (ASPICE, ISO 26262, CMMI, SOC 2, HIPAA, IEC 62304, FDA QMSR)",
+          "Living knowledge graph across requirements and code",
+          "CAPA workflow automation",
+          "Legacy code modernization",
+          "Recurring audits and continuous compliance",
+          "Natural-language Q&A across project artifacts (Ask Montana)",
+          "Source connectors: GitHub, IBM DOORS, DOORS Next, Jama, Polarion, codeBeamer, Helix RM, Visure, Azure DevOps, Jira, ReqIF"
+        ],
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "description": "Request a demo for enterprise pricing."
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Montana",
+          "url": "https://montana.eltegra.ai/",
+          "logo": "https://montana.eltegra.ai/favicon.svg"
+        }
+      }
+    </script>
+
+    <!-- Structured data: Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Montana",
+        "url": "https://montana.eltegra.ai/",
+        "logo": "https://montana.eltegra.ai/favicon.svg",
+        "description": "Montana builds the AI-native enterprise platform for the Product Development Lifecycle (PDLC).",
+        "sameAs": []
+      }
+    </script>
+
+    <!-- Structured data: WebSite (with SearchAction for sitelinks search box) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Montana",
+        "url": "https://montana.eltegra.ai/",
+        "inLanguage": "en"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="padding: 32px; font-family: system-ui, sans-serif; max-width: 720px; margin: 0 auto;">
+        <h1>Montana — AI-native PDLC Platform</h1>
+        <p>
+          Montana is an enterprise AI platform that unifies requirements management, source code,
+          compliance audits, and CAPA workflows into a single living knowledge graph. We support
+          ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, HIPAA, and FDA QMSR audits with built-in
+          connectors for GitHub, IBM DOORS, DOORS Next, Jama Connect, Polarion, codeBeamer, Helix RM,
+          Visure, Azure DevOps, Jira, and ReqIF.
+        </p>
+        <p>
+          This site requires JavaScript. Please enable it, or contact us to schedule a demo.
+        </p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

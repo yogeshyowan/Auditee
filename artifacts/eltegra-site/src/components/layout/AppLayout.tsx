@@ -18,7 +18,7 @@ import {
   FolderInput,
   Plus
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AskMontanaFloater } from "@/components/AskMontanaFloater";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
@@ -51,6 +51,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { projectId, setProjectId, connectedProjects, allProjects } = useProjectContext();
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Tell search engines never to index the signed-in app — these pages are
+  // private project workspaces. robots.txt covers most crawlers; this meta
+  // tag is the per-page belt-and-braces signal for any that ignore it.
+  useEffect(() => {
+    const tag = document.createElement("meta");
+    tag.name = "robots";
+    tag.content = "noindex, nofollow, noarchive, nosnippet";
+    document.head.appendChild(tag);
+    return () => {
+      document.head.removeChild(tag);
+    };
+  }, []);
 
   // Look up the active project across ALL projects (connected or not) so
   // freshly-created projects with 0 sources still appear in the switcher button.
