@@ -264,6 +264,7 @@ function Navigation() {
         </NavigationMenu>
 
         <div className="hidden md:flex items-center gap-4">
+          <Link href="/pricing" className="text-sm font-medium text-slate-700 hover:text-primary transition-colors" data-testid="link-pricing-top">Pricing</Link>
           <Link href="/app" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors" data-testid="link-launch-app-top">Launch Platform</Link>
           <DemoDialog>
             <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6" data-testid="button-book-demo-top">
@@ -798,12 +799,12 @@ function RoiSection() {
           <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
             That's the average price tag of a failed compliance audit or a slipped enterprise release caused by misaligned requirements. Stop paying the chaos tax.
           </p>
-          <DemoDialog>
+          <Link href="/roi-calculator">
             <Button size="lg" className="h-14 px-8 bg-white hover:bg-slate-100 text-slate-950 rounded-full text-base font-semibold" data-testid="button-roi-cta">
               Calculate your savings
               <ArrowUpRight className="ml-2 h-5 w-5 text-slate-500" />
             </Button>
-          </DemoDialog>
+          </Link>
         </motion.div>
       </div>
     </section>

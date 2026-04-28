@@ -32,11 +32,17 @@ AI-native enterprise platform for Product Development Lifecycle (PDLC) managemen
 Marketing landing page lives at `/` and the functional app lives under `/app/*`.
 
 ### Artifacts
-- `artifacts/eltegra-site` — React + Vite frontend (landing + app pages)
+- `artifacts/eltegra-site` — React + Vite frontend
+  - Marketing routes: `/` (Home), `/pricing` (3-tier plans + FAQ), `/roi-calculator` (interactive sliders)
+  - App routes under `/app/*`: sources, requirements, traceability, compliance,
+    capa, defects, reports, workflows, analytics, recurring-audits, pdlc, legacy,
+    activity, dashboard, ask
 - `artifacts/api-server` — Express API mounted at `/api`
-- `lib/db` — Drizzle schemas (10 tables: projects, requirements, codeArtifacts,
-  traceabilityLinks, complianceFrameworks, complianceControls, activityEvents,
-  pdlcStages, legacySystems, demoRequests)
+- `lib/db` — Drizzle schemas including: projects, requirements, codeArtifacts,
+  traceabilityLinks, complianceFrameworks, complianceControls, capaActions,
+  defects, projectSources, sourceFiles, activityEvents, aiReports, aiConversations,
+  workflows, recurringAudits, pdlcStages, legacySystems, comments, notifications,
+  demoRequests
 - `lib/api-spec` — OpenAPI source of truth; codegen produces api-zod and api-client-react
 - `scripts/src/seed.ts` — seeds 3 projects, 22 requirements, 6 frameworks/16 controls,
   5 legacy systems, 12 code artifacts, traceability links, PDLC stages, and activity events.

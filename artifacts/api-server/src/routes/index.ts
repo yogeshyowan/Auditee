@@ -19,6 +19,7 @@ import notificationsRouter from "./notifications";
 import recurringAuditsRouter from "./recurringAudits";
 import analyticsRouter from "./analytics";
 import sourcesRouter from "./sources";
+import defectsRouter from "./defects";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(notificationsRouter);
 router.use(recurringAuditsRouter);
 router.use(analyticsRouter);
 router.use(sourcesRouter);
+router.use(defectsRouter);
 
 export default router;

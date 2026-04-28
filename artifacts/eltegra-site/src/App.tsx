@@ -6,6 +6,8 @@ import { ProjectProvider } from "@/lib/project-context";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
+import Pricing from "@/pages/Pricing";
+import RoiCalculator from "@/pages/RoiCalculator";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 // App Pages
@@ -24,6 +26,7 @@ import Workflows from "@/pages/app/Workflows";
 import Analytics from "@/pages/app/Analytics";
 import RecurringAudits from "@/pages/app/RecurringAudits";
 import Sources from "@/pages/app/Sources";
+import Defects from "@/pages/app/Defects";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +51,7 @@ function AppRoutes() {
           <Route path="/app/analytics" component={Analytics} />
           <Route path="/app/recurring-audits" component={RecurringAudits} />
           <Route path="/app/sources" component={Sources} />
+          <Route path="/app/defects" component={Defects} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>
@@ -59,6 +63,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/app" component={() => <Redirect to="/app/sources" />} />
       <Route path="/app/*" component={AppRoutes} />
       <Route component={NotFound} />

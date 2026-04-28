@@ -467,6 +467,57 @@ export type ProjectSourceRow = {
   lastSyncAt: string | null;
   createdAt: string;
 };
+// ───────── Defects ─────────
+export type DefectRow = {
+  id: string;
+  projectId: string;
+  sourceId: string;
+  externalId: string;
+  externalUrl: string | null;
+  externalSystem: string;
+  key: string;
+  title: string;
+  description: string;
+  status: string;
+  severity: string;
+  priority: string;
+  component: string | null;
+  raisedAt: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  sourceName: string | null;
+};
+export type DefectSummary = {
+  total: number;
+  open: number;
+  critical: number;
+  bySeverity: Record<string, number>;
+  byStatus: Record<string, number>;
+  bySystem: Record<string, number>;
+};
+export function useDefects(projectId: string | null | undefined, filters?: { status?: string; severity?: string; sourceId?: string; externalSystem?: string }) {
+  return useQuery({
+    queryKey: ["defects", projectId, filters],
+    enabled: Boolean(projectId),
+    queryFn: () => {
+      const qs = new URLSearchParams({ projectId: projectId! });
+      if (filters?.status) qs.set("status", filters.status);
+      if (filters?.severity) qs.set("severity", filters.severity);
+      if (filters?.sourceId) qs.set("sourceId", filters.sourceId);
+      if (filters?.externalSystem) qs.set("externalSystem", filters.externalSystem);
+      return jfetch<{ defects: DefectRow[] }>(`/defects?${qs.toString()}`);
+    },
+  });
+}
+export function useDefectsSummary(projectId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["defects-summary", projectId],
+    enabled: Boolean(projectId),
+    queryFn: () => jfetch<DefectSummary>(`/defects/summary?projectId=${projectId}`),
+  });
+}
+
 export function useSources(projectId: string | undefined) {
   return useQuery({
     queryKey: ["sources", projectId],
