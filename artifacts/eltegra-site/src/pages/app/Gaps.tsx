@@ -63,7 +63,7 @@ export default function GapsPage() {
   const currentProject = allProjects.find((p) => p.id === projectId);
   const { data: frameworks } = useFrameworksList();
   const { toast } = useToast();
-  const [frameworkId, setFrameworkId] = useState<string>("");
+  const [frameworkId, setFrameworkId] = useState<string>("__none");
   const [result, setResult] = useState<GapAnalysisResult | null>(null);
   const [promoted, setPromoted] = useState<Set<string>>(new Set());
 
@@ -80,7 +80,7 @@ export default function GapsPage() {
       return;
     }
     gapMut.mutate(
-      { projectId, frameworkId: frameworkId || undefined },
+      { projectId, frameworkId: frameworkId && frameworkId !== "__none" ? frameworkId : undefined },
       {
         onSuccess: (r) => {
           setResult(r);
