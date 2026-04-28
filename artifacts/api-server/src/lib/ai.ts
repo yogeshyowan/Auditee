@@ -1,8 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 
-const ANTHROPIC_MODEL = "claude-haiku-4-5";
-const OPENROUTER_MODEL = "anthropic/claude-haiku-4.5";
+const OPENAI_MODEL = "gpt-4o";
+const OPENROUTER_MODEL = "google/gemini-2.5-flash";
+const ANTHROPIC_HAIKU_MODEL = "claude-haiku-4-5";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 export class AIUnavailableError extends Error {
@@ -19,14 +20,15 @@ export class AIResponseError extends Error {
   }
 }
 
-let cachedAnthropic: Anthropic | null = null;
+let cachedOpenAI: OpenAI | null = null;
 let cachedOpenRouter: OpenAI | null = null;
+let cachedAnthropic: Anthropic | null = null;
 
-function getAnthropic(): Anthropic | null {
-  if (cachedAnthropic) return cachedAnthropic;
-  if (!process.env.ANTHROPIC_API_KEY) return null;
-  cachedAnthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  return cachedAnthropic;
+function getOpenAI(): OpenAI | null {
+  if (cachedOpenAI) return cachedOpenAI;
+  if (!process.env.OPENAI_API_KEY) return null;
+  cachedOpenAI = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return cachedOpenAI;
 }
 
 function getOpenRouter(): OpenAI | null {
@@ -39,40 +41,130 @@ function getOpenRouter(): OpenAI | null {
   return cachedOpenRouter;
 }
 
+function getAnthropic(): Anthropic | null {
+  if (cachedAnthropic) return cachedAnthropic;
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  cachedAnthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return cachedAnthropic;
+}
+
 function isRetryable(err: unknown): boolean {
   const status = (err as { status?: number })?.status;
   if (typeof status !== "number") return true;
   return status === 401 || status === 403 || status === 429 || status >= 500;
 }
 
-async function withFallback<T>(
-  primary: () => Promise<T>,
-  fallback: (() => Promise<T>) | null,
-  label: string,
-): Promise<T> {
-  if (!primary && !fallback) {
+type Provider<T> = { name: string; call: () => Promise<T> };
+
+async function runChain<T>(providers: Array<Provider<T> | null>, label: string): Promise<T> {
+  const active = providers.filter((p): p is Provider<T> => p !== null);
+  if (active.length === 0) {
     throw new AIUnavailableError(
-      "AI service is not configured. Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY to enable AI features.",
+      "AI service is not configured. Set at least one of OPENAI_API_KEY, OPENROUTER_API_KEY, or ANTHROPIC_API_KEY.",
     );
   }
-  try {
-    return await primary();
-  } catch (primaryErr) {
-    if (!fallback || !isRetryable(primaryErr)) throw primaryErr;
-    const status = (primaryErr as { status?: number })?.status;
+  const failures: Array<{ name: string; status: number | string }> = [];
+  for (let i = 0; i < active.length; i++) {
+    const p = active[i];
     try {
-      const result = await fallback();
-      console.warn(
-        `[ai] Anthropic ${label} failed (status=${status ?? "?"}). Served from OpenRouter fallback.`,
-      );
+      const result = await p.call();
+      if (i > 0) {
+        console.warn(
+          `[ai] ${label}: served from fallback "${p.name}" after ${failures.map((f) => `${f.name}=${f.status}`).join(", ")}.`,
+        );
+      }
       return result;
-    } catch (fallbackErr) {
-      console.error(
-        `[ai] Both providers failed for ${label}. Anthropic=${status ?? "?"}, OpenRouter=${(fallbackErr as { status?: number })?.status ?? "?"}.`,
-      );
-      throw fallbackErr;
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? "?";
+      failures.push({ name: p.name, status });
+      const isLast = i === active.length - 1;
+      if (isLast || !isRetryable(err)) {
+        if (failures.length > 1) {
+          console.error(
+            `[ai] ${label}: all providers failed (${failures.map((f) => `${f.name}=${f.status}`).join(", ")}).`,
+          );
+        }
+        throw err;
+      }
     }
   }
+  throw new AIUnavailableError(`${label}: chain exhausted with no result.`);
+}
+
+function openAICompatibleJsonProvider(
+  name: string,
+  client: OpenAI | null,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number,
+): Provider<string> | null {
+  if (!client) return null;
+  return {
+    name,
+    call: async () => {
+      const response = await client.chat.completions.create({
+        model,
+        max_tokens: maxTokens,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+      return response.choices[0]?.message?.content ?? "{}";
+    },
+  };
+}
+
+function openAICompatibleTextProvider(
+  name: string,
+  client: OpenAI | null,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number,
+): Provider<string> | null {
+  if (!client) return null;
+  return {
+    name,
+    call: async () => {
+      const response = await client.chat.completions.create({
+        model,
+        max_tokens: maxTokens,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      });
+      return response.choices[0]?.message?.content ?? "";
+    },
+  };
+}
+
+function anthropicProvider(
+  client: Anthropic | null,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number,
+): Provider<string> | null {
+  if (!client) return null;
+  return {
+    name: `anthropic:${model}`,
+    call: async () => {
+      const response = await client.messages.create({
+        model,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }],
+      });
+      return response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("");
+    },
+  };
 }
 
 export async function jsonCompletion<T>(
@@ -83,96 +175,29 @@ export async function jsonCompletion<T>(
   const maxTokens = opts?.maxTokens ?? 8192;
   const jsonSystemPrompt = `${systemPrompt}\n\nRespond with a single valid JSON object and no other text.`;
 
-  const anthropic = getAnthropic();
-  const callAnthropic = anthropic
-    ? async (): Promise<T> => {
-        const response = await anthropic.messages.create({
-          model: ANTHROPIC_MODEL,
-          max_tokens: maxTokens,
-          system: jsonSystemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-        });
-        const text = response.content
-          .filter((b): b is Anthropic.TextBlock => b.type === "text")
-          .map((b) => b.text)
-          .join("");
-        return parseJson<T>(extractJsonObject(text));
-      }
-    : null;
+  const chain: Array<Provider<string> | null> = [
+    openAICompatibleJsonProvider("openai", getOpenAI(), OPENAI_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
+    openAICompatibleJsonProvider("openrouter", getOpenRouter(), OPENROUTER_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
+    anthropicProvider(getAnthropic(), ANTHROPIC_HAIKU_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
+  ];
 
-  const openrouter = getOpenRouter();
-  const callOpenRouter = openrouter
-    ? async (): Promise<T> => {
-        const response = await openrouter.chat.completions.create({
-          model: OPENROUTER_MODEL,
-          max_tokens: maxTokens,
-          messages: [
-            { role: "system", content: jsonSystemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-        });
-        const content = response.choices[0]?.message?.content ?? "{}";
-        return parseJson<T>(extractJsonObject(content));
-      }
-    : null;
-
-  if (!callAnthropic && !callOpenRouter) {
-    throw new AIUnavailableError(
-      "AI service is not configured. Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY to enable AI features.",
-    );
-  }
-  return withFallback(
-    callAnthropic ?? callOpenRouter!,
-    callAnthropic ? callOpenRouter : null,
-    "jsonCompletion",
-  );
+  const raw = await runChain(chain, "jsonCompletion");
+  return parseJson<T>(extractJsonObject(raw));
 }
 
 export async function textCompletion(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<string> {
-  const anthropic = getAnthropic();
-  const callAnthropic = anthropic
-    ? async (): Promise<string> => {
-        const response = await anthropic.messages.create({
-          model: ANTHROPIC_MODEL,
-          max_tokens: 8192,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }],
-        });
-        return response.content
-          .filter((b): b is Anthropic.TextBlock => b.type === "text")
-          .map((b) => b.text)
-          .join("");
-      }
-    : null;
+  const maxTokens = 8192;
 
-  const openrouter = getOpenRouter();
-  const callOpenRouter = openrouter
-    ? async (): Promise<string> => {
-        const response = await openrouter.chat.completions.create({
-          model: OPENROUTER_MODEL,
-          max_tokens: 8192,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-        });
-        return response.choices[0]?.message?.content ?? "";
-      }
-    : null;
+  const chain: Array<Provider<string> | null> = [
+    openAICompatibleTextProvider("openai", getOpenAI(), OPENAI_MODEL, systemPrompt, userPrompt, maxTokens),
+    openAICompatibleTextProvider("openrouter", getOpenRouter(), OPENROUTER_MODEL, systemPrompt, userPrompt, maxTokens),
+    anthropicProvider(getAnthropic(), ANTHROPIC_HAIKU_MODEL, systemPrompt, userPrompt, maxTokens),
+  ];
 
-  if (!callAnthropic && !callOpenRouter) {
-    throw new AIUnavailableError(
-      "AI service is not configured. Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY to enable AI features.",
-    );
-  }
-  return withFallback(
-    callAnthropic ?? callOpenRouter!,
-    callAnthropic ? callOpenRouter : null,
-    "textCompletion",
-  );
+  return runChain(chain, "textCompletion");
 }
 
 function parseJson<T>(content: string): T {
