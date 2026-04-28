@@ -471,7 +471,26 @@ function ConnectDialog({
       <div className="space-y-3">
         <Field label="Repository URL" placeholder="https://github.com/owner/repo" value={cfg.repoUrl ?? ""} onChange={(v) => up("repoUrl", v)} />
         <Field label="Branch (optional)" placeholder="main" value={cfg.branch ?? ""} onChange={(v) => up("branch", v)} />
-        <Field label="Personal access token (only for private repos)" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+        <Field
+          label="Personal access token (recommended — required for private repos)"
+          type="password"
+          placeholder="ghp_… or github_pat_…"
+          value={cfg.token ?? ""}
+          onChange={(v) => up("token", v)}
+        />
+        <p className="text-xs text-slate-500 leading-relaxed -mt-1">
+          GitHub limits anonymous calls from shared cloud IPs to 60/hour, which fills up fast.
+          A token raises that to 5,000/hour. Create one at{" "}
+          <a
+            href="https://github.com/settings/tokens?type=beta"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline"
+          >
+            github.com/settings/tokens
+          </a>{" "}
+          with read-only "Contents" + "Metadata" scope on the repo.
+        </p>
       </div>
     );
   } else if (kind === "jira") {
