@@ -10,7 +10,6 @@ import {
   reportExportUrl,
   type ReportRow,
 } from "@/lib/wave1-api";
-import { useListComplianceFrameworks } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { FileText, Sparkles, Download, Trash2, RefreshCw } from "lucide-react";
 import { Comments } from "@/components/Comments";
+import { StandardsMultiSelect } from "@/components/StandardsMultiSelect";
 
 const KIND_LABELS: Record<string, string> = {
   brd: "Business Requirements Document (BRD)",
@@ -45,15 +45,19 @@ const KIND_DESCRIPTIONS: Record<string, string> = {
 export default function Reports() {
   const { projectId } = useProjectContext();
   const { data, isLoading } = useReports(projectId);
-  const { data: frameworks } = useListComplianceFrameworks();
   const generate = useGenerateReport();
   const del = useDeleteReport();
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    kind: string;
+    tone: string;
+    frameworkIds: string[];
+    instructions: string;
+  }>({
     kind: "exec_brief",
     tone: "executive",
-    frameworkId: "" as string,
+    frameworkIds: [],
     instructions: "",
   });
 
@@ -64,7 +68,13 @@ export default function Reports() {
         projectId,
         kind: form.kind,
         tone: form.tone,
-        frameworkId: form.frameworkId || undefined,
+        // Send the new multi-standard array. Backend also accepts the legacy
+        // singular frameworkId for back-compat, but we now always send the
+        // array shape so prompts get every selected standard's blueprint.
+        frameworkIds: form.frameworkIds,
+        // Keep singular frameworkId for the very first one as well, so any
+        // server-side fallback that still reads it picks the primary.
+        frameworkId: form.frameworkIds[0],
         instructions: form.instructions || undefined,
       },
       {
@@ -75,6 +85,12 @@ export default function Reports() {
       },
     );
   }
+
+  // Compliance audit reports cannot be generated without at least one
+  // standard — keep the UI in lockstep with the server-side guard.
+  const submitDisabled =
+    generate.isPending ||
+    (form.kind === "compliance_audit" && form.frameworkIds.length === 0);
 
   return (
     <AppLayout>
@@ -130,26 +146,17 @@ export default function Reports() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-600">
-                    Framework{" "}
-                    <span className="text-slate-400 font-normal">
-                      ({form.kind === "compliance_audit" ? "required" : "optional — anchors the narrative"})
-                    </span>
-                  </label>
-                  <Select
-                    value={form.frameworkId || "__none"}
-                    onValueChange={(v) => setForm({ ...form, frameworkId: v === "__none" ? "" : v })}
-                  >
-                    <SelectTrigger data-testid="report-framework-select"><SelectValue placeholder="Select…" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none">— none —</SelectItem>
-                      {frameworks?.map((f: any) => (
-                        <SelectItem key={f.id} value={f.id}>{f.code} — {f.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <StandardsMultiSelect
+                  value={form.frameworkIds}
+                  onChange={(ids) => setForm({ ...form, frameworkIds: ids })}
+                  required={form.kind === "compliance_audit"}
+                  helper="Pick every standard this document must satisfy. Auditee will follow each one's required structure, language and citations."
+                />
+                {form.kind === "compliance_audit" && form.frameworkIds.length === 0 && (
+                  <p className="text-[11px] text-amber-600">
+                    Compliance audit reports need at least one standard selected.
+                  </p>
+                )}
                 <div>
                   <label className="text-xs font-medium text-slate-600">Extra instructions (optional)</label>
                   <Textarea
@@ -163,7 +170,7 @@ export default function Reports() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={submit} disabled={generate.isPending}>
+                <Button onClick={submit} disabled={submitDisabled}>
                   {generate.isPending ? "Generating…" : "Generate"}
                 </Button>
               </DialogFooter>

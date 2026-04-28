@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { StandardsMultiSelect } from "@/components/StandardsMultiSelect";
 import { useToast } from "@/hooks/use-toast";
 import {
   MessagesSquare,
@@ -50,6 +51,7 @@ export default function InterviewPage() {
 
   const [stage, setStage] = useState<Stage>("brief");
   const [brief, setBrief] = useState("");
+  const [frameworkIds, setFrameworkIds] = useState<string[]>([]);
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [createdCount, setCreatedCount] = useState(0);
@@ -75,7 +77,7 @@ export default function InterviewPage() {
       return;
     }
     questionsMut.mutate(
-      { projectId, brief: brief.trim() },
+      { projectId, brief: brief.trim(), applicableFrameworkIds: frameworkIds },
       {
         onSuccess: (r) => {
           setQuestions(r.questions);
@@ -117,7 +119,7 @@ export default function InterviewPage() {
 
     setStage("extracting");
     generateMut.mutate(
-      { projectId, brief: enriched.slice(0, 7900) },
+      { projectId, brief: enriched.slice(0, 7900), applicableFrameworkIds: frameworkIds },
       {
         onSuccess: (r) => {
           setCreatedCount(r.count);
@@ -142,6 +144,7 @@ export default function InterviewPage() {
   const reset = () => {
     setStage("brief");
     setBrief("");
+    setFrameworkIds([]);
     setQuestions([]);
     setAnswers({});
     setCreatedCount(0);
@@ -197,6 +200,13 @@ export default function InterviewPage() {
             className="resize-none"
             data-testid="textarea-interview-brief"
           />
+          <div className="mt-4">
+            <StandardsMultiSelect
+              value={frameworkIds}
+              onChange={setFrameworkIds}
+              helper="Auditee will tailor every interview question and the final requirements to satisfy each selected standard."
+            />
+          </div>
           <div className="mt-3 flex items-center justify-between">
             <span className="text-xs text-slate-500">{brief.length} characters</span>
             <Button

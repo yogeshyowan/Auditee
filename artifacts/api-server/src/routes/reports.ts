@@ -15,7 +15,9 @@ import {
   type ReportContent,
 } from "@workspace/db";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
+import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
+import { inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -87,7 +89,26 @@ router.post("/reports/generate", asyncH(async (req, res) => {
     ? b.kind
     : "exec_brief";
   const tone: string = ["executive", "technical", "regulator"].includes(b.tone) ? b.tone : "executive";
-  const frameworkId = typeof b.frameworkId === "string" ? b.frameworkId : null;
+  // Accept either the legacy singular `frameworkId` (back-compat) or the new
+  // `frameworkIds: string[]` (multi-standard). The first valid id (when
+  // present) is also stored on the report row in the singular `frameworkId`
+  // column so existing UIs/filters keep working.
+  const rawFrameworkIds = Array.isArray(b.frameworkIds)
+    ? (b.frameworkIds as unknown[]).filter((x): x is string => typeof x === "string" && x.length > 0)
+    : (typeof b.frameworkId === "string" && b.frameworkId.length > 0 ? [b.frameworkId] : []);
+  // De-duplicate while preserving user-input order — the FIRST id picked is
+  // the one we persist as the primary framework on the row, so listing /
+  // filtering stays predictable.
+  const frameworkIds = Array.from(new Set(rawFrameworkIds)).slice(0, 8);
+  const primaryFrameworkId = frameworkIds[0] ?? null;
+
+  // Compliance audit reports are meaningless without a standard to audit
+  // against — enforce server-side (the UI also disables submit, but a direct
+  // API call must still fail loudly).
+  if (kind === "compliance_audit" && frameworkIds.length === 0) {
+    res.status(400).json({ error: "compliance_audit reports require at least one standard in frameworkIds" });
+    return;
+  }
 
   const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
   if (!project) {
@@ -109,18 +130,31 @@ router.post("/reports/generate", asyncH(async (req, res) => {
     .innerJoin(codeArtifactsTable, eq(traceabilityLinksTable.codeArtifactId, codeArtifactsTable.id))
     .where(eq(requirementsTable.projectId, projectId));
 
-  let framework: typeof complianceFrameworksTable.$inferSelect | undefined;
+  // Load every selected framework + the union of their controls. The first
+  // matched framework is exposed as the singular `framework` field for back
+  // compat with the existing report payload shape.
+  let frameworks: typeof complianceFrameworksTable.$inferSelect[] = [];
   let controls: typeof complianceControlsTable.$inferSelect[] = [];
-  if (frameworkId) {
-    const [fw] = await db.select().from(complianceFrameworksTable).where(eq(complianceFrameworksTable.id, frameworkId));
-    framework = fw;
-    if (fw) {
+  if (frameworkIds.length > 0) {
+    frameworks = await db
+      .select()
+      .from(complianceFrameworksTable)
+      .where(inArray(complianceFrameworksTable.id, frameworkIds));
+    if (frameworks.length > 0) {
       controls = await db
         .select()
         .from(complianceControlsTable)
-        .where(eq(complianceControlsTable.frameworkId, frameworkId));
+        .where(inArray(complianceControlsTable.frameworkId, frameworks.map((f) => f.id)));
+      // SQL `inArray` does not preserve input order — re-sort the loaded
+      // frameworks back into the user-picked order so the singular `framework`
+      // field below truly reflects the user's primary choice.
+      const orderIndex = new Map(frameworkIds.map((id, i) => [id, i]));
+      frameworks.sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
     }
   }
+  const framework = frameworks[0];
+  const standardsBlueprints = selectStandardsBlueprints(frameworks);
+  const standardsAddendum = renderStandardsAddendum(standardsBlueprints, "document");
 
   const evidence: ReportContent["evidence"] = [
     ...reqs.map((r) => ({ id: r.code, label: r.title, source: "requirement" })),
@@ -213,13 +247,14 @@ Rules:
 - Every section must include 'citations' — IDs from the provided evidence list (requirement codes, CAPA codes, control codes). Empty array is acceptable only when the section is purely contextual.
 - executiveSummary: 80-160 words, plain English.
 - Do NOT invent codes or facts that aren't in the supplied data. If data is sparse, say so explicitly rather than fabricating.
-- Output JSON only.${blueprint.sectionGuide ? `\n\nSection blueprint:\n${blueprint.sectionGuide}` : ""}`;
+- Output JSON only.${blueprint.sectionGuide ? `\n\nSection blueprint:\n${blueprint.sectionGuide}` : ""}${standardsAddendum}`;
 
   const evidenceForPrompt = evidence.slice(0, 200);
   const payload = {
     project: { name: project.name, description: project.description, owner: project.owner },
     reportKind: kind,
     framework: framework ? { code: framework.code, name: framework.name, status: framework.status } : null,
+    applicableFrameworks: frameworks.map((f) => ({ code: f.code, name: f.name, status: f.status })),
     requirements: reqs.slice(0, 80).map((r) => ({
       code: r.code,
       title: r.title,
@@ -267,7 +302,7 @@ Rules:
     .values({
       id: randomUUID(),
       projectId,
-      frameworkId,
+      frameworkId: primaryFrameworkId,
       kind,
       tone,
       title: content.title,

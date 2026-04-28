@@ -46,6 +46,7 @@ import { useGenerateRequirements, useFetchCodeUrl, useEstimateEffort, type Effor
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSources, useSourceFiles, useSourceFileContent, useGenerateReport } from "@/lib/wave1-api";
 import { Comments } from "@/components/Comments";
+import { StandardsMultiSelect } from "@/components/StandardsMultiSelect";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
@@ -138,6 +139,7 @@ export default function RequirementsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [brief, setBrief] = useState("");
+  const [briefFrameworkIds, setBriefFrameworkIds] = useState<string[]>([]);
   const [generateCodeOpen, setGenerateCodeOpen] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [codeLanguage, setCodeLanguage] = useState("");
@@ -595,11 +597,12 @@ export default function RequirementsPage() {
                 e.preventDefault();
                 if (!projectId || brief.length < 20) return;
                 generateMut.mutate(
-                  { projectId, brief },
+                  { projectId, brief, applicableFrameworkIds: briefFrameworkIds },
                   {
                     onSuccess: (data) => {
                       toast({ title: `Generated ${data.count} requirements` });
                       setBrief("");
+                      setBriefFrameworkIds([]);
                       setGenerateOpen(false);
                     },
                     onError: (err: Error) => {
@@ -617,6 +620,11 @@ export default function RequirementsPage() {
                 placeholder="Describe what you're building. Auditee will draft requirements covering business, product, functional, and non-functional aspects."
                 className="resize-none"
                 data-testid="textarea-brief"
+              />
+              <StandardsMultiSelect
+                value={briefFrameworkIds}
+                onChange={setBriefFrameworkIds}
+                helper="Auditee will draft requirements that satisfy each selected standard's structure and language."
               />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setGenerateOpen(false)}>Cancel</Button>

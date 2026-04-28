@@ -176,7 +176,14 @@ export function useReport(id: string | undefined) {
 export function useGenerateReport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { projectId: string; kind: string; tone: string; frameworkId?: string | null; instructions?: string }) =>
+    mutationFn: (body: {
+      projectId: string;
+      kind: string;
+      tone: string;
+      frameworkId?: string | null;
+      frameworkIds?: string[];
+      instructions?: string;
+    }) =>
       jfetch<ReportRow>("/reports/generate", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
   });

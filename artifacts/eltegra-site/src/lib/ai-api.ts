@@ -45,6 +45,7 @@ export function useGenerateRequirements() {
       brief?: string;
       code?: string;
       language?: string;
+      applicableFrameworkIds?: string[];
     }) => aiFetch<GenerateRequirementsResult>("/ai/generate-requirements", body),
     onSuccess: () => {
       qc.invalidateQueries();
@@ -401,7 +402,7 @@ export type InterviewQuestionsResult = {
 
 export function useInterviewQuestions() {
   return useMutation({
-    mutationFn: (body: { projectId: string; brief: string }) =>
+    mutationFn: (body: { projectId: string; brief: string; applicableFrameworkIds?: string[] }) =>
       aiFetch<InterviewQuestionsResult>("/ai/interview/questions", body),
   });
 }

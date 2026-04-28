@@ -32,6 +32,7 @@ import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 import { rateAudit, getRatingScheme } from "../lib/framework-rating";
+import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 
 const router: IRouter = Router();
 
@@ -128,7 +129,19 @@ router.post("/ai/generate-requirements", aiHandler(async (req, res) => {
     return;
   }
 
-  const frameworks = await db
+  // Optional list of framework IDs the user has marked as APPLICABLE STANDARDS
+  // for this generation. When supplied, we narrow `frameworks` (the
+  // allow-listed codes the LLM may use in linkedFrameworkCodes) to those, AND
+  // we inject a deterministic standards-blueprint addendum into the prompt so
+  // every generated requirement set covers the topics each standard mandates.
+  const rawAppFwIds = Array.isArray(req.body?.applicableFrameworkIds)
+    ? (req.body.applicableFrameworkIds as unknown[])
+        .filter((x): x is string => typeof x === "string" && x.length > 0)
+        .slice(0, 8)
+    : [];
+  const applicableFrameworkIds = Array.from(new Set(rawAppFwIds));
+
+  const allFrameworks = await db
     .select({
       id: complianceFrameworksTable.id,
       code: complianceFrameworksTable.code,
@@ -136,8 +149,15 @@ router.post("/ai/generate-requirements", aiHandler(async (req, res) => {
     })
     .from(complianceFrameworksTable);
 
+  const frameworks = applicableFrameworkIds.length > 0
+    ? allFrameworks.filter((f) => applicableFrameworkIds.includes(f.id))
+    : allFrameworks;
+
+  const standardsBlueprints = selectStandardsBlueprints(frameworks);
+  const standardsAddendum = renderStandardsAddendum(standardsBlueprints, "requirements");
+
   const fwCodes = frameworks.map((f) => f.code).join(", ") || "(none)";
-  const system = mode === "code"
+  const baseSystem = mode === "code"
     ? `You are Auditee, an enterprise requirements analyst. Reverse-engineer a well-formed set of requirements (4-12) from the supplied source code. Return strict JSON of shape:
 {"requirements":[{"title":string,"description":string,"type":"BRD"|"PRD"|"FRD"|"NFR","priority":"low"|"medium"|"high"|"critical","tags":string[],"linkedFrameworkCodes":string[]}]}
 Rules:
@@ -155,6 +175,31 @@ Rules:
 - type: BRD=business goal, PRD=product capability, FRD=functional behaviour, NFR=non-functional (performance, security, compliance).
 - linkedFrameworkCodes must be a subset of these codes: ${fwCodes}. Only include when truly relevant.
 - Output JSON only, no commentary.`;
+  // When standards are explicitly applicable, lift the upper bound on the
+  // requirement count so the model can satisfy the per-standard coverage rules
+  // without truncation. The cap scales with the *total number of required
+  // coverage topics* across the selected blueprints — every topic must produce
+  // at least one requirement (architect-review fix), so the cap must be
+  // strictly greater than the topic count or the constraints are mathematically
+  // unsatisfiable. We also guard against runaway prompts with a hard ceiling.
+  const totalCoverageTopics = standardsBlueprints.reduce(
+    (sum, b) => sum + b.requirementCoverage.length,
+    0,
+  );
+  // Floor at the prior expanded caps (16/20) so we don't shrink the budget for
+  // single-standard pickers; ceiling at 60 so prompts stay bounded.
+  const expandedCountSystem = applicableFrameworkIds.length > 0
+    ? (() => {
+        const codeMin = Math.max(6, Math.min(60, totalCoverageTopics + 2));
+        const codeMax = Math.max(20, Math.min(60, totalCoverageTopics + 8));
+        const briefMin = Math.max(6, Math.min(60, totalCoverageTopics + 2));
+        const briefMax = Math.max(16, Math.min(60, totalCoverageTopics + 6));
+        return baseSystem
+          .replace("(4-12)", `(${codeMin}-${codeMax})`)
+          .replace("(3-8)", `(${briefMin}-${briefMax})`);
+      })()
+    : baseSystem;
+  const system = `${expandedCountSystem}${standardsAddendum}`;
 
   const user = mode === "code"
     ? `Project: ${project.name}\nProject context: ${project.description ?? ""}\n\nSource code${body.language ? ` (${body.language})` : ""}:\n\`\`\`${body.language || ""}\n${body.code}\n\`\`\``
@@ -1565,6 +1610,15 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
 router.post("/ai/interview/questions", aiHandler(async (req, res) => {
   const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
   const brief = requireString(req.body?.brief, "brief", { min: 20, max: 4000 });
+  // Optional list of compliance framework IDs the user marked applicable.
+  // We use them to (a) load the matching frameworks for prompt context and
+  // (b) tailor the generated interview questions toward each standard's
+  // required coverage areas — fulfilling the helper text shown in the UI.
+  const rawAppFwIds = Array.isArray(req.body?.applicableFrameworkIds)
+    ? (req.body.applicableFrameworkIds as unknown[])
+        .filter((x): x is string => typeof x === "string" && x.length > 0)
+    : [];
+  const applicableFrameworkIds = Array.from(new Set(rawAppFwIds)).slice(0, 8);
 
   const [project] = await db
     .select()
@@ -1575,9 +1629,23 @@ router.post("/ai/interview/questions", aiHandler(async (req, res) => {
     return;
   }
 
+  // Load the selected frameworks (if any) and derive the standards addendum
+  // describing the required interview-coverage topics.
+  let interviewFrameworks: typeof complianceFrameworksTable.$inferSelect[] = [];
+  if (applicableFrameworkIds.length > 0) {
+    interviewFrameworks = await db
+      .select()
+      .from(complianceFrameworksTable)
+      .where(inArray(complianceFrameworksTable.id, applicableFrameworkIds));
+  }
+  const interviewBlueprints = selectStandardsBlueprints(interviewFrameworks);
+  const interviewAddendum = renderStandardsAddendum(interviewBlueprints, "requirements");
+
+  const baseQuestionCount = applicableFrameworkIds.length > 0 ? "7-10" : "5-7";
+
   const system = `You are Auditee, a senior business analyst conducting a structured discovery interview to extract complete requirements from a stakeholder.
 
-Given a project brief, generate 5-7 sharply targeted follow-up questions. The answers, taken together, should be enough to draft a complete BRD/PRD-quality requirements set.
+Given a project brief, generate ${baseQuestionCount} sharply targeted follow-up questions. The answers, taken together, should be enough to draft a complete BRD/PRD-quality requirements set${applicableFrameworkIds.length > 0 ? " that satisfies every selected standard's coverage requirements" : ""}.
 
 Return STRICT JSON of shape:
 {"questions":[{"id":string,"category":"users"|"functional"|"data"|"integration"|"non_functional"|"compliance"|"constraints"|"success","prompt":string,"hint":string}]}
@@ -1588,13 +1656,16 @@ Rules:
 - prompt: a single direct question (<=200 chars). Plain English. No multi-part compound questions.
 - hint: a one-sentence example or clarification (<=160 chars) showing what a good answer looks like.
 - Order: start with users/scope, then functional, then non-functional/compliance, then constraints/success criteria.
-- Output JSON only, no commentary.`;
+- Output JSON only, no commentary.${interviewAddendum}`;
 
+  const fwLine = interviewFrameworks.length > 0
+    ? `\n\nApplicable standards (the answers MUST give us enough to satisfy each one): ${interviewFrameworks.map((f) => `${f.code} — ${f.name}`).join("; ")}`
+    : "";
   const user = `Project: ${project.name}
 Project context: ${project.description ?? "(none)"}
 
 Brief:
-${brief}`;
+${brief}${fwLine}`;
 
   type InterviewResult = {
     questions: Array<{
