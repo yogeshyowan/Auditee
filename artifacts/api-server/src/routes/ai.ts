@@ -31,6 +31,7 @@ import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
+import { rateAudit, getRatingScheme } from "../lib/framework-rating";
 
 const router: IRouter = Router();
 
@@ -620,9 +621,20 @@ Rules:
   const totalCitedFiles = evidenceBySource.reduce((n, s) => n + s.cited.length, 0);
   const totalIndexedFiles = evidenceBySource.reduce((n, s) => n + s.fileCount, 0);
 
+  // Standard-native rating overlay. Each framework (ASPICE, NIST CSF,
+  // ISO 27001, IEC 61508, …) has its own audit vocabulary. We deterministically
+  // derive the standard-native rating from the universal verdicts +
+  // compliance % so the report speaks the auditor's language without asking
+  // the LLM for it (which would be non-reproducible).
+  const allVerdictsForRating: Array<{ controlCode: string; verdict: "met" | "partial" | "gap" }> = controls.map((c) => ({
+    controlCode: c.code,
+    verdict: verdictByCode.get(c.code) ?? "gap",
+  }));
+  const nativeRating = rateAudit(framework.code, compliancePercentage, allVerdictsForRating);
+
   await logActivity(
     "compliance",
-    `Montana ran ${framework.code} audit on ${project.name}: ${result.overallVerdict}${capasCreated ? ` · ${capasCreated} CAPA(s) opened` : ""}${includedSources.length ? ` · ${includedSources.length} source(s), ${totalCitedFiles} file(s) cited` : ""}`,
+    `Montana ran ${framework.code} audit on ${project.name}: ${result.overallVerdict} · ${nativeRating.schemeName}: ${nativeRating.overall.value}${capasCreated ? ` · ${capasCreated} CAPA(s) opened` : ""}${includedSources.length ? ` · ${includedSources.length} source(s), ${totalCitedFiles} file(s) cited` : ""}`,
     "Montana",
     framework.code,
   );
@@ -642,7 +654,10 @@ Rules:
       citedPaths: s.cited.map((f) => f.path),
     })),
     evidenceTotals: { sources: includedSources.length, indexedFiles: totalIndexedFiles, citedFiles: totalCitedFiles },
+    // Spread the LLM result FIRST, then assign deterministic nativeRating
+    // afterwards so the model can never overwrite the standard-native rating.
     ...result,
+    nativeRating,
   });
 }));
 

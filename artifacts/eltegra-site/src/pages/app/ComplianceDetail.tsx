@@ -223,12 +223,31 @@ export default function ComplianceDetail() {
                 <Wand2 className="h-5 w-5 text-primary" /> AI audit results
                 {currentProject && <span className="text-sm font-normal text-slate-500">· {currentProject.name}</span>}
               </CardTitle>
-              <Badge className={(VERDICT_BADGE[auditMut.data.overallVerdict] ?? "bg-slate-100 text-slate-700") + " border"}>
-                {auditMut.data.overallVerdict}
-              </Badge>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={(VERDICT_BADGE[auditMut.data.overallVerdict] ?? "bg-slate-100 text-slate-700") + " border"}>
+                  {auditMut.data.overallVerdict}
+                </Badge>
+                {auditMut.data.nativeRating && (
+                  <Badge
+                    className="bg-indigo-600 text-white border-indigo-700"
+                    title={`${auditMut.data.nativeRating.schemeName} — ${auditMut.data.nativeRating.overall.description}`}
+                    data-testid="native-rating-overall"
+                  >
+                    {auditMut.data.nativeRating.overall.value} · {auditMut.data.nativeRating.overall.label}
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
+            {auditMut.data.nativeRating && (
+              <div className="rounded-md border border-indigo-200 bg-indigo-50 p-3" data-testid="native-rating-block">
+                <div className="text-[11px] uppercase tracking-wider text-indigo-700 font-semibold">{auditMut.data.framework.code} native rating</div>
+                <div className="text-sm font-semibold text-indigo-900 mt-0.5">{auditMut.data.nativeRating.schemeName}</div>
+                <div className="text-xs text-indigo-800 mt-0.5">Based on {auditMut.data.nativeRating.basedOn}</div>
+                <div className="text-xs text-slate-700 mt-2">{auditMut.data.nativeRating.description}</div>
+              </div>
+            )}
             {(auditMut.data.evidenceTotals && auditMut.data.evidenceTotals.sources > 0) && (
               <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="font-semibold">Evidence:</span>
@@ -255,16 +274,33 @@ export default function ComplianceDetail() {
                   <TableRow className="bg-slate-50 hover:bg-slate-50">
                     <TableHead className="w-28">Control</TableHead>
                     <TableHead className="w-24">Verdict</TableHead>
+                    <TableHead className="w-28">Native rating</TableHead>
                     <TableHead>Covering requirements</TableHead>
                     <TableHead>Evidence</TableHead>
                     <TableHead>Recommendation</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {auditMut.data.controlAssessments.map((a, i) => (
+                  {auditMut.data.controlAssessments.map((a, i) => {
+                    const native = auditMut.data!.nativeRating?.perControl?.[a.controlCode];
+                    return (
                     <TableRow key={i} className="align-top">
                       <TableCell className="font-mono text-xs text-slate-600">{a.controlCode}</TableCell>
                       <TableCell><Badge className={(ASSESSMENT_BADGE[a.verdict] ?? "bg-slate-100 text-slate-700") + " border"}>{a.verdict}</Badge></TableCell>
+                      <TableCell>
+                        {native ? (
+                          <Badge
+                            variant="outline"
+                            title={`${native.label} — ${native.description}`}
+                            className="bg-indigo-50 text-indigo-700 border-indigo-300 font-mono"
+                            data-testid={`native-pc-${a.controlCode}`}
+                          >
+                            {native.value}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {a.coveringRequirementCodes.length === 0 ? (
@@ -291,7 +327,8 @@ export default function ComplianceDetail() {
                       </TableCell>
                       <TableCell className="text-sm text-slate-700">{a.recommendation}</TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

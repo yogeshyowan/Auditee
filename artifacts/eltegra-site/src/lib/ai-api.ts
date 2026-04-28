@@ -106,6 +106,16 @@ export type AuditSourceSummary = {
   citedPaths: string[];
 };
 
+export type NativeRatingValue = { value: string; label: string; description: string };
+
+export type NativeRating = {
+  schemeName: string;
+  basedOn: string;
+  description: string;
+  overall: NativeRatingValue;
+  perControl: Record<string, NativeRatingValue>;
+};
+
 export type ComplianceAuditResult = {
   framework: { id: string; code: string; name: string };
   project: { id: string; name: string };
@@ -117,6 +127,7 @@ export type ComplianceAuditResult = {
   controlSummary?: { total: number; met: number; partial: number; gap: number };
   sourcesUsed?: AuditSourceSummary[];
   evidenceTotals?: { sources: number; indexedFiles: number; citedFiles: number };
+  nativeRating?: NativeRating;
 };
 
 export type CoverageStage = {

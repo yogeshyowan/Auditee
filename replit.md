@@ -63,6 +63,26 @@ columns on `requirements`: `sourceId`, `externalId`, `externalUrl`,
 `externalSystem`. ReqIF is uploaded via `POST /api/sources/upload-reqif`; all
 other RM kinds use the standard `/api/sources` + `/api/sources/:id/sync` flow.
 
+### Standard-native audit ratings
+On top of the universal `overallVerdict` (strong/adequate/weak/failing) and
+per-control `verdict` (met/partial/gap), every compliance audit now also
+returns a `nativeRating` block expressed in the audited framework's own
+vocabulary. Examples: ISO/IEC 27001 → Conformant / Observation / Minor NC /
+Major NC; ASPICE 4.0 / ASPICE Cybersecurity 2.0 → Capability Levels CL0–CL5
+with N/P/L/F per process; CMMI 3.0 → ML 1–5; NIST CSF 2.0 → Implementation
+Tiers 1–4; IEC 61508 → SIL claim limit; IEC 62304 → Software Safety Class
+A/B/C; IEC 62443 → ML/SL pair; ISO 26262 → ASIL QM/A/B/C/D; DO-178C → DAL
+A/B/C/D/E with Satisfied/Partially-Satisfied/Not-Satisfied; FDA 21 CFR Part
+11 / GDPR / HIPAA / PCI-DSS / SOC 2 → industry-standard conformity verdicts.
+
+The mapping lives in `artifacts/api-server/src/lib/framework-rating.ts` and
+is computed deterministically from `compliancePercentage` + per-control
+verdicts (no extra LLM call). The endpoint spreads `...result` first and
+assigns `nativeRating` last so the LLM cannot overwrite the deterministic
+overlay. The UI renders the rating as an indigo badge next to the existing
+verdict, an indigo highlight panel describing the scheme, a "Native rating"
+column in the per-control table, and an extra column in the Markdown export.
+
 ### Defect-management connectors
 The Sources page also has a "Defect management" section that pulls real bugs
 into a `defects` table from external trackers. Supported kinds: `jira_defects`,

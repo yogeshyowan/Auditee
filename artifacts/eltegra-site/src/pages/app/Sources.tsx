@@ -986,6 +986,25 @@ function RunAuditDialog({
               </div>
             </div>
 
+            {result.nativeRating && (
+              <div className="border rounded-md p-4 bg-white" data-testid="native-rating-block">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="text-xs uppercase tracking-wider text-muted-foreground">{result.framework.code} native rating</div>
+                    <div className="text-base font-semibold mt-0.5">{result.nativeRating.schemeName}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Based on {result.nativeRating.basedOn}</div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <Badge className="bg-emerald-600 text-white text-base px-3 py-1.5" data-testid="native-rating-overall">
+                      {result.nativeRating.overall.value}
+                    </Badge>
+                    <div className="text-xs text-slate-700 mt-1 max-w-xs">{result.nativeRating.overall.label}</div>
+                  </div>
+                </div>
+                <div className="text-xs text-slate-600 mt-2">{result.nativeRating.overall.description}</div>
+              </div>
+            )}
+
             {result.evidenceTotals && (
               <div className="text-xs text-slate-600 bg-slate-50 border rounded-md p-2 px-3">
                 Evidence: {result.evidenceTotals.sources} source(s) · {result.evidenceTotals.indexedFiles} files indexed · {result.evidenceTotals.citedFiles} file(s) cited
@@ -1010,16 +1029,28 @@ function RunAuditDialog({
             <div>
               <div className="text-sm font-semibold mb-2">Per-control assessment</div>
               <div className="space-y-2">
-                {result.controlAssessments.map((a, i) => (
+                {result.controlAssessments.map((a, i) => {
+                  const native = result.nativeRating?.perControl?.[a.controlCode];
+                  return (
                   <div key={i} className="border rounded-md p-3 bg-white">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">{a.controlCode}</span>
                         <Badge variant="outline" className={
                           a.verdict === "met" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
                           a.verdict === "partial" ? "bg-amber-50 text-amber-700 border-amber-300" :
                           "bg-rose-50 text-rose-700 border-rose-300"
                         }>{a.verdict}</Badge>
+                        {native && (
+                          <Badge
+                            variant="outline"
+                            title={`${native.label} — ${native.description}`}
+                            className="bg-indigo-50 text-indigo-700 border-indigo-300 font-mono"
+                            data-testid={`native-pc-${a.controlCode}`}
+                          >
+                            {native.value}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
@@ -1057,7 +1088,8 @@ function RunAuditDialog({
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -1165,6 +1197,10 @@ function renderAuditMarkdown(r: ComplianceAuditResult, source: ProjectSourceRow)
   if (typeof r.compliancePercentage === "number") {
     lines.push(`**Compliance:** **${Math.round(r.compliancePercentage)}%**` + (r.controlSummary ? ` (${r.controlSummary.met} met / ${r.controlSummary.partial} partial / ${r.controlSummary.gap} gap of ${r.controlSummary.total})` : ""));
   }
+  if (r.nativeRating) {
+    lines.push(`**${r.nativeRating.schemeName}:** \`${r.nativeRating.overall.value}\` — ${r.nativeRating.overall.label}  `);
+    lines.push(`*Based on ${r.nativeRating.basedOn}*`);
+  }
   lines.push(``);
   if (r.evidenceTotals) {
     lines.push(`> Evidence: ${r.evidenceTotals.sources} source(s) · ${r.evidenceTotals.indexedFiles} files indexed · ${r.evidenceTotals.citedFiles} file(s) cited` + (r.capasCreated ? ` · ${r.capasCreated} CAPA(s) auto-created` : ""));
@@ -1177,15 +1213,17 @@ function renderAuditMarkdown(r: ComplianceAuditResult, source: ProjectSourceRow)
   }
   lines.push(`## Per-control assessment`);
   lines.push(``);
-  lines.push(`| Control | Verdict | Required evidence | Found evidence | Missing evidence | Files cited | Recommendation |`);
-  lines.push(`|---|---|---|---|---|---|---|`);
+  lines.push(`| Control | Verdict | Native rating | Required evidence | Found evidence | Missing evidence | Files cited | Recommendation |`);
+  lines.push(`|---|---|---|---|---|---|---|---|`);
   r.controlAssessments.forEach((a) => {
     const ev =
       (a.evidenceFiles ?? []).length === 0
         ? "—"
         : (a.evidenceFiles ?? []).map((p) => `\`${mdCell(p)}\``).join("<br/>");
+    const native = r.nativeRating?.perControl?.[a.controlCode];
+    const nativeCell = native ? `\`${mdCell(native.value)}\` — ${mdCell(native.label)}` : "—";
     lines.push(
-      `| \`${mdCell(a.controlCode)}\` | ${mdCell(a.verdict)} | ${mdList(a.requiredEvidence)} | ${mdList(a.foundEvidence)} | ${mdList(a.missingEvidence)} | ${ev} | ${mdCell(a.recommendation)} |`,
+      `| \`${mdCell(a.controlCode)}\` | ${mdCell(a.verdict)} | ${nativeCell} | ${mdList(a.requiredEvidence)} | ${mdList(a.foundEvidence)} | ${mdList(a.missingEvidence)} | ${ev} | ${mdCell(a.recommendation)} |`,
     );
   });
   return lines.join("\n");
