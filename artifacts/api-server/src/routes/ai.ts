@@ -37,6 +37,7 @@ import { rateAudit, getRatingScheme } from "../lib/framework-rating";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 import { consumeCredit } from "../middlewares/creditMiddleware";
 import { assertProjectAccessIfAuthed, requireProjectAccessInline } from "../lib/projectAccess";
+import { loadProjectDedupIndex, findDuplicate, indexNewRow } from "../lib/requirementDedup";
 
 const router: IRouter = Router();
 
@@ -230,8 +231,21 @@ Rules:
   }
 
   const codeToId = new Map(frameworks.map((f) => [f.code, f.id]));
+  // Dedup: load all existing requirements once so we can skip any
+  // candidate that's effectively a duplicate of one already in the project.
+  const dedupIndex = await loadProjectDedupIndex(body.projectId);
   const created: Array<typeof requirementsTable.$inferSelect> = [];
+  const skipped: Array<{ title: string; duplicateOfCode: string; reason: string }> = [];
   for (const r of result.requirements) {
+    const dup = findDuplicate({ title: r.title, description: r.description }, dedupIndex);
+    if (dup) {
+      skipped.push({
+        title: r.title.slice(0, 200),
+        duplicateOfCode: dup.duplicateOfCode,
+        reason: dup.reason,
+      });
+      continue;
+    }
     const code = await nextRequirementCode(body.projectId);
     const linkedFrameworks = (r.linkedFrameworkCodes ?? [])
       .map((c) => codeToId.get(c))
@@ -255,6 +269,7 @@ Rules:
       })
       .returning();
     created.push(row);
+    indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
     await logActivity(
       "requirement",
       `${code} drafted by Auditee from ${mode}`,
@@ -263,7 +278,7 @@ Rules:
     );
   }
 
-  res.status(201).json({ created, count: created.length });
+  res.status(201).json({ created, count: created.length, skipped, skippedCount: skipped.length });
 }));
 
 // =============================================================
@@ -1609,13 +1624,24 @@ Rules:
 
   // Optionally persist requirements to a real project
   let createdRequirements: Array<typeof requirementsTable.$inferSelect> = [];
+  let skippedDuplicates: Array<{ title: string; duplicateOfCode: string; reason: string }> = [];
   if (body.projectId) {
     const [project] = await db
       .select()
       .from(projectsTable)
       .where(eq(projectsTable.id, body.projectId));
     if (project) {
+      const dedupIndex = await loadProjectDedupIndex(body.projectId);
       for (const r of result.requirements) {
+        const dup = findDuplicate({ title: r.title, description: r.description }, dedupIndex);
+        if (dup) {
+          skippedDuplicates.push({
+            title: r.title.slice(0, 200),
+            duplicateOfCode: dup.duplicateOfCode,
+            reason: dup.reason,
+          });
+          continue;
+        }
         const code = await nextRequirementCode(body.projectId);
         const [row] = await db
           .insert(requirementsTable)
@@ -1634,6 +1660,7 @@ Rules:
           })
           .returning();
         createdRequirements.push(row);
+        indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
       }
     }
   }
@@ -1983,42 +2010,62 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
     return;
   }
 
-  const code = await nextRequirementCode(projectId);
-  // Allowlist category — only the categories the gap-analysis prompt is permitted
-  // to emit can become a tag, so we never accept arbitrary user-controlled strings
-  // into the tags column.
-  const ALLOWED_GAP_CATEGORIES = new Set([
-    "security",
-    "compliance",
-    "accessibility",
-    "performance",
-    "error_handling",
-    "observability",
-    "data",
-    "ux",
-    "other",
-  ]);
-  const tags = ["gap-analysis"];
-  if (category && ALLOWED_GAP_CATEGORIES.has(category)) tags.push(category);
+  // Dedup: if this gap finding is effectively a paraphrase of an existing
+  // requirement in the project, return that row instead of inserting a
+  // duplicate. The downstream auto-close-compliance code below still runs
+  // against the existing requirement, so the control still gets evidence
+  // attached — we just stop multiplying near-identical requirement rows.
+  const dedupIndex = await loadProjectDedupIndex(projectId);
+  const dup = findDuplicate({ title, description }, dedupIndex);
+  let row: typeof requirementsTable.$inferSelect;
+  let alreadyExisted = false;
+  if (dup) {
+    const [existing] = await db
+      .select()
+      .from(requirementsTable)
+      .where(eq(requirementsTable.id, dup.duplicateOfId));
+    row = existing!;
+    alreadyExisted = true;
+  } else {
+    const code = await nextRequirementCode(projectId);
+    // Allowlist category — only the categories the gap-analysis prompt is permitted
+    // to emit can become a tag, so we never accept arbitrary user-controlled strings
+    // into the tags column.
+    const ALLOWED_GAP_CATEGORIES = new Set([
+      "security",
+      "compliance",
+      "accessibility",
+      "performance",
+      "error_handling",
+      "observability",
+      "data",
+      "ux",
+      "other",
+    ]);
+    const tags = ["gap-analysis"];
+    if (category && ALLOWED_GAP_CATEGORIES.has(category)) tags.push(category);
 
-  const [row] = await db
-    .insert(requirementsTable)
-    .values({
-      id: randomUUID(),
-      projectId,
-      code,
-      title,
-      description,
-      type: type as "BRD" | "PRD" | "FRD" | "NFR",
-      status: "draft",
-      priority: priority as "low" | "medium" | "high" | "critical",
-      owner: "Auditee",
-      tags,
-      linkedFrameworks: [],
-      externalSystem: "auditee_ai",
-      externalId: code,
-    })
-    .returning();
+    const [inserted] = await db
+      .insert(requirementsTable)
+      .values({
+        id: randomUUID(),
+        projectId,
+        code,
+        title,
+        description,
+        type: type as "BRD" | "PRD" | "FRD" | "NFR",
+        status: "draft",
+        priority: priority as "low" | "medium" | "high" | "critical",
+        owner: "Auditee",
+        tags,
+        linkedFrameworks: [],
+        externalSystem: "auditee_ai",
+        externalId: code,
+      })
+      .returning();
+    row = inserted!;
+  }
+  const code = row.code;
 
   await logActivity(
     "requirement",
@@ -2075,7 +2122,12 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
     }
   }
 
-  res.status(201).json({ created: row, linkedControlIds });
+  res.status(alreadyExisted ? 200 : 201).json({
+    created: row,
+    linkedControlIds,
+    alreadyExisted,
+    duplicateOfCode: alreadyExisted ? row.code : undefined,
+  });
 }));
 
 // =============================================================

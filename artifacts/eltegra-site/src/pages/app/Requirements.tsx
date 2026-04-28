@@ -602,7 +602,13 @@ export default function RequirementsPage() {
                   { projectId, brief, applicableFrameworkIds: briefFrameworkIds },
                   {
                     onSuccess: (data) => {
-                      toast({ title: `Generated ${data.count} requirements` });
+                      const skipped = data.skippedCount ?? 0;
+                      toast({
+                        title: `Generated ${data.count} requirements`,
+                        description: skipped > 0
+                          ? `Skipped ${skipped} that duplicated existing requirements (${(data.skipped ?? []).slice(0, 3).map((s) => s.duplicateOfCode).join(", ")}${skipped > 3 ? "…" : ""}).`
+                          : undefined,
+                      });
                       setBrief("");
                       setBriefFrameworkIds([]);
                       setGenerateOpen(false);
@@ -675,7 +681,13 @@ export default function RequirementsPage() {
                   },
                   {
                     onSuccess: (data) => {
-                      toast({ title: `Generated ${data.count} requirements from code` });
+                      const skipped = data.skippedCount ?? 0;
+                      toast({
+                        title: `Generated ${data.count} requirements from code`,
+                        description: skipped > 0
+                          ? `Skipped ${skipped} that duplicated existing requirements (${(data.skipped ?? []).slice(0, 3).map((s) => s.duplicateOfCode).join(", ")}${skipped > 3 ? "…" : ""}).`
+                          : undefined,
+                      });
                       resetCodeDialog();
                       setCodeFrameworkIds([]);
                       setGenerateCodeOpen(false);

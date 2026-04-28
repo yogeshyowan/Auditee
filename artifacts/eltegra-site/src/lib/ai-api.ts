@@ -78,6 +78,8 @@ export type GeneratedRequirement = {
 export type GenerateRequirementsResult = {
   created: GeneratedRequirement[];
   count: number;
+  skipped?: Array<{ title: string; duplicateOfCode: string; reason: string }>;
+  skippedCount?: number;
 };
 
 export function useGenerateRequirements() {
