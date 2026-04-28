@@ -307,7 +307,7 @@ function serialiseDraft(nodes: DraftNode[]): { steps: WorkflowStepDef[] } {
 export default function Workflows() {
   const { projectId } = useProjectContext();
   const wfList = useWorkflows();
-  const runs = useWorkflowRuns({ projectId });
+  const runs = useWorkflowRuns({ projectId: projectId ?? undefined });
   const create = useCreateWorkflow();
   const start = useStartRun();
   const cancel = useCancelRun();

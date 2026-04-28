@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useProjectContext } from "@/lib/project-context";
 import { useInterviewQuestions, useGenerateRequirements, type InterviewQuestion } from "@/lib/ai-api";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,11 +44,25 @@ function categoryMeta(c: string) {
 
 type Stage = "brief" | "questions" | "extracting" | "done";
 
+// Derive a friendly project name from the first sentence / first ~6 words of
+// the brief. Used when the user starts an interview without having created a
+// project yet — we auto-create one so the flow doesn't dead-end.
+function deriveProjectName(brief: string): string {
+  const firstSentence = brief.split(/[.!?\n]/)[0] ?? brief;
+  const words = firstSentence.trim().split(/\s+/).slice(0, 6).join(" ");
+  const cleaned = words.replace(/[^A-Za-z0-9 \-]/g, "").trim();
+  if (cleaned.length >= 2) return cleaned.slice(0, 60);
+  // Fallback: timestamped name so creation never fails on length.
+  const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
+  return `New project ${stamp}`;
+}
+
 export default function InterviewPage() {
-  const { projectId, allProjects } = useProjectContext();
+  const { projectId, allProjects, setProjectId } = useProjectContext();
   const currentProject = allProjects.find((p) => p.id === projectId);
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const qc = useQueryClient();
 
   const [stage, setStage] = useState<Stage>("brief");
   const [brief, setBrief] = useState("");
@@ -55,19 +70,61 @@ export default function InterviewPage() {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [createdCount, setCreatedCount] = useState(0);
+  const [creatingProject, setCreatingProject] = useState(false);
 
   const questionsMut = useInterviewQuestions();
   const generateMut = useGenerateRequirements();
 
-  const startInterview = () => {
-    if (!projectId) {
+  // Auto-create a project from the brief if one isn't selected yet, so a
+  // first-time user can go from "I've typed a brief" → "I'm answering AI
+  // questions" without first having to visit the Projects page.
+  async function ensureProjectId(): Promise<string | null> {
+    if (projectId) return projectId;
+    setCreatingProject(true);
+    try {
+      const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+      const r = await fetch(`${apiBase}/projects`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: deriveProjectName(brief),
+          description: brief.trim().slice(0, 2000),
+        }),
+      });
+      if (!r.ok) {
+        const text = await r.text();
+        let msg = text || `Failed to create project (${r.status})`;
+        try { msg = JSON.parse(text).error ?? msg; } catch { /* not JSON */ }
+        if (r.status === 401) {
+          msg = "Sign in first so we can save your project.";
+        } else if (r.status === 403) {
+          msg = "Your account can read projects but not create them — ask an admin to grant Editor access.";
+        }
+        toast({ title: "Couldn't start the interview", description: msg, variant: "destructive" });
+        return null;
+      }
+      const created = await r.json();
+      const newId: string = created.id;
+      setProjectId(newId);
+      // Invalidate the projects list so the switcher and project context pick
+      // up the new row immediately (otherwise the next render still shows it
+      // missing and the context's auto-select effect could race).
+      await qc.invalidateQueries({ queryKey: ["projects"] });
+      return newId;
+    } catch (err: any) {
       toast({
-        title: "No project selected",
-        description: "Choose a project from the top-left switcher first.",
+        title: "Couldn't start the interview",
+        description: err?.message ?? "Network error",
         variant: "destructive",
       });
-      return;
+      return null;
+    } finally {
+      setCreatingProject(false);
     }
+  }
+
+  const startInterview = async () => {
     if (brief.trim().length < 20) {
       toast({
         title: "Brief too short",
@@ -76,8 +133,10 @@ export default function InterviewPage() {
       });
       return;
     }
+    const pid = await ensureProjectId();
+    if (!pid) return;
     questionsMut.mutate(
-      { projectId, brief: brief.trim(), applicableFrameworkIds: frameworkIds },
+      { projectId: pid, brief: brief.trim(), applicableFrameworkIds: frameworkIds },
       {
         onSuccess: (r) => {
           setQuestions(r.questions);
@@ -207,15 +266,27 @@ export default function InterviewPage() {
               helper="Auditee will tailor every interview question and the final requirements to satisfy each selected standard."
             />
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-slate-500">{brief.length} characters</span>
+          <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs text-slate-500">{brief.length} characters</span>
+              {!projectId && brief.length >= 20 && (
+                <span className="text-xs text-slate-500">
+                  No project selected — we'll create one from your brief.
+                </span>
+              )}
+            </div>
             <Button
               onClick={startInterview}
-              disabled={!projectId || brief.length < 20 || questionsMut.isPending}
+              disabled={brief.length < 20 || questionsMut.isPending || creatingProject}
               className="gap-2"
               data-testid="button-start-interview"
             >
-              {questionsMut.isPending ? (
+              {creatingProject ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating project…
+                </>
+              ) : questionsMut.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Preparing questions…
