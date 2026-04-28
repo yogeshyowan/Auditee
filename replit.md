@@ -59,16 +59,56 @@ The application's left-side navigation is structured for natural workflow, start
 - **Standard-native Audit Ratings**: Compliance audits return `nativeRating` blocks expressed in the audited framework's vocabulary, derived deterministically from `compliancePercentage` and per-control verdicts.
 - **Marketing site**: `/` Home, `/features`, plus five capability deep-link pages — `/ai-product-development` (PDLC pipeline with stage cards), `/automated-compliance` (continuous evidence + 23-framework grid + 5-step "how it works"), `/ai-requirements-management` (9-capability grid + 10 RM-tool connector cards + 5-step flow), `/missing-requirements-analysis` (4 finding-type cards + 8-category scan + Gap-Detection deep dive), `/test-case-generation` (TC anatomy table + 6-capability grid + 4-step QA flow). Plus `/pricing`, `/roi-calculator`, `/about`, `/contact`. All five capability pages are surfaced from the Home page Platform nav dropdown.
 
-## SEO (eltegra-site)
+## SEO & Content (eltegra-site)
 
-The marketing site has comprehensive per-page SEO:
+Comprehensive per-page SEO infrastructure plus a long-form content engine designed to win search-listing real estate for buyer-intent and standards-research queries.
 
-- **`src/components/SEO.tsx`** — declarative `<SEO>` component (no react-helmet, uses a useEffect-based head manager). Each page passes `title`, `description`, `path`, `keywords`, optional `jsonLd`, `breadcrumbs`, `article`. Helpers: `breadcrumbsLd`, `faqLd`, `articleLd`. `SITE_URL` is the canonical origin.
-- **Per-page SEO** is wired on Home, Features, Pricing (with FAQPage JSON-LD), RoiCalculator, About, Contact, AiProductDevelopment, AutomatedCompliance, AiRequirementsManagement, MissingRequirementsAnalysis, TestCaseGeneration, Blog index, and individual blog posts.
-- **Blog system** lives at `src/content/blog/` (markdown-as-string TS modules + `index.ts` catalogue). Routes: `/blog` (`pages/Blog.tsx`) and `/blog/:slug` (`pages/BlogPost.tsx` rendering with `react-markdown` + `remark-gfm` and Article + Breadcrumb JSON-LD).
-- **Sitemap**: `scripts/generate-sitemap.mjs` enumerates static routes + blog posts and writes `public/sitemap.xml`. Wired as a `prebuild` step in `package.json` and also exposed as `pnpm --filter @workspace/eltegra-site sitemap`.
-- **Shared chrome**: `src/components/site/Chrome.tsx` exports `Navigation`, `SiteFooter`, `DemoDialog`, `NAV_GROUPS`. Navigation includes Blog under Resources; Footer has real internal links + sitemap link.
-- **`public/robots.txt`** points to the sitemap and disallows `/app` plus common LLM training scrapers.
+### Core SEO infrastructure
+
+- **`src/components/SEO.tsx`** — declarative `<SEO>` component (no react-helmet — pure `useEffect` head manager). Each page passes `title`, `description`, `path`, `keywords[]`, optional `jsonLd`, `breadcrumbs`, `article`. Tags it adds are marked with a `data-seo-managed` attribute, so unmount/route-change cleanup never disturbs static tags in `index.html`. Helpers exported: `breadcrumbsLd`, `faqLd`, `articleLd`. `SITE_URL = https://auditee.eltegra.ai` is the canonical origin used for all canonical/OG URLs.
+- **`public/robots.txt`** — allows `/`, blocks `/app/*`, points to the sitemap, and explicitly disallows GPTBot, anthropic-ai, ClaudeBot, CCBot and Google-Extended training crawlers.
+- **`scripts/generate-sitemap.mjs`** — build-time generator that enumerates the canonical static routes plus every blog post in `src/content/blog/` and writes `public/sitemap.xml` (with image entries for the home hero). Wired as `prebuild` in `package.json` so every deploy ships a fresh sitemap; also exposed as `pnpm --filter @workspace/eltegra-site sitemap`.
+- **Shared chrome** — `src/components/site/Chrome.tsx` exports `Navigation`, `SiteFooter`, `DemoDialog`, and `NAV_GROUPS`. Replaces previously duplicated nav/footer code on `Home.tsx`. Navigation surfaces Blog under the Resources mega-menu; SiteFooter ships real internal links plus a `sitemap.xml` link, improving internal-linking density.
+
+### Per-page SEO use cases (the matrix)
+
+| Route | Primary intent targeted | JSON-LD beyond default Org/SoftwareApp/WebSite |
+| --- | --- | --- |
+| `/` | Brand + category capture ("AI requirements management", "PDLC platform", "audit automation") | FAQPage (4 high-intent Qs about Auditee, supported standards, RM imports, code-to-requirements) |
+| `/features` | Feature-set discovery, competitor comparisons | — |
+| `/pricing` | Buyer-intent pricing/decision queries | FAQPage (free tier, on-prem/air-gapped, no-training-on-data, frameworks included) |
+| `/roi-calculator` | Bottom-funnel "compliance ROI" / "audit savings" queries | — |
+| `/about` | Brand, careers, press queries | — |
+| `/contact` | Sales/demo/press/support queries | — |
+| `/ai-product-development` | "AI PRD generation", "AI BRD", "Smart Interview" | — |
+| `/automated-compliance` | 23-framework compliance keywords (SOC 2, HIPAA, IEC 62304, ASPICE, ISO 26262, FDA QMSR, etc.) | — |
+| `/ai-requirements-management` | DOORS / Jama / Polarion alternative + OSLC / ReqIF queries | — |
+| `/missing-requirements-analysis` | "AI gap detection", "missing requirements", coverage queries | — |
+| `/test-case-generation` | "AI test case generation", "requirements-based testing" | — |
+| `/blog` | Hub page for content marketing; tag-filtered index | Blog schema |
+| `/blog/:slug` | Long-tail keyword capture per article | Article + BreadcrumbList |
+
+### Blog content use cases
+
+Long-form posts stored as TS modules under `src/content/blog/*.ts`, catalogued in `src/content/blog/index.ts` (exposes `POSTS`, `getPost(slug)`, `getRelatedPosts(slug, limit)`, `allTags`). Each post renders through `pages/BlogPost.tsx` with `react-markdown` + `remark-gfm` and uses the `@tailwindcss/typography` `prose` preset.
+
+Initial 6-post launch (each ~10–13 min read, optimized for top-of-funnel and buyer-intent queries):
+
+1. **AI Requirements Management: A Buyer's Guide for 2026** — buyer's-guide intent, RM-tool evaluation criteria, comparison framing.
+2. **IEC 62304: Medical Device Software Lifecycle Guide (2026)** — standards-research intent, software safety classification (Class A/B/C), required deliverables.
+3. **SOC 2 vs ISO 27001: Which Framework Should You Choose?** — high-volume comparison query, decision matrix.
+4. **Generating Requirements from Legacy Code** — modernization use case targeting COBOL / legacy estate audiences.
+5. **Top 10 IBM DOORS Alternatives (2026)** — "alternatives" SERP capture, head-to-head comparison.
+6. **HIPAA Software Compliance Requirements Checklist** — checklist intent, healthcare buyer persona.
+
+Tag taxonomy spans Requirements Management, AI, Buyer's Guide, IEC 62304, Medical Devices, Compliance, SOC 2, ISO 27001, Security, Standards, Legacy Modernization, COBOL, Migration, Enterprise, Healthcare, HIPAA, IBM DOORS, Comparison, Checklist — driving related-post recirculation and tag-filter pages on `/blog`.
+
+### Internal-linking use cases
+
+- New shared `Navigation` includes Blog under Resources, surfacing fresh content to crawlers from every page.
+- New `SiteFooter` ships four columns of real internal links (Platform / Solutions / Company / Resources) plus a `sitemap.xml` link, replacing the prior `href="#"` placeholders.
+- Each blog post links to up to 3 related posts via `getRelatedPosts(slug)` (tag-overlap scoring), creating an internal hub-and-spoke graph.
+- Breadcrumb JSON-LD on every blog post explicitly declares the `Home → Blog → Post` hierarchy to search engines.
 
 ## External Dependencies
 
