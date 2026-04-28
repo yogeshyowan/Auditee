@@ -3,30 +3,36 @@ import { pgTable, text, integer, timestamp, uniqueIndex, boolean } from "drizzle
 export const WORKSPACE_ROLES = ["owner", "admin", "editor", "viewer"] as const;
 export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
 
-export const PLAN_TIERS = ["free", "professional", "enterprise"] as const;
+export const PLAN_TIERS = ["free", "standard", "professional", "enterprise"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
 
 export const PLAN_SEATS: Record<PlanTier, number> = {
   free: 1,
+  standard: 1,
   professional: 4,
   enterprise: 20,
 };
 
 export const PLAN_PRICE_USD: Record<PlanTier, number> = {
   free: 0,
-  professional: 5,
-  enterprise: 25,
+  standard: 25,
+  professional: 100,
+  enterprise: 500,
 };
 
-// Per-workspace lifetime AI generation credits. -1 = unlimited.
-// Anonymous (signed-out) browsers get the same Free allowance (6) tracked in
+// Per-workspace lifetime AI generation credits. 1 credit = 1 AI generation.
+// Anonymous (signed-out) browsers get the same Free allowance (10) tracked in
 // localStorage on the client and verified server-side via a request header.
-export const ANON_CREDIT_LIMIT = 6;
+// Free users can also top-up: $5 prepaid grants 10 additional credits.
+export const ANON_CREDIT_LIMIT = 10;
 export const PLAN_CREDITS: Record<PlanTier, number> = {
-  free: 6,
-  professional: -1,
-  enterprise: -1,
+  free: 10,
+  standard: 50,
+  professional: 200,
+  enterprise: 1000,
 };
+export const FREE_TOPUP_PRICE_USD = 5;
+export const FREE_TOPUP_CREDITS = 10;
 
 export const workspacesTable = pgTable(
   "workspaces",

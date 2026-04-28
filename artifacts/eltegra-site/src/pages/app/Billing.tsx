@@ -47,7 +47,7 @@ interface WorkspaceMe {
   workspace: {
     id: string;
     name: string;
-    plan: "free" | "professional" | "enterprise";
+    plan: "free" | "standard" | "professional" | "enterprise";
     seatLimit: number;
     ownerUserId: string;
     planActivatedAt: string | null;
@@ -71,22 +71,29 @@ const PLAN_DETAILS: Record<
     price: "$0",
     cadence: "forever",
     seats: 1,
-    blurb: "Solo evaluation. One project, one user.",
+    blurb: "10 AI credits to start. Top up $5 for 10 more, no expiry.",
+  },
+  standard: {
+    label: "Standard",
+    price: "$25",
+    cadence: "/month",
+    seats: 1,
+    blurb: "50 AI credits per month for solo builders.",
   },
   professional: {
     label: "Professional",
-    price: "$25",
+    price: "$100",
     cadence: "/month",
     seats: 4,
-    blurb: "For audit-ready engineering teams.",
+    blurb: "200 AI credits per month for audit-ready engineering teams.",
     highlight: true,
   },
   enterprise: {
     label: "Enterprise",
-    price: "$100",
+    price: "$500",
     cadence: "/month",
     seats: 20,
-    blurb: "For regulated organizations with multiple programs.",
+    blurb: "1,000 AI credits per month for regulated multi-program orgs.",
   },
 };
 

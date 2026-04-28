@@ -2,7 +2,7 @@
 // server-side (per workspace); anonymous browsers track usage in localStorage
 // and forward it via the `x-anon-credits-used` header so the API can verify.
 
-export const ANON_CREDIT_LIMIT = 6;
+export const ANON_CREDIT_LIMIT = 10;
 const STORAGE_KEY = "auditee.anonCreditsUsed";
 
 export function getAnonCreditsUsed(): number {

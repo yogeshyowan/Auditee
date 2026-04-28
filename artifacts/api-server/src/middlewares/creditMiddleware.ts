@@ -255,7 +255,7 @@ export function consumeCredit() {
 
     if (updated.length === 0) {
       res.status(402).json({
-        error: `You've used all ${limit} free generations on the ${plan} plan. Upgrade to Professional for unlimited.`,
+        error: `You've used all ${limit} AI credits on the ${plan} plan. Upgrade your plan or top up to keep generating.`,
         requiresUpgrade: true,
         plan,
         creditsUsed: workspace.creditsUsed,
