@@ -44,48 +44,56 @@ function shouldSkip(path: string): boolean {
 export type IngestedFile = { path: string; size: number; content: Buffer | null };
 
 export async function persistFiles(sourceId: string, files: IngestedFile[]): Promise<{ count: number; bytes: number }> {
-  await db.delete(sourceFilesTable).where(eq(sourceFilesTable.sourceId, sourceId));
-  let count = 0;
-  let bytes = 0;
-  for (const f of files) {
-    const cleaned = sanitizePath(f.path);
-    if (!cleaned) continue;
-    f.path = cleaned;
-    if (shouldSkip(f.path)) continue;
-    const text = isText(f.path);
-    let content: string | null = null;
-    if (text && f.content && f.size <= MAX_TEXT_BYTES) {
-      try {
-        content = f.content.toString("utf8");
-      } catch {
-        content = null;
+  // Atomic snapshot replace: the delete + per-file inserts + summary update all
+  // run in a single transaction. A failure mid-way (DB error, oversized blob,
+  // process kill) rolls back the entire batch instead of leaving the source
+  // wiped or half-populated. This matters in particular for the scheduler's
+  // pre-audit auto-pull, which would otherwise be able to silently degrade the
+  // evidence corpus the AI then audits against.
+  return db.transaction(async (tx) => {
+    await tx.delete(sourceFilesTable).where(eq(sourceFilesTable.sourceId, sourceId));
+    let count = 0;
+    let bytes = 0;
+    for (const f of files) {
+      const cleaned = sanitizePath(f.path);
+      if (!cleaned) continue;
+      f.path = cleaned;
+      if (shouldSkip(f.path)) continue;
+      const text = isText(f.path);
+      let content: string | null = null;
+      if (text && f.content && f.size <= MAX_TEXT_BYTES) {
+        try {
+          content = f.content.toString("utf8");
+        } catch {
+          content = null;
+        }
       }
+      await tx.insert(sourceFilesTable).values({
+        id: randomUUID(),
+        sourceId,
+        path: f.path,
+        size: f.size,
+        mime: text ? "text/plain" : "application/octet-stream",
+        language: langOf(f.path),
+        isBinary: text ? "false" : "true",
+        content,
+      });
+      count++;
+      bytes += f.size;
     }
-    await db.insert(sourceFilesTable).values({
-      id: randomUUID(),
-      sourceId,
-      path: f.path,
-      size: f.size,
-      mime: text ? "text/plain" : "application/octet-stream",
-      language: langOf(f.path),
-      isBinary: text ? "false" : "true",
-      content,
-    });
-    count++;
-    bytes += f.size;
-  }
-  await db
-    .update(projectSourcesTable)
-    .set({
-      fileCount: count,
-      byteCount: bytes,
-      status: "ready",
-      statusMessage: `${count} files indexed`,
-      lastSyncAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(projectSourcesTable.id, sourceId));
-  return { count, bytes };
+    await tx
+      .update(projectSourcesTable)
+      .set({
+        fileCount: count,
+        byteCount: bytes,
+        status: "ready",
+        statusMessage: `${count} files indexed`,
+        lastSyncAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(projectSourcesTable.id, sourceId));
+    return { count, bytes };
+  });
 }
 
 export async function ingestZipBuffer(sourceId: string, buf: Buffer): Promise<{ count: number; bytes: number }> {
