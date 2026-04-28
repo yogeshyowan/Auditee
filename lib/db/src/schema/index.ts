@@ -17,3 +17,4 @@ export * from "./notifications";
 export * from "./recurringAudits";
 export * from "./projectSources";
 export * from "./defects";
+export * from "./workspaces";

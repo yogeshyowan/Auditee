@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Menu, X, ShieldCheck, ChevronRight, ArrowRight } from "lucide-react";
+import { Show } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -255,9 +256,19 @@ export function Navigation() {
           <Link href="/pricing" className="text-sm font-medium text-slate-700 hover:text-primary transition-colors" data-testid="link-pricing-top">
             Pricing
           </Link>
-          <Link href="/app" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors" data-testid="link-launch-app-top">
-            Launch Platform
-          </Link>
+          <Show when="signed-in">
+            <Link href="/app" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors" data-testid="link-launch-app-top">
+              Launch Platform
+            </Link>
+          </Show>
+          <Show when="signed-out">
+            <Link href="/sign-in" className="text-sm font-medium text-slate-700 hover:text-primary transition-colors" data-testid="link-sign-in-top">
+              Sign in
+            </Link>
+            <Link href="/sign-up" className="text-sm font-medium text-primary hover:text-primary/80 transition-colors" data-testid="link-sign-up-top">
+              Get started
+            </Link>
+          </Show>
           <DemoDialog>
             <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6" data-testid="button-book-demo-top">
               Book a demo
@@ -317,13 +328,31 @@ export function Navigation() {
             })}
           </nav>
           <div className="mt-8 flex flex-col gap-4">
-            <Link
-              href="/app"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-3 border border-primary text-primary rounded-lg font-medium"
-            >
-              Launch Platform
-            </Link>
+            <Show when="signed-in">
+              <Link
+                href="/app"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-3 border border-primary text-primary rounded-lg font-medium"
+              >
+                Launch Platform
+              </Link>
+            </Show>
+            <Show when="signed-out">
+              <Link
+                href="/sign-in"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-3 border border-slate-200 text-slate-900 rounded-lg font-medium"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/sign-up"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-3 border border-primary text-primary rounded-lg font-medium"
+              >
+                Get started
+              </Link>
+            </Show>
             <DemoDialog>
               <Button className="w-full py-6 text-lg bg-primary hover:bg-primary/90 text-white rounded-lg">Book a demo</Button>
             </DemoDialog>

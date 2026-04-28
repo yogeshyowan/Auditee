@@ -110,6 +110,47 @@ Tag taxonomy spans Requirements Management, AI, Buyer's Guide, IEC 62304, Medica
 - Each blog post links to up to 3 related posts via `getRelatedPosts(slug)` (tag-overlap scoring), creating an internal hub-and-spoke graph.
 - Breadcrumb JSON-LD on every blog post explicitly declares the `Home → Blog → Post` hierarchy to search engines.
 
+## Auth, Workspaces & Billing
+
+Auditee uses Clerk (Replit-managed white-label) for authentication and a workspace-scoped seat-based billing model.
+
+### Plans
+
+| Plan | Price | Seats |
+|---|---|---|
+| Free | $0 | 1 user |
+| Professional | $499/mo | 4 users |
+| Enterprise | $2,599/mo | 20 users |
+
+`PLAN_TIERS` and `PLAN_SEATS` live in `lib/db/src/schema/workspaces.ts` so the cap is a single source of truth across schema + API + UI.
+
+### Auth flow
+
+- `eltegra-site` is wrapped in `<ClerkProvider>` with a branded `shadcn` appearance (Auditee purple `#6366f1`, Inter Tight font, custom logo at `public/logo.svg`).
+- `/sign-in` and `/sign-up` are public routes rendering Clerk's `<SignIn>` / `<SignUp>`. Both hard-code `routing="path"` plus the artifact base path so wouter routing stays correct.
+- Marketing nav (`Chrome.tsx`) shows "Sign in" + "Get started" when signed-out and "Launch Platform" when signed-in via Clerk's `<Show when="signed-in|signed-out">`.
+- `/app/*` is gated client-side via `<Show>`; signed-out users redirect to `/sign-in`. **All sensitive mutations are also enforced server-side** — client gating is UX only.
+- The api-server proxies Clerk's frontend requests via `clerkProxyMiddleware` mounted at `CLERK_PROXY_PATH`, then `clerkMiddleware()` reads sessions on every API call.
+- CORS uses an explicit allowlist (REPLIT_DEV_DOMAIN, SITE_URL, `auditee.eltegra.ai`, localhost) — never `origin: true` with credentials.
+
+### Workspaces & seat enforcement
+
+- `workspaces` table: one row per owner, enforced by a unique index on `owner_user_id`.
+- `workspace_members` table: one row per (workspace, user), enforced by a unique index on `(workspace_id, user_id)`.
+- A free workspace is auto-provisioned on the first authenticated request via `getOrCreateWorkspace()`. Concurrent first-time calls are serialized by the unique index + `ON CONFLICT DO NOTHING` + re-select fallback.
+- Invite flow: owner POSTs an email; we insert a member row with `userId = "pending:<email>"`. On that user's first sign-in, `reconcilePendingInvites()` swaps the placeholder for their real Clerk userId.
+- All seat-cap checks (invite, plan downgrade) wrap a `SELECT … FOR UPDATE` on the workspace row + `count(*)` over members inside a transaction. This serializes concurrent invites/plan changes against one another, preventing the workspace from exceeding `seatLimit`.
+- Owner-only mutations (`POST /workspace/members`, `DELETE /workspace/members/:id`, `POST /workspace/plan`) are rejected with 403 server-side for non-owners.
+
+### Billing & Team page (`/app/billing`)
+
+Single page that shows the current plan + seat usage, three plan cards with "Activate" buttons, an invite-by-email form (disabled at cap), and a members table with remove buttons (owner only). Uses `useAuth().getToken()` to attach a Bearer token to every API call as a defense-in-depth alongside the Clerk session cookie.
+
+### Pending integrations (require user action)
+
+- **Microsoft OAuth**: Replit-managed Clerk gives Google for free; for Microsoft sign-in, the user must open the Auth pane and add their Azure AD application credentials.
+- **Stripe billing**: `POST /api/workspace/plan` currently activates plans directly. To swap in real Stripe Checkout + webhook-driven plan activation, the user must connect Stripe via the Integrations panel.
+
 ## External Dependencies
 
 - **OpenAI**: Used for all AI features via Replit AI Integrations proxy, specifically `gpt-5.2` in JSON mode.

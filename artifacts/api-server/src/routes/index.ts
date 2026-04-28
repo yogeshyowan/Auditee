@@ -20,6 +20,7 @@ import recurringAuditsRouter from "./recurringAudits";
 import analyticsRouter from "./analytics";
 import sourcesRouter from "./sources";
 import defectsRouter from "./defects";
+import workspaceRouter from "./workspace";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use(recurringAuditsRouter);
 router.use(analyticsRouter);
 router.use(sourcesRouter);
 router.use(defectsRouter);
+router.use(workspaceRouter);
 
 export default router;

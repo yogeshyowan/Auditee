@@ -18,6 +18,7 @@ import {
   CalendarClock,
   FolderInput,
   MessagesSquare,
+  CreditCard,
   Plus
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -50,6 +51,7 @@ const NAV_ITEMS = [
   { href: "/app/legacy", label: "Legacy Modernization", icon: Database },
   { href: "/app/activity", label: "Activity", icon: Activity },
   { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/app/billing", label: "Billing & Team", icon: CreditCard },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
