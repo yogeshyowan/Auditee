@@ -51,7 +51,14 @@ function getAnthropic(): Anthropic | null {
 function isRetryable(err: unknown): boolean {
   const status = (err as { status?: number })?.status;
   if (typeof status !== "number") return true;
-  return status === 401 || status === 403 || status === 429 || status >= 500;
+  return (
+    status === 401 ||
+    status === 402 ||
+    status === 403 ||
+    status === 408 ||
+    status === 429 ||
+    status >= 500
+  );
 }
 
 type Provider<T> = { name: string; call: () => Promise<T> };
