@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Briefcase, Newspaper, ShieldCheck, MessageSquare, Loader2, Check } from "lucide-react";
+import { Mail, Briefcase, Newspaper, ShieldCheck, MessageSquare, Loader2, Check, MapPin, Phone, Receipt, Linkedin } from "lucide-react";
 
 const REASONS = [
   { value: "sales", label: "Talk to sales", icon: MessageSquare },
@@ -216,6 +216,43 @@ export default function Contact() {
 
           {/* Side info */}
           <div className="space-y-4">
+            <Card className="p-5 bg-gradient-to-br from-primary/5 to-white border-primary/20">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div className="text-sm">
+                  <div className="font-semibold text-slate-900 mb-1">Registered office</div>
+                  <div className="text-slate-700 leading-relaxed">
+                    <span className="font-medium text-slate-900">Qwikstuffs Pvt. Ltd.</span><br />
+                    E2, Devi Building, Metu Street,<br />
+                    Iyyapanthangal, Chennai 600 077<br />
+                    Tamil Nadu, India
+                  </div>
+                  <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-3 w-3 text-primary" />
+                      <a href="tel:+918310042593" className="hover:text-primary">+91 83100 42593</a>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Receipt className="h-3 w-3 text-primary" />
+                      <span>GSTIN <span className="font-mono">33AFDPY2309C3ZR</span></span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Linkedin className="h-3 w-3 text-primary" />
+                      <a
+                        href="https://www.linkedin.com/feed/?shareActive=true"
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="hover:text-primary"
+                      >
+                        Founder &amp; CEO — Yogesh Yowan
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
             {REASONS.map((r) => (
               <Card key={r.value} className="p-5">
                 <div className="flex items-start gap-3">

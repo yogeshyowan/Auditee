@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Menu, X, ShieldCheck, ChevronRight, ArrowRight } from "lucide-react";
+import { Menu, X, ShieldCheck, ChevronRight, ArrowRight, MapPin, Phone, Linkedin, Receipt } from "lucide-react";
 import { Show } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -429,12 +429,49 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
-          <p>© {year} Auditee. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
-            <a href="/sitemap.xml" className="hover:text-white transition-colors">Sitemap</a>
+        <div className="pt-8 border-t border-slate-900 grid gap-8 md:grid-cols-3 text-sm">
+          <div>
+            <h5 className="text-white font-semibold mb-3">Registered office</h5>
+            <p className="text-slate-400 leading-relaxed">
+              <span className="text-white font-medium">Qwikstuffs Pvt. Ltd.</span><br />
+              E2, Devi Building, Metu Street,<br />
+              Iyyapanthangal, Chennai 600 077<br />
+              Tamil Nadu, India
+            </p>
+          </div>
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-2">
+              <Phone className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+              <a href="tel:+918310042593" className="hover:text-white transition-colors">+91 83100 42593</a>
+            </div>
+            <div className="flex items-start gap-2">
+              <Receipt className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+              <span>GSTIN <span className="font-mono text-slate-300">33AFDPY2309C3ZR</span></span>
+            </div>
+            <div className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+              <span>Founder &amp; CEO — Yogesh Yowan</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Linkedin className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+              <a
+                href="https://www.linkedin.com/feed/?shareActive=true"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="hover:text-white transition-colors"
+                data-testid="link-footer-linkedin"
+              >
+                LinkedIn
+              </a>
+            </div>
+          </div>
+          <div className="md:text-right space-y-3">
+            <p>© {year} Qwikstuffs Pvt. Ltd. All rights reserved.</p>
+            <div className="flex md:justify-end gap-6">
+              <Link href="/" className="hover:text-white transition-colors">Home</Link>
+              <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+              <a href="/sitemap.xml" className="hover:text-white transition-colors">Sitemap</a>
+            </div>
           </div>
         </div>
       </div>
