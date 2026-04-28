@@ -31,12 +31,26 @@ The backend is an Express 5 API server mounted at `/api`. Data persistence is ma
 
 AI features are exposed via `/api/ai/*` endpoints for `generate-requirements`, `analyze-code`, `compliance-audit`, `legacy-extract`, `ask`, `gap-analysis`, `promote`, and `estimate-effort`. AI document generators support various report types (e.g., `compliance_audit`, `requirements_summary`) and can export to DOCX/PDF/HTML, leveraging canonical blueprints. Standards-aware generation allows AI outputs to conform to multiple regulatory frameworks. The system supports free-trial AI credits for anonymous and Free plan users.
 
+### Pricing & Credit Model
+
+A single source of truth for pricing/seats/credits lives in `lib/db/src/schema/workspaces.ts`:
+
+| Tier         | Price       | Seats | Monthly AI credits |
+|--------------|-------------|-------|--------------------|
+| Free         | $0 forever  | 1     | 10 (one-time, plus $5 prepaid top-ups for 10 more, never expire) |
+| Standard     | $25/month   | 1     | 50                 |
+| Professional | $100/month  | 4     | 200                |
+| Enterprise   | $500/month  | 20    | 1,000              |
+
+One credit = one successful AI generation (BRD, PRD, test-case suite, compliance audit, traceability audit, etc.). Failures auto-refund via the reserve+refund pattern in `creditMiddleware.ts`. Anonymous (signed-out) browsers get the same Free allowance (`ANON_CREDIT_LIMIT = 10`), tracked in `localStorage` and verified server-side via `x-anon-credits-used`. Monthly plan credits reset each billing cycle; Free top-up credits never expire. The marketing pricing page (`Pricing.tsx`) and the in-app Billing page (`Billing.tsx`) both render directly off these constants. Razorpay billing is currently **paused** pending merchant credentials (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`) — `PLAN_PRICE_USD`, `FREE_TOPUP_PRICE_USD`, and `FREE_TOPUP_CREDITS` are display-only until those secrets are provided.
+
 ### Feature Specifications
 
 -   **Project Management**: Creation and management of projects with persistent selection.
 -   **Requirements Management Connectors**: Integrations with various RM tools (e.g., Doors Next, Jama, Jira) for importing and de-duplicating requirements.
 -   **Defect Management Connectors**: Integrations with multiple defect tracking systems (e.g., Jira, Azure DevOps, GitHub Issues) for importing and de-duplicating defects.
 -   **AI-powered Reporting**: Generation of various reports (e.g., BRD, PRD, test cases) with standards-aware content.
+-   **Standards Documentation Set**: Five dedicated AI report kinds for engineering documentation that conform to international standards: `architecture_doc` per ISO/IEC/IEEE 42010 (stakeholders & concerns, drivers, system context, logical / process / data / deployment views, ADRs, risks); `hld` and `lld` per IEEE 1016 (module decomposition, component interactions, external interface design, data design — and at low level: class/method specs, API contracts, schemas, algorithms with pseudocode, error model, concurrency & state machines); `deployment_doc` (environments, infra components, CI pipeline, release strategy, runbook, DR posture); `user_manual` per IEEE 1063 (getting started, key concepts, task-oriented procedures, screen reference, troubleshooting, glossary). All five are first-class report kinds in `KIND_BLUEPRINT` (api-server `routes/reports.ts`) with friendly labels surfaced in the in-app Reports page kind dropdown, exportable to DOCX/PDF/HTML, and pushable to the connected GitHub repo via the standard report-push affordance.
 -   **Standards Compliance**: AI generators and reports adhere to multiple compliance standards, incorporating native rating vocabularies and framework-specific filters.
 -   **Company Letterhead Templates**: Per-workspace `.docx` templates for custom branding on all PDLC reports, supporting dynamic placeholders.
 -   **5-Stage Lifecycle Traceability**: End-to-end traceability across Architecture, Design, Implementation, Testing, and Deployment, visualized with completeness badges and AI-driven recommendations.

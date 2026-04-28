@@ -12,7 +12,7 @@ import { KeyRound, Sparkles, ShieldCheck, ExternalLink, Lock, ShieldAlert } from
 interface WorkspaceMe {
   workspace: {
     id: string;
-    plan: "free" | "professional" | "enterprise";
+    plan: "free" | "standard" | "professional" | "enterprise";
     ssoEnabled: boolean;
     ssoDomain: string | null;
   };

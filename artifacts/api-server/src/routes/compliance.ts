@@ -8,7 +8,7 @@ import {
   complianceEvidenceTable,
 } from "@workspace/db";
 import { GetComplianceFrameworkParams } from "@workspace/api-zod";
-import { assertProjectAccessIfAuthed } from "../lib/projectAccess";
+import { assertProjectAccessIfAuthed, requireProjectAccessInline } from "../lib/projectAccess";
 import { logActivity } from "../lib/activityLog";
 import { getAuth } from "@clerk/express";
 
