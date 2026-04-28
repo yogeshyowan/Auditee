@@ -13,6 +13,9 @@ import Contact from "@/pages/Contact";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
+import MissingRequirementsAnalysis from "@/pages/MissingRequirementsAnalysis";
+import TestCaseGeneration from "@/pages/TestCaseGeneration";
+import AiRequirementsManagement from "@/pages/AiRequirementsManagement";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 // App Pages
@@ -75,6 +78,9 @@ function Router() {
       <Route path="/features" component={Features} />
       <Route path="/ai-product-development" component={AiProductDevelopment} />
       <Route path="/automated-compliance" component={AutomatedCompliance} />
+      <Route path="/ai-requirements-management" component={AiRequirementsManagement} />
+      <Route path="/missing-requirements-analysis" component={MissingRequirementsAnalysis} />
+      <Route path="/test-case-generation" component={TestCaseGeneration} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />
