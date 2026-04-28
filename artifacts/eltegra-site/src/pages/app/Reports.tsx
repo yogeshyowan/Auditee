@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { FileText, Sparkles, Download, Trash2, RefreshCw } from "lucide-react";
 import { Comments } from "@/components/Comments";
 import { StandardsMultiSelect } from "@/components/StandardsMultiSelect";
+import { PushToRepoButton } from "@/components/PushToRepoButton";
 
 // Grouped catalogue of every report kind, used for both the dropdown UI
 // and the display label/description maps below. Order inside each group
@@ -283,6 +284,14 @@ export default function Reports() {
                     <a href={reportExportUrl(r.id, "docx")}>
                       <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />DOCX</Button>
                     </a>
+                    <PushToRepoButton
+                      projectId={projectId}
+                      kind="report"
+                      reportId={r.id}
+                      label="Push"
+                      defaultCommitMessage={`chore(auditee): add ${KIND_LABELS[r.kind] ?? r.kind} — ${r.title.slice(0, 60)}`}
+                      testid={`push-report-${r.id}`}
+                    />
                     <Button variant="ghost" size="icon" onClick={() => del.mutate(r.id)}>
                       <Trash2 className="h-4 w-4 text-slate-400" />
                     </Button>
@@ -314,7 +323,7 @@ function ReportViewer({ id, onClose }: { id: string; onClose: () => void }) {
               <DialogTitle>{report.title}</DialogTitle>
               {report.content.subtitle && <p className="text-sm text-slate-500">{report.content.subtitle}</p>}
             </DialogHeader>
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2 flex-wrap">
               <a href={reportExportUrl(report.id, "html")} target="_blank" rel="noreferrer">
                 <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />HTML</Button>
               </a>
@@ -324,6 +333,14 @@ function ReportViewer({ id, onClose }: { id: string; onClose: () => void }) {
               <a href={reportExportUrl(report.id, "docx")}>
                 <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />DOCX</Button>
               </a>
+              <PushToRepoButton
+                projectId={projectId}
+                kind="report"
+                reportId={report.id}
+                label="Push to repo"
+                defaultCommitMessage={`chore(auditee): add report — ${report.title.slice(0, 60)}`}
+                testid={`push-report-viewer-${report.id}`}
+              />
             </div>
             <div className="bg-slate-50 border-l-4 border-primary rounded p-4 my-3">
               <div className="text-xs font-bold text-slate-500 uppercase mb-1">Executive summary</div>

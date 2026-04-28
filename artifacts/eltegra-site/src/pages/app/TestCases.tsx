@@ -60,6 +60,7 @@ import {
   Layers,
 } from "lucide-react";
 import { format } from "date-fns";
+import { PushToRepoButton } from "@/components/PushToRepoButton";
 
 const STATUS_META: Record<TestCase["status"], { label: string; cls: string; icon: typeof CheckCircle2 }> = {
   draft: { label: "Draft", cls: "bg-slate-100 text-slate-700 border-slate-300", icon: AlertCircle },
@@ -220,6 +221,15 @@ export default function TestCasesPage() {
               </a>
             </Button>
           )}
+          <PushToRepoButton
+            projectId={projectId ?? null}
+            kind="test-bundle"
+            label="Push bundle to repo"
+            variant="outline"
+            size="default"
+            className="gap-2"
+            testid="push-test-bundle"
+          />
           <NewTestCaseDialog projectId={projectId ?? null} requirements={requirements ?? []} />
         </div>
       </header>
