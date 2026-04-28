@@ -5,7 +5,7 @@ const OPENAI_MODEL = "gpt-4o";
 const OPENROUTER_MODEL = "google/gemini-2.5-flash";
 const ANTHROPIC_HAIKU_MODEL = "claude-haiku-4-5";
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-const OPENROUTER_MAX_TOKENS_CAP = 4096;
+const OPENROUTER_MAX_TOKENS_CAP = 8192;
 
 export class AIUnavailableError extends Error {
   constructor(message: string) {

@@ -83,7 +83,7 @@ router.post("/reports/generate", asyncH(async (req, res) => {
     res.status(400).json({ error: "projectId is required" });
     return;
   }
-  const kind: string = ["compliance_audit", "requirements_summary", "traceability", "exec_brief", "brd"].includes(b.kind)
+  const kind: string = ["compliance_audit", "requirements_summary", "traceability", "exec_brief", "brd", "prd", "frd", "test_cases"].includes(b.kind)
     ? b.kind
     : "exec_brief";
   const tone: string = ["executive", "technical", "regulator"].includes(b.tone) ? b.tone : "executive";
@@ -148,6 +148,55 @@ router.post("/reports/generate", asyncH(async (req, res) => {
     compliance_audit: { label: "compliance audit report", sectionGuide: "", minSections: 4, maxSections: 7 },
     requirements_summary: { label: "requirements summary", sectionGuide: "", minSections: 4, maxSections: 7 },
     traceability: { label: "traceability narrative", sectionGuide: "", minSections: 4, maxSections: 7 },
+    prd: {
+      label: "Product Requirements Document",
+      sectionGuide: `This is a CANONICAL Product Requirements Document — written for the engineering and design teams that will actually build the product. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Product Overview" — one-paragraph product positioning + the user/customer being served.
+  2. "Goals & Non-Goals" — what shipping this product means; explicitly call out what is OUT of scope.
+  3. "Personas & Use Cases" — primary and secondary users, with 2-4 representative scenarios.
+  4. "User Stories & Acceptance Criteria" — group by epic; each story uses "As a … I want … so that …" + Given/When/Then acceptance bullets. Cite requirement codes.
+  5. "Functional Requirements" — what the system must do; cite codes from the evidence list.
+  6. "Non-Functional Requirements" — perf, security, accessibility, scalability targets with numeric thresholds.
+  7. "UX Flows & Wireframes" — describe primary flows in prose (no images); call out edge cases and empty/error states.
+  8. "Release Plan & Milestones" — phasing, dependencies, rollout strategy (dark launch / feature flag / GA).
+  9. "Open Questions & Risks" — top 3-6 with owner and resolution date placeholders.`,
+      minSections: 7,
+      maxSections: 10,
+    },
+    frd: {
+      label: "Functional Requirements Document",
+      sectionGuide: `This is a CANONICAL Functional Requirements Document — the implementation contract between product and engineering. Produce these sections, in this order, using EXACTLY these headings:
+  1. "System Context & Architecture" — narrative description of where this fits in the wider architecture; key services and integrations.
+  2. "Functional Specifications" — itemised, numbered functions (FR-1, FR-2…) with input/output and behaviour for each. Cite requirement codes.
+  3. "Data Model" — entities, attributes, key relationships, ownership boundaries (no SQL — narrative + bullets).
+  4. "Interface Specifications" — every external API / event / queue this feature exposes or consumes; method, payload shape, expected status codes.
+  5. "Business Rules & Validation" — invariants, constraints, derived fields, calculation rules.
+  6. "Error Handling & Edge Cases" — categorised by severity; user-facing messaging vs. log-only.
+  7. "Security & Compliance Controls" — auth/authz model, PII handling, audit logging; cite control codes from the evidence list.
+  8. "Test Strategy" — unit / integration / e2e coverage plan; explicit links back to acceptance criteria.
+  9. "Operational Concerns" — observability hooks, runbooks, rollback procedure.`,
+      minSections: 7,
+      maxSections: 10,
+    },
+    test_cases: {
+      label: "Test Case Suite",
+      sectionGuide: `This is a CANONICAL Test Case Suite generated from the project's requirements. Produce these sections, in this order, using EXACTLY these headings:
+  1. "Suite Overview" — what this suite covers, total cases, breakdown by type.
+  2. "Functional Test Cases" — for each major requirement, write 2-4 test cases. EACH case uses this exact format inside the section body:
+     - "TC-<code>-NN — <short title>"
+     - Preconditions:
+     - Steps: numbered list
+     - Expected result:
+     - Linked requirement: <REQ code from evidence>
+     - Priority: P0 / P1 / P2
+  3. "Negative & Edge Case Tests" — boundary, invalid input, race condition cases — same format as above.
+  4. "Non-Functional Tests" — performance, load, security, accessibility tests — same format.
+  5. "Integration & E2E Scenarios" — multi-step user journeys spanning multiple requirements.
+  6. "Regression Coverage Map" — narrative summary of which requirements have what level of test coverage; flag any gaps explicitly.
+  7. "Execution & Maintenance Notes" — recommended test environments, data setup, ownership.`,
+      minSections: 6,
+      maxSections: 8,
+    },
   };
   const blueprint = KIND_BLUEPRINT[kind] ?? KIND_BLUEPRINT.exec_brief!;
 
@@ -198,7 +247,7 @@ Rules:
     executiveSummary: string;
     sections: Array<{ id?: string; heading: string; body: string; citations?: string[] }>;
   };
-  const result = await jsonCompletion<GenResult>(sysPrompt, JSON.stringify(payload).slice(0, 28000));
+  const result = await jsonCompletion<GenResult>(sysPrompt, JSON.stringify(payload).slice(0, 28000), { maxTokens: 12288 });
 
   const content: ReportContent = {
     title: result.title?.slice(0, 200) || `${project.name} — ${kind.replace("_", " ")}`,
@@ -263,7 +312,7 @@ Rules:
 - Output JSON only.`;
   const userPrompt = `Instruction: ${instruction}\n\nCurrent report:\n${JSON.stringify(report.content).slice(0, 24000)}`;
   type Refined = ReportContent;
-  const refined = await jsonCompletion<Refined>(sysPrompt, userPrompt);
+  const refined = await jsonCompletion<Refined>(sysPrompt, userPrompt, { maxTokens: 12288 });
 
   const newContent: ReportContent = {
     title: refined.title?.slice(0, 200) || report.content.title,

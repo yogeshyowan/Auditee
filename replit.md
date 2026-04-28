@@ -200,6 +200,15 @@ codegen pipeline; the frontend calls them via thin `useMutation` wrappers in
 Provider client lives at `lib/integrations-openai-ai-server` (Replit AI Integrations
 proxy — no API key required). Model: `gpt-5.2` (JSON mode for structured outputs).
 
+### AI document generators (Reports)
+- `POST /api/reports/generate` accepts kinds: `compliance_audit`, `requirements_summary`, `traceability`, `exec_brief`, `brd`, `prd`, `frd`, `test_cases`. Each kind has a canonical section blueprint in `KIND_BLUEPRINT` (artifacts/api-server/src/routes/reports.ts) that drives the LLM prompt. Reports auto-export to DOCX/PDF/HTML.
+- The Requirements page (`/app/requirements`) exposes all 4 document types — BRD, PRD, FRD and Test Cases — through a single "Generate AI document" dropdown.
+- `OPENROUTER_MAX_TOKENS_CAP = 8192` (parity with default `jsonCompletion` maxTokens). Reports explicitly request `maxTokens: 12288` to leave headroom for multi-section docs.
+
+### Marketing pages
+- `/` Home — landing with NAV_GROUPS for Platform / Solutions / Resources / Company. Internal `/`-routes use Wouter `Link` (client-side); hashed deep-links (e.g. `/about#careers`) use raw `<a>` so the browser performs native anchor scrolling.
+- `/pricing`, `/roi-calculator`, `/about`, `/contact` — full marketing pages registered in `App.tsx`. The Contact form posts to the existing `POST /api/demo-requests` endpoint with the reason prefixed into the message body.
+
 ### Notes
 - API endpoints live under `/api/*`. CRUD endpoints have generated Orval hooks; AI endpoints use the small wrapper in `src/lib/ai-api.ts`.
 - No authentication is currently configured (out of scope for the demo build).

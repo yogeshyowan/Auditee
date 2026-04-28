@@ -39,7 +39,8 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen } from "lucide-react";
+import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen, ChevronDown, FileType, FileCog, TestTube2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateRequirements, useFetchCodeUrl } from "@/lib/ai-api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -300,37 +301,40 @@ export default function RequirementsPage() {
     },
   });
   const [, navigate] = useLocation();
-  const generateBrd = useGenerateReport();
-  const handleGenerateBrd = () => {
-    if (!projectId || generateBrd.isPending) return;
+  const generateDoc = useGenerateReport();
+
+  type DocKind = { kind: "brd" | "prd" | "frd" | "test_cases"; label: string; tone: "executive" | "technical"; instructions: string };
+  const DOC_KINDS: DocKind[] = [
+    { kind: "brd", label: "Business Requirements Document (BRD)", tone: "executive", instructions: "Compose a complete, signature-ready Business Requirements Document. Be specific about scope and acceptance." },
+    { kind: "prd", label: "Product Requirements Document (PRD)", tone: "executive", instructions: "Compose a complete PRD aimed at the engineering and design teams who will build the product. Be specific about user stories, acceptance criteria and release plan." },
+    { kind: "frd", label: "Functional Requirements Document (FRD)", tone: "technical", instructions: "Compose a complete FRD as the implementation contract between product and engineering. Be precise about data model, interfaces and edge cases." },
+    { kind: "test_cases", label: "Test Case Suite", tone: "technical", instructions: "Generate a comprehensive Test Case Suite linked to every functional and non-functional requirement. Use the structured TC format with preconditions, steps, expected results and traceability." },
+  ];
+
+  const handleGenerateDoc = (doc: DocKind) => {
+    if (!projectId || generateDoc.isPending) return;
     const reqs = allProjectReqs ?? [];
     if (reqs.length === 0) {
       toast({
         title: "No requirements yet",
-        description: "Generate or import at least a few requirements first — a BRD needs source material.",
+        description: `Generate or import at least a few requirements first — a ${doc.kind.toUpperCase()} needs source material.`,
         variant: "destructive",
       });
       return;
     }
     toast({
-      title: "Generating BRD…",
-      description: "Auditee is composing your Business Requirements Document. You'll be taken to the report when it's ready.",
+      title: `Generating ${doc.kind.toUpperCase()}…`,
+      description: `Auditee is composing your ${doc.label}. You'll be taken to the report when it's ready.`,
     });
-    generateBrd.mutate(
-      {
-        projectId,
-        kind: "brd",
-        tone: "executive",
-        instructions:
-          "Compose a complete, signature-ready Business Requirements Document. Be specific about scope and acceptance.",
-      },
+    generateDoc.mutate(
+      { projectId, kind: doc.kind, tone: doc.tone, instructions: doc.instructions },
       {
         onSuccess: () => {
-          toast({ title: "BRD generated", description: "Opening in the Reports library." });
+          toast({ title: `${doc.kind.toUpperCase()} generated`, description: "Opening in the Reports library." });
           navigate("/app/reports");
         },
         onError: (err: Error) => {
-          toast({ title: "BRD generation failed", description: err.message, variant: "destructive" });
+          toast({ title: `${doc.kind.toUpperCase()} generation failed`, description: err.message, variant: "destructive" });
         },
       },
     );
@@ -361,20 +365,54 @@ export default function RequirementsPage() {
           >
             <Code2 className="h-4 w-4" /> Generate from code
           </Button>
-          <Button
-            onClick={handleGenerateBrd}
-            variant="outline"
-            className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
-            disabled={!projectId || generateBrd.isPending}
-            data-testid="button-generate-brd"
-          >
-            {generateBrd.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileText className="h-4 w-4" />
-            )}
-            {generateBrd.isPending ? "Composing BRD…" : "Generate BRD"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                disabled={!projectId || generateDoc.isPending}
+                data-testid="button-generate-ai-doc"
+              >
+                {generateDoc.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                {generateDoc.isPending ? "Composing…" : "Generate AI document"}
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuItem onClick={() => handleGenerateDoc(DOC_KINDS[0]!)} data-testid="menu-generate-brd">
+                <FileText className="h-4 w-4 mr-2 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Generate BRD</span>
+                  <span className="text-xs text-slate-500">Signature-ready business spec</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGenerateDoc(DOC_KINDS[1]!)} data-testid="menu-generate-prd">
+                <FileType className="h-4 w-4 mr-2 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Generate PRD</span>
+                  <span className="text-xs text-slate-500">Product spec with user stories</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGenerateDoc(DOC_KINDS[2]!)} data-testid="menu-generate-frd">
+                <FileCog className="h-4 w-4 mr-2 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Generate FRD</span>
+                  <span className="text-xs text-slate-500">Engineering implementation contract</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleGenerateDoc(DOC_KINDS[3]!)} data-testid="menu-generate-tests">
+                <TestTube2 className="h-4 w-4 mr-2 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Generate Test Cases</span>
+                  <span className="text-xs text-slate-500">TC suite linked to every requirement</span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button onClick={() => setCreateOpen(true)} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" /> New Requirement
           </Button>

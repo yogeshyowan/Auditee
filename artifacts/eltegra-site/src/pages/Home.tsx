@@ -69,23 +69,30 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Resources",
     key: "resources",
     items: [
-      { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "#roi" },
+      { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
       { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "#pdlc" },
+      { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
       { title: "Customer Stories", desc: "Enterprises shipping faster with full traceability.", href: "#resources" },
-      { title: "Documentation", desc: "Connectors, ingestion, the graph API.", href: "#resources" },
     ],
   },
   {
     label: "Company",
     key: "company",
     items: [
-      { title: "About", desc: "The team rebuilding the PDLC for the AI era.", href: "#company" },
-      { title: "Careers", desc: "Join us. Remote-first, mission-led.", href: "#company" },
-      { title: "Press", desc: "News, releases and brand assets.", href: "#company" },
-      { title: "Contact", desc: "Talk to sales, partnerships or support.", href: "#company" },
+      { title: "About", desc: "The team rebuilding the PDLC for the AI era.", href: "/about" },
+      { title: "Careers", desc: "Join us. Remote-first, mission-led.", href: "/about#careers" },
+      { title: "Press", desc: "News, releases and brand assets.", href: "/about#press" },
+      { title: "Contact", desc: "Talk to sales, partnerships or support.", href: "/contact" },
     ],
   },
 ];
+
+function isInternalRoute(href: string): boolean {
+  // Only client-side route when it's an internal path WITHOUT a hash —
+  // hashed paths (e.g. /about#careers) need a real <a> so the browser
+  // performs native anchor scrolling on navigation.
+  return href.startsWith("/") && !href.startsWith("//") && !href.includes("#");
+}
 
 const demoSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -240,22 +247,33 @@ function Navigation() {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid gap-2 p-4 w-[440px] md:w-[520px] grid-cols-2">
-                    {group.items.map((item) => (
-                      <li key={item.title}>
-                        <NavigationMenuLink asChild>
-                          <a
-                            href={item.href}
-                            className="block rounded-md p-3 hover:bg-slate-100 transition-colors group"
-                            data-testid={`nav-item-${group.key}-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                          >
-                            <div className="text-sm font-semibold text-slate-900 group-hover:text-primary mb-1">
-                              {item.title}
-                            </div>
-                            <p className="text-xs text-slate-500 leading-snug">{item.desc}</p>
-                          </a>
-                        </NavigationMenuLink>
-                      </li>
-                    ))}
+                    {group.items.map((item) => {
+                      const inner = (
+                        <>
+                          <div className="text-sm font-semibold text-slate-900 group-hover:text-primary mb-1">
+                            {item.title}
+                          </div>
+                          <p className="text-xs text-slate-500 leading-snug">{item.desc}</p>
+                        </>
+                      );
+                      const className = "block rounded-md p-3 hover:bg-slate-100 transition-colors group";
+                      const testId = `nav-item-${group.key}-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+                      return (
+                        <li key={item.title}>
+                          <NavigationMenuLink asChild>
+                            {isInternalRoute(item.href) ? (
+                              <Link href={item.href} className={className} data-testid={testId}>
+                                {inner}
+                              </Link>
+                            ) : (
+                              <a href={item.href} className={className} data-testid={testId}>
+                                {inner}
+                              </a>
+                            )}
+                          </NavigationMenuLink>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
@@ -919,9 +937,9 @@ function CompanyAnchor() {
           <DemoDialog>
             <Button variant="outline" className="rounded-full border-primary/30 text-primary hover:bg-primary/5">Talk to the team</Button>
           </DemoDialog>
-          <a href="#resources">
-            <Button variant="ghost" className="rounded-full text-slate-700 hover:bg-slate-100">See our work</Button>
-          </a>
+          <Link href="/about">
+            <Button variant="ghost" className="rounded-full text-slate-700 hover:bg-slate-100">Read our story</Button>
+          </Link>
         </div>
       </div>
     </section>

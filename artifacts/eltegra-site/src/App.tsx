@@ -8,6 +8,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import RoiCalculator from "@/pages/RoiCalculator";
+import About from "@/pages/About";
+import Contact from "@/pages/Contact";
 import { AppLayout } from "@/components/layout/AppLayout";
 
 // App Pages
@@ -65,6 +67,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
+      <Route path="/about" component={About} />
+      <Route path="/contact" component={Contact} />
       <Route path="/app" component={() => <Redirect to="/app/sources" />} />
       <Route path="/app/*" component={AppRoutes} />
       <Route component={NotFound} />
