@@ -52,6 +52,7 @@ A single source of truth for pricing/seats/credits is defined in `lib/db/src/sch
 -   **Pre-Audit Source Auto-Pull**: Before scheduled compliance audits, the system automatically refreshes all linked sources (GitHub, RM tools, defect tools, remote systems) to ensure AI evaluates the current state.
 -   **SEO & Content**: The marketing site incorporates comprehensive SEO infrastructure, including a declarative SEO component, `robots.txt`, a build-time sitemap generator, and a blog.
 -   **Hetzner / Docker Deployment**: The codebase supports deployment on Replit or a self-hosted Hetzner VPS via `docker compose up -d` with `db`, `api`, and `web` containers. Replit-specific code paths are gated and activate only when relevant environment variables are present.
+-   **Lead Capture & Google Sheet Sync**: Every signed-in user (signup, login, and waitlist click) is captured into the `lead_captures` table with a unique `(email, source)` constraint. A "Join the waitlist with Google" button on the marketing pages opens Clerk's Google OAuth modal. Captures are forwarded to a Google Sheet via an Apps Script web app when `GOOGLE_SHEET_WEBHOOK_URL` (and optional `GOOGLE_SHEET_WEBHOOK_TOKEN`) are set; until then rows are stored locally and back-filled to the sheet automatically on the next capture for that email.
 
 ## External Dependencies
 

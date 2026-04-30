@@ -18,6 +18,8 @@ import type {
 
 import type {
   ActivityEvent,
+  CaptureLeadBody,
+  CaptureLeadResult,
   CodeArtifact,
   ComplianceFramework,
   ComplianceFrameworkDetail,
@@ -1413,4 +1415,90 @@ export const useCreateDemoRequest = <
   TContext
 > => {
   return useMutation(getCreateDemoRequestMutationOptions(options));
+};
+
+/**
+ * @summary Capture a signed-in contact for downstream Google Form sync
+ */
+export const getCaptureLeadUrl = () => {
+  return `/api/leads/capture`;
+};
+
+export const captureLead = async (
+  captureLeadBody: CaptureLeadBody,
+  options?: RequestInit,
+): Promise<CaptureLeadResult> => {
+  return customFetch<CaptureLeadResult>(getCaptureLeadUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(captureLeadBody),
+  });
+};
+
+export const getCaptureLeadMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof captureLead>>,
+    TError,
+    { data: BodyType<CaptureLeadBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof captureLead>>,
+  TError,
+  { data: BodyType<CaptureLeadBody> },
+  TContext
+> => {
+  const mutationKey = ["captureLead"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof captureLead>>,
+    { data: BodyType<CaptureLeadBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return captureLead(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CaptureLeadMutationResult = NonNullable<
+  Awaited<ReturnType<typeof captureLead>>
+>;
+export type CaptureLeadMutationBody = BodyType<CaptureLeadBody>;
+export type CaptureLeadMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Capture a signed-in contact for downstream Google Form sync
+ */
+export const useCaptureLead = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof captureLead>>,
+    TError,
+    { data: BodyType<CaptureLeadBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof captureLead>>,
+  TError,
+  { data: BodyType<CaptureLeadBody> },
+  TContext
+> => {
+  return useMutation(getCaptureLeadMutationOptions(options));
 };

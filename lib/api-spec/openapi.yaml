@@ -247,6 +247,28 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/DemoRequest" }
 
+  /leads/capture:
+    post:
+      operationId: captureLead
+      tags: [projects]
+      summary: Capture a signed-in contact for downstream Google Form sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CaptureLeadBody" }
+      responses:
+        "201":
+          description: New row captured
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptureLeadResult" }
+        "200":
+          description: Existing row \u2014 deduped, no new write
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptureLeadResult" }
+
 components:
   schemas:
     HealthStatus:
@@ -512,3 +534,20 @@ components:
         email: { type: string, format: email }
         company: { type: string }
         message: { type: string }
+
+    CaptureLeadBody:
+      type: object
+      required: [source]
+      properties:
+        source:
+          type: string
+          enum: [signup, login, waitlist]
+          description: Which user moment triggered the capture
+
+    CaptureLeadResult:
+      type: object
+      required: [captured, deduped]
+      properties:
+        captured: { type: boolean, description: True when a new row was inserted }
+        deduped: { type: boolean, description: True when a matching (email,source) row already existed }
+        id: { type: string, description: New row id when captured is true }

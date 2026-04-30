@@ -381,3 +381,18 @@ export const CreateDemoRequestBody = zod.object({
   company: zod.string().optional(),
   message: zod.string().optional(),
 });
+
+/**
+ * @summary Capture a signed-in contact for downstream Google Form sync
+ */
+export const CaptureLeadBody = zod.object({
+  source: zod
+    .enum(["signup", "login", "waitlist"])
+    .describe("Which user moment triggered the capture"),
+});
+
+export const CaptureLeadResponse = zod.object({
+  captured: zod.boolean().describe("True when a new row was inserted"),
+  deduped: zod.boolean().describe("True when a matching (email"),
+  id: zod.string().optional().describe("New row id when captured is true"),
+});

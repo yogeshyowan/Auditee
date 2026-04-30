@@ -7,6 +7,9 @@
  */
 
 export * from "./activityEvent";
+export * from "./captureLeadBody";
+export * from "./captureLeadBodySource";
+export * from "./captureLeadResult";
 export * from "./codeArtifact";
 export * from "./complianceControl";
 export * from "./complianceFramework";

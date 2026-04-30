@@ -236,6 +236,32 @@ export interface CreateDemoRequestBody {
   message?: string;
 }
 
+/**
+ * Which user moment triggered the capture
+ */
+export type CaptureLeadBodySource =
+  (typeof CaptureLeadBodySource)[keyof typeof CaptureLeadBodySource];
+
+export const CaptureLeadBodySource = {
+  signup: "signup",
+  login: "login",
+  waitlist: "waitlist",
+} as const;
+
+export interface CaptureLeadBody {
+  /** Which user moment triggered the capture */
+  source: CaptureLeadBodySource;
+}
+
+export interface CaptureLeadResult {
+  /** True when a new row was inserted */
+  captured: boolean;
+  /** True when a matching (email */
+  deduped: boolean;
+  /** New row id when captured is true */
+  id?: string;
+}
+
 export type ListRequirementsParams = {
   projectId?: string;
   type?: RequirementType;

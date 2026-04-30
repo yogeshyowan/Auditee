@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navigation, SiteFooter, DemoDialog } from "@/components/site/Chrome";
+import { WaitlistButton } from "@/components/site/WaitlistButton";
 import { SEO } from "@/components/SEO";
 
 const fadeIn = {
@@ -79,6 +80,12 @@ function Hero() {
                   Launch Platform
                 </Button>
               </Link>
+              <WaitlistButton
+                size="lg"
+                variant="secondary"
+                className="h-14 px-8 rounded-full text-base font-semibold bg-slate-900 hover:bg-slate-800 text-white border-slate-900"
+                testId="hero-cta-waitlist"
+              />
             </motion.div>
           </motion.div>
 

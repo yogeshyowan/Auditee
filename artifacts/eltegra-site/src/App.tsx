@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { UpsellDialog } from "@/components/UpsellDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProjectProvider } from "@/lib/project-context";
+import { useLeadCapture } from "@/lib/leadCapture";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
@@ -113,6 +114,11 @@ const clerkAppearance = {
     logoImage: "h-8 w-auto",
   },
 };
+
+function LeadCaptureMount() {
+  useLeadCapture();
+  return null;
+}
 
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
@@ -249,6 +255,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <LeadCaptureMount />
         <TooltipProvider>
           <Router />
           <Toaster />

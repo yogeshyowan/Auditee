@@ -24,6 +24,7 @@ import defectsRouter from "./defects";
 import workspaceRouter from "./workspace";
 import workspaceTemplateRouter from "./workspaceTemplate";
 import testCasesRouter from "./testCases";
+import leadsRouter from "./leads";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(defectsRouter);
 router.use(workspaceRouter);
 router.use(workspaceTemplateRouter);
 router.use(testCasesRouter);
+router.use(leadsRouter);
 
 export default router;
