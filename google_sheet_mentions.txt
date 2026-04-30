@@ -1,7 +1,0 @@
-.local/skills/integrations/SKILL.md:- Example ID: `connector:ccfg_google-sheet_E42A9F6DA6...`
-.local/skills/integrations/SKILL.md:// { integrations: [{ id: 'connector:ccfg_google-sheet_...', displayName: 'Google Sheets',
-.local/skills/integrations/SKILL.md:const result = await proposeIntegration("connector:ccfg_google-sheet_E42A9F6CA62546F68A1FECA0E8");
-.local/secondary_skills/ai-recruiter/SKILL.md:- If not connected, guide the user through setup: use `proposeIntegration`with connector ID`connector:ccfg_google-sheet_E42A9F6CA62546F68A1FECA0E8`.
-.local/secondary_skills/ai-recruiter/SKILL.md:- Use `listConnections('google-sheet')` to get credentials once connected.
-.local/secondary_skills/ai-recruiter/SKILL.md:const conns = await listConnections('google-sheet');
-.local/secondary_skills/ai-recruiter/SKILL.md:| **Google Sheets** | `connector:ccfg_google-sheet_E42A9F6CA62546F68A1FECA0E8`|`google-sheet` | Pipeline tracking, candidate evaluations, communication logs, funnel metrics |
