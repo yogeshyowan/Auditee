@@ -43,6 +43,17 @@ export const workspacesTable = pgTable(
     seatLimit: integer("seat_limit").notNull().default(1),
     ownerUserId: text("owner_user_id").notNull(),
     planActivatedAt: timestamp("plan_activated_at", { withTimezone: true }),
+    /** When the current paid plan lapses. Only set for annual one-time
+     *  Razorpay orders (cadence='annual'). Null for free workspaces and for
+     *  monthly subscriptions (those auto-renew via Razorpay). */
+    planExpiresAt: timestamp("plan_expires_at", { withTimezone: true }),
+    /** The subscription row that's currently entitling this workspace to
+     *  paid features. Used to ignore stale Razorpay webhook events: if a
+     *  delayed `subscription.cancelled` arrives for an OLD subscription
+     *  after the workspace has already moved to a newer subscription/order,
+     *  we must not downgrade. The webhook handler checks this column before
+     *  honouring downgrade events. Null means workspace is on free. */
+    currentSubscriptionId: text("current_subscription_id"),
     creditsUsed: integer("credits_used").notNull().default(0),
     ssoEnabled: boolean("sso_enabled").notNull().default(false),
     ssoDomain: text("sso_domain"),

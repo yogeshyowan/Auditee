@@ -25,3 +25,4 @@ export * from "./projectMembers";
 export * from "./workspaceTemplates";
 export * from "./testCases";
 export * from "./leadCaptures";
+export * from "./billing";

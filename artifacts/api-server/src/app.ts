@@ -56,7 +56,17 @@ app.use(
     },
   }),
 );
-app.use(express.json());
+// Capture the raw request bytes alongside the parsed JSON so the Razorpay
+// billing webhook can verify its HMAC signature against the exact payload
+// Razorpay sent. Adds ~one Buffer per request — negligible.
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (req as any).rawBody = buf;
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true }));
 
 app.use(clerkMiddleware());

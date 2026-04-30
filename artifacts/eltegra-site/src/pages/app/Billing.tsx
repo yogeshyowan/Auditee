@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import { useAuth, useUser, UserButton } from "@clerk/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useGetBillingMe,
+  useCreateBillingCancel,
+  getGetBillingMeQueryKey,
+} from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Trash2, Users, Sparkles, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Trash2,
+  Users,
+  Sparkles,
+  ShieldCheck,
+  CreditCard,
+  AlertTriangle,
+} from "lucide-react";
 
 const ROLE_OPTIONS = ["owner", "admin", "editor", "viewer"] as const;
 type Role = (typeof ROLE_OPTIONS)[number];
@@ -68,21 +82,21 @@ const PLAN_DETAILS: Record<
 > = {
   free: {
     label: "Free",
-    price: "$0",
+    price: "₹0",
     cadence: "forever",
     seats: 1,
-    blurb: "10 AI credits to start. Top up $5 for 10 more, no expiry.",
+    blurb: "10 AI credits to start. Top up ₹420 for 10 more, no expiry.",
   },
   standard: {
     label: "Standard",
-    price: "$25",
+    price: "₹1,999",
     cadence: "/month",
     seats: 1,
     blurb: "50 AI credits per month for solo builders.",
   },
   professional: {
     label: "Professional",
-    price: "$100",
+    price: "₹7,999",
     cadence: "/month",
     seats: 4,
     blurb: "200 AI credits per month for audit-ready engineering teams.",
@@ -90,12 +104,25 @@ const PLAN_DETAILS: Record<
   },
   enterprise: {
     label: "Enterprise",
-    price: "$500",
-    cadence: "/month",
+    price: "Custom",
+    cadence: "",
     seats: 20,
     blurb: "1,000 AI credits per month for regulated multi-program orgs.",
   },
 };
+
+function formatDate(s: string | null | undefined): string {
+  if (!s) return "—";
+  try {
+    return new Date(s).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return s;
+  }
+}
 
 const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -136,6 +163,28 @@ export default function BillingPage() {
     queryFn: async () => {
       const token = await getToken();
       return authedFetch("/workspace/me", token);
+    },
+  });
+
+  const billingQuery = useGetBillingMe({
+    query: { queryKey: getGetBillingMeQueryKey(), enabled: isLoaded },
+  });
+  const cancelMutation = useCreateBillingCancel({
+    mutation: {
+      onSuccess: () => {
+        toast({
+          title: "Cancellation scheduled",
+          description: "Your subscription will end at the close of the current billing cycle.",
+        });
+        void billingQuery.refetch();
+        qc.invalidateQueries({ queryKey: ["workspace", "me"] });
+      },
+      onError: (err: Error) =>
+        toast({
+          title: "Could not cancel",
+          description: err.message,
+          variant: "destructive",
+        }),
     },
   });
 
@@ -180,21 +229,6 @@ export default function BillingPage() {
       qc.invalidateQueries({ queryKey: ["workspace", "me"] });
     },
     onError: (err: Error) => toast({ title: "Could not change role", description: err.message, variant: "destructive" }),
-  });
-
-  const planMutation = useMutation({
-    mutationFn: async (plan: WorkspaceMe["workspace"]["plan"]) => {
-      const token = await getToken();
-      return authedFetch("/workspace/plan", token, {
-        method: "POST",
-        body: JSON.stringify({ plan }),
-      });
-    },
-    onSuccess: (_data, plan) => {
-      toast({ title: "Plan activated", description: `You're now on the ${PLAN_DETAILS[plan].label} plan.` });
-      qc.invalidateQueries({ queryKey: ["workspace", "me"] });
-    },
-    onError: (err: Error) => toast({ title: "Plan change failed", description: err.message, variant: "destructive" }),
   });
 
   if (!isLoaded || meQuery.isLoading) return <div className="p-8 text-slate-500">Loading…</div>;
@@ -262,10 +296,130 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
+      {/* Active subscription / order panel — only shows for paid plans
+          or for free workspaces that have a subscription history row. */}
+      {(billingQuery.data?.subscription || billingQuery.data?.planExpiresAt) && (
+        <Card data-testid="card-subscription">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {billingQuery.data?.subscription ? (
+              <div className="grid gap-6 md:grid-cols-4">
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Plan</div>
+                  <div className="mt-1 text-lg font-semibold capitalize text-slate-900" data-testid="text-sub-plan">
+                    {billingQuery.data.subscription.plan}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Billing</div>
+                  <div className="mt-1 text-lg font-semibold capitalize text-slate-900" data-testid="text-sub-cadence">
+                    {billingQuery.data.subscription.cadence}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Status</div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Badge
+                      variant={
+                        billingQuery.data.subscription.status === "active" ||
+                        billingQuery.data.subscription.status === "authenticated"
+                          ? "default"
+                          : "secondary"
+                      }
+                      data-testid="text-sub-status"
+                    >
+                      {billingQuery.data.subscription.status}
+                    </Badge>
+                  </div>
+                  {billingQuery.data.subscription.cancelAtPeriodEnd && (
+                    <div className="mt-1 text-xs text-amber-700">Cancels at period end.</div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-slate-500">
+                    {billingQuery.data.subscription.cadence === "annual" ? "Expires" : "Next renewal"}
+                  </div>
+                  <div className="mt-1 text-lg font-semibold text-slate-900" data-testid="text-sub-renewal">
+                    {formatDate(
+                      billingQuery.data.subscription.currentPeriodEnd ??
+                        billingQuery.data.planExpiresAt,
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-slate-500">Annual access expires</div>
+                  <div className="mt-1 text-lg font-semibold text-slate-900">
+                    {formatDate(billingQuery.data?.planExpiresAt)}
+                  </div>
+                </div>
+                <div className="text-sm text-slate-600">
+                  Annual plans don't auto-renew (RBI ₹15,000 auto-debit cap). We'll email
+                  you 14 days before this date with a one-click renewal link.
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+              <Link href="/pricing">
+                <Button variant="outline" data-testid="button-change-plan">
+                  Change plan
+                </Button>
+              </Link>
+              {billingQuery.data?.subscription &&
+                billingQuery.data.subscription.cadence === "monthly" &&
+                !billingQuery.data.subscription.cancelAtPeriodEnd &&
+                isOwner && (
+                  <Button
+                    variant="ghost"
+                    className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                    onClick={() => {
+                      if (
+                        confirm(
+                          "Cancel your subscription? You'll keep access until the end of the current billing cycle.",
+                        )
+                      ) {
+                        cancelMutation.mutate();
+                      }
+                    }}
+                    disabled={cancelMutation.isPending}
+                    data-testid="button-cancel-subscription"
+                  >
+                    {cancelMutation.isPending ? "Cancelling…" : "Cancel subscription"}
+                  </Button>
+                )}
+              {billingQuery.data?.subscription?.cancelAtPeriodEnd && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-700">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Subscription scheduled to cancel.
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <section>
-        <h2 className="font-display text-xl font-semibold text-slate-900">Choose a plan</h2>
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-xl font-semibold text-slate-900">Plans</h2>
+            <p className="text-sm text-slate-500">
+              Upgrade or change your plan from the pricing page — payments are processed securely via Razorpay.
+            </p>
+          </div>
+          <Link href="/pricing">
+            <Button data-testid="button-view-pricing">View pricing</Button>
+          </Link>
+        </div>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
-          {(Object.keys(PLAN_DETAILS) as Array<WorkspaceMe["workspace"]["plan"]>).map((tier) => {
+          {(["standard", "professional", "enterprise"] as Array<WorkspaceMe["workspace"]["plan"]>).map((tier) => {
             const meta = PLAN_DETAILS[tier];
             const active = me.workspace.plan === tier;
             return (
@@ -285,7 +439,9 @@ export default function BillingPage() {
                 <CardContent className="space-y-4">
                   <div>
                     <span className="text-3xl font-bold text-slate-900">{meta.price}</span>
-                    <span className="ml-1 text-sm text-slate-500">{meta.cadence}</span>
+                    {meta.cadence && (
+                      <span className="ml-1 text-sm text-slate-500">{meta.cadence}</span>
+                    )}
                   </div>
                   <div className="text-sm font-semibold uppercase tracking-wide text-primary">
                     Up to {meta.seats} {meta.seats === 1 ? "user" : "users"}
@@ -298,15 +454,28 @@ export default function BillingPage() {
                       <li>• Priority support + DPA</li>
                     </ul>
                   )}
-                  <Button
-                    className="w-full"
-                    variant={active ? "outline" : "default"}
-                    disabled={active || planMutation.isPending || !isOwner}
-                    onClick={() => planMutation.mutate(tier)}
-                    data-testid={`button-activate-${tier}`}
-                  >
-                    {active ? "Current plan" : `Activate ${meta.label}`}
-                  </Button>
+                  {tier === "enterprise" ? (
+                    <a href="mailto:sales@auditee.site?subject=Enterprise%20plan%20enquiry">
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        data-testid={`button-activate-${tier}`}
+                      >
+                        Contact sales
+                      </Button>
+                    </a>
+                  ) : (
+                    <Link href="/pricing">
+                      <Button
+                        className="w-full"
+                        variant={active ? "outline" : "default"}
+                        disabled={!isOwner}
+                        data-testid={`button-activate-${tier}`}
+                      >
+                        {active ? "Current plan" : `Upgrade to ${meta.label}`}
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             );

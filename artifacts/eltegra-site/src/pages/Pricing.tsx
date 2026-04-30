@@ -1,23 +1,51 @@
-import { Link } from "wouter";
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { useAuth, useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles, ArrowRight, Zap } from "lucide-react";
 import { SEO, faqLd } from "@/components/SEO";
+import {
+  useCreateBillingSubscribe,
+  useCreateBillingVerify,
+} from "@workspace/api-client-react";
+import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
+import { useToast } from "@/hooks/use-toast";
 
-const TIERS = [
+type Cadence = "monthly" | "annual";
+
+interface Tier {
+  name: string;
+  /** Razorpay-billed plan key. Free and Enterprise are not sold via Razorpay. */
+  planKey: "free" | "standard" | "professional" | "enterprise";
+  monthlyInr: number;
+  annualInr: number;
+  blurb: string;
+  ctaCopy: string;
+  highlight: boolean;
+  seatLine: string;
+  creditLine: string;
+  features: string[];
+  /** Free tier and Enterprise tier route to non-Razorpay flows. */
+  externalCtaHref?: string;
+}
+
+const TIERS: Tier[] = [
   {
     name: "Free",
-    price: "$0",
-    cadence: "forever, no card required",
-    blurb: "Try the full PDLC platform with 10 free AI credits — top up any time.",
-    cta: "Start free",
-    ctaHref: "/sign-up",
+    planKey: "free",
+    monthlyInr: 0,
+    annualInr: 0,
+    blurb:
+      "Try the full PDLC platform with 10 free AI credits — top up any time.",
+    ctaCopy: "Start free",
+    externalCtaHref: "/sign-up",
     highlight: false,
     seatLine: "1 user",
     creditLine: "10 AI credits included",
     features: [
       "10 AI credits to start (1 credit = 1 generation)",
-      "Top-up: $5 prepaid → 10 extra credits, no expiry",
+      "Top-up: ₹420 prepaid → 10 extra credits, no expiry",
       "1 project, up to 200 requirements",
       "GitHub + ZIP source connectors",
       "BRDs, PRDs and exec briefings",
@@ -26,11 +54,12 @@ const TIERS = [
   },
   {
     name: "Standard",
-    price: "$25",
-    cadence: "per month",
-    blurb: "Solo builders shipping production-grade requirements and audits.",
-    cta: "Activate Standard",
-    ctaHref: "/sign-up?plan=standard",
+    planKey: "standard",
+    monthlyInr: 1999,
+    annualInr: 19990,
+    blurb:
+      "Solo builders shipping production-grade requirements and audits.",
+    ctaCopy: "Activate Standard",
     highlight: false,
     seatLine: "1 user",
     creditLine: "50 AI credits / month",
@@ -46,11 +75,12 @@ const TIERS = [
   },
   {
     name: "Professional",
-    price: "$100",
-    cadence: "per month",
-    blurb: "For product, engineering and compliance teams shipping continuously.",
-    cta: "Activate Professional",
-    ctaHref: "/sign-up?plan=professional",
+    planKey: "professional",
+    monthlyInr: 7999,
+    annualInr: 79990,
+    blurb:
+      "For product, engineering and compliance teams shipping continuously.",
+    ctaCopy: "Activate Professional",
     highlight: true,
     seatLine: "Up to 4 users",
     creditLine: "200 AI credits / month",
@@ -67,11 +97,13 @@ const TIERS = [
   },
   {
     name: "Enterprise",
-    price: "$500",
-    cadence: "per month",
-    blurb: "For regulated, multi-business-unit organisations with complex audit obligations.",
-    cta: "Activate Enterprise",
-    ctaHref: "/sign-up?plan=enterprise",
+    planKey: "enterprise",
+    monthlyInr: 0,
+    annualInr: 0,
+    blurb:
+      "For regulated, multi-business-unit organisations with complex audit obligations.",
+    ctaCopy: "Contact sales",
+    externalCtaHref: "mailto:sales@auditee.site?subject=Enterprise%20plan%20enquiry",
     highlight: false,
     seatLine: "Up to 20 users",
     creditLine: "1,000 AI credits / month",
@@ -98,8 +130,8 @@ const FAQS = [
     a: "Free top-up credits never expire. Monthly plan credits (Standard / Professional / Enterprise) reset at the start of each billing cycle and do not roll over.",
   },
   {
-    q: "How does the $5 top-up work on the Free plan?",
-    a: "Free accounts start with 10 credits. When you run out, a $5 prepaid top-up grants you 10 additional credits that never expire. You can top up as many times as you like and stay on the Free plan indefinitely.",
+    q: "How does the Free top-up work?",
+    a: "Free accounts start with 10 credits. When you run out, a ₹420 prepaid top-up grants you 10 additional credits that never expire. You can top up as many times as you like and stay on the Free plan indefinitely.",
   },
   {
     q: "How does Auditee count requirements?",
@@ -108,6 +140,10 @@ const FAQS = [
   {
     q: "Can I bring my own LLM keys?",
     a: "Yes, on Professional and Enterprise. By default we run on managed providers; you can swap in your own OpenAI, Azure OpenAI, Anthropic or self-hosted endpoint without code changes.",
+  },
+  {
+    q: "How does annual billing work?",
+    a: "Annual plans are paid up front for 12 months. They don't auto-renew (RBI rules cap card auto-debit at ₹15,000 per transaction in India), so we'll email you 14 days before the period ends with a one-click renewal link.",
   },
   {
     q: "Is there a non-profit / academic discount?",
@@ -119,24 +155,105 @@ const FAQS = [
   },
 ];
 
+function formatInr(n: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
 export default function Pricing() {
+  const [cadence, setCadence] = useState<Cadence>("monthly");
+  const [busyTier, setBusyTier] = useState<string | null>(null);
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const subscribe = useCreateBillingSubscribe();
+  const verify = useCreateBillingVerify();
+
+  async function handleCheckout(tier: Tier) {
+    if (!authLoaded) return;
+    if (!isSignedIn) {
+      // Send them to sign-in with a returnTo so they land back here.
+      navigate(`/sign-in?redirect_url=${encodeURIComponent("/pricing")}`);
+      return;
+    }
+    if (tier.planKey === "free" || tier.planKey === "enterprise") return;
+
+    setBusyTier(tier.name);
+    try {
+      const subResp = await subscribe.mutateAsync({
+        data: { plan: tier.planKey, cadence },
+      });
+      const email = user?.primaryEmailAddress?.emailAddress ?? "";
+      const name =
+        [user?.firstName ?? "", user?.lastName ?? ""].filter(Boolean).join(" ") ||
+        user?.username ||
+        email;
+
+      const checkoutResp = await openRazorpayCheckout({
+        key: subResp.keyId,
+        name: "Auditee",
+        description: `${tier.name} (${cadence})`,
+        prefill: { email, name },
+        theme: { color: "#0ea5e9" },
+        ...(subResp.kind === "subscription"
+          ? { subscription_id: subResp.subscriptionId! }
+          : {
+              order_id: subResp.orderId!,
+              amount: subResp.amountPaise,
+              currency: subResp.currency,
+            }),
+      });
+
+      const verifyBody =
+        subResp.kind === "subscription"
+          ? {
+              kind: "subscription" as const,
+              razorpay_payment_id: checkoutResp.razorpay_payment_id,
+              razorpay_subscription_id: checkoutResp.razorpay_subscription_id!,
+              razorpay_signature: checkoutResp.razorpay_signature,
+            }
+          : {
+              kind: "order" as const,
+              razorpay_payment_id: checkoutResp.razorpay_payment_id,
+              razorpay_order_id: checkoutResp.razorpay_order_id!,
+              razorpay_signature: checkoutResp.razorpay_signature,
+            };
+      await verify.mutateAsync({ data: verifyBody });
+
+      toast({
+        title: "Payment successful",
+        description: `Your ${tier.name} (${cadence}) plan is now active.`,
+      });
+      navigate("/app/billing");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Checkout failed.";
+      if (msg !== "Checkout cancelled") {
+        toast({
+          title: "Couldn't complete payment",
+          description: msg,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setBusyTier(null);
+    }
+  }
+
   return (
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900">
       <SEO
         title="Pricing — Auditee AI Requirements & Compliance Platform"
-        description="Transparent pricing for Auditee. Free tier with 10 AI credits + $5 top-ups, Standard $25/mo (50 credits, 1 user), Professional $100/mo (200 credits, 4 users), Enterprise $500/mo (1,000 credits, 20 users). Single-tenant deployments, SOC 2 Type II, on-prem and air-gapped options available."
+        description="Transparent INR pricing for Auditee. Free tier with 10 AI credits + ₹420 top-ups, Standard ₹1,999/mo (50 credits, 1 user), Professional ₹7,999/mo (200 credits, 4 users), Enterprise (contact sales). Single-tenant deployments, SOC 2 Type II, on-prem and air-gapped options available."
         path="/pricing"
         keywords={["Auditee pricing", "AI requirements pricing", "compliance platform pricing", "DOORS alternative pricing", "AI credit top-up"]}
         jsonLd={[
-          faqLd([
-            { q: "What exactly is an AI credit?", a: "One credit equals one AI generation — BRD, PRD, test-case suite, compliance gap analysis, or traceability audit. Credits are consumed only on successful runs; failures are auto-refunded." },
-            { q: "Is there a free tier?", a: "Yes. Free accounts get 10 AI credits up front, plus $5 prepaid top-ups that grant 10 additional credits each, with no expiry." },
-            { q: "How many users does each paid plan support?", a: "Standard ($25/mo) is single-user. Professional ($100/mo) includes up to 4 user seats. Enterprise ($500/mo) includes up to 20 user seats. Owners can invite or remove members at any time from the in-app Billing & Team page." },
-            { q: "How many AI credits do I get on each plan?", a: "Free: 10 credits + $5 top-ups for 10 more. Standard: 50 credits/month. Professional: 200 credits/month. Enterprise: 1,000 credits/month. Monthly credits reset each billing cycle." },
-            { q: "Can I deploy Auditee on-premises or air-gapped?", a: "Yes. Enterprise plans support single-tenant cloud (your VPC), on-premises Kubernetes, and air-gapped installs for regulated industries (defence, medical, automotive)." },
-            { q: "Do you train on customer data?", a: "No. Auditee never trains foundation models on customer source code, requirements or audit content. Customer data stays inside the customer's tenant." },
-            { q: "Which compliance frameworks are included?", a: "All paid tiers include the full 23-framework library: SOC 2, ISO 27001, HIPAA, IEC 62304, ISO 13485, ISO 26262, ASPICE, CMMI, DO-178C, FDA 21 CFR Part 11, FDA QMSR, GDPR, PCI DSS 4.0, NIST CSF, NIST 800-53, EU AI Act, NIS2, DORA, and more." },
-          ]),
+          faqLd(
+            FAQS.slice(0, 5).map((f) => ({ q: f.q, a: f.a })),
+          ),
         ]}
       />
       {/* Slim nav */}
@@ -165,58 +282,139 @@ export default function Pricing() {
               One credit. One generation. <span className="text-primary">Zero surprises.</span>
             </h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Start with 10 free credits — no card required. Top up $5 for 10 more, or scale up to a monthly plan when you're ready. No setup fees, no per-seat overages, no surprise audit-season bills.
+              Start with 10 free credits — no card required. Top up ₹420 for 10 more, or upgrade to a monthly plan when you're ready. No setup fees, no per-seat overages, no surprise audit-season bills.
             </p>
+
+            {/* Monthly / annual toggle */}
+            <div className="mt-8 inline-flex items-center gap-1 p-1 rounded-full border border-slate-200 bg-white">
+              <button
+                type="button"
+                onClick={() => setCadence("monthly")}
+                data-testid="cadence-monthly"
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+                  cadence === "monthly"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setCadence("annual")}
+                data-testid="cadence-annual"
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2 ${
+                  cadence === "annual"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                Annual
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    cadence === "annual"
+                      ? "bg-emerald-400/30 text-emerald-100"
+                      : "bg-emerald-100 text-emerald-700"
+                  }`}
+                >
+                  2 months free
+                </span>
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>
 
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6 md:px-12 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              data-testid={`pricing-tier-${tier.name.toLowerCase()}`}
-              className={`rounded-3xl border p-8 flex flex-col ${
-                tier.highlight
-                  ? "border-primary/40 bg-gradient-to-b from-primary/5 to-white shadow-xl shadow-primary/10 relative"
-                  : "border-slate-200 bg-white"
-              }`}
-            >
-              {tier.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-white text-xs font-semibold uppercase tracking-wide">
-                  Most popular
+          {TIERS.map((tier) => {
+            const priceInr =
+              cadence === "monthly" ? tier.monthlyInr : tier.annualInr;
+            const cadenceLabel =
+              tier.planKey === "free"
+                ? "forever, no card required"
+                : tier.planKey === "enterprise"
+                  ? "tailored to your scale"
+                  : cadence === "monthly"
+                    ? "per month, billed monthly"
+                    : "per year, billed up front";
+            const showPrice =
+              tier.planKey !== "enterprise" && tier.planKey !== "free"
+                ? formatInr(priceInr)
+                : tier.planKey === "free"
+                  ? "₹0"
+                  : "Custom";
+            return (
+              <div
+                key={tier.name}
+                data-testid={`pricing-tier-${tier.name.toLowerCase()}`}
+                className={`rounded-3xl border p-8 flex flex-col ${
+                  tier.highlight
+                    ? "border-primary/40 bg-gradient-to-b from-primary/5 to-white shadow-xl shadow-primary/10 relative"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                {tier.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-white text-xs font-semibold uppercase tracking-wide">
+                    Most popular
+                  </div>
+                )}
+                <h3 className="text-xl font-display font-bold text-slate-900">{tier.name}</h3>
+                <div className="mt-4 mb-1 flex items-baseline gap-1">
+                  <span className="text-4xl font-display font-bold text-slate-950">{showPrice}</span>
                 </div>
-              )}
-              <h3 className="text-xl font-display font-bold text-slate-900">{tier.name}</h3>
-              <div className="mt-4 mb-1 flex items-baseline gap-1">
-                <span className="text-4xl font-display font-bold text-slate-950">{tier.price}</span>
+                <div className="text-xs text-slate-500 mb-1">{cadenceLabel}</div>
+                <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wide">{tier.seatLine}</div>
+                <div className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 mb-4">
+                  <Zap className="h-3 w-3 text-primary" /> {tier.creditLine}
+                </div>
+                <p className="text-sm text-slate-600 mb-6">{tier.blurb}</p>
+                <ul className="space-y-2.5 mb-8 flex-1">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
+                      <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                {tier.externalCtaHref ? (
+                  tier.externalCtaHref.startsWith("mailto:") ? (
+                    <a href={tier.externalCtaHref}>
+                      <Button
+                        className={`w-full rounded-full ${tier.highlight ? "" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                        data-testid={`pricing-cta-${tier.name.toLowerCase()}`}
+                      >
+                        {tier.ctaCopy}
+                        <ArrowRight className="ml-1.5 h-4 w-4" />
+                      </Button>
+                    </a>
+                  ) : (
+                    <Link href={tier.externalCtaHref}>
+                      <Button
+                        className={`w-full rounded-full ${tier.highlight ? "" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                        data-testid={`pricing-cta-${tier.name.toLowerCase()}`}
+                      >
+                        {tier.ctaCopy}
+                        <ArrowRight className="ml-1.5 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )
+                ) : (
+                  <Button
+                    onClick={() => void handleCheckout(tier)}
+                    disabled={busyTier !== null}
+                    className={`w-full rounded-full ${tier.highlight ? "" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
+                    data-testid={`pricing-cta-${tier.name.toLowerCase()}`}
+                  >
+                    {busyTier === tier.name ? "Opening checkout…" : tier.ctaCopy}
+                    {busyTier !== tier.name && (
+                      <ArrowRight className="ml-1.5 h-4 w-4" />
+                    )}
+                  </Button>
+                )}
               </div>
-              <div className="text-xs text-slate-500 mb-1">{tier.cadence}</div>
-              <div className="text-xs font-semibold text-primary mb-1 uppercase tracking-wide">{tier.seatLine}</div>
-              <div className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 mb-4">
-                <Zap className="h-3 w-3 text-primary" /> {tier.creditLine}
-              </div>
-              <p className="text-sm text-slate-600 mb-6">{tier.blurb}</p>
-              <ul className="space-y-2.5 mb-8 flex-1">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
-                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href={tier.ctaHref}>
-                <Button
-                  className={`w-full rounded-full ${tier.highlight ? "" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
-                  data-testid={`pricing-cta-${tier.name.toLowerCase()}`}
-                >
-                  {tier.cta}
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Top-up callout */}
@@ -230,7 +428,7 @@ export default function Pricing() {
                 Stay on Free as long as you like — top up when you need more.
               </div>
               <p className="text-sm text-amber-800 mt-1">
-                <strong>$5 prepaid = 10 additional AI credits</strong>, no expiry, no recurring charge. Perfect for solo founders, evaluators, and weekend builders. Top-ups stack on top of your monthly plan credits too.
+                <strong>₹420 prepaid = 10 additional AI credits</strong>, no expiry, no recurring charge. Perfect for solo founders, evaluators, and weekend builders. Top-ups stack on top of your monthly plan credits too.
               </p>
             </div>
           </div>

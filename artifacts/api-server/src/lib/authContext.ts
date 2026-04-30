@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
+import { expirePastDueAnnualPlan } from "./billingPlanSync";
 import {
   db,
   workspacesTable,
@@ -128,7 +129,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 export async function requireWorkspace(req: Request, res: Response, next: NextFunction) {
   const ctx = (req as AuthedRequest).auth_ctx!;
   const { workspace, role } = await getOrCreateWorkspace(ctx.userId, ctx.email);
-  (req as AuthedRequest).ws_ctx = { ...ctx, workspace, role };
+  // Lazy annual-plan expiry. Razorpay annual purchases are one-time orders
+  // (RBI ₹15k auto-debit cap workaround), so we have no recurring webhook to
+  // trigger downgrade — instead we expire the plan on the next workspace
+  // load after planExpiresAt has passed.
+  const liveWorkspace = await expirePastDueAnnualPlan(workspace);
+  (req as AuthedRequest).ws_ctx = { ...ctx, workspace: liveWorkspace, role };
   next();
 }
 

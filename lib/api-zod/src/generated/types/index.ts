@@ -7,6 +7,16 @@
  */
 
 export * from "./activityEvent";
+export * from "./billingCadence";
+export * from "./billingCancelResult";
+export * from "./billingMe";
+export * from "./billingPlan";
+export * from "./billingSubscribeBody";
+export * from "./billingSubscribeResult";
+export * from "./billingSubscribeResultKind";
+export * from "./billingSubscriptionState";
+export * from "./billingVerifyBody";
+export * from "./billingVerifyResult";
 export * from "./captureLeadBody";
 export * from "./captureLeadBodySource";
 export * from "./captureLeadResult";

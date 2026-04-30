@@ -30,6 +30,7 @@
     "pino": "^9",
     "pino-http": "^10",
     "pizzip": "^3.2.0",
+    "razorpay": "^2.9.6",
     "zod": "catalog:"
   },
   "devDependencies": {

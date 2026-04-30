@@ -272,7 +272,13 @@ router.patch("/workspace/members/:id", requireAuth, requireWorkspace, async (req
   res.json(result.member);
 });
 
-const PlanBody = z.object({ plan: z.enum(PLAN_TIERS) });
+// Direct plan mutation is restricted to "free" only. Paid tiers must go
+// through /billing/subscribe → Razorpay → /billing/verify (or the webhook).
+// Without this restriction, any owner could POST {"plan":"enterprise"} and
+// grant themselves paid access for free — historically this endpoint
+// existed before Razorpay was wired up. Kept around so users can
+// self-downgrade to free without reaching out to Razorpay support.
+const PlanBody = z.object({ plan: z.literal("free") });
 
 router.post("/workspace/plan", requireAuth, requireWorkspace, async (req, res) => {
   const ctx = (req as Request & { ws_ctx: WorkspaceCtx }).ws_ctx;
@@ -304,18 +310,18 @@ router.post("/workspace/plan", requireAuth, requireWorkspace, async (req, res) =
         msg: `You currently have ${seatsUsed} members but the ${newPlan} plan only allows ${newSeatLimit}. Remove members before downgrading.`,
       };
     }
-    // Disable Enterprise-only features when downgrading.
-    const ssoFields =
-      newPlan === "enterprise"
-        ? {}
-        : { ssoEnabled: false, ssoDomain: null as string | null };
+    // Self-downgrade to free clears all paid-tier state: SSO, the
+    // entitling subscription pointer, and the planExpiresAt watchdog.
     const [updated] = await tx
       .update(workspacesTable)
       .set({
         plan: newPlan,
         seatLimit: newSeatLimit,
-        planActivatedAt: new Date(),
-        ...ssoFields,
+        planActivatedAt: null,
+        planExpiresAt: null,
+        currentSubscriptionId: null,
+        ssoEnabled: false,
+        ssoDomain: null,
       })
       .where(eq(workspacesTable.id, ctx.workspace.id))
       .returning();

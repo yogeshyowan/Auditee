@@ -396,3 +396,97 @@ export const CaptureLeadResponse = zod.object({
   deduped: zod.boolean().describe("True when a matching (email"),
   id: zod.string().optional().describe("New row id when captured is true"),
 });
+
+/**
+ * @summary Current subscription state for the workspace
+ */
+export const GetBillingMeResponse = zod.object({
+  workspaceId: zod.string(),
+  plan: zod.string().describe("One of free|standard|professional|enterprise"),
+  planActivatedAt: zod.coerce.date().nullish(),
+  planExpiresAt: zod.coerce.date().nullish(),
+  subscription: zod
+    .union([
+      zod.object({
+        id: zod.string(),
+        plan: zod
+          .enum(["standard", "professional"])
+          .describe(
+            "Razorpay-billed plan tier (free and enterprise are not sold via Razorpay)",
+          ),
+        cadence: zod.enum(["monthly", "annual"]),
+        status: zod.string(),
+        currentPeriodEnd: zod.coerce.date().nullish(),
+        cancelAtPeriodEnd: zod.boolean(),
+        razorpaySubscriptionId: zod.string().nullish(),
+        razorpayOrderId: zod.string().nullish(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+});
+
+/**
+ * @summary Create a Razorpay subscription (monthly) or order (annual)
+ */
+export const CreateBillingSubscribeBody = zod.object({
+  plan: zod
+    .enum(["standard", "professional"])
+    .describe(
+      "Razorpay-billed plan tier (free and enterprise are not sold via Razorpay)",
+    ),
+  cadence: zod.enum(["monthly", "annual"]),
+});
+
+export const CreateBillingSubscribeResponse = zod.object({
+  kind: zod
+    .enum(["subscription", "order"])
+    .describe("subscription = monthly auto-renew. order = one-time annual."),
+  subscriptionId: zod.string().optional(),
+  orderId: zod.string().optional(),
+  keyId: zod.string().describe("Razorpay public key id for Checkout"),
+  amountPaise: zod.number().describe("Amount in Indian paise (INR × 100)"),
+  currency: zod.string(),
+  plan: zod
+    .enum(["standard", "professional"])
+    .describe(
+      "Razorpay-billed plan tier (free and enterprise are not sold via Razorpay)",
+    ),
+  cadence: zod.enum(["monthly", "annual"]),
+});
+
+/**
+ * @summary Verify Razorpay Checkout signature and activate the plan
+ */
+export const CreateBillingVerifyBody = zod.union([
+  zod.object({
+    kind: zod.enum(["subscription"]),
+    razorpay_payment_id: zod.string(),
+    razorpay_subscription_id: zod.string(),
+    razorpay_signature: zod.string(),
+  }),
+  zod.object({
+    kind: zod.enum(["order"]),
+    razorpay_payment_id: zod.string(),
+    razorpay_order_id: zod.string(),
+    razorpay_signature: zod.string(),
+  }),
+]);
+
+export const CreateBillingVerifyResponse = zod.object({
+  ok: zod.boolean(),
+  plan: zod
+    .enum(["standard", "professional"])
+    .describe(
+      "Razorpay-billed plan tier (free and enterprise are not sold via Razorpay)",
+    ),
+  cadence: zod.enum(["monthly", "annual"]),
+});
+
+/**
+ * @summary Cancel the active monthly subscription at period end
+ */
+export const CreateBillingCancelResponse = zod.object({
+  ok: zod.boolean(),
+  cancelAtPeriodEnd: zod.boolean(),
+});

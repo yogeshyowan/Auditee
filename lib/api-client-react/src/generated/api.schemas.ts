@@ -262,6 +262,99 @@ export interface CaptureLeadResult {
   id?: string;
 }
 
+/**
+ * Razorpay-billed plan tier (free and enterprise are not sold via Razorpay)
+ */
+export type BillingPlan = (typeof BillingPlan)[keyof typeof BillingPlan];
+
+export const BillingPlan = {
+  standard: "standard",
+  professional: "professional",
+} as const;
+
+export type BillingCadence =
+  (typeof BillingCadence)[keyof typeof BillingCadence];
+
+export const BillingCadence = {
+  monthly: "monthly",
+  annual: "annual",
+} as const;
+
+export interface BillingSubscribeBody {
+  plan: BillingPlan;
+  cadence: BillingCadence;
+}
+
+/**
+ * subscription = monthly auto-renew. order = one-time annual.
+ */
+export type BillingSubscribeResultKind =
+  (typeof BillingSubscribeResultKind)[keyof typeof BillingSubscribeResultKind];
+
+export const BillingSubscribeResultKind = {
+  subscription: "subscription",
+  order: "order",
+} as const;
+
+export interface BillingSubscribeResult {
+  /** subscription = monthly auto-renew. order = one-time annual. */
+  kind: BillingSubscribeResultKind;
+  subscriptionId?: string;
+  orderId?: string;
+  /** Razorpay public key id for Checkout */
+  keyId: string;
+  /** Amount in Indian paise (INR × 100) */
+  amountPaise: number;
+  currency: string;
+  plan: BillingPlan;
+  cadence: BillingCadence;
+}
+
+export type BillingVerifyBody =
+  | {
+      kind: "subscription";
+      razorpay_payment_id: string;
+      razorpay_subscription_id: string;
+      razorpay_signature: string;
+    }
+  | {
+      kind: "order";
+      razorpay_payment_id: string;
+      razorpay_order_id: string;
+      razorpay_signature: string;
+    };
+
+export interface BillingVerifyResult {
+  ok: boolean;
+  plan: BillingPlan;
+  cadence: BillingCadence;
+}
+
+export interface BillingCancelResult {
+  ok: boolean;
+  cancelAtPeriodEnd: boolean;
+}
+
+export interface BillingSubscriptionState {
+  id: string;
+  plan: BillingPlan;
+  cadence: BillingCadence;
+  status: string;
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd: boolean;
+  razorpaySubscriptionId?: string | null;
+  razorpayOrderId?: string | null;
+}
+
+export interface BillingMe {
+  workspaceId: string;
+  /** One of free|standard|professional|enterprise */
+  plan: string;
+  planActivatedAt?: string | null;
+  planExpiresAt?: string | null;
+  subscription?: BillingSubscriptionState | null;
+}
+
 export type ListRequirementsParams = {
   projectId?: string;
   type?: RequirementType;

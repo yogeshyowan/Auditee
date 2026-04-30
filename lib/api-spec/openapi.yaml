@@ -17,6 +17,7 @@ tags:
   - name: activity
   - name: pdlc
   - name: legacy
+  - name: billing
 paths:
   /healthz:
     get:
@@ -268,6 +269,64 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CaptureLeadResult" }
+
+  /billing/me:
+    get:
+      operationId: getBillingMe
+      tags: [billing]
+      summary: Current subscription state for the workspace
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingMe" }
+
+  /billing/subscribe:
+    post:
+      operationId: createBillingSubscribe
+      tags: [billing]
+      summary: Create a Razorpay subscription (monthly) or order (annual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BillingSubscribeBody" }
+      responses:
+        "200":
+          description: Razorpay handles needed by Checkout
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingSubscribeResult" }
+
+  /billing/verify:
+    post:
+      operationId: createBillingVerify
+      tags: [billing]
+      summary: Verify Razorpay Checkout signature and activate the plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BillingVerifyBody" }
+      responses:
+        "200":
+          description: Plan activated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingVerifyResult" }
+
+  /billing/cancel:
+    post:
+      operationId: createBillingCancel
+      tags: [billing]
+      summary: Cancel the active monthly subscription at period end
+      responses:
+        "200":
+          description: Cancellation scheduled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillingCancelResult" }
 
 components:
   schemas:
@@ -551,3 +610,93 @@ components:
         captured: { type: boolean, description: True when a new row was inserted }
         deduped: { type: boolean, description: True when a matching (email,source) row already existed }
         id: { type: string, description: New row id when captured is true }
+
+    BillingPlan:
+      type: string
+      enum: [standard, professional]
+      description: Razorpay-billed plan tier (free and enterprise are not sold via Razorpay)
+
+    BillingCadence:
+      type: string
+      enum: [monthly, annual]
+
+    BillingSubscribeBody:
+      type: object
+      required: [plan, cadence]
+      properties:
+        plan: { $ref: "#/components/schemas/BillingPlan" }
+        cadence: { $ref: "#/components/schemas/BillingCadence" }
+
+    BillingSubscribeResult:
+      type: object
+      required: [kind, keyId, amountPaise, currency, plan, cadence]
+      properties:
+        kind:
+          type: string
+          enum: [subscription, order]
+          description: subscription = monthly auto-renew. order = one-time annual.
+        subscriptionId: { type: string }
+        orderId: { type: string }
+        keyId: { type: string, description: Razorpay public key id for Checkout }
+        amountPaise: { type: integer, description: Amount in Indian paise (INR × 100) }
+        currency: { type: string }
+        plan: { $ref: "#/components/schemas/BillingPlan" }
+        cadence: { $ref: "#/components/schemas/BillingCadence" }
+
+    BillingVerifyBody:
+      oneOf:
+        - type: object
+          required: [kind, razorpay_payment_id, razorpay_subscription_id, razorpay_signature]
+          properties:
+            kind: { type: string, enum: [subscription] }
+            razorpay_payment_id: { type: string }
+            razorpay_subscription_id: { type: string }
+            razorpay_signature: { type: string }
+        - type: object
+          required: [kind, razorpay_payment_id, razorpay_order_id, razorpay_signature]
+          properties:
+            kind: { type: string, enum: [order] }
+            razorpay_payment_id: { type: string }
+            razorpay_order_id: { type: string }
+            razorpay_signature: { type: string }
+
+    BillingVerifyResult:
+      type: object
+      required: [ok, plan, cadence]
+      properties:
+        ok: { type: boolean }
+        plan: { $ref: "#/components/schemas/BillingPlan" }
+        cadence: { $ref: "#/components/schemas/BillingCadence" }
+
+    BillingCancelResult:
+      type: object
+      required: [ok, cancelAtPeriodEnd]
+      properties:
+        ok: { type: boolean }
+        cancelAtPeriodEnd: { type: boolean }
+
+    BillingSubscriptionState:
+      type: object
+      required: [id, plan, cadence, status, cancelAtPeriodEnd]
+      properties:
+        id: { type: string }
+        plan: { $ref: "#/components/schemas/BillingPlan" }
+        cadence: { $ref: "#/components/schemas/BillingCadence" }
+        status: { type: string }
+        currentPeriodEnd: { type: string, format: date-time, nullable: true }
+        cancelAtPeriodEnd: { type: boolean }
+        razorpaySubscriptionId: { type: string, nullable: true }
+        razorpayOrderId: { type: string, nullable: true }
+
+    BillingMe:
+      type: object
+      required: [workspaceId, plan]
+      properties:
+        workspaceId: { type: string }
+        plan: { type: string, description: One of free|standard|professional|enterprise }
+        planActivatedAt: { type: string, format: date-time, nullable: true }
+        planExpiresAt: { type: string, format: date-time, nullable: true }
+        subscription:
+          oneOf:
+            - { $ref: "#/components/schemas/BillingSubscriptionState" }
+            - { type: "null" }

@@ -34,6 +34,19 @@ AI features are exposed via `/api/ai/*` endpoints for `generate-requirements`, `
 
 A single source of truth for pricing/seats/credits is defined in `lib/db/src/schema/workspaces.ts` with tiers: Free, Standard, Professional, and Enterprise, each with specific seats and monthly AI credits. One credit equals one successful AI generation, with failures auto-refunded. Anonymous users receive a Free allowance tracked locally and verified server-side.
 
+### Razorpay Billing (LIVE mode, INR)
+
+- **Monthly Standard (₹1,999/mo)** and **Monthly Professional (₹7,999/mo)** are sold as Razorpay **Subscriptions** (auto-renew, `total_count: 120`).
+- **Annual Standard (₹19,990/yr)** and **Annual Professional (₹79,990/yr)** are sold as Razorpay one-time **Orders**. They do **not** auto-renew (RBI ₹15,000 card-auto-debit cap workaround) and lapse after 12 months via `workspaces.planExpiresAt`.
+- **Enterprise** is contact-sales (`mailto:`), not sold via Razorpay.
+- **Free** is unchanged.
+- DB schema: `razorpay_plans` (Razorpay-side plan id cache), `subscriptions`, `payments`. See `lib/db/src/schema/billing.ts`.
+- Server: `artifacts/api-server/src/routes/billing.ts` + `src/lib/razorpay.ts` + `src/lib/razorpayPlans.ts`. Webhook is mounted with `express.json({ verify })` so the raw body is stashed for HMAC-SHA256 verification against `RAZORPAY_WEBHOOK_SECRET`.
+- Successful `payment.captured` webhook events fire `marketingstuffs payment_completed` server-side.
+- Frontend Pricing page (`src/pages/Pricing.tsx`) has a Monthly/Annual toggle and lazy-loads Razorpay Checkout via `src/lib/razorpayCheckout.ts`.
+- Billing page (`src/pages/app/Billing.tsx`) shows the active subscription/order state via `GET /billing/me` and supports cancel-at-period-end for monthly subscriptions.
+- Webhook URL the user must register in the Razorpay dashboard: `https://<deployed-domain>/api/billing/webhook`. See `artifacts/api-server/RAZORPAY_WEBHOOK_SETUP.md` for the full event list and instructions.
+
 ### Feature Specifications
 
 -   **Project Management**: Creation and management of projects.

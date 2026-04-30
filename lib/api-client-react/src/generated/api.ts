@@ -18,6 +18,12 @@ import type {
 
 import type {
   ActivityEvent,
+  BillingCancelResult,
+  BillingMe,
+  BillingSubscribeBody,
+  BillingSubscribeResult,
+  BillingVerifyBody,
+  BillingVerifyResult,
   CaptureLeadBody,
   CaptureLeadResult,
   CodeArtifact,
@@ -1501,4 +1507,332 @@ export const useCaptureLead = <
   TContext
 > => {
   return useMutation(getCaptureLeadMutationOptions(options));
+};
+
+/**
+ * @summary Current subscription state for the workspace
+ */
+export const getGetBillingMeUrl = () => {
+  return `/api/billing/me`;
+};
+
+export const getBillingMe = async (
+  options?: RequestInit,
+): Promise<BillingMe> => {
+  return customFetch<BillingMe>(getGetBillingMeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBillingMeQueryKey = () => {
+  return [`/api/billing/me`] as const;
+};
+
+export const getGetBillingMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBillingMe>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBillingMe>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBillingMeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getBillingMe>>> = ({
+    signal,
+  }) => getBillingMe({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBillingMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBillingMeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBillingMe>>
+>;
+export type GetBillingMeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Current subscription state for the workspace
+ */
+
+export function useGetBillingMe<
+  TData = Awaited<ReturnType<typeof getBillingMe>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBillingMe>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBillingMeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a Razorpay subscription (monthly) or order (annual)
+ */
+export const getCreateBillingSubscribeUrl = () => {
+  return `/api/billing/subscribe`;
+};
+
+export const createBillingSubscribe = async (
+  billingSubscribeBody: BillingSubscribeBody,
+  options?: RequestInit,
+): Promise<BillingSubscribeResult> => {
+  return customFetch<BillingSubscribeResult>(getCreateBillingSubscribeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(billingSubscribeBody),
+  });
+};
+
+export const getCreateBillingSubscribeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingSubscribe>>,
+    TError,
+    { data: BodyType<BillingSubscribeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBillingSubscribe>>,
+  TError,
+  { data: BodyType<BillingSubscribeBody> },
+  TContext
+> => {
+  const mutationKey = ["createBillingSubscribe"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBillingSubscribe>>,
+    { data: BodyType<BillingSubscribeBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBillingSubscribe(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBillingSubscribeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBillingSubscribe>>
+>;
+export type CreateBillingSubscribeMutationBody = BodyType<BillingSubscribeBody>;
+export type CreateBillingSubscribeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Razorpay subscription (monthly) or order (annual)
+ */
+export const useCreateBillingSubscribe = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingSubscribe>>,
+    TError,
+    { data: BodyType<BillingSubscribeBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBillingSubscribe>>,
+  TError,
+  { data: BodyType<BillingSubscribeBody> },
+  TContext
+> => {
+  return useMutation(getCreateBillingSubscribeMutationOptions(options));
+};
+
+/**
+ * @summary Verify Razorpay Checkout signature and activate the plan
+ */
+export const getCreateBillingVerifyUrl = () => {
+  return `/api/billing/verify`;
+};
+
+export const createBillingVerify = async (
+  billingVerifyBody: BillingVerifyBody,
+  options?: RequestInit,
+): Promise<BillingVerifyResult> => {
+  return customFetch<BillingVerifyResult>(getCreateBillingVerifyUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(billingVerifyBody),
+  });
+};
+
+export const getCreateBillingVerifyMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingVerify>>,
+    TError,
+    { data: BodyType<BillingVerifyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBillingVerify>>,
+  TError,
+  { data: BodyType<BillingVerifyBody> },
+  TContext
+> => {
+  const mutationKey = ["createBillingVerify"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBillingVerify>>,
+    { data: BodyType<BillingVerifyBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBillingVerify(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBillingVerifyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBillingVerify>>
+>;
+export type CreateBillingVerifyMutationBody = BodyType<BillingVerifyBody>;
+export type CreateBillingVerifyMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Verify Razorpay Checkout signature and activate the plan
+ */
+export const useCreateBillingVerify = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingVerify>>,
+    TError,
+    { data: BodyType<BillingVerifyBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBillingVerify>>,
+  TError,
+  { data: BodyType<BillingVerifyBody> },
+  TContext
+> => {
+  return useMutation(getCreateBillingVerifyMutationOptions(options));
+};
+
+/**
+ * @summary Cancel the active monthly subscription at period end
+ */
+export const getCreateBillingCancelUrl = () => {
+  return `/api/billing/cancel`;
+};
+
+export const createBillingCancel = async (
+  options?: RequestInit,
+): Promise<BillingCancelResult> => {
+  return customFetch<BillingCancelResult>(getCreateBillingCancelUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCreateBillingCancelMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingCancel>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBillingCancel>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["createBillingCancel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBillingCancel>>,
+    void
+  > = () => {
+    return createBillingCancel(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBillingCancelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBillingCancel>>
+>;
+
+export type CreateBillingCancelMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Cancel the active monthly subscription at period end
+ */
+export const useCreateBillingCancel = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBillingCancel>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBillingCancel>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getCreateBillingCancelMutationOptions(options));
 };
