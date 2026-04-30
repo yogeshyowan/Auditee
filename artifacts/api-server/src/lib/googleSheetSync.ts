@@ -1,4 +1,5 @@
 import { ReplitConnectors } from "@replit/connectors-sdk";
+import { GoogleAuth } from "google-auth-library";
 import { logger } from "./logger";
 
 export interface GoogleSheetPayload {
@@ -18,11 +19,34 @@ export interface GoogleSheetSyncResult {
 
 const HEADER_ROW = ["capturedAt", "source", "name", "email", "clerkUserId"];
 const SHEET_RANGE = "Sheet1!A:E";
+const SHEET_HEADER_RANGE = "Sheet1!A1:E1";
+const SHEETS_BASE = "https://sheets.googleapis.com";
 
 let connectors: ReplitConnectors | null = null;
 function getConnectors(): ReplitConnectors {
   if (!connectors) connectors = new ReplitConnectors();
   return connectors;
+}
+
+let serviceAccountAuth: GoogleAuth | null = null;
+function getServiceAccountAuth(): GoogleAuth | null {
+  const raw = process.env.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON?.trim();
+  if (!raw) return null;
+  if (serviceAccountAuth) return serviceAccountAuth;
+  try {
+    const credentials = JSON.parse(raw) as Record<string, unknown>;
+    serviceAccountAuth = new GoogleAuth({
+      credentials,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+    return serviceAccountAuth;
+  } catch (err) {
+    logger.error(
+      { err: err instanceof Error ? err.message : String(err) },
+      "GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON could not be parsed as JSON",
+    );
+    return null;
+  }
 }
 
 let headerEnsured = false;
@@ -41,16 +65,40 @@ async function readResponseSnippet(res: Response): Promise<string> {
   }
 }
 
+/**
+ * Routes a Sheets API call through whichever auth source is configured.
+ * Prefers a service-account JSON (portable across hosts, e.g. Hetzner) and
+ * falls back to the Replit `google-sheet` OAuth connector (only available
+ * when running inside a Replit container).
+ */
+async function sheetsFetch(
+  pathAndQuery: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const sa = getServiceAccountAuth();
+  if (sa) {
+    const client = await sa.getClient();
+    const { token } = await client.getAccessToken();
+    if (!token) throw new Error("service_account_token_unavailable");
+    return fetch(`${SHEETS_BASE}${pathAndQuery}`, {
+      ...init,
+      headers: {
+        ...(init.headers ?? {}),
+        authorization: `Bearer ${token}`,
+      },
+    });
+  }
+  return getConnectors().proxy("google-sheet", pathAndQuery, init);
+}
+
 async function ensureHeaderRow(spreadsheetId: string): Promise<void> {
   if (headerEnsured) return;
   if (headerEnsurePromise) return headerEnsurePromise;
 
   headerEnsurePromise = (async () => {
     try {
-      const c = getConnectors();
-      const getRes = await c.proxy(
-        "google-sheet",
-        `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent("Sheet1!A1:E1")}`,
+      const getRes = await sheetsFetch(
+        `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(SHEET_HEADER_RANGE)}`,
         { method: "GET" },
       );
       if (!getRes.ok) {
@@ -67,9 +115,8 @@ async function ensureHeaderRow(spreadsheetId: string): Promise<void> {
         headerEnsured = true;
         return;
       }
-      const writeRes = await c.proxy(
-        "google-sheet",
-        `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent("Sheet1!A1:E1")}?valueInputOption=RAW`,
+      const writeRes = await sheetsFetch(
+        `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(SHEET_HEADER_RANGE)}?valueInputOption=RAW`,
         {
           method: "PUT",
           headers: { "content-type": "application/json" },
@@ -100,8 +147,9 @@ async function ensureHeaderRow(spreadsheetId: string): Promise<void> {
 
 /**
  * Appends a captured lead as a new row in the Google Sheet identified by
- * GOOGLE_SHEET_ID, using the connected Replit "google-sheet" integration
- * (OAuth, no Apps Script or service account required).
+ * GOOGLE_SHEET_ID. Auth source is auto-selected:
+ *   1. GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON (preferred, host-agnostic)
+ *   2. Replit `google-sheet` OAuth integration (Replit only)
  *
  * Returns { attempted: false } when GOOGLE_SHEET_ID is not configured so the
  * caller can persist the row locally and forward later.
@@ -115,9 +163,8 @@ export async function postToGoogleSheet(
   try {
     await ensureHeaderRow(spreadsheetId);
 
-    const c = getConnectors();
     const path = `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(SHEET_RANGE)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-    const res = await c.proxy("google-sheet", path, {
+    const res = await sheetsFetch(path, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
