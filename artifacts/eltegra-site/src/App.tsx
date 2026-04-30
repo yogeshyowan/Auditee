@@ -8,6 +8,7 @@ import { UpsellDialog } from "@/components/UpsellDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProjectProvider } from "@/lib/project-context";
 import { useLeadCapture } from "@/lib/leadCapture";
+import { useMarketingstuffs } from "@/lib/marketingstuffs";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
@@ -117,6 +118,7 @@ const clerkAppearance = {
 
 function LeadCaptureMount() {
   useLeadCapture();
+  useMarketingstuffs();
   return null;
 }
 
