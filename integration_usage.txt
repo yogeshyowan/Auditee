@@ -1,0 +1,52 @@
+.local/skills/data-visualization/SKILL.md:**Key point:** This skill handles data fetching internally. You do NOT need to query data first using other skills - this skill will use `searchIntegrations()` and `proposeIntegration()` to connect to data sources as part of building the app.
+.local/skills/data-visualization/references/common-bootstrap.md:2. Use `searchIntegrations()` / `proposeIntegration()` to connect data sources
+.local/skills/data-visualization/references/common-bootstrap.md:   - `searchIntegrations({ query: "Linear" })`
+.local/skills/data-visualization/references/common-bootstrap.md:   - If not set up: `proposeIntegration({ integrationId: "connector:ccfg_..." })`
+.local/skills/data-visualization/references/common-bootstrap.md:2. **No data source specified**: Ask the user. Use `searchIntegrations()` to show available connectors.
+.local/skills/data-visualization/references/common-data-sources.md:1. Search: `searchIntegrations({ query: "stripe" })`
+.local/skills/integrations/SKILL.md:    → user completes OAuth via proposeIntegration
+.local/skills/integrations/SKILL.md:        → addIntegration        ← wires the connection to this project, adds dependencies
+.local/skills/integrations/SKILL.md:        → proposeIntegration    ← establishes the OAuth token for this Repl
+.local/skills/integrations/SKILL.md:    → addIntegration or proposeIntegration
+.local/skills/integrations/SKILL.md:- Cannot be added directly — must use `proposeIntegration` which allows the user through the OAuth flow
+.local/skills/integrations/SKILL.md:- Use `addIntegration` first to wire the connection to this project, then call `proposeIntegration` to establish the OAuth token for this Repl. Both steps are required on first setup. The token may also expire later — see Common Pitfalls.
+.local/skills/integrations/SKILL.md:- When `searchIntegrations` returns a `connection` for a service, it means the user has already completed OAuth at the account level — but you still need `addIntegration` to wire the project, then `proposeIntegration` to establish the OAuth token for this Repl
+.local/skills/integrations/SKILL.md:NOTE: You must not delay calling proposeIntegration even if it waits for the user. You will be blocked and not have access to test the feature you build because you don't have access to real data, real APIs, etc, which is even more inefficient than reaching out to the user as soon as you know you need the integration to get accepted.
+.local/skills/integrations/SKILL.md:- Use `addIntegration` directly; if `requiresConfirmation` is True, use `proposeIntegration` instead
+.local/skills/integrations/SKILL.md:### searchIntegrations(query)
+.local/skills/integrations/SKILL.md:- `askForBlueprintConfirmation`: boolean — if True, blueprint additions in this environment will require user confirmation; expect `requiresConfirmation: True` back from `addIntegration` and be ready to call `proposeIntegration` instead
+.local/skills/integrations/SKILL.md:const results = await searchIntegrations("Google Sheets");
+.local/skills/integrations/SKILL.md:- When the user has not explicitly requested a specific provider, at least search with a generic, capability-focused query to ensure all relevant options are returned. For example, when user asks "build an icon generating app", prefer `searchIntegrations("image generation")` instead of `searchIntegrations("OpenAI image generation")`
+.local/skills/integrations/SKILL.md:**Note:** `addIntegration` returns the exact same `renderedContent` blob, so in most cases you don't need to call this separately — just read the result of `addIntegration`. The main reason to call `viewIntegration` first is if you want to inspect the package name, code snippet, or documentation URL before committing to the install.
+.local/skills/integrations/SKILL.md:console.log(info.renderedContent);  // Same blob you'd get from addIntegration
+.local/skills/integrations/SKILL.md:### addIntegration(integrationId)
+.local/skills/integrations/SKILL.md:Add a blueprint or connection to the current project. **Do not use for connectors** (those with `integrationType: connector` and `status: not_setup`) — use `proposeIntegration` for those.
+.local/skills/integrations/SKILL.md:- `requiresConfirmation`: boolean — if True, call `proposeIntegration` instead
+.local/skills/integrations/SKILL.md:- `connectionAlreadyAdded`: boolean — if True, the connection is already wired to this project; skip addIntegration but still call proposeIntegration to ensure the OAuth token is valid
+.local/skills/integrations/SKILL.md:const result = await addIntegration("connection:conn_linear_01KG10PAJR6MQ525SQSWEB8QHC");
+.local/skills/integrations/SKILL.md:  proposeIntegration("connection:conn_linear_01KG10PAJR6MQ525SQSWEB8QHC");
+.local/skills/integrations/SKILL.md:**After calling addIntegration:**
+.local/skills/integrations/SKILL.md:### proposeIntegration(integrationId)
+.local/skills/integrations/SKILL.md:- Blueprints where `addIntegration` returns `requiresConfirmation: True`
+.local/skills/integrations/SKILL.md:const result = await proposeIntegration("connector:ccfg_google-sheet_E42A9F6CA62546F68A1FECA0E8");
+.local/skills/integrations/SKILL.md:- On the next agent loop, call `addIntegration` with the new `connection:...` ID
+.local/skills/integrations/SKILL.md:After `addIntegration` or `viewIntegration`, the `renderedContent` contains a code snippet. Key things to know:
+.local/skills/integrations/SKILL.md:- **Not logging results:** `searchIntegrations` and all other functions return silently unless you `console.log()` the output
+.local/skills/integrations/SKILL.md:- **Calling addIntegration on a connector:** Will fail or behave unexpectedly. Check `integrationType` first
+.local/skills/integrations/SKILL.md:- **Asking for API keys when a connection exists:** If `searchIntegrations` returns a `connection`, the user is already authenticated at the account level — use `addIntegration` to wire the project, then `proposeIntegration` to establish the OAuth token for this Repl. Both steps are always required
+.local/skills/integrations/SKILL.md:- **Package install side effects:** `addIntegration` runs package installation (e.g. npm, uv), which can crash a running dev server. Restart the workflow after adding integrations
+.local/skills/integrations/SKILL.md:- **Connection added but runtime still fails:** If `addIntegration` succeeds for a `connection` but the app throws "not connected" at runtime, the token may be expired or missing. Call `proposeIntegration` with the same connection ID to trigger re-authorization, then restart the workflow
+.local/skills/query-integration-data/SKILL.md:description: Query and modify data in any connected integration (Linear, GitHub, HubSpot, Slack, Google services, etc.) or connected data warehouse (Databricks, Snowflake, BigQuery). Use listConnections() in the code_execution sandbox to get credentials, then call APIs directly. Supports read operations (queries, counts, exports) and write operations (create, update, delete).
+.local/skills/query-integration-data/SKILL.md:1. CHECK      → listConnections(connectorName) to get existing credentials
+.local/skills/query-integration-data/SKILL.md:- **CHECK**: Call `listConnections(connectorName)` in the `code_execution` sandbox. If it returns connections, you already have credentials — skip straight to EXECUTE.
+.local/skills/query-integration-data/SKILL.md:- **SEARCH → CONNECT** (only when no connections exist): Use `searchIntegrations`, `proposeIntegration`, and `addIntegration` to set up a new connection. See the `integrations` skill for the full lifecycle details.
+.local/skills/query-integration-data/SKILL.md:### Primary: `listConnections(connectorName)`
+.local/skills/query-integration-data/SKILL.md:const conns = await listConnections('linear');
+.local/skills/query-integration-data/SKILL.md:const conns = await listConnections('linear');
+.local/skills/query-integration-data/SKILL.md:If `listConnections` returns an empty array, the user hasn't connected the service yet. Use `searchIntegrations` to find the connector, then follow the `integrations` skill to walk the user through setup (`addIntegration` and `proposeIntegration` — order depends on integration type). After the connection is established, `listConnections` will return it.
+.local/skills/query-integration-data/SKILL.md:const conns = await listConnections('linear');
+.local/skills/query-integration-data/SKILL.md:const conns = await listConnections('linear');
+.local/skills/query-integration-data/SKILL.md:const conns = await listConnections('linear');
+.local/skills/query-integration-data/SKILL.md:const conns = await listConnections('linear');
+.local/skills/query-integration-data/SKILL.md:- **Use `listConnections(connectorName)`** as the primary way to get credentials
+.local/skills/query-integration-data/SKILL.md:- **Don't cache clients** — access tokens expire; re-create clients from `listConnections` when needed
