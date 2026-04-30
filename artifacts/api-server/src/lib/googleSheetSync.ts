@@ -1,3 +1,4 @@
+import { ReplitConnectors } from "@replit/connectors-sdk";
 import { logger } from "./logger";
 
 export interface GoogleSheetPayload {
@@ -15,60 +16,140 @@ export interface GoogleSheetSyncResult {
   error?: string;
 }
 
+const HEADER_ROW = ["capturedAt", "source", "name", "email", "clerkUserId"];
+const SHEET_RANGE = "Sheet1!A:E";
+
+let connectors: ReplitConnectors | null = null;
+function getConnectors(): ReplitConnectors {
+  if (!connectors) connectors = new ReplitConnectors();
+  return connectors;
+}
+
+let headerEnsured = false;
+let headerEnsurePromise: Promise<void> | null = null;
+
+function getSpreadsheetId(): string | null {
+  return process.env.GOOGLE_SHEET_ID?.trim() || null;
+}
+
+async function readResponseSnippet(res: Response): Promise<string> {
+  try {
+    const text = await res.text();
+    return text.slice(0, 300);
+  } catch {
+    return "";
+  }
+}
+
+async function ensureHeaderRow(spreadsheetId: string): Promise<void> {
+  if (headerEnsured) return;
+  if (headerEnsurePromise) return headerEnsurePromise;
+
+  headerEnsurePromise = (async () => {
+    try {
+      const c = getConnectors();
+      const getRes = await c.proxy(
+        "google-sheet",
+        `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent("Sheet1!A1:E1")}`,
+        { method: "GET" },
+      );
+      if (!getRes.ok) {
+        const snippet = await readResponseSnippet(getRes);
+        logger.warn(
+          { status: getRes.status, snippet },
+          "Google Sheet header probe failed",
+        );
+        return;
+      }
+      const data = (await getRes.json()) as { values?: string[][] };
+      const firstCell = data.values?.[0]?.[0];
+      if (firstCell === HEADER_ROW[0]) {
+        headerEnsured = true;
+        return;
+      }
+      const writeRes = await c.proxy(
+        "google-sheet",
+        `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent("Sheet1!A1:E1")}?valueInputOption=RAW`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ values: [HEADER_ROW] }),
+        },
+      );
+      if (writeRes.ok) {
+        headerEnsured = true;
+      } else {
+        const snippet = await readResponseSnippet(writeRes);
+        logger.warn(
+          { status: writeRes.status, snippet },
+          "Google Sheet header write failed",
+        );
+      }
+    } catch (err) {
+      logger.warn(
+        { err: err instanceof Error ? err.message : String(err) },
+        "Google Sheet header ensure threw",
+      );
+    } finally {
+      headerEnsurePromise = null;
+    }
+  })();
+
+  return headerEnsurePromise;
+}
+
 /**
- * Pushes a captured lead to a Google Sheet via a bound Google Apps Script
- * web-app deployment. Activates only when GOOGLE_SHEET_WEBHOOK_URL is set;
- * otherwise returns { attempted: false } so the caller can persist the row
- * locally and forward later when the webhook is wired up.
+ * Appends a captured lead as a new row in the Google Sheet identified by
+ * GOOGLE_SHEET_ID, using the connected Replit "google-sheet" integration
+ * (OAuth, no Apps Script or service account required).
  *
- * Setup (one-time, no Cloud project required):
- *   1. Open the target Google Sheet.
- *   2. Extensions > Apps Script. Replace Code.gs with:
- *        const TOKEN = "<paste a long random string here, optional>";
- *        function doPost(e) {
- *          const body = JSON.parse(e.postData.contents);
- *          if (TOKEN && body.token !== TOKEN) {
- *            return ContentService.createTextOutput("forbidden")
- *              .setMimeType(ContentService.MimeType.TEXT);
- *          }
- *          const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
- *          sheet.appendRow([
- *            body.capturedAt, body.source, body.name, body.email, body.id,
- *          ]);
- *          return ContentService.createTextOutput("ok");
- *        }
- *   3. Deploy > New deployment > type "Web app".
- *      Execute as: Me. Who has access: Anyone (or "Anyone with the link").
- *   4. Copy the resulting /exec URL into env var GOOGLE_SHEET_WEBHOOK_URL.
- *      If you used a TOKEN, also set GOOGLE_SHEET_WEBHOOK_TOKEN to the same
- *      value so the server includes it on every request.
+ * Returns { attempted: false } when GOOGLE_SHEET_ID is not configured so the
+ * caller can persist the row locally and forward later.
  */
 export async function postToGoogleSheet(
   payload: GoogleSheetPayload,
 ): Promise<GoogleSheetSyncResult> {
-  const url = process.env.GOOGLE_SHEET_WEBHOOK_URL;
-  if (!url) return { attempted: false, ok: false };
-
-  const token = process.env.GOOGLE_SHEET_WEBHOOK_TOKEN ?? "";
+  const spreadsheetId = getSpreadsheetId();
+  if (!spreadsheetId) return { attempted: false, ok: false };
 
   try {
-    const res = await fetch(url, {
+    await ensureHeaderRow(spreadsheetId);
+
+    const c = getConnectors();
+    const path = `/v4/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(SHEET_RANGE)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+    const res = await c.proxy("google-sheet", path, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...payload, token }),
-      redirect: "follow",
+      body: JSON.stringify({
+        values: [
+          [
+            payload.capturedAt,
+            payload.source,
+            payload.name,
+            payload.email,
+            payload.id,
+          ],
+        ],
+      }),
     });
-    const ok = res.status >= 200 && res.status < 400;
-    if (!ok) {
+
+    if (!res.ok) {
+      const snippet = await readResponseSnippet(res);
       logger.warn(
-        { status: res.status, statusText: res.statusText },
-        "Google Sheet webhook returned non-success status",
+        { status: res.status, snippet },
+        "Google Sheet append returned non-success status",
       );
+      return {
+        attempted: true,
+        ok: false,
+        status: res.status,
+        error: snippet || `status_${res.status}`,
+      };
     }
-    return { attempted: true, ok, status: res.status };
+    return { attempted: true, ok: true, status: res.status };
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);
-    logger.error({ err: error }, "Google Sheet webhook threw");
+    logger.error({ err: error }, "Google Sheet append threw");
     return { attempted: true, ok: false, error };
   }
 }

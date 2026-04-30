@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { bootstrapFrameworks } from "./lib/bootstrap-frameworks";
 import { bootstrapGapRequirements } from "./lib/bootstrap-gap-requirements";
+import { backfillUnforwardedLeads } from "./lib/leadCaptureBackfill";
 import { startScheduler } from "./lib/scheduler";
 
 const rawPort = process.env["PORT"];
@@ -30,5 +31,13 @@ app.listen(port, (err) => {
   // Runs in the background so it never blocks request handling.
   void bootstrapFrameworks();
   void bootstrapGapRequirements();
+  // Best-effort: flush any lead_captures rows that were stored before the
+  // Google Sheet integration was wired up. No-op once everything is forwarded.
+  void backfillUnforwardedLeads().catch((err) =>
+    logger.error(
+      { err: err instanceof Error ? err.message : String(err) },
+      "lead backfill on startup failed",
+    ),
+  );
   startScheduler(port);
 });
