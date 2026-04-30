@@ -42,9 +42,14 @@ function Hero() {
     <section id="hero" className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden bg-slate-50">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/40 via-background to-background"></div>
-        <img 
-          src="/hero-network.png" 
-          alt="" 
+        <img
+          src="/hero-network.png"
+          alt=""
+          width="1920"
+          height="1080"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
           className="w-full h-full object-cover opacity-[0.03] mix-blend-multiply"
         />
       </div>
@@ -475,9 +480,13 @@ function RoiSection() {
   return (
     <section id="roi" className="py-24 relative overflow-hidden bg-slate-950 text-white scroll-mt-24">
       <div className="absolute inset-0 z-0">
-        <img 
-          src="/roi-bg.png" 
-          alt="" 
+        <img
+          src="/roi-bg.png"
+          alt=""
+          width="1920"
+          height="1080"
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover opacity-20 mix-blend-screen"
         />
         <div className="absolute inset-0 bg-slate-950/80"></div>
