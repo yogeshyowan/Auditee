@@ -327,7 +327,7 @@ The marketing site is fully optimised for search and social:
 - `public/sitemap.xml` lists the canonical homepage with image entries.
 - The signed-in app (`AppLayout`) injects a `<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">` while mounted, so even if a crawler ignores robots.txt the per-page directive still suppresses indexing.
 
-**Canonical hostname** is currently `https://auditee.eltegra.ai/`. When the production domain is finalised, search-and-replace this URL across `index.html`, `public/robots.txt`, and `public/sitemap.xml` — that's the only site-wide change required.
+**Canonical hostname** is `https://auditee.site/` (DNS for `auditee.site` points to the production deployment). The hostname is centralised in `artifacts/eltegra-site/src/components/SEO.tsx` (`SITE_URL`), `artifacts/eltegra-site/scripts/generate-sitemap.mjs` (`SITE`), `artifacts/eltegra-site/index.html` (canonical / OG / JSON-LD URLs), `artifacts/eltegra-site/public/robots.txt` (Sitemap line), and the CORS allowlist in `artifacts/api-server/src/app.ts`. To change the hostname later, search-and-replace across those files and re-run the sitemap generator.
 
 ---
 

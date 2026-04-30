@@ -13,7 +13,7 @@ import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
-const SITE = "https://auditee.eltegra.ai";
+const SITE = "https://auditee.site";
 const today = new Date().toISOString().slice(0, 10);
 
 // Canonical marketing routes. KEEP IN SYNC with src/App.tsx.

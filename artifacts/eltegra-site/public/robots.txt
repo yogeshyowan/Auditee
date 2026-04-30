@@ -37,4 +37,4 @@ Disallow: /
 User-agent: Google-Extended
 Disallow: /
 
-Sitemap: https://auditee.eltegra.ai/sitemap.xml
+Sitemap: https://auditee.site/sitemap.xml

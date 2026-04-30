@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export const SITE_URL = "https://auditee.eltegra.ai";
+export const SITE_URL = "https://auditee.site";
 export const SITE_NAME = "Auditee";
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/opengraph.jpg`;
 

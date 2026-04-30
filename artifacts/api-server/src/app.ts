@@ -38,7 +38,7 @@ const allowedOrigins = new Set<string>(
   [
     process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
     process.env.SITE_URL ?? null,
-    "https://auditee.eltegra.ai",
+    "https://auditee.site",
     "http://localhost:5173",
     "http://localhost:80",
     "http://localhost:24265",
