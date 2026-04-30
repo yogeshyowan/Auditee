@@ -5,6 +5,7 @@ import { db, leadCapturesTable, type LeadCaptureSource } from "@workspace/db";
 import { CaptureLeadBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/authContext";
 import { postToGoogleSheet } from "../lib/googleSheetSync";
+import { msTrack } from "../lib/marketingstuffs";
 import { clerkClient } from "@clerk/express";
 
 const router: IRouter = Router();
@@ -98,6 +99,16 @@ router.post("/leads/capture", requireAuth, async (req, res) => {
   }
 
   if (captured) {
+    // Fire a server-side marketingstuffs trigger for brand-new leads only
+    // (deduped rows skip this so the user isn't re-emailed every time they
+    // sign in again). Match the `event` value to the trigger_event name set
+    // up in the marketingstuffs.site automation.
+    void msTrack({
+      event: "lead_captured",
+      email,
+      name,
+      metadata: { source, clerk_user_id: ctx.userId },
+    });
     res.status(201).json({ captured: true, deduped: false, id: targetRow!.id });
   } else {
     res.json({ captured: false, deduped: true });
