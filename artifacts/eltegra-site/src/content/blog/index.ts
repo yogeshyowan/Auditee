@@ -4,7 +4,7 @@ import { post as soc2VsIso } from "./soc-2-vs-iso-27001-which-framework-should-y
 import { post as fromCode } from "./generating-requirements-from-legacy-code";
 import { post as doorsAlternatives } from "./top-10-ibm-doors-alternatives-2026";
 import { post as hipaaChecklist } from "./hipaa-software-compliance-requirements-checklist";
-import { post as marketingChecklist } from "./auditee-site-all-in-one-marketing-checklist";
+import { post as pdlcAuditChecklist } from "./enterprise-pdlc-audit-checklist";
 
 export interface BlogPost {
   slug: string;
@@ -27,7 +27,7 @@ export const POSTS: BlogPost[] = [
   fromCode,
   doorsAlternatives,
   hipaaChecklist,
-  marketingChecklist,
+  pdlcAuditChecklist,
 ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
 export function getPost(slug: string): BlogPost | undefined {
