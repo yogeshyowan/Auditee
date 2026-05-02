@@ -26,6 +26,7 @@ import workspaceTemplateRouter from "./workspaceTemplate";
 import testCasesRouter from "./testCases";
 import leadsRouter from "./leads";
 import billingRouter from "./billing";
+import customStandardsRouter from "./customStandards";
 
 const router: IRouter = Router();
 
@@ -56,5 +57,6 @@ router.use(workspaceTemplateRouter);
 router.use(testCasesRouter);
 router.use(leadsRouter);
 router.use(billingRouter);
+router.use(customStandardsRouter);
 
 export default router;

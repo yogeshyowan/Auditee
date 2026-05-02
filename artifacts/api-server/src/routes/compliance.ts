@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, isNull, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import {
   db,
@@ -10,12 +10,39 @@ import {
 import { GetComplianceFrameworkParams } from "@workspace/api-zod";
 import { assertProjectAccessIfAuthed, requireProjectAccessInline } from "../lib/projectAccess";
 import { logActivity } from "../lib/activityLog";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
+import { getOrCreateWorkspace } from "../lib/authContext";
 
 const router: IRouter = Router();
 
-router.get("/compliance/frameworks", async (_req, res) => {
-  const frameworks = await db.select().from(complianceFrameworksTable);
+router.get("/compliance/frameworks", async (req, res) => {
+  // Workspace-aware: seeded standards (workspaceId IS NULL) are visible to
+  // everyone; uploaded standards are visible only to the workspace that owns
+  // them. Anonymous traffic only sees the seeded catalog.
+  const { userId } = getAuth(req);
+  let workspaceId: string | null = null;
+  if (userId) {
+    try {
+      const user = await clerkClient.users.getUser(userId);
+      const email =
+        user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress ?? null;
+      const { workspace } = await getOrCreateWorkspace(userId, email);
+      workspaceId = workspace.id;
+    } catch {
+      workspaceId = null;
+    }
+  }
+  const frameworks = await db
+    .select()
+    .from(complianceFrameworksTable)
+    .where(
+      workspaceId
+        ? or(
+            isNull(complianceFrameworksTable.workspaceId),
+            eq(complianceFrameworksTable.workspaceId, workspaceId),
+          )
+        : isNull(complianceFrameworksTable.workspaceId),
+    );
   const out = await Promise.all(
     frameworks.map(async (f) => {
       const [{ value: met }] = await db

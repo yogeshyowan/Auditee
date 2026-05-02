@@ -48,6 +48,7 @@ const NAV_ITEMS = [
   { href: "/app/gaps", label: "Gap Detection", icon: AlertTriangle },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },
+  { href: "/app/standards", label: "Custom Standards", icon: FileBadge2 },
   { href: "/app/capa", label: "CAPA Actions", icon: AlertTriangle },
   { href: "/app/defects", label: "Defects", icon: Bug },
   { href: "/app/tests", label: "Test Cases", icon: Beaker },

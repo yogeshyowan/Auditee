@@ -601,3 +601,72 @@ export async function uploadReqif(projectId: string, file: File, label?: string)
   if (!r.ok) throw new Error((await r.json()).error ?? "ReqIF import failed");
   return r.json();
 }
+
+// ───────── Custom Standards ─────────
+export type UploadedStandard = {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  description: string;
+  status: string;
+  score: number;
+  controlsTotal: number;
+  workspaceId: string | null;
+  source: string;
+  originalFilename: string | null;
+  uploadedBy: string | null;
+  uploadedAt: string | null;
+  lastAuditAt: string;
+};
+
+export type UploadStandardResult = {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  description: string;
+  controlsTotal: number;
+  originalFilename: string | null;
+  uploadedAt: string;
+};
+
+export function listUploadedStandards(): Promise<{ standards: UploadedStandard[] }> {
+  return jfetch<{ standards: UploadedStandard[] }>("/standards");
+}
+
+export async function uploadStandard(file: File): Promise<UploadStandardResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const r = await fetch(`${apiBase}/standards/upload`, {
+    method: "POST",
+    body: fd,
+    credentials: "include",
+  });
+  if (!r.ok) {
+    const text = await r.text();
+    let message = text || `Upload failed (${r.status})`;
+    try {
+      const j = JSON.parse(text);
+      message = j.error || j.message || message;
+    } catch {}
+    throw new Error(message);
+  }
+  return r.json();
+}
+
+export async function deleteStandard(id: string): Promise<void> {
+  const r = await fetch(`${apiBase}/standards/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!r.ok && r.status !== 204) {
+    const text = await r.text();
+    let message = text || `Delete failed (${r.status})`;
+    try {
+      const j = JSON.parse(text);
+      message = j.error || j.message || message;
+    } catch {}
+    throw new Error(message);
+  }
+}

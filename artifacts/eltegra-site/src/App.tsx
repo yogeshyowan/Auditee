@@ -34,6 +34,7 @@ import Requirements from "@/pages/app/Requirements";
 import Traceability from "@/pages/app/Traceability";
 import Compliance from "@/pages/app/Compliance";
 import ComplianceDetail from "@/pages/app/ComplianceDetail";
+import CustomStandards from "@/pages/app/CustomStandards";
 import Pdlc from "@/pages/app/Pdlc";
 import Legacy from "@/pages/app/Legacy";
 import Activity from "@/pages/app/Activity";
@@ -155,6 +156,7 @@ function AppRoutes() {
           <Route path="/app/traceability" component={Traceability} />
           <Route path="/app/compliance" component={Compliance} />
           <Route path="/app/compliance/:id" component={ComplianceDetail} />
+          <Route path="/app/standards" component={CustomStandards} />
           <Route path="/app/pdlc" component={Pdlc} />
           <Route path="/app/legacy" component={Legacy} />
           <Route path="/app/activity" component={Activity} />
