@@ -1,1 +1,138 @@
-[]
+[
+  {
+    "id": "01HTAU01-0001-4001-8001-000000000001",
+    "position": 1,
+    "filepath": "src/pages/slides/TitleSlide.tsx",
+    "title": "Auditee — The AI-native PDLC platform",
+    "description": "Title slide introducing Auditee with key headline metrics and a sample audit-readiness chart.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU02-0002-4002-8002-000000000002",
+    "position": 2,
+    "filepath": "src/pages/slides/ProblemScramble.tsx",
+    "title": "The audit-week scramble",
+    "description": "The core problem: requirements, code, evidence and controls live in disconnected systems.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU03-0003-4003-8003-000000000003",
+    "position": 3,
+    "filepath": "src/pages/slides/WhatThisCosts.tsx",
+    "title": "What this costs",
+    "description": "Four concrete costs of disconnection: late gaps, untraced code, manual evidence, repeat findings.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU04-0004-4004-8004-000000000004",
+    "position": 4,
+    "filepath": "src/pages/slides/KnowledgeGraph.tsx",
+    "title": "One living knowledge graph",
+    "description": "Auditee's core abstraction: a single graph linking requirements, code, tests, evidence and findings.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU05-0005-4005-8005-000000000005",
+    "position": 5,
+    "filepath": "src/pages/slides/FourCapabilities.tsx",
+    "title": "Four capabilities. One platform.",
+    "description": "Overview of the four product capabilities that build on the knowledge graph.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU06-0006-4006-8006-000000000006",
+    "position": 6,
+    "filepath": "src/pages/slides/StandardsBigStat.tsx",
+    "title": "40+ standards covered",
+    "description": "Hero stat slide highlighting Auditee's coverage of 40+ enterprise compliance frameworks.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU07-0007-4007-8007-000000000007",
+    "position": 7,
+    "filepath": "src/pages/slides/StandardsGrid.tsx",
+    "title": "The standards grid",
+    "description": "Five-category grid listing the specific safety, quality, security, privacy and emerging standards supported.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU08-0008-4008-8008-000000000008",
+    "position": 8,
+    "filepath": "src/pages/slides/Connectors.tsx",
+    "title": "Connect everything you already use",
+    "description": "Three-column view of supported requirements, ALM, code and defect-tracking integrations.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU09-0009-4009-8009-000000000009",
+    "position": 9,
+    "filepath": "src/pages/slides/HowItWorks.tsx",
+    "title": "How it works",
+    "description": "Five-step horizontal flow: connect, select standards, generate or import, run the audit, export.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU10-0010-4010-8010-000000000010",
+    "position": 10,
+    "filepath": "src/pages/slides/RequirementsGen.tsx",
+    "title": "Requirements Generation",
+    "description": "Capability deep-dive on AI-drafted requirements with citations, shown via a sample requirement card.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU11-0011-4011-8011-000000000011",
+    "position": 11,
+    "filepath": "src/pages/slides/CodeToSpec.tsx",
+    "title": "Code-to-Spec Traceability",
+    "description": "Capability deep-dive on language-agnostic code-to-requirement linking with a sample trace map.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU12-0012-4012-8012-000000000012",
+    "position": 12,
+    "filepath": "src/pages/slides/ComplianceWorkflows.tsx",
+    "title": "Compliance & Audit Workflows",
+    "description": "Continuous compliance, CAPA tracking and a single Audit-Readiness Score, shown via a gauge.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU13-0013-4013-8013-000000000013",
+    "position": 13,
+    "filepath": "src/pages/slides/VsAlternatives.tsx",
+    "title": "Auditee vs the alternatives",
+    "description": "Capability matrix comparing Auditee with ALM, static analysis and GRC vendors.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU14-0014-4014-8014-000000000014",
+    "position": 14,
+    "filepath": "src/pages/slides/BuiltForEnterprise.tsx",
+    "title": "Built for enterprise quality teams",
+    "description": "Five target verticals: automotive, medical, aerospace, industrial control, enterprise SaaS.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU15-0015-4015-8015-000000000015",
+    "position": 15,
+    "filepath": "src/pages/slides/Pricing.tsx",
+    "title": "Pricing",
+    "description": "Four-tier pricing in INR: Free, Standard, Professional (highlighted), Enterprise.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU16-0016-4016-8016-000000000016",
+    "position": 16,
+    "filepath": "src/pages/slides/WhyNow.tsx",
+    "title": "Why now",
+    "description": "Regulatory milestones driving urgency: EU AI Act, NIS2, DORA, FDA QMSR, ISO 26262 audit volumes.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "01HTAU17-0017-4017-8017-000000000017",
+    "position": 17,
+    "filepath": "src/pages/slides/ClosingCta.tsx",
+    "title": "auditee.site",
+    "description": "Closing call to action with the auditee.site URL and sales contact.",
+    "speakerNotes": ""
+  }
+]
