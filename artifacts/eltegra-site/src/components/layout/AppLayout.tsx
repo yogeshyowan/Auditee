@@ -24,13 +24,15 @@ import {
   Plus,
   Users,
   Beaker,
-  FileBadge2
+  FileBadge2,
+  Compass
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AskAuditeeFloater } from "@/components/AskAuditeeFloater";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useProjectContext } from "@/lib/project-context";
+import { startTour, maybeAutoStartTour } from "@/lib/tour";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 
@@ -65,7 +67,7 @@ const NAV_ITEMS = [
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const { projectId, setProjectId, connectedProjects, allProjects, effectiveRole } = useProjectContext();
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -81,6 +83,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       document.head.removeChild(tag);
     };
   }, []);
+
+  useEffect(() => {
+    maybeAutoStartTour(navigate);
+  }, [navigate]);
 
   // Look up the active project across ALL projects (connected or not) so
   // freshly-created projects with 0 sources still appear in the switcher button.
@@ -190,10 +196,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {NAV_ITEMS.map((item) => {
             const isActive = location.startsWith(item.href);
+            const tourKey = `nav-${item.href.replace("/app/", "")}`;
             return (
               <Link 
                 key={item.href} 
                 href={item.href}
+                data-tour={tourKey}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive 
                     ? "bg-primary/10 text-primary" 
@@ -221,7 +229,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex-1 ml-64 flex flex-col min-h-screen">
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-2 flex items-center justify-end">
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-2 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => startTour(navigate)}
+            data-testid="button-take-tour"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-primary px-3 py-1.5 rounded-full border border-slate-200 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+          >
+            <Compass className="h-3.5 w-3.5" />
+            Take a tour
+          </button>
           <NotificationBell recipient="avery.kim" />
         </div>
         <div className="p-6 flex-1">{children}</div>

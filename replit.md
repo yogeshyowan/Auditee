@@ -16,6 +16,8 @@ The project is structured as a pnpm workspace monorepo using Node.js and TypeScr
 
 The marketing site is optimized for SEO, while the application (`/app/*`) is configured for `noindex, nofollow`. The application features a logical navigation and a floating "Ask Auditee" AI chat button. The UI adheres to a branded `shadcn` appearance with Auditee purple (`#6366f1`) and Inter Tight font.
 
+A first-run **Platform Tour** (powered by `driver.js`, defined in `artifacts/eltegra-site/src/lib/tour.ts`) walks new users through every workflow in `/app/*` — Project Sources → Smart Interview → Requirements → Gap Detection → Traceability Graph → Compliance → CAPA → Defects → Test Cases → AI Reports → Workflows → Analytics → Recurring Audits → Dashboard → Ask Auditee. Each step navigates to the corresponding route while highlighting its sidebar entry (via `data-tour="nav-<slug>"` attributes) and uses element-presence gating instead of fixed timeouts. The tour auto-launches once on first visit (localStorage flag `auditee_tour_seen` / `auditee_tour_completed`) and can be relaunched anytime from the **Take a tour** button in the top-right header bar of the app shell.
+
 ### Technical Implementations
 
 The backend is an Express 5 API server. Data persistence is managed by PostgreSQL with Drizzle ORM, utilizing Zod for validation. API client code is generated from an OpenAPI specification. The frontend is built with React and Vite. All external HTTP requests are routed through `lib/safe-fetch.ts` for SSRF protection. Authentication and authorization are handled by Clerk, supporting a workspace-scoped, seat-based billing model.
