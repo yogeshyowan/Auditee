@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Download,
 } from "lucide-react";
 
 interface LeadRow {
@@ -139,6 +140,39 @@ export default function AdminLeadsPage() {
     );
   }, [query.data, search]);
 
+  function downloadCsv() {
+    const headers = [
+      "capturedAt",
+      "source",
+      "name",
+      "email",
+      "clerkUserId",
+      "syncedAt",
+      "forwardError",
+    ];
+    const rows = filtered.map((r) =>
+      [
+        r.createdAt,
+        r.source,
+        r.name,
+        r.email,
+        r.clerkUserId ?? "",
+        r.forwardedToFormAt ?? "",
+        r.forwardError ?? "",
+      ]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `captured-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const unforwardedCount = useMemo(
     () =>
       (query.data?.leads ?? []).filter((r) => !r.forwardedToFormAt).length,
@@ -189,18 +223,28 @@ export default function AdminLeadsPage() {
             whether the row was forwarded to the connected Google Sheet.
           </p>
         </div>
-        <Button
-          onClick={() => resyncMutation.mutate()}
-          disabled={resyncMutation.isPending || unforwardedCount === 0}
-          data-testid="button-resync-unforwarded"
-        >
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${resyncMutation.isPending ? "animate-spin" : ""}`}
-          />
-          {resyncMutation.isPending
-            ? "Resyncing…"
-            : `Resync all unforwarded (${unforwardedCount})`}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={downloadCsv}
+            disabled={filtered.length === 0}
+            data-testid="button-export-csv"
+          >
+            <Download className="h-4 w-4 mr-2" /> Export CSV
+          </Button>
+          <Button
+            onClick={() => resyncMutation.mutate()}
+            disabled={resyncMutation.isPending || unforwardedCount === 0}
+            data-testid="button-resync-unforwarded"
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${resyncMutation.isPending ? "animate-spin" : ""}`}
+            />
+            {resyncMutation.isPending
+              ? "Resyncing…"
+              : `Resync all unforwarded (${unforwardedCount})`}
+          </Button>
+        </div>
       </header>
 
       <Card>
