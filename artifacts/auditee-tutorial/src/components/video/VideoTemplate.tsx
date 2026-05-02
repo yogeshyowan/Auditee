@@ -15,6 +15,7 @@ import { CaseConclude } from './video_scenes/CaseConclude';
 import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
 import { BackgroundMusic } from './BackgroundMusic';
+import { Captions } from './Captions';
 
 export const SCENE_DURATIONS = {
   problem: 14000,
@@ -114,6 +115,8 @@ export default function VideoTemplate({
       <AnimatePresence initial={false} mode="wait">
         {SceneComponent && <SceneComponent key={currentSceneKey} />}
       </AnimatePresence>
+
+      <Captions audioRef={audioRef} />
     </div>
   );
 }
