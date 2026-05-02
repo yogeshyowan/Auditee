@@ -1,27 +1,53 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { Scene1 } from './video_scenes/Scene1';
 import { Scene2 } from './video_scenes/Scene2';
-import { Scene3 } from './video_scenes/Scene3';
+import { CaseIntake } from './video_scenes/CaseIntake';
+import { CaseRequirements } from './video_scenes/CaseRequirements';
+import { CaseTraceability } from './video_scenes/CaseTraceability';
+import { CaseAudit } from './video_scenes/CaseAudit';
+import { CaseReport } from './video_scenes/CaseReport';
+import { CaseGaps } from './video_scenes/CaseGaps';
+import { CaseCapa } from './video_scenes/CaseCapa';
+import { CaseWorkflow } from './video_scenes/CaseWorkflow';
+import { CaseConclude } from './video_scenes/CaseConclude';
 import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
 
 export const SCENE_DURATIONS = {
-  problem: 12000,
-  intro: 10000,
-  casestudy: 25000,
-  outcome: 10000,
-  cta: 8000,
+  problem: 14000,
+  intro: 11000,
+  case_intake: 6000,
+  case_requirements: 9500,
+  case_traceability: 9000,
+  case_audit: 9500,
+  case_report: 9500,
+  case_gaps: 7500,
+  case_capa: 8500,
+  case_workflow: 8500,
+  case_conclude: 6000,
+  outcome: 7000,
+  cta: 6000,
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   problem: Scene1,
   intro: Scene2,
-  casestudy: Scene3,
+  case_intake: CaseIntake,
+  case_requirements: CaseRequirements,
+  case_traceability: CaseTraceability,
+  case_audit: CaseAudit,
+  case_report: CaseReport,
+  case_gaps: CaseGaps,
+  case_capa: CaseCapa,
+  case_workflow: CaseWorkflow,
+  case_conclude: CaseConclude,
   outcome: Scene4,
   cta: Scene5,
 };
+
+const NARRATION_SRC = `${import.meta.env.BASE_URL}audio/narration.mp3`;
 
 export default function VideoTemplate({
   durations = SCENE_DURATIONS,
@@ -33,6 +59,7 @@ export default function VideoTemplate({
   onSceneChange?: (sceneKey: string) => void;
 } = {}) {
   const { currentSceneKey } = useVideoPlayer({ durations, loop });
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     onSceneChange?.(currentSceneKey);
@@ -41,8 +68,23 @@ export default function VideoTemplate({
   const baseSceneKey = currentSceneKey.replace(/_r[12]$/, '') as keyof typeof SCENE_DURATIONS;
   const SceneComponent = SCENE_COMPONENTS[baseSceneKey];
 
+  // Reset audio at the start of every loop (when we land on the first scene).
+  useEffect(() => {
+    if (baseSceneKey === 'problem' && audioRef.current) {
+      try {
+        audioRef.current.currentTime = 0;
+        const p = audioRef.current.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch {
+        /* noop */
+      }
+    }
+  }, [baseSceneKey]);
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[var(--color-bg-dark)] font-display text-white">
+      <audio ref={audioRef} src={NARRATION_SRC} autoPlay preload="auto" />
+
       {/* Persistent Background */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div
