@@ -1,4 +1,6 @@
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@clerk/react";
+import { useQuery } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   ListChecks, 
@@ -25,7 +27,8 @@ import {
   Users,
   Beaker,
   FileBadge2,
-  Compass
+  Compass,
+  Mailbox
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -67,10 +70,42 @@ const NAV_ITEMS = [
   { href: "/app/sso", label: "SSO & Security", icon: KeyRound },
 ];
 
+// Internal-admin-only nav items. These are gated by both the workspace
+// `owner` role AND the LEAD_ADMIN_EMAILS allowlist on the API; we hide the
+// link entirely when the API says the signed-in user is not an admin so the
+// rest of the team isn't shown a link that just shows them a 403.
+const ADMIN_NAV_ITEMS = [
+  { href: "/app/admin/leads", label: "Captured Leads", icon: Mailbox },
+];
+
+const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const { projectId, setProjectId, connectedProjects, allProjects, effectiveRole } = useProjectContext();
   const [createOpen, setCreateOpen] = useState(false);
+  const { getToken, isLoaded: isAuthLoaded } = useAuth();
+
+  const adminCheck = useQuery<{ isAdmin: boolean }>({
+    queryKey: ["leads", "admin-check"],
+    enabled: isAuthLoaded,
+    queryFn: async () => {
+      const token = await getToken();
+      const headers = new Headers();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      const res = await fetch(`${apiBase}/leads/admin/me`, {
+        headers,
+        credentials: "include",
+      });
+      if (!res.ok) return { isAdmin: false };
+      return res.json();
+    },
+    retry: false,
+  });
+
+  const navItems = adminCheck.data?.isAdmin
+    ? [...NAV_ITEMS, ...ADMIN_NAV_ITEMS]
+    : NAV_ITEMS;
 
   // Tell search engines never to index the signed-in app — these pages are
   // private project workspaces. robots.txt covers most crawlers; this meta
@@ -195,7 +230,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = location.startsWith(item.href);
             const tourKey = `nav-${item.href.replace("/app/", "")}`;
             return (

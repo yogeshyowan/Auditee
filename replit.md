@@ -16,8 +16,6 @@ The project is structured as a pnpm workspace monorepo using Node.js and TypeScr
 
 The marketing site is optimized for SEO, while the application (`/app/*`) is configured for `noindex, nofollow`. The application features a logical navigation and a floating "Ask Auditee" AI chat button. The UI adheres to a branded `shadcn` appearance with Auditee purple (`#6366f1`) and Inter Tight font.
 
-A first-run **Platform Tour** (powered by `driver.js`, defined in `artifacts/eltegra-site/src/lib/tour.ts`) walks new users through every workflow in `/app/*` — Project Sources → Smart Interview → Requirements → Gap Detection → Traceability Graph → Compliance → CAPA → Defects → Test Cases → AI Reports → Workflows → Analytics → Recurring Audits → Dashboard → Ask Auditee. Each step navigates to the corresponding route while highlighting its sidebar entry (via `data-tour="nav-<slug>"` attributes) and uses element-presence gating instead of fixed timeouts. The tour auto-launches once on first visit (localStorage flag `auditee_tour_seen` / `auditee_tour_completed`) and can be relaunched anytime from the **Take a tour** button in the top-right header bar of the app shell.
-
 ### Technical Implementations
 
 The backend is an Express 5 API server. Data persistence is managed by PostgreSQL with Drizzle ORM, utilizing Zod for validation. API client code is generated from an OpenAPI specification. The frontend is built with React and Vite. All external HTTP requests are routed through `lib/safe-fetch.ts` for SSRF protection. Authentication and authorization are handled by Clerk, supporting a workspace-scoped, seat-based billing model.
@@ -35,19 +33,6 @@ AI features are exposed via `/api/ai/*` endpoints for `generate-requirements`, `
 ### Pricing & Credit Model
 
 A single source of truth for pricing/seats/credits is defined in `lib/db/src/schema/workspaces.ts` with tiers: Free, Standard, Professional, and Enterprise, each with specific seats and monthly AI credits. One credit equals one successful AI generation, with failures auto-refunded. Anonymous users receive a Free allowance tracked locally and verified server-side.
-
-### Razorpay Billing (LIVE mode, INR)
-
-- **Monthly Standard (₹1,999/mo)** and **Monthly Professional (₹7,999/mo)** are sold as Razorpay **Subscriptions** (auto-renew, `total_count: 120`).
-- **Annual Standard (₹19,990/yr)** and **Annual Professional (₹79,990/yr)** are sold as Razorpay one-time **Orders**. They do **not** auto-renew (RBI ₹15,000 card-auto-debit cap workaround) and lapse after 12 months via `workspaces.planExpiresAt`.
-- **Enterprise** is contact-sales (`mailto:`), not sold via Razorpay.
-- **Free** is unchanged.
-- DB schema: `razorpay_plans` (Razorpay-side plan id cache), `subscriptions`, `payments`. See `lib/db/src/schema/billing.ts`.
-- Server: `artifacts/api-server/src/routes/billing.ts` + `src/lib/razorpay.ts` + `src/lib/razorpayPlans.ts`. Webhook is mounted with `express.json({ verify })` so the raw body is stashed for HMAC-SHA256 verification against `RAZORPAY_WEBHOOK_SECRET`.
-- Successful `payment.captured` webhook events fire `marketingstuffs payment_completed` server-side.
-- Frontend Pricing page (`src/pages/Pricing.tsx`) has a Monthly/Annual toggle and lazy-loads Razorpay Checkout via `src/lib/razorpayCheckout.ts`.
-- Billing page (`src/pages/app/Billing.tsx`) shows the active subscription/order state via `GET /billing/me` and supports cancel-at-period-end for monthly subscriptions.
-- Webhook URL the user must register in the Razorpay dashboard: `https://<deployed-domain>/api/billing/webhook`. See `artifacts/api-server/RAZORPAY_WEBHOOK_SETUP.md` for the full event list and instructions.
 
 ### Feature Specifications
 
@@ -67,7 +52,7 @@ A single source of truth for pricing/seats/credits is defined in `lib/db/src/sch
 -   **Pre-Audit Source Auto-Pull**: Before scheduled compliance audits, the system automatically refreshes all linked sources (GitHub, RM tools, defect tools, remote systems) to ensure AI evaluates the current state.
 -   **SEO & Content**: The marketing site incorporates comprehensive SEO infrastructure, including a declarative SEO component, `robots.txt`, a build-time sitemap generator, and a blog.
 -   **Hetzner / Docker Deployment**: The codebase supports deployment on Replit or a self-hosted Hetzner VPS via `docker compose up -d` with `db`, `api`, and `web` containers. Replit-specific code paths are gated and activate only when relevant environment variables are present.
--   **Lead Capture & Google Sheet Sync**: Every signed-in user (signup, login, and waitlist click) is captured into the `lead_captures` table with a unique `(email, source)` constraint. A "Join the waitlist with Google" button on the marketing pages opens Clerk's Google OAuth modal. Captures are appended as new rows to a Google Sheet via the connected Replit `google-sheet` integration (OAuth-based; no Apps Script or service account required) when `GOOGLE_SHEET_ID` is set. The sheet's header row is created automatically on the first append, and any rows captured before the integration was wired up are back-filled on the next API server start.
+-   **Lead Capture & Google Sheet Sync**: Every signed-in user (signup, login, and waitlist click) is captured into the `lead_captures` table with a unique `(email, source)` constraint. A "Join the waitlist with Google" button on the marketing pages opens Clerk's Google OAuth modal. Captures are appended as new rows to a Google Sheet via the connected Replit `google-sheet` integration (OAuth-based; no Apps Script or service account required) when `GOOGLE_SHEET_ID` is set. The sheet's header row is created automatically on the first append, and any rows captured before the integration was wired up are back-filled on the next API server start. An admin page at `/app/admin/leads` lists every captured row newest-first with a per-row green/red sheet-sync indicator and a "Resync all unforwarded" button. Access requires both the workspace `owner` role AND a match in the `LEAD_ADMIN_EMAILS` env var allowlist (comma-separated emails). Both checks are required because `lead_captures` is a single global table (not workspace-scoped) and `requireWorkspace` auto-creates a workspace where the caller is owner — an owner-only check by itself would let any signed-in user read every other user's signup PII. The "Captured Leads" sidebar entry is hidden for users who do not pass both checks; direct navigation shows a 403 card.
 
 ## External Dependencies
 

@@ -1,11 +1,18 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, leadCapturesTable, type LeadCaptureSource } from "@workspace/db";
 import { CaptureLeadBody } from "@workspace/api-zod";
-import { requireAuth, type AuthedRequest } from "../lib/authContext";
+import type { Request } from "express";
+import {
+  requireAuth,
+  requireWorkspace,
+  canonicalRole,
+  type AuthedRequest,
+  type WorkspaceCtx,
+} from "../lib/authContext";
 import { postToGoogleSheet } from "../lib/googleSheetSync";
-import { msTrack } from "../lib/marketingstuffs";
+import { isLeadAdminEmail } from "../lib/leadAdmin";
 import { clerkClient } from "@clerk/express";
 
 const router: IRouter = Router();
@@ -99,16 +106,6 @@ router.post("/leads/capture", requireAuth, async (req, res) => {
   }
 
   if (captured) {
-    // Fire a server-side marketingstuffs trigger for brand-new leads only
-    // (deduped rows skip this so the user isn't re-emailed every time they
-    // sign in again). Match the `event` value to the trigger_event name set
-    // up in the marketingstuffs.site automation.
-    void msTrack({
-      event: "lead_captured",
-      email,
-      name,
-      metadata: { source, clerk_user_id: ctx.userId },
-    });
     res.status(201).json({ captured: true, deduped: false, id: targetRow!.id });
   } else {
     res.json({ captured: false, deduped: true });
@@ -124,5 +121,131 @@ router.get("/leads/captures", requireAuth, async (req, res) => {
     .where(and(eq(leadCapturesTable.clerkUserId, ctx.userId)));
   res.json(rows);
 });
+
+/**
+ * Admin authorization for the captured-leads endpoints.
+ *
+ * The task literally asks for "gated to workspace owners", so we require the
+ * caller to be the owner of their workspace. But `lead_captures` is a single
+ * GLOBAL table (not workspace-scoped) and `requireWorkspace` auto-creates a
+ * workspace where the caller is owner — so an owner-only check by itself is
+ * not enough to prevent any signed-in user from reading every other user's
+ * signup PII. We additionally require the caller's email to be on the
+ * `LEAD_ADMIN_EMAILS` allowlist (safe-by-default: empty/unset = no admins).
+ */
+function isLeadAdmin(ctx: WorkspaceCtx): boolean {
+  return (
+    canonicalRole(ctx.role) === "owner" && isLeadAdminEmail(ctx.email)
+  );
+}
+
+// Lightweight check the frontend can call to decide whether to render the
+// admin "Captured Leads" sidebar item. Returns false unless the user is both
+// a workspace owner AND on the LEAD_ADMIN_EMAILS allowlist.
+router.get(
+  "/leads/admin/me",
+  requireAuth,
+  requireWorkspace,
+  async (req, res) => {
+    const ctx = (req as Request & { ws_ctx: WorkspaceCtx }).ws_ctx;
+    res.json({ isAdmin: isLeadAdmin(ctx) });
+  },
+);
+
+// Admin: list every captured lead, newest first. Restricted to workspace
+// owners on the LEAD_ADMIN_EMAILS allowlist — see isLeadAdmin() above for
+// why both checks are required.
+router.get(
+  "/leads/captures/all",
+  requireAuth,
+  requireWorkspace,
+  async (req, res) => {
+    const ctx = (req as Request & { ws_ctx: WorkspaceCtx }).ws_ctx;
+    if (!isLeadAdmin(ctx)) {
+      res
+        .status(403)
+        .json({ error: "Workspace owner + internal admin access required." });
+      return;
+    }
+    const rows = await db
+      .select()
+      .from(leadCapturesTable)
+      .orderBy(desc(leadCapturesTable.createdAt));
+    res.json({ leads: rows, count: rows.length });
+  },
+);
+
+// Admin: re-runs the Google Sheet sync for every row that was never
+// successfully forwarded. Useful when the sheet was misconfigured during
+// the initial captures and we want to backfill without losing any rows.
+router.post(
+  "/leads/resync-unforwarded",
+  requireAuth,
+  requireWorkspace,
+  async (req, res) => {
+    const ctx = (req as Request & { ws_ctx: WorkspaceCtx }).ws_ctx;
+    if (!isLeadAdmin(ctx)) {
+      res
+        .status(403)
+        .json({ error: "Workspace owner + internal admin access required." });
+      return;
+    }
+    const pending = await db
+      .select()
+      .from(leadCapturesTable)
+      .where(isNull(leadCapturesTable.forwardedToFormAt))
+      .orderBy(desc(leadCapturesTable.createdAt));
+
+    let attempted = 0;
+    let synced = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    // Process sequentially so we don't slam the Google Sheets API and so any
+    // transient quota errors surface as a single failure rather than cascading.
+    for (const row of pending) {
+      const result = await postToGoogleSheet({
+        name: row.name,
+        email: row.email,
+        id: row.clerkUserId ?? row.id,
+        source: row.source,
+        capturedAt: row.createdAt.toISOString(),
+      });
+      if (!result.attempted) {
+        skipped++;
+        continue;
+      }
+      attempted++;
+      if (result.ok) {
+        synced++;
+        await db
+          .update(leadCapturesTable)
+          .set({ forwardedToFormAt: new Date(), forwardError: null })
+          .where(eq(leadCapturesTable.id, row.id));
+      } else {
+        failed++;
+        await db
+          .update(leadCapturesTable)
+          .set({
+            forwardError: result.error ?? `status_${result.status ?? "unknown"}`,
+          })
+          .where(eq(leadCapturesTable.id, row.id));
+      }
+    }
+
+    req.log.info(
+      { pending: pending.length, attempted, synced, failed, skipped, actor: ctx.userId },
+      "lead resync run complete",
+    );
+
+    res.json({
+      pending: pending.length,
+      attempted,
+      synced,
+      failed,
+      skipped,
+    });
+  },
+);
 
 export default router;
