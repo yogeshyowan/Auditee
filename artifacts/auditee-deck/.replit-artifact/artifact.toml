@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/auditee-deck/"
+title = "Auditee — Investor / Sales Deck"
+version = "1.0.0"
+id = "artifacts/auditee-deck"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/auditee-deck/" ]
+localPort = 25036
+
+[services.development]
+run = "pnpm --filter @workspace/auditee-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/auditee-deck", "run", "build" ]
+publicDir = "artifacts/auditee-deck/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25036"
+BASE_PATH = "/auditee-deck/"
