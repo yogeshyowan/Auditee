@@ -14,6 +14,7 @@ import { CaseWorkflow } from './video_scenes/CaseWorkflow';
 import { CaseConclude } from './video_scenes/CaseConclude';
 import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
+import { BackgroundMusic } from './BackgroundMusic';
 
 export const SCENE_DURATIONS = {
   problem: 14000,
@@ -84,6 +85,7 @@ export default function VideoTemplate({
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[var(--color-bg-dark)] font-display text-white">
       <audio ref={audioRef} src={NARRATION_SRC} autoPlay preload="auto" />
+      <BackgroundMusic />
 
       {/* Persistent Background */}
       <div className="absolute inset-0 pointer-events-none">
