@@ -111,6 +111,25 @@ const PLAN_DETAILS: Record<
   },
 };
 
+const ANNUAL_PRICES: Record<"standard" | "professional", string> = {
+  standard: "₹19,990",
+  professional: "₹79,990",
+};
+
+/** Derive the price/cadence labels for the "Current plan" card. For paid
+ *  workspaces we honour the subscription's cadence (monthly vs annual) so an
+ *  annual subscriber doesn't see "/month" pricing. Free and Enterprise fall
+ *  back to the static plan detail. */
+function priceForCurrentPlan(
+  plan: WorkspaceMe["workspace"]["plan"],
+  cadence: "monthly" | "annual" | undefined,
+): { price: string; cadence: string } {
+  if (cadence === "annual" && (plan === "standard" || plan === "professional")) {
+    return { price: ANNUAL_PRICES[plan], cadence: "/year" };
+  }
+  return { price: PLAN_DETAILS[plan].price, cadence: PLAN_DETAILS[plan].cadence };
+}
+
 function formatDate(s: string | null | undefined): string {
   if (!s) return "—";
   try {
@@ -266,10 +285,18 @@ export default function BillingPage() {
             <div className="text-xs uppercase tracking-wide text-slate-500">Plan</div>
             <div className="mt-1 flex items-center gap-2">
               <span className="text-2xl font-semibold text-slate-900">{PLAN_DETAILS[me.workspace.plan].label}</span>
-              <Badge variant="secondary">
-                {PLAN_DETAILS[me.workspace.plan].price}
-                {PLAN_DETAILS[me.workspace.plan].cadence}
-              </Badge>
+              {(() => {
+                const { price, cadence } = priceForCurrentPlan(
+                  me.workspace.plan,
+                  billingQuery.data?.subscription?.cadence,
+                );
+                return (
+                  <Badge variant="secondary" data-testid="badge-current-plan-price">
+                    {price}
+                    {cadence}
+                  </Badge>
+                );
+              })()}
             </div>
           </div>
           <div>
