@@ -28,7 +28,11 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 
-type NavGroup = { label: string; key: string; items: { title: string; desc: string; href: string }[] };
+type NavGroup = {
+  label: string;
+  key: string;
+  items: { title: string; desc: string; href: string; external?: boolean }[];
+};
 
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -61,6 +65,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
       { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
       { title: "Security & Trust", desc: "Encryption, SSO, audit logs, SOC 2 / ISO 27001 / GDPR posture.", href: "/security" },
+      { title: "Investor / Sales Deck", desc: "The full Auditee story in slides — vision, traction, GTM.", href: "/auditee-deck/", external: true },
       { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "/#pdlc" },
     ],
   },
@@ -230,15 +235,23 @@ export function Navigation() {
                       );
                       const className = "block rounded-md p-3 hover:bg-slate-100 transition-colors group";
                       const testId = `nav-item-${group.key}-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+                      // Items marked `external` (e.g. the slides artifact at /auditee-deck/)
+                      // live outside this SPA's wouter routes — they must use a real <a>.
+                      const useWouterLink = !item.external && isInternalRoute(item.href);
                       return (
                         <li key={item.title}>
                           <NavigationMenuLink asChild>
-                            {isInternalRoute(item.href) ? (
+                            {useWouterLink ? (
                               <Link href={item.href} className={className} data-testid={testId}>
                                 {inner}
                               </Link>
                             ) : (
-                              <a href={item.href} className={className} data-testid={testId}>
+                              <a
+                                href={item.href}
+                                className={className}
+                                data-testid={testId}
+                                {...(item.external ? { target: "_blank", rel: "noopener" } : {})}
+                              >
                                 {inner}
                               </a>
                             )}
@@ -415,6 +428,7 @@ export function SiteFooter() {
               <li><Link href="/pricing" className="hover:text-primary transition-colors" data-testid="link-footer-pricing">Pricing</Link></li>
               <li><Link href="/roi-calculator" className="hover:text-primary transition-colors" data-testid="link-footer-roi">ROI Calculator</Link></li>
               <li><Link href="/security" className="hover:text-primary transition-colors" data-testid="link-footer-security">Security & Trust</Link></li>
+              <li><a href="/auditee-deck/" target="_blank" rel="noopener" className="hover:text-primary transition-colors" data-testid="link-footer-deck">Investor Deck</a></li>
             </ul>
           </div>
 
