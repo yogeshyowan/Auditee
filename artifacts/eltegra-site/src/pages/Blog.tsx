@@ -4,6 +4,7 @@ import { POSTS, allTags } from "@/content/blog";
 import { SEO, SITE_URL, breadcrumbsLd } from "@/components/SEO";
 import { Navigation, SiteFooter } from "@/components/site/Chrome";
 import { Badge } from "@/components/ui/badge";
+import { WaitlistButton } from "@/components/site/WaitlistButton";
 import { useMemo, useState } from "react";
 
 export default function Blog() {
@@ -149,6 +150,23 @@ export default function Blog() {
         {visible.length === 0 && (
           <p className="text-slate-500 text-sm">No posts match this filter yet.</p>
         )}
+
+        <section
+          className="mt-20 rounded-2xl border border-slate-200 bg-gradient-to-br from-secondary/30 to-white p-8 md:p-12 text-center"
+          data-testid="blog-waitlist-cta"
+        >
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-950 mb-3">
+            Want this research in your inbox?
+          </h2>
+          <p className="text-slate-600 max-w-2xl mx-auto mb-6">
+            Join the waitlist to get new buyer's guides, standards walkthroughs and modernization playbooks the moment they ship — plus early access to the Auditee platform.
+          </p>
+          <WaitlistButton
+            size="lg"
+            className="rounded-full"
+            testId="blog-cta-waitlist"
+          />
+        </section>
       </main>
       <SiteFooter />
     </div>

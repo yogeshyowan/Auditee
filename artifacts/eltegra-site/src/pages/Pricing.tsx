@@ -5,6 +5,7 @@ import { useAuth, useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles, ArrowRight, Zap } from "lucide-react";
 import { SEO, faqLd } from "@/components/SEO";
+import { WaitlistButton } from "@/components/site/WaitlistButton";
 import {
   useCreateBillingSubscribe,
   useCreateBillingVerify,
@@ -463,14 +464,22 @@ export default function Pricing() {
             Still on the fence?
           </h2>
           <p className="text-slate-600 mb-6">
-            Run our 60-second ROI calculator to see what audit chaos is actually costing your org.
+            Run our 60-second ROI calculator to see what audit chaos is actually costing your org — or join the waitlist and we'll keep you posted as new tiers, integrations and on-prem options ship.
           </p>
-          <Link href="/roi-calculator">
-            <Button size="lg" className="rounded-full" data-testid="pricing-roi-cta">
-              Open the ROI calculator
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <Link href="/roi-calculator">
+              <Button size="lg" className="rounded-full" data-testid="pricing-roi-cta">
+                Open the ROI calculator
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <WaitlistButton
+              size="lg"
+              variant="outline"
+              className="rounded-full"
+              testId="pricing-cta-waitlist"
+            />
+          </div>
         </div>
       </section>
     </div>
