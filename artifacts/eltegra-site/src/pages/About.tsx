@@ -23,11 +23,11 @@ const PRINCIPLES = [
 ];
 
 const ROLES = [
-  { team: "Engineering", role: "Senior Backend Engineer (Graph Infrastructure)", location: "Remote — EU/US" },
-  { team: "Engineering", role: "Staff ML Engineer (Requirements Extraction)", location: "Remote — EU/US" },
-  { team: "Product", role: "Senior PM (Compliance & Audit)", location: "Remote — EU" },
-  { team: "Customer Success", role: "Solutions Architect, Regulated Industries", location: "Remote — US" },
-  { team: "GTM", role: "Enterprise Account Executive — Healthcare & MedTech", location: "Boston / Remote — US" },
+  { team: "Engineering", role: "Senior Backend Engineer (Graph Infrastructure)", location: "Chennai / Remote — India" },
+  { team: "Engineering", role: "Staff ML Engineer (Requirements Extraction)", location: "Chennai / Remote — India" },
+  { team: "Product", role: "Senior PM (Compliance & Audit)", location: "Chennai / Remote — India" },
+  { team: "Customer Success", role: "Solutions Architect, Regulated Industries", location: "Chennai / Remote — India" },
+  { team: "GTM", role: "Enterprise Account Executive — Healthcare & MedTech", location: "Chennai, Tamil Nadu / Remote — India" },
 ];
 
 const PRESS = [
