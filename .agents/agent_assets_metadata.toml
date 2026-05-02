@@ -23,3 +23,9 @@ id = "NNDXXJ6TsmUBsgzH3d_U6"
 uri = "file://ABOUT.md"
 type = "text"
 title = "Montana — App Documentation"
+
+[[outputs]]
+id = "yxFFbD2IO75YFzkQWNIhv"
+uri = "file://.local/outputs/Auditee---Investor-Sales-Deck.pdf"
+type = "pdf"
+title = "Auditee — Investor / Sales Deck (PDF)"
