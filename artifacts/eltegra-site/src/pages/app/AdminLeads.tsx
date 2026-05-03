@@ -95,6 +95,8 @@ export default function AdminLeadsPage() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   useEffect(() => {
     document.title = "Captured Leads — Auditee";
@@ -209,15 +211,23 @@ export default function AdminLeadsPage() {
 
   const filtered = useMemo(() => {
     const rows = query.data?.leads ?? [];
-    if (!search.trim()) return rows;
     const q = search.trim().toLowerCase();
-    return rows.filter(
-      (r) =>
-        r.email.toLowerCase().includes(q) ||
-        r.name.toLowerCase().includes(q) ||
-        r.source.includes(q),
-    );
-  }, [query.data, search]);
+    const fromDate = from ? new Date(from) : null;
+    const toDate = to ? new Date(`${to}T23:59:59`) : null;
+    return rows.filter((r) => {
+      if (q) {
+        if (
+          !r.email.toLowerCase().includes(q) &&
+          !r.name.toLowerCase().includes(q) &&
+          !r.source.includes(q)
+        )
+          return false;
+      }
+      if (fromDate && new Date(r.createdAt) < fromDate) return false;
+      if (toDate && new Date(r.createdAt) > toDate) return false;
+      return true;
+    });
+  }, [query.data, search, from, to]);
 
   function downloadCsv() {
     const headers = [
@@ -344,15 +354,42 @@ export default function AdminLeadsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Filter</CardTitle>
+          <CardTitle className="text-base">Filters</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter by name, email, or source…"
-            data-testid="input-filter-leads"
-          />
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              Search
+            </label>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter by name, email, or source…"
+              data-testid="input-filter-leads"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              From
+            </label>
+            <Input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              data-testid="input-filter-from"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              To
+            </label>
+            <Input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              data-testid="input-filter-to"
+            />
+          </div>
         </CardContent>
       </Card>
 
