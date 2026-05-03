@@ -96,6 +96,11 @@ const STATIC_ROUTES = [
   { path: "/templates",          priority: 0.80, changefreq: "monthly" },
   { path: "/for-startups",       priority: 0.75, changefreq: "monthly" },
   { path: "/for-enterprise",     priority: 0.85, changefreq: "monthly" },
+  { path: "/customers",          priority: 0.80, changefreq: "monthly" },
+  { path: "/standards",          priority: 0.85, changefreq: "monthly" },
+  { path: "/teams",              priority: 0.75, changefreq: "monthly" },
+  { path: "/vdp",                priority: 0.50, changefreq: "yearly"  },
+  { path: "/sitemap",            priority: 0.45, changefreq: "monthly" },
 
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },

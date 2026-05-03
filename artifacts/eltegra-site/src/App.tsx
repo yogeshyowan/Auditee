@@ -36,6 +36,11 @@ import IndustriesHub from "@/pages/IndustriesHub";
 import ForStartups from "@/pages/ForStartups";
 import ForEnterprise from "@/pages/ForEnterprise";
 import TemplatesPage from "@/pages/Templates";
+import Customers from "@/pages/Customers";
+import StandardsHub from "@/pages/StandardsHub";
+import Teams from "@/pages/Teams";
+import VulnerabilityDisclosure from "@/pages/VulnerabilityDisclosure";
+import HtmlSitemap from "@/pages/HtmlSitemap";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -355,6 +360,17 @@ function Router() {
       <Route path="/enterprise" component={ForEnterprise} />
       <Route path="/templates" component={TemplatesPage} />
       <Route path="/template-library" component={TemplatesPage} />
+      <Route path="/customers" component={Customers} />
+      <Route path="/logos" component={Customers} />
+      <Route path="/standards" component={StandardsHub} />
+      <Route path="/standards-library" component={StandardsHub} />
+      <Route path="/teams" component={Teams} />
+      <Route path="/roles" component={Teams} />
+      <Route path="/vdp" component={VulnerabilityDisclosure} />
+      <Route path="/vulnerability-disclosure" component={VulnerabilityDisclosure} />
+      <Route path="/security/disclosure" component={VulnerabilityDisclosure} />
+      <Route path="/sitemap" component={HtmlSitemap} />
+      <Route path="/site-map" component={HtmlSitemap} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
