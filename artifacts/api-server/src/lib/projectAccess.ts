@@ -16,6 +16,7 @@ import {
 } from "./authContext";
 import { permissionsFor } from "./permissions";
 import { PROJECT_ROLES, projectPermissionsFor, projectRoleAtLeast } from "./projectPermissions";
+import { logSecurityEvent } from "./auditLog";
 
 export interface ProjectAccess {
   project: Project;
@@ -97,6 +98,15 @@ export function requireProjectAccess(minRole: ProjectRole) {
       return;
     }
     if (!projectRoleAtLeast(access.effectiveRole, minRole)) {
+      void logSecurityEvent(req, {
+        action: "security.permission_denied",
+        workspaceId: ws.workspace.id,
+        actorUserId: ws.userId,
+        actorEmail: ws.email,
+        resourceType: "project",
+        resourceId: access.project.id,
+        metadata: { effectiveRole: access.effectiveRole, requiredRole: minRole, path: req.path },
+      });
       res.status(403).json({
         error: `Your project role (${access.effectiveRole}) is not allowed to perform this action. Requires ${minRole} or higher.`,
         effectiveRole: access.effectiveRole,
@@ -194,6 +204,15 @@ async function resolveProjectAccess(
     return false;
   }
   if (!projectRoleAtLeast(access.effectiveRole, minRole)) {
+    void logSecurityEvent(req, {
+      action: "security.permission_denied",
+      workspaceId: ws.workspace.id,
+      actorUserId: ws.userId,
+      actorEmail: ws.email,
+      resourceType: "project",
+      resourceId: access.project.id,
+      metadata: { effectiveRole: access.effectiveRole, requiredRole: minRole, path: req.path },
+    });
     res.status(403).json({
       error: `Your project role (${access.effectiveRole}) is not allowed to perform this action. Requires ${minRole} or higher.`,
       effectiveRole: access.effectiveRole,

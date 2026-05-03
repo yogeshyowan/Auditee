@@ -18,6 +18,8 @@ import {
   DeleteRequirementParams,
 } from "@workspace/api-zod";
 import { requireProjectAccessInline } from "../lib/projectAccess";
+import { auditLog } from "../lib/auditLog";
+import type { AuthedRequest } from "../lib/authContext";
 
 const router: IRouter = Router();
 
@@ -46,19 +48,15 @@ async function withCounts(rows: typeof requirementsTable.$inferSelect[]) {
 
 router.get("/requirements", async (req, res) => {
   const params = ListRequirementsQueryParams.parse(req.query);
-  // Listing requirements is project-scoped — require an explicit projectId
-  // and verify the caller has at least auditor access on it. This prevents
-  // cross-workspace enumeration when no filter is supplied.
   if (!params.projectId) {
     res.status(400).json({ error: "projectId is required" });
     return;
   }
   const access = await requireProjectAccessInline(req, res, params.projectId, "auditor");
   if (access === false) return;
-  // Extra filters not in the generated zod schema (extension fields):
   const sourceId = typeof req.query.sourceId === "string" ? req.query.sourceId : undefined;
   const externalSystem = typeof req.query.externalSystem === "string" ? req.query.externalSystem : undefined;
-  const origin = typeof req.query.origin === "string" ? req.query.origin : undefined; // "manual" | "imported"
+  const origin = typeof req.query.origin === "string" ? req.query.origin : undefined;
   const conds = [];
   if (params.projectId) conds.push(eq(requirementsTable.projectId, params.projectId));
   if (params.type) conds.push(eq(requirementsTable.type, params.type));
@@ -70,7 +68,6 @@ router.get("/requirements", async (req, res) => {
   if (sourceId) conds.push(eq(requirementsTable.sourceId, sourceId));
   if (externalSystem) conds.push(eq(requirementsTable.externalSystem, externalSystem));
   if (origin === "manual") {
-    // Manual requirements have no source linkage.
     conds.push(isNull(requirementsTable.sourceId));
   }
   const where = conds.length ? and(...conds) : undefined;
@@ -125,6 +122,8 @@ router.post("/requirements", async (req, res) => {
   const body = CreateRequirementBody.parse(req.body);
   const access = await requireProjectAccessInline(req, res, body.projectId, "developer");
   if (access === false) return;
+
+  const ws = (req as AuthedRequest).ws_ctx!;
   const id = randomUUID();
   const prefix = await projectPrefix(body.projectId);
   const [{ value: existingCount }] = await db
@@ -151,23 +150,39 @@ router.post("/requirements", async (req, res) => {
       updatedAt: now,
     })
     .returning();
-  await db.insert(activityEventsTable).values({
-    id: randomUUID(),
-    kind: "requirement",
-    message: `New requirement created: ${row.title}`,
-    actor: row.owner,
-    entityCode: row.code,
-    createdAt: now,
-  });
+
+  await Promise.all([
+    db.insert(activityEventsTable).values({
+      id: randomUUID(),
+      kind: "requirement",
+      message: `New requirement created: ${row.title}`,
+      actor: row.owner,
+      entityCode: row.code,
+      createdAt: now,
+    }),
+    auditLog(req, ws.workspace.id, ws.userId, ws.email, {
+      action: "requirement.created",
+      resourceType: "requirement",
+      resourceId: row.id,
+      metadata: {
+        code: row.code,
+        title: row.title,
+        type: row.type,
+        status: row.status,
+        priority: row.priority,
+        projectId: row.projectId,
+      },
+    }),
+  ]);
+
   res.status(201).json({ ...row, linkedCodeCount: 0 });
 });
 
 router.patch("/requirements/:requirementId", async (req, res) => {
   const params = UpdateRequirementParams.parse(req.params);
   const body = UpdateRequirementBody.parse(req.body);
-  // Resolve the requirement's project for the access check.
   const [target] = await db
-    .select({ projectId: requirementsTable.projectId })
+    .select({ projectId: requirementsTable.projectId, title: requirementsTable.title, code: requirementsTable.code })
     .from(requirementsTable)
     .where(eq(requirementsTable.id, params.requirementId))
     .limit(1);
@@ -177,6 +192,8 @@ router.patch("/requirements/:requirementId", async (req, res) => {
   }
   const access = await requireProjectAccessInline(req, res, target.projectId, "developer");
   if (access === false) return;
+
+  const ws = (req as AuthedRequest).ws_ctx!;
   const updates: Partial<typeof requirementsTable.$inferInsert> = { updatedAt: new Date() };
   if (body.title !== undefined) updates.title = body.title;
   if (body.description !== undefined) updates.description = body.description;
@@ -193,13 +210,27 @@ router.patch("/requirements/:requirementId", async (req, res) => {
     res.status(404).json({ error: "Requirement not found" });
     return;
   }
-  await db.insert(activityEventsTable).values({
-    id: randomUUID(),
-    kind: "requirement",
-    message: `Updated requirement: ${row.title}`,
-    actor: row.owner,
-    entityCode: row.code,
-  });
+  await Promise.all([
+    db.insert(activityEventsTable).values({
+      id: randomUUID(),
+      kind: "requirement",
+      message: `Updated requirement: ${row.title}`,
+      actor: row.owner,
+      entityCode: row.code,
+    }),
+    auditLog(req, ws.workspace.id, ws.userId, ws.email, {
+      action: "requirement.updated",
+      resourceType: "requirement",
+      resourceId: row.id,
+      metadata: {
+        code: row.code,
+        title: row.title,
+        changes: Object.keys(updates).filter((k) => k !== "updatedAt"),
+        projectId: row.projectId,
+      },
+    }),
+  ]);
+
   const [{ value: linkedCodeCount }] = await db
     .select({ value: count() })
     .from(traceabilityLinksTable)
@@ -210,7 +241,7 @@ router.patch("/requirements/:requirementId", async (req, res) => {
 router.delete("/requirements/:requirementId", async (req, res) => {
   const params = DeleteRequirementParams.parse(req.params);
   const [target] = await db
-    .select({ projectId: requirementsTable.projectId })
+    .select({ projectId: requirementsTable.projectId, title: requirementsTable.title, code: requirementsTable.code })
     .from(requirementsTable)
     .where(eq(requirementsTable.id, params.requirementId))
     .limit(1);
@@ -221,10 +252,26 @@ router.delete("/requirements/:requirementId", async (req, res) => {
   }
   const access = await requireProjectAccessInline(req, res, target.projectId, "developer");
   if (access === false) return;
+
+  const ws = (req as AuthedRequest).ws_ctx!;
   await db
     .delete(traceabilityLinksTable)
     .where(eq(traceabilityLinksTable.requirementId, params.requirementId));
   await db.delete(requirementsTable).where(eq(requirementsTable.id, params.requirementId));
+
+  // Fire-and-forget audit entry after the delete so the row ID is still
+  // captured even though the requirement record is gone.
+  void auditLog(req, ws.workspace.id, ws.userId, ws.email, {
+    action: "requirement.deleted",
+    resourceType: "requirement",
+    resourceId: params.requirementId,
+    metadata: {
+      code: target.code,
+      title: target.title,
+      projectId: target.projectId,
+    },
+  });
+
   res.status(204).end();
 });
 

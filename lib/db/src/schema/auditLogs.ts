@@ -24,6 +24,12 @@ export const auditLogsTable = pgTable(
     metadata: jsonb("metadata"),
     ip: text("ip"),
     userAgent: text("user_agent"),
+    /**
+     * SHA-256 tamper-detection hash of the record's canonical fields.
+     * Computed at insert time over: id|workspaceId|actorUserId|action|
+     * resourceType|resourceId|createdAt. Allows offline integrity verification.
+     */
+    integrityHash: text("integrity_hash"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

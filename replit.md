@@ -23,7 +23,11 @@ The backend is an Express 5 API server. Data persistence is managed by PostgreSQ
 ### Enterprise Features
 
 -   **RBAC**: Four workspace roles (`owner`, `admin`, `editor`, `viewer`) and four project roles (`manager`, `developer`, `reviewer`, `auditor`) with detailed permission matrices and server-side checks.
--   **Audit Log**: An append-only `audit_logs` table records all mutations with read access for admin+ roles and Enterprise plans.
+-   **Audit Log**: An append-only `audit_logs` table records all mutations with read access for admin+ roles and Enterprise plans. Each row now carries a SHA-256 `integrity_hash` over its canonical fields (id, workspaceId, actorUserId, action, resourceType, resourceId, createdAt) for offline tamper-detection.
+-   **Security Event Log**: A `logSecurityEvent()` helper writes `security.*` actions (permission denials, rate-limit hits, suspicious input) to the same audit trail; fired automatically on every 403 from project-access checks.
+-   **HTTP Security Headers (Helmet)**: Every API response carries `Strict-Transport-Security` (2 yr + preload), `Content-Security-Policy` (deny-all for this pure-API origin), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geo/payment/usb/bluetooth all denied), and `X-Powered-By` removed.
+-   **IP Rate Limiting**: Four tiers via `express-rate-limit` — general (200 req/15 min), workspace/auth-adjacent (30 req/15 min), AI generation (20 req/15 min), billing webhook (60 req/min). All keyed by the first `X-Forwarded-For` IP.
+-   **Audit Coverage**: Requirements `create`, `update`, `delete` now produce `requirement.*` audit rows in addition to the existing `project.*`, `workspace.*` events.
 -   **SSO**: SAML / OIDC via Clerk Enterprise for owner-only, Enterprise-only access.
 -   **Plan-gating**: Features are gated by plan, returning HTTP 402 for Free/Pro plans.
 -   **Trust / Security Center**: A public page detailing security posture and compliance.
