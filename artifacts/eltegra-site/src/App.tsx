@@ -21,6 +21,11 @@ import Roadmap from "@/pages/Roadmap";
 import Careers from "@/pages/Careers";
 import CookiePolicy from "@/pages/CookiePolicy";
 import Sla from "@/pages/Sla";
+import Newsroom from "@/pages/Newsroom";
+import BrandKit from "@/pages/BrandKit";
+import Dpa from "@/pages/Dpa";
+import SubProcessors from "@/pages/SubProcessors";
+import Aup from "@/pages/Aup";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -305,6 +310,18 @@ function Router() {
       <Route path="/cookies" component={CookiePolicy} />
       <Route path="/sla" component={Sla} />
       <Route path="/service-level-agreement" component={Sla} />
+      <Route path="/newsroom" component={Newsroom} />
+      <Route path="/press" component={Newsroom} />
+      <Route path="/brand" component={BrandKit} />
+      <Route path="/brand-kit" component={BrandKit} />
+      <Route path="/press-kit" component={BrandKit} />
+      <Route path="/dpa" component={Dpa} />
+      <Route path="/data-processing-addendum" component={Dpa} />
+      <Route path="/sub-processors" component={SubProcessors} />
+      <Route path="/subprocessors" component={SubProcessors} />
+      <Route path="/aup" component={Aup} />
+      <Route path="/acceptable-use" component={Aup} />
+      <Route path="/acceptable-use-policy" component={Aup} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
