@@ -149,6 +149,62 @@ Allow: /
 Disallow: /app
 Disallow: /app/
 
+User-agent: AI2Bot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Quora-Bot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: TikTokSpider
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+# --- Google Ads (paid search quality + landing-page checks) -----------------
+# Explicit allow so Ads quality crawlers don't fall back to a more
+# restrictive default and disable our ad serving.
+User-agent: AdsBot-Google
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: AdsBot-Google-Mobile-Apps
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Mediapartners-Google
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+# --- Crawl-noise: keep faceted / utility query strings out of the index -----
+# Applies to all crawlers (the * group below). These never produce useful
+# search-result pages and just dilute crawl budget.
+User-agent: *
+Disallow: /*?format=
+Disallow: /*&format=
+Disallow: /*?utm_
+Disallow: /*&utm_
+Disallow: /*?fbclid=
+Disallow: /*?gclid=
+Disallow: /*?ref=
+Disallow: /*&ref=
+
 # --- Canonical references ---------------------------------------------------
 Sitemap: https://auditee.site/sitemap.xml
 Host: https://auditee.site
