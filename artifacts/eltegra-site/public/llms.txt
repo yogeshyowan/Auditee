@@ -55,9 +55,7 @@ Auditee is delivered as a multi-tenant SaaS, with sovereign / VPC / on-prem opti
 - [5G Network Compliance: A Practical 3GPP + ETSI + NIST Mapping](https://auditee.site/blog/5g-network-compliance-3gpp-etsi-mapping): How operators and 5G core vendors map their architecture against 3GPP TS 23.501, 33.501, ETSI EN 303 645, and NIST CSF — and where shared traceability cuts months off launch.
 - [EU AI Act 2026: A Software Team Checklist for High-Risk Systems](https://auditee.site/blog/eu-ai-act-2026-software-team-checklist): What software teams shipping AI features into the EU must do in 2026: risk classification, technical documentation, logging, human oversight, conformity assessment, and post-market monitoring.
 - [From Jira Tickets to Compliant Requirements: A Working Conversion Guide](https://auditee.site/blog/from-jira-tickets-to-compliant-requirements): Why Jira and similar issue trackers are not requirements management — and a step-by-step conversion path that preserves engineering velocity while meeting ISO/IEC/IEEE 29148.
-- [Glossary](https://auditee.site/glossary): 45+ definitions — BRD, ASIL, IEC 62304, SOUP, ReqIF.
-- [FAQs](https://auditee.site/faqs): Platform, AI, integrations, compliance, security and pricing.
-- [Partners](https://auditee.site/partners): Implementation, GRC, technology, channel and sovereignty tracks.
+
 
 ## Company
 - [About](https://auditee.site/about): The team and the thesis behind Auditee.

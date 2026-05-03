@@ -7,7 +7,7 @@
 # convenient ingestion by AI answer engines. The signed-in product at /app/*
 # is private and is NOT included.
 
-# Blog (11 posts)
+# Blog (21 posts)
 
 ## The Enterprise PDLC Audit Checklist: How to Run Requirements, Code & Compliance Audits with Auditee
 URL: https://auditee.site/blog/enterprise-pdlc-audit-checklist
@@ -17,6 +17,272 @@ Tags: Audit, Compliance, Checklist, PDLC
 Reading time: 9 min
 
 Most teams audit one slice — code, or specs, or controls. The strongest engineering organizations audit the whole Product Development Lifecycle continuously. Here's the working checklist we use with enterprise customers, plus a step-by-step setup in Auditee.
+
+> "A good audit is the difference between software that simply ships and software that ships safely, traceably, and at audit-grade."
+
+If you've ever stitched together requirements from IBM DOORS, code from GitHub, evidence from Confluence, and CAPA from a spreadsheet — only to face an ASPICE assessor or an FDA inspector with gaps you didn't know existed — this guide is for you. **Auditee** unifies requirements, code, audits and compliance into a single living knowledge graph so the audit trail is always there. Here's how to run a complete PDLC audit, end to end.
+
+## Table of Contents
+
+1. [What Is Auditee?](#what-is-auditee)
+2. [Why a Unified PDLC Audit Beats Point Tools](#why-a-unified-pdlc-audit-beats-point-tools)
+3. [Step-by-Step Setup Guide](#step-by-step-setup-guide)
+4. [Customizing Audits for Each Standard](#customizing-audits-for-each-standard)
+5. [Interpreting Key Audit Metrics](#interpreting-key-audit-metrics)
+6. [Integrations and Automation](#integrations-and-automation)
+7. [Key Takeaways](#key-takeaways)
+8. [Conclusion & Call to Action](#conclusion--call-to-action)
+
+---
+
+## What Is Auditee?
+
+Auditee is an AI-native enterprise platform for the Product Development Lifecycle. It connects requirements management, source-code analysis, compliance frameworks and audit evidence into one searchable knowledge graph.
+
+| Capability | What it does |
+|------------|--------------|
+| **Requirements Generation** | Generates structured, standards-conformant requirements from briefs, PDFs, code, or legacy specs — with inline citations. |
+| **Code-to-Spec Traceability** | Crawls TypeScript, Python, Java, C/C++, Go, Rust, COBOL, SQL and more; links every requirement to the file/class/route that implements it. |
+| **Compliance Mapping** | Standards-aware coverage for HIPAA, IEC 62304, IEC 61508, ISO 13485, ISO 26262, ISO 27001, SOC 2, ASPICE, CMMI, DO-178C, FDA QMSR, GDPR, PCI DSS, NIST, EU AI Act, NIS2, DORA, IEC 62443. |
+| **Audit & CAPA Workflows** | Continuous audits, gap detection, corrective-and-preventive-action tracking with full evidence chain. |
+| **Ask Auditee** | Natural-language Q&A across every requirement, commit, document and audit finding in your project. |
+
+Source connectors include GitHub, IBM DOORS, DOORS Next (OSLC), Jama Connect, Polarion, codeBeamer, Helix RM, Visure, Azure DevOps, Jira and a generic ReqIF importer.
+
+---
+
+## Why a Unified PDLC Audit Beats Point Tools
+
+DOORS, Polarion, SonarQube, ServiceNow GRC and Vanta are all great at one slice. The cost shows up at audit time, when you have to manually reconcile them.
+
+- **One Living Knowledge Graph:** Requirements, code, tests, evidence and findings live in the same model — no manual reconciliation.
+- **AI-Generated Coverage:** Standards-aware generation drives required document sections and citation hints automatically.
+- **Code-First Traceability:** Generate requirements *from* legacy code so you can audit systems whose original specs were lost.
+- **Audit-Grade Provenance:** Every requirement, change and finding carries a full source citation — what it came from, who changed it, when.
+- **Pricing That Scales:** Free plan to evaluate, ₹1,999/mo Standard for small teams, ₹7,999/mo Professional for full feature access. Annual options available. Enterprise on request.
+
+**Point-tool comparison**
+
+| Tool category | Strength | Audit gap it leaves |
+|---------------|----------|---------------------|
+| ALM (DOORS, Polarion, Jama) | Deep requirements management | No code coverage, no AI generation, no compliance mapping |
+| Static analysis (SonarQube, CodeQL) | Code quality & security | No requirements, no traceability, no audit evidence |
+| GRC (Vanta, Drata, ServiceNow) | Controls & evidence collection | Doesn't see requirements or code; can't trace control to artefact |
+| **Auditee** | Requirements + code + compliance + audit unified | Newer ecosystem of integrations vs incumbents |
+
+---
+
+## Step-by-Step Setup Guide
+
+You can run your first compliance audit with Auditee in well under an hour.
+
+### 1. Create Your Workspace
+
+- Sign up at [auditee.site](https://auditee.site) and create a workspace.
+- The Free plan gives you full visibility of the platform's core flows.
+
+### 2. Connect Your Sources
+
+- In the dashboard, open **Connectors** and add your requirements source: IBM DOORS, DOORS Next, Jama, Polarion, codeBeamer, Helix RM, Visure, Azure DevOps Boards, Jira — or upload a ReqIF / DOCX / PDF.
+- Connect your code source via **GitHub**, ZIP upload, or folder upload.
+
+### 3. Pick Your Standards
+
+- Open **Project Settings → Standards** and select the frameworks that apply: HIPAA, IEC 62304, ISO 26262, SOC 2, ASPICE, ISO 27001, FDA QMSR, GDPR, etc.
+- The selection drives required document sections, requirement coverage topics, and citation hints across the project.
+
+### 4. Generate or Import Requirements
+
+- For greenfield projects: click **Generate Requirements** and provide a brief, BRD, or PDF. Auditee produces structured, standards-conformant requirements with citations.
+- For existing systems: import via your connector or upload code, then run **Generate Requirements from Code** to recover specs.
+
+### 5. Run the Audit
+
+- Open **Audits** and pick the standard. Auditee maps each control to the requirements, code, and evidence in your project, flagging gaps.
+- **Missing Requirements Analysis** highlights areas of code with no covering requirement.
+- **Test Case Generation** drafts the test cases needed to close coverage.
+
+### 6. Export Evidence
+
+- Click **Export** to generate the audit report, traceability matrices, and evidence bundles in PDF, DOCX, or CSV — ready for your assessor.
+
+---
+
+## Customizing Audits for Each Standard
+
+Audits aren't one-size-fits-all. Auditee adapts its output to each framework.
+
+### 1. Filter by Severity
+
+- Critical first: open findings, missing safety requirements, untraced safety-critical code paths.
+
+### 2. Standard-Aware Templates
+
+- Generated documents follow each framework's expected structure (e.g. IEC 62304 software safety classification, ISO 26262 ASIL decomposition, SOC 2 control narrative).
+
+### 3. Auto-Scheduling for Recurring Audits
+
+- Schedule weekly or monthly compliance scans under **Automations**. Get notified when a new gap appears in code or requirements.
+
+### 4. Role-Based Dashboards
+
+- *Engineering view* — requirement-to-code coverage, test gaps.
+- *Quality / Compliance view* — control coverage by standard, open findings, CAPA status.
+- *Leadership view* — audit-readiness score per project.
+
+---
+
+## Interpreting Key Audit Metrics
+
+Understanding the numbers is half the audit.
+
+| Metric | Why It Matters | How Auditee Helps |
+|--------|----------------|-------------------|
+| **Requirement Coverage %** | Untraced requirements are findings waiting to happen | Auto-links each requirement to source code and test cases |
+| **Code Coverage by Requirement** | Code without a requirement is unverified scope | Missing Requirements Analysis flags every uncovered file/route |
+| **Standard Coverage Score** | Direct input to audit readiness | Per-control scoring across HIPAA, IEC 62304, SOC 2, etc. |
+| **Open Findings & CAPA Aging** | Old findings become regulatory risk | Aging dashboard with owner and due date per finding |
+| **Change Impact Radius** | Late-stage requirement changes are expensive | Graph traversal shows every code path and test affected |
+
+**Tip:** The **Audit-Readiness Score** rolls all of the above into a single number per project — useful for leadership reviews and pre-assessment go/no-go calls.
+
+---
+
+## Integrations and Automation
+
+Auditee fits inside your existing stack.
+
+- **GitHub:** Pull requests, file-level traceability, code citations.
+- **Jira / Azure DevOps Boards:** Bi-directional sync between findings and engineering tickets.
+- **IBM DOORS / DOORS Next / Jama / Polarion / codeBeamer / Helix RM / Visure:** First-party requirements connectors.
+- **ReqIF:** Generic exchange format for any other ALM tool.
+- **Push to Repo:** Send generated docs and evidence back to your repo for version control.
+
+The result: less manual reconciliation, fewer surprises at audit time, and a continuously up-to-date evidence trail.
+
+---
+
+## Key Takeaways
+
+- **Unified PDLC platform:** Requirements, code, audits and compliance in one knowledge graph.
+- **AI-driven accuracy:** Generation, traceability and gap detection across 20+ frameworks.
+- **Fast time to first audit:** Connect sources, pick standards, run the scan — under an hour.
+- **Customizable:** Standard-aware templates, recurring audits, role-based dashboards.
+- **Pricing that scales:** Free plan to evaluate, ₹1,999/mo Standard, ₹7,999/mo Professional, Enterprise on request.
+
+---
+
+## Conclusion & Call to Action
+
+Auditee isn't another point tool. It's the connective tissue between requirements, code and compliance — the layer enterprise teams have been stitching together by hand for years. If you're tired of reconciling spreadsheets the night before an assessor walks in, give Auditee a try.
+
+**Ready to run your first PDLC audit?**
+
+🔗 Visit [auditee.site](https://auditee.site), create your free workspace, and connect your first source today. 🚀
+
+Audit-grade traceability — without the audit-week scramble.
+
+
+---
+
+## AI Requirements Management: A Buyer's Guide for 2026
+URL: https://auditee.site/blog/ai-requirements-management-buyers-guide-2026
+Date: 2026-04-22 (updated 2026-04-28)
+Author: Auditee Research
+Tags: Requirements Management, AI, Buyer's Guide, Enterprise
+Reading time: 11 min
+
+Legacy RM tools were built for a world where humans authored every requirement. AI-native RM platforms turn requirements into a living, traceable, compliance-aware graph. Here's how to evaluate them in 2026.
+
+## Why "AI-powered RM" is now table stakes
+
+For two decades, requirements management meant a centralized database of carefully numbered statements that engineers manually mapped to design, code, and tests. Tools like IBM DOORS, Jama Connect, Polarion, and codeBeamer became indispensable in regulated industries — automotive, medical, defense, aerospace, finance — precisely because they enforced traceability.
+
+But by 2026, three things have changed:
+
+1. **Software is generated at machine speed.** A team can ship more code in a sprint than a requirements analyst can transcribe in a month.
+2. **Standards have multiplied.** ASPICE, ISO 26262, IEC 62304, IEC 61508, DO-178C, ISO 13485, FDA QMSR, SOC 2, ISO 27001, HIPAA, GDPR, the EU AI Act, NIS2, DORA — most enterprise products now sit at the intersection of three or more of these.
+3. **Auditors expect evidence in real time.** "Pull a report next week" is no longer acceptable when continuous-compliance is the norm.
+
+A modern, AI-native requirements management platform addresses all three by treating requirements as a *living knowledge graph* rather than a static catalogue.
+
+## The capability checklist
+
+When you evaluate an AI requirements management tool in 2026, score it against the following capabilities. Anything below 80% coverage is unlikely to repay its license cost.
+
+### 1. Generate requirements from a brief
+
+The platform should accept a free-form business brief or product description and produce a complete requirements set — functional, non-functional, security, accessibility, performance — that conforms to the standards your industry mandates.
+
+### 2. Generate requirements from existing code
+
+Most enterprises have decades of undocumented code. A good AI RM tool reads source files, infers their behavior, and emits a structured requirements set with traceability links back to specific files, classes, or routes.
+
+### 3. Standards-aware authoring
+
+When you select HIPAA, IEC 62304, or SOC 2, the AI should *change what it writes* — not merely append a checkbox. It should:
+
+- Generate requirements covering each standard's required topics (e.g. IEC 62304 §5.1.1, §5.2.2, §7.1).
+- Cite the standard clauses in the requirement text.
+- Refuse to generate fewer requirements than the union of coverage topics demands.
+
+### 4. Living traceability
+
+The requirements graph must be queryable in both directions: requirement → tests → code, and requirement → upstream business goal → downstream change request. Stale links should be flagged automatically when artefacts move.
+
+### 5. Gap and conflict analysis
+
+The platform should compare requirements against the active code base, the test suite, and recent change history — and surface missing test coverage, contradictory statements, or orphan requirements.
+
+### 6. Multi-source ingestion
+
+Real enterprises rarely consolidate to one tool. Expect first-class ingestion from IBM DOORS, DOORS Next (OSLC), Jama Connect, Polarion ALM, codeBeamer, Helix RM, Visure, Azure DevOps, Jira, ReqIF files, GitHub, and uploaded ZIPs/folders.
+
+### 7. Smart interview
+
+The tool should drive a follow-up Q&A when your initial brief is too thin, then weave answers back into the generated set. This is where AI dramatically outperforms a human business analyst — it never gets bored.
+
+### 8. Audit & CAPA workflows
+
+The same data layer should generate compliance audits, surface findings, open CAPA (Corrective Action / Preventive Action) tickets, and track them to closure with evidence attached.
+
+### 9. Multi-format reporting
+
+BRD, PRD, FRD, test cases, traceability matrices, executive briefs, compliance audit reports — all exportable to DOCX, PDF, and HTML, all citing the same underlying graph.
+
+### 10. Project source layer
+
+Connect a GitHub repo, an Azure DevOps repo, a ZIP, a folder, or a Google Drive — and the platform should index it once and reuse it across requirements, gap analysis, and audits.
+
+## Red flags to walk away from
+
+- **"AI" that's just a wrapper around a chat box.** If it cannot read your code or your existing requirements, it cannot be standards-aware.
+- **No multi-standard support.** A platform that only knows ISO 27001 will fail you the day you need to ship into a HIPAA-regulated US hospital.
+- **Single-source vendor lock-in.** If the only way data gets in is via the tool's own UI, your migration cost is the entire dataset.
+- **Black-box generation.** Every generated requirement should expose the standards clauses, source files, and prompts that produced it.
+- **Per-seat pricing without value tie-in.** Modern RM is consumed by far more roles than the original analyst-only world. Per-project or usage-based pricing scales more sensibly.
+
+## Total cost of ownership
+
+A naive ROI calculation looks only at license fees. The real cost components are:
+
+| Cost component | Legacy RM | AI-native RM |
+| --- | --- | --- |
+| Tool license | High | Mid–High |
+| Analyst headcount to author requirements | High | Low |
+| Audit-prep consultants | High | Low |
+| Lost engineering velocity from rework | High | Low |
+| Time-to-evidence during audit | Days/weeks | Minutes |
+| Onboarding a new regulated market | Months | Weeks |
+
+In our customer base, the engineering-velocity and audit-prep savings alone routinely repay the platform within one quarter.
+
+## How Auditee approaches it
+
+Auditee was built from the start as an AI-native, standards-aware requirements platform. Every generator — brief-to-requirements, code-to-requirements, smart interview, audit reports, BRD/PRD/FRD/test cases — accepts a multi-standard selection and conforms to it. The same data layer drives traceability, gap analysis, CAPA workflows, and compliance audits.
+
+If you'd like to see how it scores against this checklist for your specific stack, [book a demo](/contact) or [try the ROI calculator](/roi-calculator).
+
 
 ---
 
@@ -29,27 +295,173 @@ Reading time: 11 min
 
 Forty years after IBM Rational shipped DOORS, the modal requirements tool in industry is still… a spreadsheet. That isn't a tooling failure — it's a UX, speed and lock-in failure. AI changes the equation.
 
+## The uncomfortable data
+
+Surveys keep finding the same thing: across regulated software (medical, automotive, aerospace, fintech), **40–55% of teams** use Excel or Google Sheets as the primary requirements artefact, even when their organization owns DOORS, Jama or Polarion. They use the enterprise tool only at audit time.
+
+Why?
+
+## The four reasons spreadsheets win
+
+### 1. Speed of capture
+A row is faster than a form. A 12-column sheet is faster than a 47-field requirement object with mandatory custom attributes.
+
+### 2. Universally accessible
+Every stakeholder — PMs, BAs, regulators, auditors, clinical SMEs, hardware engineers — already has Excel. RM tools require licences, training and VPN access.
+
+### 3. Cheap to abandon
+You can throw a sheet away on Friday and start fresh on Monday. Six-figure ALM platforms have organizational gravity that prevents that.
+
+### 4. The work happens elsewhere anyway
+Requirements get drafted in Word, debated in Slack, redlined in PDF, signed off in email — then someone copies the result into the RM tool. The tool stores artefacts, but the *work* lives in the office suite.
+
+## What every previous RM-tool generation got wrong
+
+DOORS, Jama, Polarion, codeBeamer, Helix RM, Visure: enormous engineering effort went into modelling requirements as objects with attributes, links and baselines. Almost none went into making capture, classification or document generation faster than pasting into a spreadsheet.
+
+Result: the tool is correct but slow; the spreadsheet is wrong but fast. **Fast wins.**
+
+## What AI-native RM has to do to actually win
+
+### Generation, not just storage
+A working AI co-analyst should turn a one-paragraph idea into a 60-row classified, prioritized requirements set in under a minute. That beats both the spreadsheet *and* the legacy RM tool.
+
+### Ingest the spreadsheet
+Don't try to wean people off Excel. Read the Excel. Read the Word doc. Read the Confluence page. Read the GitHub repo. Build the graph from where the work actually happens.
+
+### Document generation as a first-class citizen
+The deliverable a stakeholder needs is the BRD, not the requirements list. If your RM tool can't return a board-grade BRD/PRD/FRD in DOCX in one click, it loses to Word.
+
+### Auto-traceability or nothing
+Manual linking is what made teams quit DOORS. Bidirectional traceability has to be derived from code, tests and integrations — not typed by hand.
+
+### Live, queryable Q&A
+"Which requirements touch patient consent?" should return cited answers in seconds, not require a custom DXL script.
+
+### Plug into the legacy stack
+Don't ask for a migration. Connect to DOORS / Jama / Polarion / Jira and become the AI layer over what's already there.
+
+## The verdict
+
+For 40 years RM tools tried to win on rigour. Spreadsheets won on speed. AI-native RM finally has a shot at winning on both — and the tools that do are the ones built around generation, ingestion and document production from day one, not bolt-on AI features in a 1990s data model.
+
+This is exactly where Auditee starts: AI-first capture, RM-tool ingestion, one-click document generation and bidirectional traceability — your spreadsheet absorbed into a living graph in under an hour.
+
+Ready to test the claim against your current RM stack? [Book a 30-minute walkthrough](/contact).
+
 ---
 
-## AI Requirements Management: A Buyer's Guide for 2026
-URL: https://auditee.site/blog/ai-requirements-management-buyers-guide-2026
-Date: 2026-04-22 (updated 2026-04-28)
+## ISO 26262 ASIL Classification: A Practical Guide for Software Teams (2026)
+URL: https://auditee.site/blog/iso-26262-asil-classification-practical-guide
+Date: 2026-04-22
 Author: Auditee Research
-Tags: Requirements Management, AI, , 
-Reading time: 11 min
+Tags: ISO 26262, Automotive, Functional Safety, Compliance, Standards
+Reading time: 12 min
 
-Legacy RM tools were built for a world where humans authored every requirement. AI-native RM platforms turn requirements into a living, traceable, compliance-aware graph. Here's how to evaluate them in 2026.
+ASIL classification governs every safety argument in your automotive software. Get it wrong and you over-engineer Class B code at ASIL D cost — or under-engineer Class C and lose the audit.
 
----
+## What ASIL really is
 
-## Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture
-URL: https://auditee.site/blog/legacy-cobol-modernization-with-ai
-Date: 2026-04-15
-Author: Auditee Research
-Tags: Legacy Modernization, AI, COBOL, Architecture
-Reading time: 13 min
+ASIL — *Automotive Safety Integrity Level* — is a risk classification defined in ISO 26262 Part 3. It is a function of three factors evaluated for each potential hazardous event:
 
-Most legacy modernization programs fail because they start by asking 'how do we rewrite this?'. The right question is 'what does this actually do?' — and AI is the first technology that can answer it at scale.
+- **Severity (S0–S3)** — how bad the harm is if the hazard manifests.
+- **Exposure (E0–E4)** — how often the operational situation occurs.
+- **Controllability (C0–C3)** — how reliably the driver (or another agent) can avoid the harm.
+
+Combine the three and you get ASIL A, B, C, D — or QM (Quality Management) when no specific ASIL applies.
+
+## The classification table you actually need
+
+| | C1 | C2 | C3 |
+| --- | --- | --- | --- |
+| **S1 / E1** | QM | QM | QM |
+| **S1 / E2** | QM | QM | QM |
+| **S1 / E3** | QM | QM | A |
+| **S1 / E4** | QM | A | B |
+| **S2 / E2** | QM | QM | A |
+| **S2 / E3** | QM | A | B |
+| **S2 / E4** | A | B | C |
+| **S3 / E3** | A | B | C |
+| **S3 / E4** | B | C | D |
+
+The most common scoping mistake teams make is treating *the entire ECU* at the highest ASIL identified anywhere on it. This is wrong, expensive, and discouraged by the standard.
+
+## ASIL decomposition — and when it actually saves you work
+
+Part 9, Clause 5 allows you to decompose an ASIL D safety requirement into:
+
+- ASIL B(D) + ASIL B(D)
+- ASIL C(D) + ASIL A(D)
+- ASIL D(D) + QM(D)
+
+The (D) annotation tells future auditors the requirement *originated* at ASIL D and the integrity of each decomposed element must be argued accordingly.
+
+Decomposition is only valid if you can prove **independence** between the decomposed elements. In practice that means:
+
+- No shared resources that can fail-cause both elements.
+- No common-mode failures (same compiler bug, same memory region, same clock).
+- A documented argument backed by FMEDA or DFA.
+
+If your two "independent" elements live in the same C++ namespace and share a malloc arena, you do not have independence and the decomposition argument will be rejected.
+
+## What goes in the safety case
+
+Every ASIL-rated software item needs a defensible chain of evidence:
+
+1. **Item definition** — boundaries, interfaces, operating modes.
+2. **HARA** — hazards, S/E/C ratings, ASIL determination, safety goals.
+3. **Functional safety requirements** — derived from safety goals.
+4. **Technical safety requirements** — allocated to hardware and software.
+5. **Software safety requirements** — refined and traced.
+6. **Architecture & design** — with freedom-from-interference arguments.
+7. **Implementation evidence** — coding rules (MISRA C:2023), static analysis results, code reviews.
+8. **Verification & validation** — unit, integration, system tests with coverage targets per ASIL.
+
+Coverage targets that auditors will check:
+
+| ASIL | Statement | Branch | MC/DC |
+| --- | --- | --- | --- |
+| A | Recommended | – | – |
+| B | Required | Recommended | – |
+| C | Required | Required | Recommended |
+| D | Required | Required | Required |
+
+## Where teams typically fail
+
+After dozens of customer audits across ISO 26262 implementations, the failure modes cluster:
+
+1. **No traceable link from safety goal to test.** "It's covered by test plan TP-12" is not enough; the link must be queryable down to the individual test case.
+2. **MC/DC coverage claimed but not measured.** Only branch coverage was actually instrumented.
+3. **SOUP and AUTOSAR BSWs aren't argued.** If you depend on supplier code, you owe a qualification argument or a hazard analysis showing the dependency is QM-acceptable.
+4. **Tool qualification is missing.** Your code generator and test harness need TCL classification and qualification evidence (ISO 26262-8, Clause 11).
+5. **Configuration baseline is informal.** "We tag releases in git" is not a configuration management plan.
+
+## How AI-native RM closes the gap
+
+A standards-aware platform removes most of the manual book-keeping:
+
+- **HARA generation** — ingest the item definition, surface candidate hazards from the function model, ask the engineer to confirm S/E/C ratings.
+- **Safety-requirement decomposition** — propose decomposed pairs and flag shared dependencies that would invalidate the independence argument.
+- **Coverage matrix** — every safety goal → safety requirement → software requirement → unit test → coverage % live and queryable.
+- **Tool qualification packs** — pre-generated TCL evidence for connected code generators and test runners.
+- **CAPA loops** — defects that violate a safety requirement open a CAPA automatically with the right ASIL, owner, and due date.
+
+When your auditor asks "show me how Safety Goal SG-02 propagates into your release," the answer becomes a five-second drill-down rather than a two-week archaeology project.
+
+## A 60-day path to "ASIL-ready"
+
+For a typical ECU project the realistic sequence:
+
+1. **Days 0–10** — Item definition complete. HARA drafted; S/E/C confirmed in workshop.
+2. **Days 10–25** — Functional and technical safety requirements derived; safety goals allocated.
+3. **Days 25–40** — Software safety requirements refined; architectural design complete with freedom-from-interference argument.
+4. **Days 40–55** — Implementation against MISRA + coverage targets; static-analysis baseline clean.
+5. **Days 55–60** — Pre-assessment audit; CAPAs closed; safety case package exported.
+
+This is the difference between shipping the next-gen ADAS feature on time and pushing it a quarter.
+
+[Book a demo](/contact) to see ISO 26262 generation end-to-end on the Apollo and Ares demo projects.
+
 
 ---
 
@@ -62,6 +474,189 @@ Reading time: 13 min
 
 IEC 62304 governs every line of software inside a medical device. Here's what the standard actually demands — by class, by phase, by deliverable — and how AI-native platforms close the gap fast.
 
+## What IEC 62304 actually is
+
+IEC 62304:2006 (with the 2015 Amendment 1) is the international standard for *medical device software lifecycle processes*. It is harmonized under the EU Medical Devices Regulation (MDR 2017/745), and it is referenced by the US FDA in their software-validation guidance and the new QMSR (21 CFR Part 820 alignment with ISO 13485).
+
+In practice: if your software runs in, on, or as a medical device — implantable, diagnostic, therapeutic, surgical, monitoring, or general-purpose health software — you almost certainly need to demonstrate conformance with IEC 62304.
+
+## Software safety classification (Class A / B / C)
+
+Before you write a single requirement, classify each *software item*. The classification governs how much rigour and documentation you owe.
+
+| Class | Possible harm | Examples |
+| --- | --- | --- |
+| **Class A** | No injury or damage to health is possible | UI logging, non-clinical telemetry |
+| **Class B** | Non-serious injury is possible | Patient-data display, dosing reminders |
+| **Class C** | Death or serious injury is possible | Infusion control, defibrillator firmware |
+
+You can *decompose* a Class C system into Class A subsystems if you can prove segregation. AI-native platforms make this argument far easier because the boundary between modules is captured as graph edges rather than buried in slide decks.
+
+## The mandatory deliverables (by phase)
+
+### §5.1 Software development planning
+
+- Software development plan
+- Software risk-management plan (cross-references ISO 14971)
+- Software configuration-management plan
+- Software problem-resolution plan
+
+### §5.2 Software requirements analysis
+
+- Software requirements specification covering: functional/capability, software-system inputs/outputs, interfaces, alarms/warnings, security, user interface, data definition, installation/acceptance, operation/maintenance.
+- Each requirement must be *uniquely identifiable* and *verifiable*.
+- Risk-control measures from your hazard analysis must be traceable into requirements.
+
+### §5.3 Software architectural design (Class B and C)
+
+- Architecture transforming the requirements into software items.
+- Identify SOUP (Software Of Unknown Provenance) and document its requirements & known anomalies.
+
+### §5.4 Software detailed design (Class C)
+
+- Detailed design for each software unit.
+
+### §5.5 Software unit implementation & verification (Class C)
+
+- Implement units, verify acceptance criteria.
+
+### §5.6 Software integration testing (Class B and C)
+
+- Integrate units, run integration tests, document results.
+
+### §5.7 Software system testing
+
+- System tests covering every requirement.
+- Pass/fail evidence retained.
+
+### §5.8 Software release
+
+- Verify all anomalies have been evaluated.
+- Document the release version, archive build environment, and known residual anomalies.
+
+### §6 Software maintenance
+
+- Establish a maintenance process.
+- Re-classify post-release feedback through risk-management.
+
+### §7 Software risk-management process
+
+- Identify hazardous situations contributed to by software.
+- Define risk-control measures and evidence.
+- Maintain a risk-traceability table linking hazards → requirements → tests.
+
+### §8 Configuration management
+
+- Identify configuration items.
+- Maintain a record of all changes with rationale.
+
+### §9 Problem resolution
+
+- Capture problem reports, investigate, implement corrections, re-verify, and trend-analyse.
+
+## Where teams typically fail an audit
+
+After hundreds of customer audits across MDR, FDA, MDSAP, and notified-body inspections, the failure modes cluster:
+
+1. **Traceability matrix is stale.** Requirements moved, tests were renamed, the matrix wasn't updated.
+2. **SOUP catalogue is incomplete.** That one MIT-licensed dependency you forgot to declare derails an entire submission.
+3. **Risk-control evidence is implicit.** "It's covered by test TST-43" is not enough; the connection must be a queryable link.
+4. **Class C components weren't decomposed.** The whole system was conservatively labelled Class C, multiplying documentation effort by 3–5×.
+5. **Maintenance loop is broken.** Field reports aren't fed back into requirements and risk re-evaluation.
+
+## How AI-native RM closes the gap
+
+A standards-aware platform helps in every section of the standard:
+
+- **§5.2 Requirements analysis** — generate IEC 62304-conformant requirements from a brief or directly from the existing source code, with each requirement covering a specific clause and citing it inline.
+- **§5.7 System testing** — auto-generate test cases tied to each requirement with pass/fail tracking.
+- **§7 Risk management** — maintain hazard-to-requirement-to-test links as graph edges, not as a spreadsheet.
+- **§8 Configuration management** — ingest from GitHub or DOORS/Jama/Polarion so the configuration record is exactly the live source of truth.
+- **§9 Problem resolution** — drive CAPA workflows from defect findings, with evidence attached to each step.
+
+When auditors ask "show me how this requirement is covered," the answer becomes a one-click drill-down rather than a forensic exercise.
+
+## A 30-day path to "audit-ready"
+
+If you're starting from scratch, this is the realistic sequence:
+
+1. **Day 0–3** — Connect your code and any existing RM source. Run gap analysis.
+2. **Day 3–10** — Generate IEC 62304-conformant requirements from your code (every selected clause, every coverage topic).
+3. **Day 10–17** — Generate the test-case set; close coverage gaps.
+4. **Day 17–24** — Run a compliance audit; address findings via auto-opened CAPAs.
+5. **Day 24–30** — Export the BRD, PRD, FRD, traceability matrix, and audit report. Submit.
+
+This used to take six months. With an AI-native platform it takes a month, and the artefacts are *better* — every link is live, every clause is cited, every change is captured.
+
+[Try the ROI calculator](/roi-calculator) to see what the savings look like for your team, or [book a demo](/contact) to see IEC 62304 generation end-to-end.
+
+
+---
+
+## Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture
+URL: https://auditee.site/blog/legacy-cobol-modernization-with-ai
+Date: 2026-04-15
+Author: Auditee Research
+Tags: Legacy Modernization, AI, COBOL, Architecture
+Reading time: 13 min
+
+Most legacy modernization programs fail because they start by asking 'how do we rewrite this?'. The right question is 'what does this actually do?' — and AI is the first technology that can answer it at scale.
+
+## The legacy paradox
+
+The systems most worth modernizing are precisely the ones nobody fully understands any more. Original architects retired a decade ago. Documentation went stale before the cloud existed. Requirements are scattered across change tickets, mainframe notes and the heads of three SMEs.
+
+Yet these systems run mortgage processing, settlement, claims adjudication, telecom provisioning, ECU calibration and pharmacy benefit management.
+
+You can't rewrite what you can't describe.
+
+## Why "rewrite" projects fail
+
+McKinsey research and our own field experience converge on the same numbers: **60–70% of legacy modernization programs over $25M either fail or deliver less than half the planned scope**. The pattern is consistent:
+
+1. Big-bang rewrite is approved.
+2. The team discovers the legacy system has 4× more business rules than documented.
+3. Six-month requirements gathering balloons to 18 months.
+4. Modernization stalls; legacy stays in production; technical debt compounds.
+
+## The AI-derived requirements approach
+
+Modern LLMs combined with static analysis and code-graph indexing can do something fundamentally new: **read the legacy codebase and explain it as a requirement set**. Not the *intended* requirements (those are lost) — the *de-facto* requirements the code actually enforces.
+
+The workflow:
+
+1. **Index the codebase** — files, functions, classes, control flow, data flow. For COBOL/PL/SQL/Java/C/C++/C#/Angular this is well-tooled.
+2. **AI extraction** — for each meaningful module the LLM emits a candidate requirement (functional, NFR, business rule, edge case) with evidence pointing to specific source lines.
+3. **Human-in-the-loop review** — domain SMEs approve, edit or reject each extracted requirement.
+4. **Trace back to code** — approved requirements stay linked to their originating source.
+5. **Gap analysis** — AI surfaces what *should* be there but isn't (security, accessibility, compliance, error handling).
+6. **Modernize against requirements** — your new build target is now a clean, classified, traceable requirements graph — not a 30-year-old code dump.
+
+## Real-world checkpoints
+
+When we work with teams modernizing legacy fintech, telecom OSS and clinical software, the same checkpoints predict success:
+
+- **Time-to-first-requirement.** If the AI can't return a credible draft in the first 24 hours of indexing, the tooling is wrong. With Auditee it's measured in *minutes*.
+- **Source attribution.** Every extracted requirement has to point to specific commits / files / lines. No source citation = no trust.
+- **Domain validation rate.** SMEs should approve or revise (not reject) at least 60% of generated requirements on first pass. If that's lower, the model has the wrong context.
+- **Gap detection signal.** The AI should surface non-trivial missing requirements (audit logging, idempotency, rate limiting). If it only finds typos, it's not earning its keep.
+
+## The new build sequence
+
+With AI-derived requirements, modernization sequencing changes:
+
+| Old playbook | AI-native playbook |
+| --- | --- |
+| Discovery → Requirements → Design → Build → Test → Cutover | Index → Extract → Review → Gap-fix → Build alongside legacy → Cutover module-by-module |
+| 18+ months before first deploy | First refactored module shipping in 6–10 weeks |
+| Big-bang risk | Strangler-pattern, requirement-by-requirement |
+
+## Where Auditee fits
+
+Auditee's [Legacy module](/app/legacy) does exactly the index → extract → review → trace loop above for COBOL, Java, C, C++, C#, PL/SQL, Angular and more — and feeds the result into the same requirements graph your new build will run on. Gap detection runs continuously; recurring audits catch regressions.
+
+If you're staring at a 30-year-old codebase and a modernization deck nobody believes, [book a 30-minute scoping call](/contact) — we'll point Auditee at a single module live and show you the requirement graph it produces.
+
 ---
 
 ## SOC 2 vs ISO 27001: Which Compliance Framework Should You Choose?
@@ -72,6 +667,209 @@ Tags: SOC 2, ISO 27001, Compliance, Security
 Reading time: 9 min
 
 SOC 2 and ISO 27001 are the two most-asked-for compliance attestations on enterprise procurement checklists. Both are achievable; many companies need both. Here's how to choose — and how to do them efficiently.
+
+## The 30-second answer
+
+- **You sell mostly to US enterprise customers, especially mid-market SaaS** → start with **SOC 2 Type II**.
+- **You sell to European or Asia-Pacific enterprises, financial services, or government** → start with **ISO/IEC 27001**.
+- **Your customers ask for both, or you sell into healthcare/finance/global enterprise** → plan for **both**, with a unified control set.
+
+## What each framework actually is
+
+### SOC 2
+
+A *report* produced by a CPA firm under AICPA's SSAE 18 attestation standard. It evaluates how your organization meets the AICPA Trust Services Criteria across five categories (you choose which to include in scope):
+
+1. **Security** (mandatory)
+2. **Availability**
+3. **Processing Integrity**
+4. **Confidentiality**
+5. **Privacy**
+
+Two report flavours:
+
+- **Type I** — point-in-time design assessment. Cheaper, faster, but enterprise procurement teams increasingly reject it.
+- **Type II** — design *and* operating-effectiveness over an audit window (3–12 months). The credible standard.
+
+### ISO/IEC 27001
+
+A *certification* awarded by an accredited certification body. Built around establishing an Information Security Management System (ISMS) — a documented, risk-driven system of policies, procedures, and Annex A controls (93 controls in the 2022 revision).
+
+Surveillance audits annually; recertification every three years.
+
+## Side-by-side comparison
+
+| Dimension | SOC 2 | ISO 27001 |
+| --- | --- | --- |
+| Issued by | AICPA-registered CPA firm | Accredited certification body |
+| Output | Audit report | Certificate + statement of applicability |
+| Geographic recognition | Strong in US | Global |
+| Scope flexibility | Choose 1–5 trust criteria | Defined by your ISMS scope |
+| Audit cadence (after first) | Annual | Annual surveillance, 3-year recert |
+| Cost (year 1, mid-stage SaaS) | $30k–$80k | $40k–$120k |
+| Time to first attestation | 4–9 months | 6–12 months |
+| Renewal disruption | Recurring full audit | Lighter surveillance audits |
+| Mapping to other frameworks | Maps to ISO 27001, NIST | Maps to SOC 2, NIST, GDPR, PCI |
+
+## What's the same
+
+Roughly **65–75% of the underlying controls overlap**. Both want:
+
+- A documented information-security policy approved by management.
+- Asset inventory and ownership.
+- Access control with least privilege and periodic reviews.
+- Encryption in transit and at rest.
+- Vulnerability management and penetration testing.
+- Vendor risk management.
+- Incident response with documented runbooks.
+- Business continuity and disaster recovery.
+- Change management with traceability.
+- Logging, monitoring, and alerting.
+
+## What's different
+
+- **ISO 27001 demands a formal risk-treatment plan.** SOC 2 expects risk assessment but is less prescriptive about its form.
+- **ISO 27001 requires a management review.** A periodic, documented executive review of the ISMS.
+- **SOC 2 produces a public-facing report.** The actual document with evidence is shareable under NDA — useful in sales.
+- **ISO 27001 grants a certificate.** Easier to display on a marketing site or in an RFP.
+
+## The "do both at once" play
+
+Because the controls overlap so heavily, sophisticated teams design a *single* control set that satisfies both standards and produce both attestations from the same evidence base. The trick is:
+
+1. Start with the broader of the two — usually ISO 27001 — because it forces an ISMS.
+2. Map every Annex A control to the matching SOC 2 trust services criterion.
+3. Implement the control once; produce evidence in a format that satisfies both auditors.
+4. Engage the SOC 2 auditor and the ISO certification body in parallel windows.
+
+This typically cuts year-one effort by 30–40% versus running them sequentially.
+
+## How AI-native compliance helps
+
+An AI-native compliance platform changes the economics:
+
+- **Generate requirements that satisfy both standards at once.** Select SOC 2 *and* ISO 27001 in the standards selector; the platform generates a unified requirement set covering both.
+- **Continuous evidence collection.** Plug in your code, ticket system, and RM tool; evidence accrues to the right control automatically.
+- **Native rating in each framework's vocabulary.** A SOC 2 audit doesn't speak ISO 27001 maturity levels — but the same underlying findings render correctly in both reports.
+- **CAPAs that close findings, not just track them.** Findings open corrective-action tickets, evidence is attached, status is tracked to closure.
+
+## Recommendation
+
+If you're a US-headquartered SaaS company under 200 people selling to US enterprises, get SOC 2 Type II first and add ISO 27001 in year two when you go international.
+
+If you're EU-based, sell into financial services, or pursue large global accounts, do ISO 27001 first.
+
+If your buyers are asking for both *now*, run them in parallel using a unified control set — and consider an AI-native platform to make the dual-standard generation, evidence collection, and audit reporting tractable.
+
+[See how Auditee handles dual-standard compliance →](/automated-compliance)
+
+
+---
+
+## DO-178C Software Certification: A 2026 Primer for Avionics Teams
+URL: https://auditee.site/blog/do-178c-software-certification-2026-primer
+Date: 2026-04-08
+Author: Auditee Research
+Tags: DO-178C, Avionics, Aerospace, Compliance, Standards
+Reading time: 14 min
+
+DO-178C is the unforgiving cousin of IEC 62304 — 71 objectives, 5 design assurance levels, and a certification authority that will not accept ambiguity. Here's the 2026 playbook.
+
+## Why DO-178C is different
+
+DO-178C / ED-12C is the de-facto standard for airborne software. The FAA, EASA, Transport Canada, and ANAC all reference it. Unlike many safety standards, DO-178C is *outcome-based* but enforced through 71 explicit objectives mapped to your **Design Assurance Level (DAL)**.
+
+DAL is determined by the worst-case failure condition the software can cause, classified in ARP4761:
+
+| DAL | Failure condition | Example |
+| --- | --- | --- |
+| **A** | Catastrophic | Flight-control law, autoland |
+| **B** | Hazardous | Engine control, collision-avoidance |
+| **C** | Major | Cabin pressurisation |
+| **D** | Minor | In-flight entertainment |
+| **E** | No effect | Galley lighting controller |
+
+DAL A demands all 71 objectives, several with independence between developer and verifier. DAL E demands almost none. The classification drives every cost decision in the program.
+
+## The 10 process areas
+
+DO-178C objectives live in 10 process tables:
+
+1. **Software planning** (Table A-1)
+2. **Software development** (Table A-2)
+3. **Verification of requirements** (Table A-3)
+4. **Verification of design** (Table A-4)
+5. **Verification of source code** (Table A-5)
+6. **Verification of integration** (Table A-6)
+7. **Verification of verification** (Table A-7)
+8. **Configuration management** (Table A-8)
+9. **Quality assurance** (Table A-9)
+10. **Certification liaison** (Table A-10)
+
+Auditors do not improvise — they walk these tables row by row and ask for evidence.
+
+## Coverage targets you cannot fake
+
+Coverage is where DO-178C shows its teeth:
+
+| DAL | Statement | Decision | MC/DC |
+| --- | --- | --- | --- |
+| A | Required | Required | Required |
+| B | Required | Required | – |
+| C | Required | – | – |
+| D | – | – | – |
+
+MC/DC for DAL A means **every condition independently affects the decision outcome at least once** — not just every branch taken. Tools that claim "MC/DC" but actually report modified condition coverage will get you rejected.
+
+## DO-178C plus its supplements
+
+DO-178C is normally cited together with:
+
+- **DO-330** — Software tool qualification considerations.
+- **DO-331** — Model-based development supplement.
+- **DO-332** — Object-oriented technology supplement.
+- **DO-333** — Formal methods supplement.
+
+Tool qualification (DO-330) is the silent killer. Anything you use to *eliminate* an objective (e.g. an autocoder that replaces hand-written source) is **TQL-1** through **TQL-5**, and TQL-1 is almost as much work as the application itself. Pick tools whose vendor provides a qualification kit.
+
+## Where teams typically lose
+
+Common failure modes from real audits:
+
+1. **PSAC and SAS misalignment.** Your Plan for Software Aspects of Certification promised 71 objectives; your Software Accomplishment Summary delivers 67.
+2. **Derived requirements aren't allocated to safety analysis.** DO-178C §5.2.2 requires every derived requirement to be evaluated by the system-level safety process — many teams skip this.
+3. **Coverage is reported on instrumented code, not source.** The mapping must be traceable.
+4. **Robustness testing is missing.** DO-178C §6.4.2 requires both normal and robustness ranges on every input.
+5. **Problem-reporting trail is broken.** PRs were closed in Jira but never re-verified at the integration level.
+
+## How AI-native traceability changes the math
+
+A standards-aware platform turns DO-178C from a documentation marathon into a continuous-evidence system:
+
+- **High/Low-Level Requirements (HLR/LLR)** — generated from a system spec or directly from the source, with each requirement citing the DO-178C objective and section it satisfies.
+- **Bidirectional traceability** — HLR ↔ LLR ↔ source ↔ test cases ↔ coverage results, all live links rather than a stale matrix.
+- **Robustness test generation** — for each input, derive boundary, equivalence-class, and out-of-range tests automatically.
+- **Coverage gap analysis** — surface uncovered MC/DC pairs before the audit, not during.
+- **Tool qualification artefacts** — pre-generated TQL evidence packs for connected analysers.
+- **Problem-reporting loop** — every PR ties to the requirement, the test that failed, and the fix verification, with the objective table updated automatically.
+
+The typical impact for a DAL B engine-control module: certification-evidence prep drops from 9 months to 5, and the freed engineers ship the next feature.
+
+## A realistic certification timeline
+
+For a DAL B project of ~80 KLOC:
+
+1. **Months 1–2** — PSAC, SDP, SVP, SCMP, SQAP drafted and approved.
+2. **Months 3–5** — HLR and LLR complete; architecture frozen.
+3. **Months 5–9** — Source implemented; static analysis clean; unit tests at coverage targets.
+4. **Months 9–11** — Integration tests; system tests; robustness; coverage analysis.
+5. **Months 11–13** — Stage-of-Involvement (SOI) audits 1–4 with the DER/CVE.
+6. **Month 14** — SAS submitted; certification credit granted.
+
+Skip a step and the certification authority will know.
+
+[Book a demo](/contact) to see DO-178C objective tracking on the Hermes flight-management demo project.
+
 
 ---
 
@@ -84,6 +882,110 @@ Reading time: 10 min
 
 Most enterprise legacy systems have lost their authors and their docs. AI can read the code and produce a structured, standards-aware requirements baseline — the prerequisite for any modernization program.
 
+## Why legacy code has no requirements
+
+The patterns are familiar:
+
+- A 1990s **COBOL** core in a bank or insurer that has outlived three rounds of analysts.
+- A **Java EE** monolith in healthcare that grew by accretion of 200 developers over 15 years.
+- A **.NET Framework** ERP customization with hundreds of stored procedures and no spec.
+- An industrial SCADA system whose original requirements were a Word doc deleted in 2008.
+
+Modernization programs stall here because step zero — *what is this system actually supposed to do?* — has no answer. You cannot replace what you cannot specify, and you cannot certify what you cannot trace.
+
+## The traditional approach: read every line
+
+Historically the answer has been a 6–18 month "requirements recovery" engagement: a small army of analysts reads the code, interviews the few remaining engineers, and produces a requirements document. By the time it ships:
+
+- It is already out of date.
+- It is unstructured prose, not a queryable graph.
+- It has no traceability links back to specific files or routines.
+- It cites no standards, so it cannot drive a compliance audit.
+
+This is exactly the workload that modern AI does well — and unlike a human team, the AI does not need to be re-onboarded for each new module.
+
+## A practical AI-driven workflow
+
+### Step 1 — Get the code into the platform
+
+Connect a GitHub repository, upload a ZIP, point at a folder, or — for tools like IBM DOORS, Jama, Polarion, codeBeamer — connect the existing RM source directly. The platform indexes once and reuses the index across every subsequent step.
+
+### Step 2 — Pick the standards that apply
+
+This is the step most teams get wrong. Before generating requirements, decide what standards the *modernized* system will be certified against. For a bank's core ledger that might be SOC 2, ISO 27001, PCI DSS. For a medical device firmware port, IEC 62304 and ISO 14971. For an automotive ECU, ASPICE and ISO 26262.
+
+The standards selection drives:
+
+- Which coverage topics the AI must produce requirements for.
+- The required document sections in the eventual BRD/PRD/FRD.
+- The citation hints embedded in each generated requirement.
+
+### Step 3 — Generate requirements from a code subset
+
+Pick a meaningful unit — a microservice, a module, a stored-procedure pack — and feed it to the AI. With a standards-aware platform, the prompt is augmented so the output:
+
+1. Covers every required topic of every selected standard.
+2. Cites the relevant clauses inline.
+3. Is uniquely numbered, verifiable, and traceable to specific code files.
+
+For a ~5,000-line module, this typically produces 30–60 requirements in a single pass. Repeat for each module.
+
+### Step 4 — Run gap analysis against the recovered set
+
+The same platform compares what was generated against existing tests, existing tickets, and any pre-existing documentation. The output:
+
+- *Missing requirements* — behavior implied by code but not yet captured.
+- *Conflicting requirements* — old docs that no longer match current behavior.
+- *Orphan requirements* — old docs whose code has been removed.
+
+### Step 5 — Generate test cases for each requirement
+
+For each new requirement, generate a test case set. This becomes the validation harness for the modernization itself: when you reimplement the module, the tests must still pass.
+
+### Step 6 — Produce the BRD/PRD/FRD
+
+Now you have artefacts a modernization vendor (or your own team) can actually consume. Each document cites the original code locations, the standards it conforms to, and the test cases that validate each requirement.
+
+### Step 7 — Drive the modernization with CAPAs
+
+As the rebuild progresses, every gap or deviation opens a tracked CAPA. The closing evidence is the new code's test results.
+
+## Pitfalls to avoid
+
+### Don't dump the whole monolith into a single prompt
+
+Even modern long-context models lose fidelity past ~30k characters of dense source. Slice by module, generate per-module requirements, then merge.
+
+### Don't skip the standards selection
+
+A pile of generated requirements that doesn't conform to *any* standard is no better than the prose document you already have. Standards-aware generation is what makes the output certifiable.
+
+### Don't accept the AI's output unreviewed
+
+A senior engineer should spend ~10 minutes reviewing the output of each generation pass. They will catch hallucinated capabilities (the model inferred a feature from a function name that's actually dead code), misclassified safety levels, and missing risk-control measures.
+
+### Don't ignore the SOUP catalogue
+
+Every legacy system has dependencies whose own provenance is unclear — old open-source libraries, vendor SDKs, in-house forks of public projects. A standards-aware platform should generate requirements describing these, including known anomalies and version constraints.
+
+## Realistic timelines
+
+| Code base | Manual recovery | AI-assisted recovery |
+| --- | --- | --- |
+| 50k LOC microservice cluster | 4–6 weeks | 2–4 days |
+| 500k LOC Java monolith | 6–9 months | 3–4 weeks |
+| 2M LOC COBOL banking core | 12–18 months | 8–12 weeks |
+| Mixed-language enterprise estate | 12–24 months | 8–16 weeks |
+
+The savings are not just calendar time — they are *quality*. The AI-generated baseline is a queryable graph cited against standards; the manual baseline is a 600-page Word doc that no one reads.
+
+## Where to start
+
+If you have a legacy modernization program on the roadmap, the lowest-risk first step is to pick *one* module, generate requirements from its code with a standards selection, and review the output. Most teams are surprised how quickly the bench-test convinces stakeholders to invest properly.
+
+[See requirements-from-code in action →](/ai-product-development) · [Talk to us about a modernization pilot →](/contact)
+
+
 ---
 
 ## 15 AI Prompts Senior BAs Actually Use for Requirements Gathering
@@ -94,6 +996,343 @@ Tags: Business Analysis, AI Prompts, BRD, Requirements
 Reading time: 8 min
 
 Skip the LinkedIn-influencer prompt lists. These are 15 prompts Senior BAs are actually pasting into ChatGPT, Claude and (better) into structured tools every day, with the failure modes and the fixes.
+
+## How to use this list
+
+Each prompt below is split into three parts:
+- **Use case** — when to reach for it
+- **Prompt template** — paste-ready, with variables in `{curly braces}`
+- **Failure mode** — the way it goes wrong, and the structural fix
+
+> Heads up: pure-LLM prompts top out fast on regulated work. Our Auditee Smart Interview is a structured version of these prompts that always cites sources, classifies output and traces back to the source artefact. Use these prompts to learn the patterns; use a structured tool for production.
+
+---
+
+### 1. Discovery from a one-paragraph idea
+
+**Use case.** Stakeholder describes a feature in 3 sentences and expects a draft BRD by Friday.
+
+**Prompt.**
+```
+You are a Senior Business Analyst. The stakeholder description is:
+
+"{paragraph}"
+
+Generate 5 follow-up questions you must ask before drafting requirements.
+For each question, explain why answering it changes the requirement set.
+```
+
+**Failure mode.** GPT will skip mandatory regulatory questions for healthcare/fintech. Add: `Industry: {industry}. Compliance frameworks: {list}.`
+
+---
+
+### 2. Stakeholder identification
+
+**Prompt.**
+```
+For the project "{name}: {one-line description}", list every stakeholder
+type (internal, external, regulatory) likely to have functional or
+non-functional requirements. For each, list 3 representative requirements.
+```
+
+---
+
+### 3. Use-case enumeration
+
+**Prompt.**
+```
+List the top 20 use cases for "{system}". For each include: actor,
+trigger, primary flow (3-5 steps), 2 alternative flows, and 1 exception
+flow. Format as JSON.
+```
+
+---
+
+### 4. Functional requirement extraction from a BRD
+
+**Prompt.**
+```
+Extract all functional requirements from the document below.
+For each, output: id, title, description (≤1 line), priority (MoSCoW),
+type (functional|business rule|integration), source (paragraph number).
+
+Document:
+"""
+{paste BRD}
+"""
+```
+
+**Failure mode.** Loses requirements buried in tables/figures. Convert to plain text first or use Auditee's Intelligent Document Analysis which handles tables and OCR'd PDFs.
+
+---
+
+### 5. Non-functional requirement (NFR) generation
+
+**Prompt.**
+```
+For "{system description}", generate non-functional requirements covering:
+performance, scalability, availability, security, accessibility (WCAG 2.2 AA),
+internationalisation, observability and disaster recovery. For each include
+target and acceptance criteria.
+```
+
+---
+
+### 6. Acceptance-criteria expansion
+
+**Prompt.**
+```
+Convert this user story into Gherkin acceptance criteria including
+2 happy-path, 2 alternate-path and 2 negative-path scenarios:
+
+User story: "{story}"
+```
+
+---
+
+### 7. Gap detection across requirements
+
+**Prompt.**
+```
+Review the requirement set below. For "{system context}", list missing
+requirements grouped by category: security, privacy, accessibility,
+internationalisation, error handling, observability, performance.
+Flag any contradictions.
+
+Requirements:
+{paste list}
+```
+
+**Failure mode.** Without retrieval over a knowledge base of regulatory standards, GPT will miss IEC 62304 / SOC 2 / PCI-specific gaps. This is why purpose-built gap detection wins on regulated work.
+
+---
+
+### 8. Conflict & duplication detection
+
+**Prompt.**
+```
+List requirement pairs in the set below that are: (a) duplicates,
+(b) overlap >50%, (c) directly conflict. For each pair, recommend
+resolution.
+
+Requirements:
+{paste list}
+```
+
+---
+
+### 9. Requirement quality scoring
+
+**Prompt.**
+```
+Score each requirement on the INVEST + IEEE 830 dimensions:
+unambiguous, verifiable, traceable, complete, consistent, atomic.
+Score 1-5. Suggest one rewrite for each requirement scoring <3 on any dimension.
+```
+
+---
+
+### 10. BRD draft from requirements
+
+**Prompt.**
+```
+Produce a Business Requirements Document for "{project}" from the
+requirements set below. Include: executive summary, business context,
+scope, in/out of scope, stakeholders, business rules, functional
+requirements grouped by capability, NFRs, assumptions, constraints,
+risks. Use formal tone.
+```
+
+---
+
+### 11. PRD draft from BRD
+
+**Prompt.**
+```
+Convert the BRD below into a Product Requirements Document focused on
+the user-facing solution: personas, jobs-to-be-done, user journeys,
+solution overview, feature set, success metrics, release plan.
+```
+
+---
+
+### 12. Compliance crosswalk
+
+**Prompt.**
+```
+Map each requirement below to the controls it satisfies in:
+SOC 2 Trust Services Criteria, ISO 27001:2022 Annex A, HIPAA Security
+Rule (45 CFR 164.308-312). Output a markdown table.
+```
+
+---
+
+### 13. Test-case generation per requirement
+
+**Prompt.**
+```
+For each requirement below, generate test cases covering positive,
+negative, boundary and edge cases. Each test case has: id,
+preconditions, steps, expected result, severity.
+```
+
+---
+
+### 14. Stakeholder review prompt
+
+**Prompt.**
+```
+You are reviewing the requirement set below in the role of "{persona}"
+(e.g., Compliance Officer, Site Reliability Engineer, Security Architect).
+List the 5 most concerning gaps or risks from your perspective. Be specific.
+```
+
+---
+
+### 15. Requirement-to-code mapping (for legacy)
+
+**Prompt.**
+```
+Given the source code module below, derive the requirements it
+implements. For each requirement: functional or NFR? source line
+range? business rule or technical?
+
+Code:
+```{language}
+{paste code}
+```
+```
+
+**Failure mode.** Pure-LLM prompts on >2000-line files lose context. This is why production reverse-engineering needs a code-graph index (which Auditee builds for [legacy modernization](/app/legacy)).
+
+---
+
+## What separates production from playground
+
+The 15 prompts above are great for prototyping. They struggle on production work because:
+
+1. **No memory.** Each prompt forgets the last one.
+2. **No retrieval.** Standards aren't in the model's recall.
+3. **No traceability.** Output isn't linked back to source.
+4. **No structure.** You re-format every result.
+5. **No collaboration.** Three BAs running the same prompt get three different outputs.
+
+This is the gap purpose-built tools fill. Auditee's [Smart Interview](/app/interview), [Requirements](/app/requirements) and [Reports](/app/reports) modules are essentially these prompts, structured, with retrieval, classification, traceability and review baked in.
+
+Try the prompts above in your favourite LLM. When you hit the wall — [book a walkthrough](/contact).
+
+---
+
+## The Bidirectional Traceability Matrix: A Complete Guide with Examples
+URL: https://auditee.site/blog/bidirectional-traceability-matrix-complete-guide
+Date: 2026-03-30
+Author: Auditee Research
+Tags: Traceability, Requirements, Compliance, Standards
+Reading time: 11 min
+
+Every regulated standard requires bidirectional traceability. Almost every team builds it as a spreadsheet — and almost every team fails the audit because of it. Here's the modern way.
+
+## What "bidirectional" actually means
+
+Forward traceability answers: *which design, code, and test artefacts implement this requirement?*
+
+Backward traceability answers: *which requirement justifies this code, this test, this design choice?*
+
+Bidirectional traceability requires *both*, kept consistent in real time. Every regulated standard — IEC 62304, ISO 26262, DO-178C, FDA QSR, IEC 61508, EN 50128 — mandates it explicitly.
+
+## The minimum link types
+
+A defensible matrix needs at least these link classes:
+
+- **Stakeholder need ↔ user requirement** (BRS to PRD)
+- **User requirement ↔ system requirement** (PRD to FRD)
+- **System requirement ↔ software requirement** (FRD to SRS)
+- **Software requirement ↔ design element** (SRS to architecture/detailed design)
+- **Design element ↔ source unit** (file, function, module)
+- **Source unit ↔ unit test**
+- **Software requirement ↔ system test**
+- **Hazard ↔ risk control measure ↔ requirement**
+- **Standard clause ↔ requirement**
+- **Defect ↔ requirement and test**
+- **CAPA ↔ defect, hazard, or audit finding**
+
+Notice how many of those exist in different tools today: requirements in DOORS, design in Confluence, code in Git, tests in TestRail, defects in Jira, CAPAs in QMS. The matrix lives nowhere — and that is exactly why audits fail.
+
+## Why spreadsheet matrices always rot
+
+The classic approach is one large Excel sheet:
+
+| Req ID | Title | Linked Code | Linked Tests | Verified |
+| --- | --- | --- | --- | --- |
+| REQ-001 | Login required | login.tsx | TST-001 | ✓ |
+| REQ-002 | … | … | … | – |
+
+Three weeks after the sheet is "done":
+
+- A developer renames `login.tsx` to `auth.tsx`. The matrix doesn't notice.
+- A test was deleted. The matrix still claims coverage.
+- A new requirement was added to a sub-feature. Nobody updated the sheet.
+- A hazard from the risk file was tightened. The matrix doesn't link to risks at all.
+
+By audit week the spreadsheet is theatre, and everyone knows it.
+
+## What a graph-native traceability layer looks like
+
+Treat every artefact as a node in a typed graph and every dependency as a typed edge:
+
+```text
+Hazard HAZ-04  ─┐
+                ├── controls ──> ReqSW SRS-019
+StandardClause ─┘                       │
+                                        ├── implementedBy ──> SourceUnit src/dose.ts:calcDose()
+                                        ├── verifiedBy   ──> Test  TST-209
+                                        └── linkedTo     ──> Defect DEF-031 ──> CAPA CPA-014
+```
+
+Now every audit question becomes a graph traversal:
+
+- "Show coverage of HAZ-04" — one hop forward.
+- "Why does this code exist?" — one hop backward from the source unit.
+- "What breaks if PRD-031 changes?" — multi-hop impact analysis.
+
+You don't *maintain* the matrix. The matrix is a view onto the live graph, generated on demand.
+
+## How to bootstrap one in an existing project
+
+If you have a spreadsheet matrix today:
+
+1. **Inventory your sources.** Where do requirements live? Code? Tests? Risks? CAPAs?
+2. **Adopt stable IDs everywhere.** A requirement without an ID cannot be linked. A test labelled "Login flow happy path" cannot be cited.
+3. **Connect the systems read-only first.** GitHub, Jira, DOORS, Polarion, TestRail, Confluence. Let the platform parse what is already there.
+4. **Run a coverage report.** You will be surprised how much already exists implicitly — "this commit message references REQ-031" is enough for an inferred edge.
+5. **Close the gaps.** The remaining gaps are the real work; everything else was already there, just not surfaced.
+6. **Make new edges automatic.** PR templates that name the requirement, test naming conventions that name the function — these turn discipline into infrastructure.
+
+## Common questions auditors ask
+
+Be ready for these. With a graph, each is a five-second answer:
+
+- **Forward:** Show me every implementation and test for SRS-027.
+- **Backward:** Why does this function exist? Which requirement?
+- **Coverage:** What percentage of Class C requirements have at least one passing system test?
+- **Impact:** PRD-031 was modified yesterday — what should be re-verified?
+- **Provenance:** This released binary — which requirement baseline does it correspond to?
+- **Risk closure:** HAZ-04 — show every risk control, the requirements that implement them, and verification evidence.
+
+## How AI-native platforms change the cost curve
+
+Modern RM systems treat traceability as an *emergent property* of doing the work, not a separate task:
+
+- **Auto-link inference.** When a PR contains "fixes SRS-019", the link is created without manual matrix entry.
+- **Standards-aware classification.** A new requirement is auto-tagged with the clauses it satisfies.
+- **Live coverage rings** that recompute on every commit — so coverage regressions are noticed by Friday rather than three days before the audit.
+- **Impact previews** before merging — "this change touches code linked to 4 Class C requirements; 2 of their tests have not been re-run."
+- **Evidence export** — one click renders the matrix in the format the auditor expects (BRS↔PRD↔FRD, hazard analysis, coverage table, defect register).
+
+The objective is not "have a matrix." It is "*never need to build one again*."
+
+[See it on the Titan demo project](/demo-videos/traceability) — every IEC 61508 SIL-3 requirement walked from spec to test to evidence in a live graph.
+
 
 ---
 
@@ -106,6 +1345,113 @@ Reading time: 12 min
 
 IBM Rational DOORS Classic is approaching its second decade past end-of-major-development. If you're looking to migrate, here's a clear-eyed comparison of the ten most credible alternatives.
 
+## Why teams are leaving DOORS Classic
+
+IBM Rational DOORS Classic has been the gold standard for requirements management in safety-critical industries since the late 1990s. It is also showing its age:
+
+- The thick client is hostile to remote and hybrid teams.
+- DXL scripts are increasingly hard to maintain.
+- Integration with modern Git-based engineering tooling is painful.
+- IBM has positioned DOORS Next as the successor, signalling reduced investment in Classic.
+- License costs have not fallen even as alternatives have proliferated.
+
+That said, DOORS Classic still does some things spectacularly well — link traceability across modules, baselining, and large-scale formal review workflows. Any honest alternative comparison has to acknowledge that.
+
+## The ten alternatives, ranked by 2026 fit
+
+### 1. IBM Engineering Requirements Management DOORS Next (DNG)
+
+The IBM-blessed migration path. OSLC-based, web-native, integrates with the rest of the IBM ELM suite (RTC, RQM, RPE).
+
+- **Best for:** Existing IBM ELM customers who want to consolidate.
+- **Caveats:** OSLC adds complexity; performance of the shared-jazz-team-server can be challenging at scale.
+
+### 2. Jama Connect
+
+Mature SaaS-first RM tool with strong UX, broad adoption in medical devices and defense, and good test-management integration.
+
+- **Best for:** Mid-to-large product teams in medical devices, defense, automotive who want a managed-cloud option.
+- **Caveats:** Per-user licensing scales aggressively.
+
+### 3. Siemens Polarion ALM
+
+Application-lifecycle suite with strong requirements, test, and quality modules. Native LiveDocs are excellent for collaborative authoring.
+
+- **Best for:** Automotive and complex systems engineering, especially where Siemens is already a vendor.
+- **Caveats:** Steep learning curve; on-prem deployments are heavy.
+
+### 4. PTC Codebeamer
+
+Strong end-to-end ALM with native ASPICE/ISO 26262/IEC 62304 templates. Owned by PTC since 2022 (acquired Intland).
+
+- **Best for:** Regulated automotive and medical device teams who want pre-built standards templates.
+- **Caveats:** UI can feel dated; reporting customization needs scripting.
+
+### 5. Perforce Helix ALM (formerly Helix RM / TestTrack)
+
+Bundles RM, test management, and issue tracking. Strong on-premise story for sectors that cannot use cloud.
+
+- **Best for:** Regulated industries with strict on-premise mandates.
+- **Caveats:** Modern integrations (Slack, GitHub Actions) are thinner than competitors.
+
+### 6. Visure Requirements ALM
+
+Underrated tool with strong customizability, good standards templates, and reasonable pricing.
+
+- **Best for:** Mid-sized regulated teams who need customization without paying enterprise rates.
+- **Caveats:** Smaller community; fewer third-party integrations.
+
+### 7. Microsoft Azure DevOps Boards (with extensions)
+
+If you are already deeply invested in Azure DevOps, requirements can live as work items with extensions for traceability matrices and reporting.
+
+- **Best for:** .NET / Azure-centric organizations doing predominantly agile work.
+- **Caveats:** Not built for formal RM out of the box; extensions are hit-or-miss.
+
+### 8. Jira + R4J / Jira Align
+
+Jira with R4J (Requirements for Jira) or Jira Align bolts a requirements layer onto an issue tracker.
+
+- **Best for:** Agile-first teams who need lightweight RM and don't have heavy regulated obligations.
+- **Caveats:** Atlassian keeps changing the data-center vs cloud story; plugin ecosystem is uneven.
+
+### 9. Modern Requirements (3SL, Cradle, ReqView and friends)
+
+A loose category of niche tools, each with a small but loyal customer base. Worth shortlisting if your team has a specific workflow that the majors handle awkwardly.
+
+### 10. Auditee — AI-native PDLC platform
+
+Auditee is a category unto itself: not just an RM tool but a unified AI-native platform that:
+
+- Generates requirements from a brief, from existing code, or from imported DOORS/Jama/Polarion/codeBeamer/Helix/Visure/Azure DevOps/Jira/ReqIF data.
+- Conforms generation to selected standards (HIPAA, IEC 62304, SOC 2, ISO 27001, ASPICE, ISO 26262, FDA QMSR, GDPR, PCI DSS, NIST, EU AI Act, NIS2, DORA, and more).
+- Drives compliance audits, CAPA workflows, and recurring re-audits from the same data.
+- Imports your existing DOORS/RM data day one — you don't lose the historical baseline.
+
+- **Best for:** Teams that want to consolidate RM, audit, and CAPA into one AI-driven platform without surrendering their existing RM data.
+- **Caveats:** A newer entrant; if you need a 30-year reference customer like a major automotive OEM today, the established vendors above have longer lists.
+
+## Migration playbook (DOORS → anywhere)
+
+1. **Export** — DOORS supports export to ReqIF, CSV, RTF. ReqIF preserves the most structure including links.
+2. **Map the link types** — Every alternative has its own link-type vocabulary. Map yours up front.
+3. **Decide what to bring** — Not every project needs to migrate. Archive read-only DOORS instances for closed projects; migrate active ones.
+4. **Re-baseline post-migration** — Lock a baseline immediately after import so you have a known-good starting point.
+5. **Validate sample traceability** — Pick five high-value requirement chains and verify they round-trip correctly.
+6. **Run parallel for one cycle** — Authoritative source switches when both teams confirm the new tool meets their needs.
+
+## A pragmatic recommendation
+
+If you are migrating off DOORS Classic in 2026, do not pick a tool based only on its "DOORS replacement" pitch. Pick based on:
+
+- The standards your products must satisfy.
+- The way your engineers want to author and review.
+- Your tolerance for on-premise vs cloud.
+- Whether you want plain RM, or AI-native generation and audit on top of RM.
+
+If the answer to that last point is "AI-native," [Auditee imports DOORS data day one](/app/sources) and turns it into a standards-conformant, AI-augmented graph. Worth a 30-minute look before you sign a five-year deal with anyone else.
+
+
 ---
 
 ## Poor Software Requirements Cost the Industry Billions — Here's the Math
@@ -116,6 +1462,203 @@ Tags: Requirements, ROI, Research, Software Engineering
 Reading time: 10 min
 
 Industry research from IBM, Standish, IEEE and Gartner has converged on the same answer for 25 years: requirements defects are the single most expensive class of bug. Here's the math, with sources.
+
+## The headline number
+
+Across the last 25 years of empirical software engineering research, **40–55% of total project rework cost** traces back to requirements defects (missing, ambiguous, conflicting or wrong requirements). For an enterprise software portfolio of $50M annual spend, that's typically **$8–14M per year of avoidable rework**.
+
+Sources: IBM Systems Sciences Institute (2010), Standish CHAOS (multiple), Capers Jones (2017), IEEE Software (Boehm, multiple).
+
+## Why requirements defects dominate
+
+The cost-to-fix curve is exponential by phase:
+
+| Phase defect found | Relative cost to fix |
+| --- | --- |
+| Requirements | 1× |
+| Design | 5× |
+| Coding | 10× |
+| Testing | 20× |
+| Production | 100–200× |
+
+A missing security requirement found in production costs 100–200× what it would have cost to add to the requirements doc.
+
+This is why mature engineering orgs invest heavily upstream — and why teams that *don't* end up with the largest defect-leakage bills.
+
+## Where the cost actually lands
+
+The "requirements defects cost billions" headline is true but vague. Here's where the spend actually shows up in your P&L:
+
+### 1. Rework
+By far the biggest line. Caper Jones puts software rework at 30–50% of total dev cost in low-maturity orgs. Most of that rework is requirements-driven.
+
+### 2. Schedule slips
+IBM's analysis of 200+ projects: requirements defects are the #1 cause of >25% schedule overruns. Each month of slip on a $5M project ≈ $400K in delayed value.
+
+### 3. Audit findings
+For regulated industries (medical, automotive, fintech, aerospace), missing requirements traceability is the #1 audit finding. Each major nonconformity costs $50K–$300K in CAPA, re-audit and consultant time.
+
+### 4. Defect leakage
+Production defects from missing requirements: industry average ≈ $25K–$80K per defect (incident response, customer credits, hotfix release, regression testing, RCA documentation).
+
+### 5. Customer churn
+For SaaS, B2B churn from "missing capabilities they expected" runs 5–8% annually in low-RM-maturity orgs. On $20M ARR that's $1–1.6M of annual lost revenue traceable to requirements gaps.
+
+### 6. Knowledge loss
+When the BA who knew the system leaves, their tacit requirements walk out the door. Replacement cost ≈ 6–9 months of re-discovery.
+
+## A defendable per-team estimate
+
+For a single team of 8 engineers + 2 BAs + 1 PM building regulated software at ~$2M/year fully loaded:
+
+| Cost driver | Industry-typical % | Annual $ |
+| --- | --- | --- |
+| Requirements rework | 18% | $360K |
+| Schedule slip | 8% | $160K |
+| Audit / CAPA | 4% | $80K |
+| Defect leakage | 6% | $120K |
+| Tooling overhead (Excel/DOORS jugging) | 3% | $60K |
+| **Total avoidable** | **39%** | **$780K / team / year** |
+
+That's the upper bound — call it $400K/team/year as a conservative midpoint.
+
+## What actually moves the number
+
+Three interventions show up consistently in the research:
+
+1. **Requirements quality scoring + gap detection.** Cuts requirements-defect leakage 40–60%.
+2. **Bidirectional traceability.** Cuts audit-finding rate 50–70%.
+3. **AI-assisted document generation.** Cuts time-per-BRD from ~3 weeks to <3 days, freeing BA time for actual analysis.
+
+These are precisely the three things AI-native requirements platforms make routine — and Excel doesn't.
+
+## Apply the math to your org
+
+Use our [ROI calculator](/roi-calculator) to plug in your team size, project mix and audit cadence. It outputs a defensible avoided-cost number you can take to the finance committee.
+
+When you're ready to compare against current state — [book a 30-minute scoping call](/contact). We'll do a no-obligation walkthrough of one of your live projects in Auditee and you'll see the requirement graph the AI extracts in under 10 minutes.
+
+## Sources
+
+- IBM Systems Sciences Institute, "Cost of fixing defects across the SDLC" (2010 analysis, multiple updates).
+- Standish Group, CHAOS Reports (1995–2024).
+- Capers Jones, *Software Engineering Best Practices* (2010); *A Guide to Selecting Software Measures and Metrics* (2017).
+- Boehm, "Software Engineering Economics", IEEE Software (multiple revisions).
+- Gartner, "Magic Quadrant for Application Lifecycle Management" (multiple years).
+
+---
+
+## The CAPA Lifecycle: From Audit Finding to Verified Closure
+URL: https://auditee.site/blog/capa-lifecycle-from-finding-to-closure
+Date: 2026-03-21
+Author: Auditee Research
+Tags: CAPA, Quality Management, Compliance, ISO 9001, FDA
+Reading time: 10 min
+
+Corrective and Preventive Actions are the immune system of a regulated organisation. Done well, they kill recurring defects forever. Done poorly, they bury teams in paperwork and still let issues recur.
+
+## What CAPA is — and what it isn't
+
+A **Corrective Action** addresses the *cause* of a known nonconformity so it does not recur. A **Preventive Action** addresses the *cause of a potential* nonconformity that has not yet occurred.
+
+What CAPA is *not*:
+
+- **Containment.** Recalling a batch is containment, not corrective.
+- **A bug fix.** Patching the symptom is not addressing the cause.
+- **A meeting.** "We discussed it" is not a corrective action.
+
+The standards that mandate CAPA — ISO 9001 §10.2, ISO 13485 §8.5, FDA 21 CFR 820.100, IATF 16949 §10.2, AS9100 §10.2, SOC 2 CC4.2 — all require *evidence of effectiveness*, not just evidence of activity.
+
+## The seven-stage lifecycle
+
+Every defensible CAPA follows essentially the same arc:
+
+1. **Identify** — a finding from an audit, complaint, defect, or trend.
+2. **Investigate** — root-cause analysis (5 Whys, Fishbone, FMEA).
+3. **Plan** — corrective and/or preventive actions with owners and dates.
+4. **Implement** — execute the planned actions.
+5. **Verify** — prove the action was carried out.
+6. **Validate effectiveness** — prove it actually prevented recurrence over a defined window.
+7. **Close** — sign off, archive evidence, update the trend register.
+
+Skipping stage 6 is the most common audit failure: you implemented the action, but you never confirmed it worked.
+
+## Realistic SLAs by severity
+
+Tie due dates to severity at the moment of opening:
+
+| Severity | Investigation due | Implementation due | Effectiveness check |
+| --- | --- | --- | --- |
+| **Critical** (recall, regulatory exposure) | 3 days | 14 days | 90 days |
+| **Major** | 7 days | 30 days | 180 days |
+| **Minor** | 30 days | 90 days | 1 audit cycle |
+
+Tracking these openly — and pinging the owner when they slip — is the single biggest hygiene improvement most QMS programs can make.
+
+## Root-cause techniques that hold up
+
+Auditors look for evidence the team *understood* the cause, not just guessed at it:
+
+- **5 Whys** — start at the symptom, ask "why" five times, until the answer is a process or system, not a person.
+- **Fishbone (Ishikawa)** — categorise potential causes (Method, Machine, Material, Manpower, Measurement, Environment).
+- **Fault-tree analysis** — for safety-critical defects.
+- **DMAIC** — for chronic defects with statistical signal.
+- **A3 report** — single-page narrative covering background, current state, root cause, countermeasures, follow-up.
+
+Whichever technique you use, *write down the chain of reasoning*. "Cause: human error" is not an acceptable conclusion in any modern audit.
+
+## Linking CAPA to the rest of the system
+
+A CAPA is not an island. It must link to:
+
+- The **finding** that triggered it (audit observation, defect, complaint).
+- The **requirement** or **process step** that was violated.
+- The **standard clause** the violation breached.
+- The **risk** in the risk register that was realised (or that is now reduced).
+- Any **document changes** required (procedure updates, work instructions).
+- **Training records** if the CAPA includes a training action.
+- The **test or measurement** used to validate effectiveness.
+
+When auditors pull a single CAPA and trace these links, the answer must be one click each.
+
+## What "effectiveness" really requires
+
+An effectiveness check is not "did we do the thing." It is "did doing the thing eliminate the recurrence."
+
+That requires:
+
+- A **defined observation window** (e.g. "no recurrence over 90 days and 12 production releases").
+- A **measurable signal** (defect rate, escape rate, complaint count, audit observation count).
+- A **comparison** to the baseline before the corrective action.
+- A **statistical or narrative argument** that the change was meaningful.
+
+If you cannot describe what evidence will close the CAPA at the moment you open it, you have a wish, not an action plan.
+
+## Where AI-native quality systems help
+
+A connected platform turns CAPA from a manual ticket queue into a closed loop:
+
+- **Auto-open from defects.** A defect violating a Class C requirement opens a CAPA with the right standard clause attached.
+- **Auto-open from audit findings.** Internal-audit observations classified to a clause open a CAPA in the same workflow.
+- **Owner & due-date defaults** by severity and standard — no more "we'll figure that out later".
+- **Effectiveness window timers** — the CAPA does not auto-close; the platform pings the owner at day 90 to record evidence.
+- **Trend boards** — recurring root causes (e.g. "validation against ISO 13485 §7.3.3" appears on six CAPAs) surface the systemic issue.
+- **Audit packets** — one click renders the CAPA register, RCA chain, evidence, and effectiveness record.
+
+The teams that do this well stop firefighting. The teams that do not, ship the same defect again next quarter and call the auditor unfair.
+
+## A realistic 30-day rollout
+
+If your CAPA process today lives in spreadsheets and email:
+
+1. **Days 0–5** — Standardise the CAPA form (one page; severity, owner, dates, RCA, planned actions, effectiveness criteria).
+2. **Days 5–10** — Migrate open CAPAs into the platform; assign realistic SLAs.
+3. **Days 10–20** — Wire incoming sources (Jira severity-1 bugs, internal-audit findings, customer complaints).
+4. **Days 20–25** — Run the first weekly CAPA stand-up; surface aging items.
+5. **Days 25–30** — Publish trend dashboard to the leadership team. Watch what happens.
+
+[See the CAPA workflow on the Vega claims-intelligence demo](/demo-videos/capa) — open through verified-closed in eleven days.
+
 
 ---
 
@@ -128,3 +1671,788 @@ Reading time: 10 min
 
 HIPAA isn't a checkbox — it's a continuous program. Here's the working checklist we use with healthcare-software customers, broken into Administrative, Physical, and Technical Safeguards, plus 2025 NPRM updates.
 
+## Who needs to comply
+
+HIPAA applies to **Covered Entities** (health plans, healthcare clearinghouses, most healthcare providers) and their **Business Associates** (any vendor that creates, receives, maintains, or transmits PHI on behalf of a Covered Entity).
+
+If your software:
+
+- Is sold to hospitals, clinics, payers, pharmacies, or labs **and**
+- Stores, transmits, or processes Protected Health Information (PHI)
+
+…then you almost certainly need a Business Associate Agreement (BAA) with each customer and you must comply with the HIPAA Security and Privacy Rules.
+
+## The 2025 NPRM in one paragraph
+
+HHS's December 2024 Notice of Proposed Rulemaking would meaningfully harden the Security Rule for the first time in over a decade — adding mandatory MFA, encryption-at-rest baselines, network segmentation, vulnerability scanning cadences, written security plans, and 24-hour incident notification between Covered Entities and Business Associates. Final rule expected late 2025; assume it's the new baseline and design accordingly.
+
+## Administrative Safeguards (§164.308)
+
+- [ ] **Security Management Process** — formal risk analysis (annual), risk-management plan, sanction policy, information system activity review.
+- [ ] **Assigned Security Responsibility** — a named Security Official.
+- [ ] **Workforce Security** — authorization, clearance, termination procedures.
+- [ ] **Information Access Management** — isolating clearinghouse functions, role-based access, periodic access reviews.
+- [ ] **Security Awareness & Training** — onboarding, periodic, and event-driven training. Document attendance.
+- [ ] **Security Incident Procedures** — documented runbooks; incident log retained six years.
+- [ ] **Contingency Plan** — data-backup plan, disaster-recovery plan, emergency-mode operation plan, testing & revision, applications & data criticality analysis.
+- [ ] **Evaluation** — periodic technical and non-technical evaluation against the standard.
+- [ ] **Business Associate Contracts** — executed BAA with every downstream subcontractor that touches PHI.
+
+## Physical Safeguards (§164.310)
+
+- [ ] **Facility Access Controls** — contingency operations, facility security plan, access control & validation procedures, maintenance records.
+- [ ] **Workstation Use & Security** — written policies for workstation handling of PHI.
+- [ ] **Device & Media Controls** — disposal, media re-use, accountability, data backup & storage.
+
+## Technical Safeguards (§164.312)
+
+- [ ] **Access Control** — unique user identification, emergency access procedure, automatic logoff, encryption & decryption.
+- [ ] **Audit Controls** — hardware, software, and procedural mechanisms to record and examine activity.
+- [ ] **Integrity** — mechanisms to authenticate that ePHI has not been altered or destroyed.
+- [ ] **Person or Entity Authentication** — MFA strongly recommended now; mandatory under the 2024 NPRM.
+- [ ] **Transmission Security** — integrity controls, end-to-end encryption (TLS 1.2+ minimum, increasingly 1.3).
+
+## Privacy Rule essentials (§164.500)
+
+- [ ] **Notice of Privacy Practices** — drafted, posted, distributed.
+- [ ] **Minimum Necessary** — access policies enforce least-privilege to PHI.
+- [ ] **Patient rights** — access, amendment, accounting of disclosures, restriction requests, confidential communications.
+- [ ] **Authorizations** — for non-treatment, non-payment, non-operations uses of PHI.
+- [ ] **De-identification** — Safe Harbor or Expert Determination methodology applied where datasets are shared for research or analytics.
+
+## Breach Notification Rule (§164.400)
+
+- [ ] **Breach risk assessment** — four-factor analysis documented for every suspected incident.
+- [ ] **Individual notice** — within 60 days.
+- [ ] **HHS notice** — within 60 days for breaches affecting 500+ individuals; annual for smaller incidents.
+- [ ] **Media notice** — for breaches affecting 500+ residents of a state or jurisdiction.
+- [ ] **Business Associate notification** — to Covered Entity within timelines specified in the BAA (2024 NPRM proposes 24 hours).
+
+## Engineering practices that satisfy multiple rows at once
+
+A few engineering investments dramatically simplify the checklist:
+
+1. **Centralized identity provider with SSO + MFA** — closes Access Control + Authentication boxes.
+2. **Comprehensive audit log shipped to immutable storage** — closes Audit Controls + Integrity.
+3. **End-to-end encryption with managed keys (KMS)** — closes Transmission Security + a chunk of Access Control.
+4. **Infrastructure-as-code with PR review** — produces the change-management evidence auditors love.
+5. **Automated vulnerability scanning in CI** — feeds the Security Management Process.
+6. **A standards-aware requirements platform** — generates HIPAA-conformant requirements and tests for every feature so you stop accumulating compliance debt with each release.
+
+## Common audit findings (and how to avoid them)
+
+| Finding | Fix |
+| --- | --- |
+| Risk analysis is years old | Schedule annually; capture in a tracked CAPA |
+| Access reviews not performed | Quarterly attestation in your IdP |
+| Logs unprotected from tampering | Ship to write-once storage |
+| Workforce training stale | Annual + new-hire enrollment automated |
+| Vendor BAA missing or stale | Inventory every vendor that touches PHI; renew BAAs annually |
+| No incident-response runbook | Author one; tabletop exercise twice per year |
+| PHI in non-production environments | Production data must never leave production; use synthetic data |
+
+## How AI helps
+
+A standards-aware AI platform like Auditee:
+
+- Generates HIPAA-conformant requirements for every new feature, citing the relevant rule.
+- Generates test cases tied to those requirements.
+- Runs HIPAA compliance audits whose findings auto-open CAPAs.
+- Produces audit reports in HIPAA-native vocabulary on demand.
+
+When an OCR audit notification arrives, "show me the evidence" is a query, not a fire drill.
+
+[See HIPAA-aware generation →](/automated-compliance) · [Talk to a compliance specialist →](/contact)
+
+
+---
+
+## Continuous Compliance vs Quarterly Audits: Why the Old Model Is Dead
+URL: https://auditee.site/blog/continuous-compliance-vs-quarterly-audits
+Date: 2026-03-12
+Author: Auditee Research
+Tags: Continuous Compliance, Audits, DevSecOps, SOC 2, ISO 27001
+Reading time: 9 min
+
+Quarterly audits compress 90 days of work into the last two weeks of the quarter, ship surprises to the executive team, and leave compliance posture stale 87 of every 90 days. Continuous compliance flips the model.
+
+## The cost of the old model
+
+A typical quarterly compliance cycle for a SaaS company looks like this:
+
+- Day 1–60: nothing. Engineers ship features.
+- Day 61–80: scramble. Pull evidence, screenshot dashboards, chase owners.
+- Day 81–90: external auditor on site. Findings issued. CAPAs filed in panic.
+- Repeat.
+
+This costs more than it appears:
+
+- **Engineering interruption.** The last 30 days of every quarter is partially redirected to evidence work.
+- **Stale evidence.** Screenshots dated day 75 reflect a configuration the team has since changed.
+- **Surprise findings.** The board hears about gaps the same week the auditor does.
+- **Recurring CAPAs.** The same control fails in two consecutive quarters because nothing structural changed.
+- **Release brakes.** "Don't ship anything risky in the audit window" is a quiet productivity tax most companies pay.
+
+## What continuous compliance actually is
+
+Continuous compliance treats the controls as *executable* and the evidence as a *stream*:
+
+- Every control has an owner and a check that runs at a defined cadence (daily, hourly, on-commit).
+- Each check produces evidence — a log line, a screenshot, an API response — that is captured automatically.
+- Drift triggers a CAPA at the moment of drift, not 60 days later.
+- The audit becomes "show the auditor the dashboard" rather than "build the audit packet."
+
+The shift looks like this:
+
+| | Quarterly audit | Continuous compliance |
+| --- | --- | --- |
+| Evidence freshness | 0–90 days stale | < 24 hours |
+| Time-to-detect drift | up to 90 days | minutes to hours |
+| Engineer interruption | 30 days/quarter | < 1 hour/week |
+| Audit prep effort | 2–4 engineer-weeks | < 1 engineer-day |
+| Recurring findings | common | rare |
+
+## The five capabilities you need
+
+You do not need a 50-product compliance stack. You need five capabilities, however delivered:
+
+1. **A control catalog** — every control in every framework you commit to (SOC 2, ISO 27001, HIPAA, PCI DSS, DORA, NIST CSF, …) with a stable ID and owner.
+2. **Automated checks** — for every control, a runnable test that emits a pass/fail and a piece of evidence.
+3. **A unified evidence store** — where check output, manual attestations, and screenshots all live with timestamps and immutable hashes.
+4. **A drift workflow** — the moment a check fails, a CAPA is opened with the right control, owner, and SLA.
+5. **An audit view** — for any control, any timestamp, the auditor can see the evidence chain without engineering involvement.
+
+Where teams over-buy: ten different "compliance copilots". Where teams under-buy: nobody ever connected the checks to actual production systems.
+
+## What "automated" actually means by control type
+
+Different controls automate to different degrees:
+
+- **Configuration controls** (encryption at rest, MFA, log retention) — fully automatable via API checks. Daily cadence.
+- **Process controls** (access reviews, change management) — semi-automatable. The platform reminds the owner; the owner attests; the attestation is the evidence.
+- **Cultural controls** (security training completion, incident drills) — automatable around the edges (tracking) but the underlying activity is human.
+- **Vendor controls** — automatable via vendor questionnaires and SOC 2 retrieval.
+
+A continuous-compliance posture acknowledges these differences instead of pretending everything is API-checkable.
+
+## Operating-model shift
+
+Continuous compliance is as much organisation as tooling:
+
+- **Monthly business review** of compliance posture is the dashboard, not a 90-page deck.
+- **CAPA SLAs** by severity are tracked openly, owned by named individuals.
+- **Pre-merge gates** for high-risk changes (changing IAM roles, modifying logging) require evidence the change preserves the relevant control.
+- **Release readiness** is a coloured tile, not an ad-hoc question to the security team.
+
+When the executive team can see the same dashboard as the audit committee, surprises disappear.
+
+## How AI-native compliance helps
+
+Beyond the basic check infrastructure, AI-native platforms add:
+
+- **Mapping intelligence.** A single control can satisfy SOC 2 CC6.1, ISO 27001 A.9.2.1, and HIPAA §164.312(a)(1) at once — the platform maintains the mapping so you do not duplicate evidence.
+- **Drift triage.** When a check fails, the platform proposes the most likely cause based on recent changes (commits, deploy events, IAM changes) so the CAPA opens with the investigation already started.
+- **Evidence summarisation.** For long-form attestations the platform drafts the narrative from the underlying check history, leaving the owner to confirm and sign.
+- **Continuous gap analysis.** New frameworks added (e.g. DORA, EU AI Act) are mapped to existing controls automatically, surfacing only the genuinely new requirements.
+
+## A 60-day path to "continuous"
+
+If you run quarterly today:
+
+1. **Days 0–10** — Inventory controls; pick one framework as the spine.
+2. **Days 10–25** — Wire automated checks for the 30 controls that cover ~70% of evidence by volume.
+3. **Days 25–40** — Wire CAPA workflow for drift; set realistic SLAs.
+4. **Days 40–55** — Onboard the rest of the framework; map secondary frameworks (cross-framework dedup).
+5. **Days 55–60** — Run a "fire drill" audit using only the live dashboard.
+
+By month two the next quarterly audit looks like a status meeting.
+
+[See it on the Bastion cloud-security demo](/demo-videos/compliance) — PCI DSS, DORA and ISO 27001 evidence in one drawer.
+
+
+---
+
+## PDLC vs SDLC: Why Product Lifecycle Wins for Regulated Teams
+URL: https://auditee.site/blog/pdlc-vs-sdlc-for-regulated-teams
+Date: 2026-03-04
+Author: Auditee Research
+Tags: PDLC, SDLC, Product Management, Compliance, MedTech
+Reading time: 10 min
+
+Engineering organisations love SDLC because it ends at release. Regulators do not. PDLC carries the artefact through governance and post-market — and that is exactly where most software fails its audit.
+
+## SDLC ends too early
+
+The classic Software Development Lifecycle covers requirements → design → build → test → deploy. It is excellent at managing engineering risk, and most modern teams execute it well.
+
+The problem is that most regulators care more about what happens *outside* SDLC than inside it:
+
+- Did Ideation include the right stakeholders, including patient/customer voice?
+- Was the Design reviewed against the safety case, not just the engineering wishlist?
+- Was the Launch authorised by the right governance body, with the right evidence?
+- Once Launched, are field signals being fed back into the next iteration?
+
+SDLC handles "build the thing right." PDLC handles "build the right thing and keep it right."
+
+## The six PDLC stages we use
+
+Different domains call them different names; the architecture is consistent:
+
+1. **Ideation** — Problem, target user, regulatory scope, initial risk.
+2. **Design** — Functional and non-functional requirements, architecture, hazard analysis, safety case skeleton.
+3. **Development** — Implementation, unit and integration tests, design reviews, traceability live.
+4. **Testing** — System V&V against requirements; standards conformance; usability and human-factors validation.
+5. **Launch** — Release authorisation, regulatory submission, customer onboarding, training.
+6. **Governance** — Post-market surveillance, complaint handling, periodic review, update planning.
+
+Each stage has gate criteria. You don't move forward without them, and the gate signature is itself an audit artefact.
+
+## What changes per industry
+
+The shape stays. The contents differ:
+
+- **Medical (IEC 62304 + ISO 13485 + MDR/FDA QSR).** Ideation includes Intended Use Statement and intended-user definition. Launch includes regulatory submission (510(k), MDR technical file). Governance includes Periodic Safety Update Reports.
+- **Automotive (ISO 26262 + ISO 21434 + UN R155/R156).** Ideation includes Item Definition. Launch includes ASPICE assessment. Governance includes cybersecurity incident response and OTA update governance.
+- **Avionics (DO-178C + ARP4754A).** Ideation includes safety assessment basis. Launch includes Stage-of-Involvement audits. Governance includes airworthiness directives.
+- **Financial services (DORA + PCI DSS + MiCA).** Ideation includes operational-resilience analysis. Launch includes BCP attestation. Governance includes ICT third-party risk re-assessment.
+
+The pattern repeats across regulated domains because the underlying *governance need* repeats: who authorised this, on what evidence, who is accountable now.
+
+## Where SDLC-only teams fail
+
+Common failures observable from the outside:
+
+1. **No traceable Intended Use.** Engineering shipped features the safety case never anticipated.
+2. **Risk file disconnected from requirements.** The hazard analysis and the requirements set evolved separately and disagree.
+3. **Launch authorised informally.** "We did a review" with no signed gate document.
+4. **No post-market loop.** Customer complaints go to support; field defects go to engineering; neither feeds back into requirements or risk.
+5. **Periodic review is the audit.** The team only re-reads the requirements when an external auditor schedules a visit.
+
+Each of these is invisible to SDLC metrics and lethal in regulatory inspection.
+
+## A workable PDLC operating model
+
+The model that survives audit and ships fast looks like this:
+
+- **Ideation reviews** are brief but mandatory. Output: signed brief with intended use, scope, regulatory class, initial hazards, target users.
+- **Design reviews** require the safety case skeleton be present. No safety skeleton, no Design exit.
+- **Development** runs SDLC inside the PDLC frame; nothing changes for engineers day-to-day except that links to requirements and hazards are first-class.
+- **Testing** combines verification (against requirements) and validation (against intended use). Failure to validate is a Launch blocker even if all V tests pass.
+- **Launch authorisation** is signed by named individuals (Quality, Regulatory, Engineering, Product). The signature is captured with timestamp.
+- **Governance** runs on a calendar — monthly complaints triage, quarterly post-market review, annual periodic safety update.
+
+## What an AI-native platform does for each stage
+
+- **Ideation.** Drafts intended-use statements and proposes regulatory class based on the brief.
+- **Design.** Generates hazard analysis from the function model; cross-links every requirement to a hazard and a standard clause.
+- **Development.** Maintains live traceability from requirement to source to test, so no engineer has to maintain a matrix.
+- **Testing.** Generates the validation suite from intended-use; surfaces unvalidated user paths.
+- **Launch.** Renders the Launch packet (technical file, design history file, software accomplishment summary) automatically.
+- **Governance.** Aggregates complaints, defects, CAPAs, and field telemetry into the periodic review pack.
+
+The engineering team gets back the time it used to spend on documentation theatre, and the quality and regulatory teams get a system of record that is actually current.
+
+## A realistic transition
+
+If you are SDLC-only today:
+
+1. **Quarter 1.** Add Ideation gates to all new initiatives. Backfill an Intended Use for existing products.
+2. **Quarter 2.** Connect risk file to requirements; force the link before any Design exit.
+3. **Quarter 3.** Formalise Launch authorisation; capture signatures; archive packets.
+4. **Quarter 4.** Stand up Governance cadence; first periodic review held.
+
+Within a year your audit posture is a different organisation. So is the cost of a finding.
+
+[See PDLC end-to-end on the Phoenix surgical-robotics demo](/demo-videos/pdlc) — Ideation through Governance with every gate signed.
+
+
+---
+
+## AI Hallucinations in Regulated Software: A Compliance Leader's Playbook
+URL: https://auditee.site/blog/ai-hallucinations-in-regulated-software-playbook
+Date: 2026-02-24
+Author: Auditee Research
+Tags: AI, LLM, Compliance, EU AI Act, Governance
+Reading time: 11 min
+
+An LLM that confidently cites a non-existent requirement is more dangerous than no LLM at all. Here is the architecture and operating model that makes AI usable in a regulated environment.
+
+## Why hallucinations are a compliance problem, not a UX problem
+
+In consumer settings a hallucinated answer is annoying. In a regulated workflow it is a finding. If your AI drafted a requirement that referenced "ISO 26262 §9.5.2.7" and that clause does not exist, you have:
+
+- A safety case argument resting on a fabricated citation.
+- A traceability link with no source of truth.
+- A statement in a controlled document that an auditor *will* check.
+- Potential exposure under the EU AI Act for high-risk system documentation.
+
+The fix is not "tell users to verify." Verification at scale fails. The fix is architectural.
+
+## The four root causes of hallucination
+
+1. **No retrieval grounding.** The model is asked to answer from training memory.
+2. **Stale or wrong context.** Retrieval ran but pulled the wrong document.
+3. **Loose generation constraints.** The prompt allows free-form output where a structured schema would catch errors.
+4. **Missing verifier.** Nothing checks the output against ground truth before it reaches the user.
+
+Each cause has a counter-measure. A defensible AI feature uses *all four*.
+
+## Counter-measure 1: Retrieval that returns ground-truth IDs
+
+Every answer must be derived from your live system of record:
+
+- Requirements stored with stable IDs and version history.
+- Standards stored as parsed text with section and clause IDs.
+- Code indexed with file, function, and commit pointers.
+- Defects, tests, and CAPAs with their canonical IDs.
+
+When a user asks "which requirements are affected by handover latency?", the retrieval step returns *PRD-031, PRD-044, FRD-112* — actual IDs in your graph. The LLM never invents a requirement.
+
+## Counter-measure 2: Citation-required generation
+
+The generation prompt must require citations and the output schema must enforce them:
+
+```json
+{
+  "answer": "...",
+  "citations": [
+    { "type": "Requirement", "id": "PRD-031", "url": "/app/requirements/PRD-031" },
+    { "type": "StandardClause", "id": "3GPP TS 23.501 §5.3", "url": "..." }
+  ]
+}
+```
+
+If the model returns an empty `citations` array, the answer is suppressed. If a citation ID does not resolve in the live graph, the answer is suppressed.
+
+## Counter-measure 3: Structured outputs over prose
+
+For safety-critical workflows, prefer structured JSON over free-form text:
+
+- A *requirement* has fields (id, title, text, classification, links, standards). Generate the structure; reject free-form additions.
+- A *test case* has preconditions, steps, and expected results. Same constraint.
+- A *CAPA* has owner, due date, RCA, planned actions, effectiveness criteria.
+
+This leaves much less room for the model to invent.
+
+## Counter-measure 4: A deterministic verifier
+
+Before any AI-drafted artefact lands, run a deterministic check:
+
+- Does every cited ID exist?
+- Does every cited clause exist?
+- Are the linked requirements compatible (same project, same baseline)?
+- Does the proposed change pass schema validation?
+- Are conflicts with existing artefacts surfaced?
+
+The verifier blocks publication and returns the AI to fix-it loop, not the human.
+
+## Operating model: human-in-the-loop where it matters
+
+Not every step needs review. Pick reviewers by risk:
+
+| Action | Reviewer |
+| --- | --- |
+| Draft a non-safety requirement | Author |
+| Draft a Class B/C requirement or hazard | Author + Quality |
+| Edit a baselined requirement | Author + Quality + Regulatory |
+| Auto-link existing artefacts | None — verifier-only |
+| Generate a test case | Author |
+| Generate an audit narrative | Author + Quality |
+| Draft a CAPA | Author + CAPA owner |
+
+Stage your reviews so they accelerate the team rather than create a queue.
+
+## EU AI Act considerations
+
+For systems classified as high-risk under the EU AI Act (Annex III), additional obligations apply:
+
+- **Risk management system** for the AI system itself (Article 9).
+- **Data governance** for training and grounding data (Article 10).
+- **Technical documentation** of the AI system's capabilities and limitations (Article 11).
+- **Logging** of outputs (Article 12) — every AI-drafted artefact must be reproducible.
+- **Human oversight** (Article 14) — the operating model above.
+- **Accuracy, robustness, cybersecurity** (Article 15).
+
+If you are using AI to draft regulated artefacts, you are likely operating a high-risk AI system. Plan accordingly.
+
+## What to ask vendors
+
+Questions that distinguish a credible AI-RM platform from a chatbot wrapper:
+
+1. Where do your answers come from? Show me the retrieval pipeline.
+2. Can you show me an answer with no citations? (Correct: "no — the system suppresses uncited output.")
+3. What happens if I ask for a requirement that does not exist? (Correct: "we surface that no matching requirement was found.")
+4. How is your AI logged for reproducibility?
+5. How do you handle baselined documents — can the AI propose changes without modifying the baseline?
+6. What is your policy on customer data used in training?
+
+If a vendor cannot answer these clearly, you have your answer.
+
+## A 30-day rollout plan
+
+1. **Days 0–7** — Inventory the AI use-cases on your roadmap by risk class.
+2. **Days 7–14** — Pilot one low-risk workflow (test-case generation from existing requirements) end-to-end.
+3. **Days 14–21** — Stand up the verifier and citation-enforcement layer.
+4. **Days 21–28** — Promote the pilot to a Class B requirements workflow with reviewer-in-the-loop.
+5. **Days 28–30** — Document the AI risk management file (EU AI Act §9 alignment) and run a tabletop with Quality.
+
+[See grounded Q&A on the Sirius 5G demo](/demo-videos/ask) — every answer cited to live evidence, zero hallucinations.
+
+
+---
+
+## 5G Network Compliance: A Practical 3GPP + ETSI + NIST Mapping
+URL: https://auditee.site/blog/5g-network-compliance-3gpp-etsi-mapping
+Date: 2026-02-15
+Author: Auditee Research
+Tags: Telecom, 5G, 3GPP, ETSI, NIST CSF, Compliance
+Reading time: 12 min
+
+Launching a 5G core means satisfying half a dozen overlapping standards bodies. The teams who survive build a single requirement graph and let the mappings derive from it.
+
+## Why 5G compliance is harder than it looks
+
+Most 5G core programmes underestimate the standards surface. A typical commercial 5G launch must demonstrate conformance against:
+
+- **3GPP TS 23.501** — System architecture for the 5G System.
+- **3GPP TS 23.502** — Procedures for the 5G System.
+- **3GPP TS 33.501** — Security architecture and procedures.
+- **3GPP TS 24.501 / 38.331** — NAS and RRC protocol layers.
+- **ETSI EN 303 645** — Cyber Security for Consumer IoT.
+- **ETSI TS 103 645 / TS 103 701** — Cyber Security baseline for connected devices.
+- **NIST CSF 2.0** — National-level cyber framework, frequently mandated by enterprise customers.
+- **ISO/IEC 27001:2022** and **IEC 62443** — for the surrounding management and OT integration.
+- **3GPP TR 33.926** — Threat modelling guidance for network products.
+
+That's before you add country-specific telecom regulations (FCC, OFCOM, TRAI, ANATEL).
+
+## The mapping problem
+
+Every requirement in your 5G core typically maps to *multiple* standards. A single AMF requirement to enforce subscriber concealed-identifier handling might satisfy:
+
+- 3GPP TS 33.501 §6.12 (SUCI / SUPI handling)
+- 3GPP TS 23.501 §5.9 (privacy)
+- ETSI EN 303 645 §5.8 (data protection)
+- NIST CSF PR.DS-1 (data-at-rest protection)
+
+Maintained as separate matrices for each standard, this duplicates effort by the count of standards. Maintained as a single requirement with multiple standard-clause links, it is one entry.
+
+## A defensible architecture: one graph, many views
+
+The teams that scale build a single requirement graph and *project* the audit views from it:
+
+```text
+Requirement REQ-AMF-019
+  ├── satisfies ──> 3GPP TS 33.501 §6.12.2
+  ├── satisfies ──> 3GPP TS 23.501 §5.9.1
+  ├── satisfies ──> ETSI EN 303 645 §5.8
+  ├── satisfies ──> NIST CSF PR.DS-1
+  ├── implementedBy ──> service/amf/suci.go
+  ├── verifiedBy   ──> tst/amf/test_suci_concealment.go
+  └── threatModeledIn ──> TR 33.926 §K.2.3.4
+```
+
+When the certification body asks "show me your TS 33.501 §6.12 evidence," the answer is a graph traversal, not a parallel document.
+
+## What "5G core compliance ready" actually means
+
+A reasonable internal definition for being ready for a Tier-1 launch:
+
+1. **100% of mandatory 3GPP procedures** mapped to at least one requirement, code unit, and passing system test.
+2. **TR 33.926 threat catalogue** — every relevant threat has a documented control or accepted-risk note.
+3. **NESAS/SCAS** — Security Assurance Specification testing complete with no open critical findings.
+4. **Logs and tracing** — every NF (Network Function) emits structured audit events to a tamper-evident store.
+5. **Privacy controls** — SUPI/SUCI handling, IMEI handling, location privacy all covered with evidence.
+6. **Operational runbooks** — incident, recovery, lawful intercept handling, key-management — each tied to a requirement and a procedure.
+7. **Change-management** — every 3GPP minor-release alignment goes through a documented impact assessment.
+
+## Common failure modes
+
+Patterns observed across operator-vendor relationships:
+
+1. **3GPP version drift.** Vendor implements Release 17; operator's RFP referenced Release 18. The gap is large and undocumented.
+2. **NESAS/SCAS findings are recurring.** A SAS test fails the same way in two consecutive cycles because the underlying control was never re-engineered.
+3. **Logs exist but are not queryable.** "We have logs" is not the same as "we have an audit-grade evidence trail."
+4. **Threat model decoupled from requirements.** TR 33.926 was reviewed once at design time and never re-walked after architecture changes.
+5. **Lawful-intercept compliance is opaque.** The capability exists, but the evidence chain — who configured it, who reviewed access — is not audit-ready.
+
+## Where AI-native RM helps a 5G programme
+
+Modern RM platforms specifically reduce 5G compliance overhead:
+
+- **Standard-aware ingestion.** Drop 3GPP, ETSI, NIST documents into the platform; clauses are parsed and indexed for direct linkage.
+- **Multi-mapping by default.** A requirement can satisfy several standards; the audit views are generated per-standard from the same source of truth.
+- **Threat-to-requirement traceability.** TR 33.926 threats become first-class nodes, linked to the controls and tests that mitigate them.
+- **Release alignment.** When 3GPP publishes a new release, the platform diffs the procedure deltas and surfaces affected requirements.
+- **Grounded Q&A.** "Show me every requirement affected by handover latency, with the SAS test result" — answered in seconds with citations.
+
+## A realistic 90-day path for a 5G core team
+
+If you are mid-program with an existing requirement set:
+
+1. **Days 0–14** — Ingest 3GPP TS 23.501, 33.501, ETSI EN 303 645, NIST CSF into the platform. Index by clause.
+2. **Days 14–35** — Map existing requirements to clauses; surface uncovered clauses.
+3. **Days 35–55** — Close coverage gaps; add tests where missing; threat-model deltas.
+4. **Days 55–75** — Internal SAS-equivalent dry-run; close critical findings; CAPA the rest.
+5. **Days 75–90** — External NESAS audit. Pass.
+
+The teams that execute this find the next 3GPP release alignment is no longer a fire drill — it is a Tuesday morning.
+
+[See grounded 5G compliance on the Sirius demo](/demo-videos/ask) — every answer cited to PRD, 3GPP clause, test, and CAPA.
+
+
+---
+
+## EU AI Act 2026: A Software Team Checklist for High-Risk Systems
+URL: https://auditee.site/blog/eu-ai-act-2026-software-team-checklist
+Date: 2026-02-06
+Author: Auditee Research
+Tags: EU AI Act, AI Governance, Compliance, Risk Management
+Reading time: 12 min
+
+If your product reaches an EU user and contains an AI system, the EU AI Act applies. Here's the practical 2026 checklist — by role, by stage, by deliverable.
+
+## What changed in 2026
+
+The EU AI Act entered force on 1 August 2024 with phased application. The practical landmarks for software teams in 2026:
+
+- **2 February 2025** — Prohibited practices and AI literacy obligations applied.
+- **2 August 2025** — General-purpose AI (GPAI) model obligations applied.
+- **2 August 2026** — High-risk AI system obligations *fully* apply, including conformity assessment and CE marking for relevant systems.
+- **2 August 2027** — Article 6(1) high-risk systems (those embedded in regulated products) fully apply.
+
+If you ship an AI system that touches an EU user in 2026, the question is no longer "will it apply?" but "which articles apply to me?"
+
+## Step 1 — Classify your AI system
+
+The Act recognises four risk classes:
+
+1. **Prohibited** — social scoring, real-time biometric ID in public (with exceptions), emotion recognition in workplace/education, predictive policing.
+2. **High-risk** — Annex III systems (biometrics, critical infrastructure, education, employment, essential services, law enforcement, migration, justice) and Annex I (safety components of regulated products).
+3. **Limited-risk** — chatbots, deepfakes (transparency obligations).
+4. **Minimal-risk** — everything else.
+
+Most B2B SaaS AI features are limited or minimal risk. AI used in HR, healthcare triage, credit scoring, education, or critical infrastructure is almost always high-risk.
+
+## Step 2 — Map your obligations
+
+For **high-risk systems** (Articles 8–17), you owe:
+
+| Article | Obligation | What it looks like |
+| --- | --- | --- |
+| 9 | Risk management system | Living risk file for the AI system itself |
+| 10 | Data governance | Documented data sources, validation, bias evaluation |
+| 11 | Technical documentation | Annex IV-conformant doc set |
+| 12 | Record-keeping (logs) | Reproducible output trail |
+| 13 | Transparency to users | Clear, accessible system notice |
+| 14 | Human oversight | Designed-in oversight points and competent overseers |
+| 15 | Accuracy, robustness, cybersecurity | Tested and documented |
+| 16 | Quality management system | Connected to risk and post-market |
+| 17 | Conformity assessment | Internal or notified-body, depending on Annex III sub-class |
+
+For **limited-risk systems** (Article 50), the bar is much lower but still real: users must be informed they are interacting with AI; AI-generated content must be labelled.
+
+## Step 3 — The technical documentation pack (Annex IV)
+
+The Annex IV technical documentation is the single biggest preparation item. It must cover:
+
+1. General description (intended purpose, providers, version).
+2. Detailed description (system architecture, training data, validation, accuracy metrics).
+3. Monitoring, functioning and control.
+4. Risk management system (Article 9 evidence).
+5. Changes through lifecycle.
+6. Standards applied (e.g. ISO/IEC 42001 AI Management System).
+7. EU declaration of conformity.
+8. Post-market monitoring plan.
+
+Treat this pack as a *product* with a maintainer, not a one-off submission.
+
+## Step 4 — Logging that is actually reproducible
+
+Article 12 requires logs that allow events to be reconstructed. For AI features that means:
+
+- **Input snapshot** at each inference call.
+- **Model version** identifier.
+- **Retrieval context** if the system uses retrieval augmentation.
+- **Output** with timestamps.
+- **Reviewer action** if human-in-the-loop.
+
+This is a far higher bar than typical application logging. Plan storage, retention, and access controls accordingly. The retention default of six months in the Act is a *floor*, not a ceiling.
+
+## Step 5 — Human oversight that the Act will accept
+
+Article 14 expects oversight that is:
+
+- **Designed in** to the user interface (override controls, abort).
+- **Comprehensible** — the operator can interpret the output and its limits.
+- **Resourced** — the overseer has the time and authority to intervene.
+- **Trained** — competence is documented.
+
+A reviewer who has 90 seconds to triage 100 AI suggestions does not satisfy Article 14. Process design and tool design must be aligned.
+
+## Step 6 — Connect to your existing QMS
+
+Article 17 requires a quality management system covering the AI lifecycle. The good news: if you operate ISO 13485, ISO 9001, ISO/IEC 27001, or are SOC 2 mature, you already have most of the spine. Map your existing QMS clauses to Article 17 sub-points and identify the deltas.
+
+ISO/IEC 42001 (AI Management System) is the natural standard to adopt for the AI-specific deltas.
+
+## Step 7 — Post-market monitoring
+
+Article 72 requires a post-market monitoring plan and reactive measures. Practically:
+
+- A defined channel for serious incident reports.
+- Trend analysis on outputs (drift, regression, fairness signals).
+- A path from incident to risk-file update to engineering correction.
+- Reporting obligations to the relevant national competent authority within defined windows (15 days for serious incidents in many cases).
+
+## Common failure patterns
+
+What we see in early audits:
+
+1. **Risk file is for the product, not the AI system.** They are different files.
+2. **Training data lineage is lost.** Article 10 requires documented data governance; "we used the data the team had" is insufficient.
+3. **Logs exist but cannot reconstruct an output.** Inputs were sampled; retrieval context wasn't captured.
+4. **Human oversight is theoretical.** The override exists in the spec but not in the UI.
+5. **Limited-risk systems with no transparency notice.** Even chatbots need to declare themselves.
+
+## A 90-day readiness sprint
+
+If 2 August 2026 is approaching and you are not ready:
+
+1. **Days 0–10** — Classify every AI feature in your product against Annex III.
+2. **Days 10–25** — For high-risk features, draft the Article 9 risk file and the Annex IV technical documentation skeleton.
+3. **Days 25–45** — Implement Article 12 logging; backfill Article 13 transparency notices.
+4. **Days 45–65** — Design Article 14 oversight points into the UI; train operators.
+5. **Days 65–80** — Run the first internal conformity-assessment dry-run.
+6. **Days 80–90** — Engage notified body if required (rare for in-house AI; more common for AI components in regulated products).
+
+The teams that start this sprint in Q1 are calm in Q3. The teams that start in Q3 will not be.
+
+[Book a demo](/contact) to see how AI risk-file and Annex IV evidence can be auto-generated and kept current.
+
+
+---
+
+## From Jira Tickets to Compliant Requirements: A Working Conversion Guide
+URL: https://auditee.site/blog/from-jira-tickets-to-compliant-requirements
+Date: 2026-01-28
+Author: Auditee Research
+Tags: Requirements, Jira, ALM, ISO/IEC 29148, DevOps
+Reading time: 10 min
+
+Engineering organisations love Jira because it ships work. Auditors hate Jira because it does not specify it. Here is how to bridge the two without slowing the team down.
+
+## Why Jira is not requirements management
+
+Jira (or Linear, Azure Boards, Shortcut, GitHub Issues — same shape) is excellent at:
+
+- Tracking *work to do*.
+- Routing work between contributors.
+- Capturing decisions made *during* delivery.
+- Reporting velocity and burndown.
+
+It is structurally weak at:
+
+- Stable, versioned identifiers for the *thing being built* rather than the work item.
+- Bidirectional links between specification, design, code, test, and verification.
+- Baselining a coherent set as a release candidate.
+- Standards-clause classification.
+- Distinguishing *requirement* from *implementation task*.
+
+ISO/IEC/IEEE 29148:2018 — the international standard for requirements engineering — calls out properties Jira lacks by default: necessity, implementation independence, completeness, singularity, feasibility, traceability, and verifiability.
+
+That does not mean abandon Jira. It means stop pretending the Jira ticket *is* the requirement.
+
+## The right division of labour
+
+A working pattern observed across regulated and non-regulated teams:
+
+- **Requirements** live in a requirements platform with stable IDs (e.g. `PRD-031`), version history, and links to standards.
+- **Implementation work** lives in Jira, where each ticket carries a link back to the requirement(s) it implements or modifies.
+- **Defects** in Jira link back to the requirement(s) and test(s) they violate.
+- **Tests** live in your test management system and link back to the requirements they verify.
+- **Releases** are baselines of the requirements set with a corresponding Jira version.
+
+This division gives engineers Jira (no friction) and gives auditors the requirements graph (defensible).
+
+## Step-by-step conversion path
+
+If you are starting from a Jira-only world today:
+
+### 1. Inventory your "requirement-shaped" tickets
+
+Filter Jira for items that are *specifications*, not *tasks*:
+
+- Stories marked "spec", "PRD", "requirement", or carrying acceptance criteria.
+- Confluence pages linked from Jira that contain the actual specification.
+- Documents in shared drives.
+
+This is the seed corpus.
+
+### 2. Choose stable IDs
+
+Decide a naming convention before importing:
+
+- `BRS-XXX` — business / stakeholder needs.
+- `PRD-XXX` — product requirements (user-visible behaviour).
+- `FRD-XXX` — functional requirements (system-internal).
+- `SRS-XXX` — software requirements (where IEC 62304/DO-178C apply).
+- `NFR-XXX` — non-functional.
+
+Every imported requirement gets an ID at this point. From here, IDs are immutable.
+
+### 3. Decompose stories into requirements
+
+A typical "user story" decomposes into:
+
+- 1–3 user-visible PRDs.
+- Several FRDs.
+- Acceptance criteria becoming candidate test cases.
+- Non-functional concerns lifted into NFRs.
+
+Don't over-decompose. The smallest useful unit is "this is independently testable."
+
+### 4. Re-link Jira to the new IDs
+
+Every existing Jira ticket gets a link field (`Implements`, `Verifies`, `Affects`) populated with the requirement IDs.
+
+New tickets follow a template that requires this field.
+
+### 5. Wire your CI
+
+Each PR description carries the requirement IDs touched. CI rejects PRs without them. Now your requirement graph is updated as a side effect of doing the work.
+
+### 6. Baseline a release
+
+Snapshot the requirement set at release time. The baseline is what your safety case, audit packet, or change-control process refers to.
+
+## Where teams stall
+
+Common pitfalls:
+
+1. **"We'll add the link later."** Later is never. Make it merge-blocking.
+2. **Requirements written in Jira issue notation.** "AC: User can log in" is not a requirement; "PRD-019 — The system shall authenticate users via SSO with MFA, returning a session token within 500ms p95" is.
+3. **Dual maintenance.** Updating both the Jira ticket *and* the requirement. Pick one source of truth per field; reflect the other read-only.
+4. **No baseline.** "Latest" is not a release artefact.
+5. **Standards classification skipped.** A regulated team without standards links has done half the work.
+
+## What AI-native RM does for the Jira-heavy team
+
+The conversion is much faster with the right tooling:
+
+- **Jira ingestion.** Pull the existing ticket corpus, classify which tickets are requirement-shaped vs task-shaped, propose IDs.
+- **Decomposition.** Suggest BRS/PRD/FRD/NFR splits with the original Jira link preserved.
+- **Standards classification.** Auto-tag each new requirement with the relevant ISO/IEC clauses.
+- **Bidirectional sync.** Jira ticket `KEY-123` automatically links to its requirements; updating the requirement updates the ticket's reference.
+- **CI gates.** PR templates and merge checks ensure new tickets carry the link.
+
+What used to take a quarter takes two weeks.
+
+## The upgrade in audit posture
+
+After conversion the auditor experience changes shape. "Where is your specification for this feature?" used to require a hunt across Jira, Confluence and three Slack threads. Now it is a single page with stable IDs, links to the implementation tickets and tests, and a baseline that matches the released binary.
+
+[See the Smart Interview workflow on the Aesop demo](/demo-videos/interview) — Jira-style stories converted to ICH-GCP and 21 CFR Part 11 conformant requirements in minutes.
+
+
+---

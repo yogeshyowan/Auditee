@@ -169,6 +169,45 @@ if (llms.includes("### Blog posts")) {
 }
 writeFileSync(llmsPath, llms);
 
+// ---------- llms-full.txt: rebuild Blog section ----------
+const llmsFullPath = resolve(PUB_DIR, "llms-full.txt");
+let llmsFull = readFileSync(llmsFullPath, "utf8");
+const today = new Date().toISOString().slice(0, 10);
+
+const blogFullEntries = sortedDesc.map((p) => {
+  const dateLine = p.updated && p.updated !== p.date
+    ? `Date: ${p.date.slice(0, 10)} (updated ${p.updated.slice(0, 10)})`
+    : `Date: ${p.date.slice(0, 10)}`;
+  return `## ${p.title}
+URL: ${SITE}/blog/${p.slug}
+${dateLine}
+Author: ${p.author}
+Tags: ${p.tags.join(", ")}
+Reading time: ${p.readingTimeMin} min
+
+${p.excerpt}
+
+${p.body}
+
+---`;
+}).join("\n\n");
+
+const blogFullSection = `# Blog (${sortedDesc.length} posts)
+
+${blogFullEntries}
+`;
+
+// Replace from "# Blog (...)" header through end of file (Blog is the last section)
+const blogHeaderMatch = llmsFull.match(/^# Blog \(\d+ posts?\)/m);
+if (blogHeaderMatch && blogHeaderMatch.index !== undefined) {
+  llmsFull = llmsFull.slice(0, blogHeaderMatch.index) + blogFullSection;
+} else {
+  llmsFull += "\n\n" + blogFullSection;
+}
+// Refresh "Last generated" header line if present
+llmsFull = llmsFull.replace(/^# Last generated: \d{4}-\d{2}-\d{2}/m, `# Last generated: ${today}`);
+writeFileSync(llmsFullPath, llmsFull);
+
 console.log(`✅ Regenerated SEO feeds for ${sortedDesc.length} blog posts`);
 console.log(`   sitemap.xml      — ${sortedDesc.length} blog URLs`);
 console.log(`   rss.xml          — ${sortedDesc.length} items`);
@@ -176,3 +215,4 @@ console.log(`   atom.xml         — ${sortedDesc.length} entries`);
 console.log(`   feed.json        — ${sortedDesc.length} items`);
 console.log(`   sitemap-news.xml — ${newsItems.split("<url>").length - 1} items (last 30d)`);
 console.log(`   llms.txt         — Blog posts section refreshed`);
+console.log(`   llms-full.txt    — Full content for ${sortedDesc.length} posts`);
