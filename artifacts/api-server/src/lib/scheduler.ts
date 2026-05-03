@@ -18,6 +18,7 @@ import { randomUUID } from "node:crypto";
 import { ingestGithub, ingestRemoteSystem } from "./source-ingestion";
 import { ingestRequirementsTool, isRmKind } from "./rm-ingestion";
 import { ingestDefectsTool, isDefectKind } from "./defect-ingestion";
+import { uptimeSamplesTable } from "@workspace/db";
 
 // In-process scheduler. Each tick (60s) finds active schedules whose nextRunAt has
 // passed, calls the AI compliance audit endpoint internally (via fetch to localhost),
@@ -41,6 +42,32 @@ export function startScheduler(port: number): void {
   }, TICK_MS);
 }
 
+async function sampleUptime(port: number): Promise<void> {
+  const t0 = Date.now();
+  let healthy = false;
+  let note: string | null = null;
+  try {
+    const r = await fetch(`http://127.0.0.1:${port}/api/healthz`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    healthy = r.ok;
+    if (!r.ok) note = `status:${r.status}`;
+  } catch (err) {
+    note = (err as Error).message ?? "fetch_failed";
+  }
+  try {
+    await db.insert(uptimeSamplesTable).values({
+      id: randomUUID(),
+      kind: "platform",
+      healthy,
+      durationMs: String(Date.now() - t0),
+      note,
+    });
+  } catch (err) {
+    logger.warn({ err }, "uptime sample insert failed");
+  }
+}
+
 async function runTick(port: number): Promise<void> {
   // Atomically claim due schedules by advancing nextRunAt before processing.
   // This prevents duplicate execution if multiple instances or overlapping ticks occur.
@@ -52,8 +79,10 @@ async function runTick(port: number): Promise<void> {
     // Even when no audits are due, still run the daily stale-requirements
     // digest pass — it has its own 24h dedupe so it's cheap to call often.
     await runStaleRequirementsDigest();
+    await sampleUptime(port);
     return;
   }
+  await sampleUptime(port);
   // Pre-claim: bump nextRunAt forward immediately so a concurrent tick won't pick the same row.
   const claimed: typeof due = [];
   for (const sched of due) {

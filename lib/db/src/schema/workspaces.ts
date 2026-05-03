@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, uniqueIndex, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, uniqueIndex, boolean, jsonb } from "drizzle-orm/pg-core";
 
 export const WORKSPACE_ROLES = ["owner", "admin", "editor", "viewer"] as const;
 export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
@@ -71,6 +71,14 @@ export const workspacesTable = pgTable(
     siemWebhookSecret: text("siem_webhook_secret"),
     // ─── Enterprise: Customer-managed encryption key id (KMS metadata) ────
     cmkKid: text("cmk_kid"),
+    // ─── Enterprise: Network allowlist — array of CIDR strings ─────────────
+    // Empty/null disables the check. Non-empty: requests from non-matching IPs
+    // are rejected with HTTP 403. Applied by `ipAllowlistGuard` middleware.
+    ipAllowlist: jsonb("ip_allowlist").$type<string[]>().notNull().default([]),
+    // ─── Enterprise: White-label branding ──────────────────────────────────
+    brandingLogoUrl: text("branding_logo_url"),
+    brandingPrimaryColor: text("branding_primary_color"),
+    brandingProductName: text("branding_product_name"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

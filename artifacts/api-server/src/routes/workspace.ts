@@ -58,6 +58,11 @@ router.get("/workspace/me", requireAuth, requireWorkspace, async (req, res) => {
       mfa_policy: planAllows(planTier, "mfa_policy"),
       data_residency: planAllows(planTier, "data_residency"),
       cmk: planAllows(planTier, "cmk"),
+      ip_allowlist: planAllows(planTier, "ip_allowlist"),
+      branding: planAllows(planTier, "branding"),
+      sla_dashboard: planAllows(planTier, "sla_dashboard"),
+      backups: planAllows(planTier, "backups"),
+      dsar: planAllows(planTier, "dsar"),
     },
   });
 });

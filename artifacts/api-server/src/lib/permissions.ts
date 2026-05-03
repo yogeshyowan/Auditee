@@ -90,6 +90,11 @@ const ENTERPRISE_ONLY_FEATURES = [
   "mfa_policy",
   "data_residency",
   "cmk",
+  "ip_allowlist",
+  "branding",
+  "sla_dashboard",
+  "backups",
+  "dsar",
 ] as const;
 export type EnterpriseFeature = (typeof ENTERPRISE_ONLY_FEATURES)[number];
 

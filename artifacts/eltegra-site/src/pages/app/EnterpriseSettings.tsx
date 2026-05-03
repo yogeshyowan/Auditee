@@ -28,6 +28,11 @@ import {
   LockKeyhole,
   Trash2,
   Copy,
+  Network,
+  Palette,
+  Activity,
+  DatabaseBackup,
+  UserMinus,
 } from "lucide-react";
 
 const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
@@ -58,6 +63,10 @@ interface WorkspaceMe {
     mfaRequired: boolean;
     dataRegion: string | null;
     cmkKid: string | null;
+    ipAllowlist: string[] | null;
+    brandingLogoUrl: string | null;
+    brandingPrimaryColor: string | null;
+    brandingProductName: string | null;
   };
   role: "owner" | "admin" | "editor" | "viewer";
   permissions: { canManageSso: boolean; canManageBilling: boolean };
@@ -173,6 +182,11 @@ export default function EnterpriseSettingsPage() {
           <TabsTrigger value="mfa" data-testid="tab-mfa"><ShieldCheck className="mr-1 h-4 w-4" /> MFA</TabsTrigger>
           <TabsTrigger value="region" data-testid="tab-region"><Globe2 className="mr-1 h-4 w-4" /> Data Region</TabsTrigger>
           <TabsTrigger value="cmk" data-testid="tab-cmk"><LockKeyhole className="mr-1 h-4 w-4" /> Encryption Key</TabsTrigger>
+          <TabsTrigger value="ipallow" data-testid="tab-ipallow"><Network className="mr-1 h-4 w-4" /> IP Allowlist</TabsTrigger>
+          <TabsTrigger value="branding" data-testid="tab-branding"><Palette className="mr-1 h-4 w-4" /> Branding</TabsTrigger>
+          <TabsTrigger value="sla" data-testid="tab-sla"><Activity className="mr-1 h-4 w-4" /> SLA / Uptime</TabsTrigger>
+          <TabsTrigger value="backups" data-testid="tab-backups"><DatabaseBackup className="mr-1 h-4 w-4" /> Backups</TabsTrigger>
+          <TabsTrigger value="dsar" data-testid="tab-dsar"><UserMinus className="mr-1 h-4 w-4" /> Privacy / DSAR</TabsTrigger>
         </TabsList>
 
         <TabsContent value="saml"><SamlPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
@@ -182,6 +196,11 @@ export default function EnterpriseSettingsPage() {
         <TabsContent value="mfa"><MfaPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
         <TabsContent value="region"><RegionPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
         <TabsContent value="cmk"><CmkPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
+        <TabsContent value="ipallow"><IpAllowPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
+        <TabsContent value="branding"><BrandingPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
+        <TabsContent value="sla"><SlaPanel getToken={getToken} /></TabsContent>
+        <TabsContent value="backups"><BackupsPanel getToken={getToken} toast={toast} /></TabsContent>
+        <TabsContent value="dsar"><DsarPanel getToken={getToken} toast={toast} /></TabsContent>
       </Tabs>
     </div>
   );
@@ -531,5 +550,245 @@ function Field({ label, value, onChange, placeholder, testId }: { label: string;
       <label className="mb-1 block text-sm font-medium text-slate-700">{label}</label>
       <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} data-testid={testId} />
     </div>
+  );
+}
+
+// ─── IP Allowlist ────────────────────────────────────────────────────────
+function IpAllowPanel({ ws, getToken, toast, onSaved }: any) {
+  const [text, setText] = useState((ws.ipAllowlist ?? []).join("\n"));
+  const [force, setForce] = useState(false);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const list = text.split(/[\s,]+/).map((s: string) => s.trim()).filter(Boolean);
+      const path = `/workspace/ip-allowlist${force ? "?force=true" : ""}`;
+      return authedFetch(path, await getToken(), {
+        method: "POST",
+        body: JSON.stringify({ allowlist: list }),
+      });
+    },
+    onSuccess: () => { toast({ title: "IP allowlist saved" }); onSaved(); },
+    onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Network IP Allowlist</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-slate-600">
+          Restrict workspace access to a list of IPv4 addresses or CIDR blocks (one per line).
+          Leave empty to disable. Applies to all authenticated API requests for this workspace.
+        </p>
+        <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)}
+          placeholder={"203.0.113.0/24\n198.51.100.42"} data-testid="input-ipallow" />
+        <label className="flex items-center gap-2 text-sm text-slate-700">
+          <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} data-testid="check-ipallow-force" />
+          I understand this list may not include my current IP (override self-lockout check)
+        </label>
+        <Button onClick={() => save.mutate()} disabled={save.isPending} data-testid="button-save-ipallow">
+          {save.isPending ? "Saving…" : "Save allowlist"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── White-label Branding ────────────────────────────────────────────────
+function BrandingPanel({ ws, getToken, toast, onSaved }: any) {
+  const [name, setName] = useState(ws.brandingProductName ?? "");
+  const [color, setColor] = useState(ws.brandingPrimaryColor ?? "#0ea5e9");
+  const [logo, setLogo] = useState(ws.brandingLogoUrl ?? "");
+
+  const save = useMutation({
+    mutationFn: async () => authedFetch("/workspace/branding", await getToken(), {
+      method: "POST",
+      body: JSON.stringify({
+        brandingProductName: name.trim() || null,
+        brandingPrimaryColor: color.trim() || null,
+        brandingLogoUrl: logo.trim() || null,
+      }),
+    }),
+    onSuccess: () => { toast({ title: "Branding saved" }); onSaved(); },
+    onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>White-label Branding</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <Field label="Product name (overrides 'Auditee' in nav)" value={name} onChange={setName} placeholder="Acme Compliance" testId="input-brand-name" />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Primary brand color</label>
+          <div className="flex items-center gap-2">
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-9 w-16 rounded border" data-testid="input-brand-color" />
+            <Input value={color} onChange={(e) => setColor(e.target.value)} placeholder="#0ea5e9" />
+          </div>
+        </div>
+        <Field label="Logo URL (PNG/SVG, square, ≥256px)" value={logo} onChange={setLogo} placeholder="https://cdn.example.com/logo.png" testId="input-brand-logo" />
+        {logo && <img src={logo} alt="Brand preview" className="h-16 w-16 rounded border bg-white object-contain p-1" />}
+        <Button onClick={() => save.mutate()} disabled={save.isPending} data-testid="button-save-brand">
+          {save.isPending ? "Saving…" : "Save branding"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── SLA / Uptime ────────────────────────────────────────────────────────
+function SlaPanel({ getToken }: any) {
+  const q = useQuery<{ windowDays: number; samples: number; healthy: number; uptimePct: number | null; slaTarget: number; recent: Array<{ sampledAt: string; healthy: boolean; durationMs: string | null; note: string | null }> }>({
+    queryKey: ["uptime"],
+    queryFn: async () => authedFetch("/workspace/uptime?days=30", await getToken()),
+  });
+  if (q.isLoading) return <div className="p-4 text-slate-500">Loading…</div>;
+  if (q.isError || !q.data) return <div className="p-4 text-red-600">Failed to load uptime.</div>;
+  const d = q.data;
+  const pct = d.uptimePct === null ? "—" : `${d.uptimePct.toFixed(3)}%`;
+  return (
+    <Card>
+      <CardHeader><CardTitle>Service-Level Uptime</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-3 gap-4">
+          <Stat label={`Last ${d.windowDays} days uptime`} value={pct} />
+          <Stat label="SLA target" value={`${d.slaTarget}%`} />
+          <Stat label="Health samples" value={`${d.healthy} / ${d.samples}`} />
+        </div>
+        <div>
+          <h3 className="mb-2 text-sm font-medium text-slate-700">Recent samples</h3>
+          <div className="max-h-72 overflow-auto rounded border">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 text-slate-600"><tr><th className="px-2 py-1 text-left">When</th><th className="px-2 py-1">Status</th><th className="px-2 py-1">Latency</th><th className="px-2 py-1 text-left">Note</th></tr></thead>
+              <tbody>
+                {d.recent.map((r, i) => (
+                  <tr key={i} className="border-t" data-testid={`row-uptime-${i}`}>
+                    <td className="px-2 py-1">{new Date(r.sampledAt).toLocaleString()}</td>
+                    <td className="px-2 py-1 text-center">{r.healthy ? "✓" : "✗"}</td>
+                    <td className="px-2 py-1 text-center">{r.durationMs ?? "—"}ms</td>
+                    <td className="px-2 py-1 text-slate-500">{r.note ?? ""}</td>
+                  </tr>
+                ))}
+                {d.recent.length === 0 && <tr><td colSpan={4} className="px-2 py-4 text-center text-slate-500">No samples yet — first sample lands within 60s.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-white p-4">
+      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-2xl font-semibold text-slate-900">{value}</div>
+    </div>
+  );
+}
+
+// ─── Backups / DR ────────────────────────────────────────────────────────
+function BackupsPanel({ getToken, toast }: any) {
+  const qc = useQueryClient();
+  const q = useQuery<{ rpoHours: number; rtoHours: number; snapshots: Array<{ id: string; kind: string; createdAt: string; sizeBytes: string | null; location: string | null; note: string | null }> }>({
+    queryKey: ["backups"],
+    queryFn: async () => authedFetch("/workspace/backups", await getToken()),
+  });
+  const trigger = useMutation({
+    mutationFn: async () => authedFetch("/workspace/backups/trigger", await getToken(), { method: "POST", body: "{}" }),
+    onSuccess: () => { toast({ title: "Backup triggered" }); qc.invalidateQueries({ queryKey: ["backups"] }); },
+    onError: (e: Error) => toast({ title: "Trigger failed", description: e.message, variant: "destructive" }),
+  });
+  if (q.isLoading) return <div className="p-4 text-slate-500">Loading…</div>;
+  if (q.isError || !q.data) return <div className="p-4 text-red-600">Failed to load backups.</div>;
+  const d = q.data;
+  return (
+    <Card>
+      <CardHeader><CardTitle>Backups & Disaster Recovery</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <Stat label="RPO (Recovery Point)" value={`${d.rpoHours}h`} />
+          <Stat label="RTO (Recovery Time)" value={`${d.rtoHours}h`} />
+        </div>
+        <Button onClick={() => trigger.mutate()} disabled={trigger.isPending} data-testid="button-trigger-backup">
+          {trigger.isPending ? "Triggering…" : "Trigger on-demand snapshot"}
+        </Button>
+        <div>
+          <h3 className="mb-2 text-sm font-medium text-slate-700">Recent snapshots</h3>
+          <div className="max-h-72 overflow-auto rounded border">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 text-slate-600"><tr><th className="px-2 py-1 text-left">Created</th><th className="px-2 py-1">Kind</th><th className="px-2 py-1 text-left">Location</th><th className="px-2 py-1 text-left">Note</th></tr></thead>
+              <tbody>
+                {d.snapshots.map((s) => (
+                  <tr key={s.id} className="border-t" data-testid={`row-backup-${s.id}`}>
+                    <td className="px-2 py-1">{new Date(s.createdAt).toLocaleString()}</td>
+                    <td className="px-2 py-1 text-center">{s.kind}</td>
+                    <td className="px-2 py-1 font-mono text-[11px] text-slate-600">{s.location ?? ""}</td>
+                    <td className="px-2 py-1 text-slate-500">{s.note ?? ""}</td>
+                  </tr>
+                ))}
+                {d.snapshots.length === 0 && <tr><td colSpan={4} className="px-2 py-4 text-center text-slate-500">No snapshots yet.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── DSAR / right-to-erasure ─────────────────────────────────────────────
+function DsarPanel({ getToken, toast }: any) {
+  const [email, setEmail] = useState("");
+  const [exportData, setExportData] = useState<any>(null);
+
+  const fetchData = useMutation({
+    mutationFn: async () => authedFetch("/workspace/dsar", await getToken(), {
+      method: "POST", body: JSON.stringify({ subjectEmail: email.trim() }),
+    }),
+    onSuccess: (r: any) => { setExportData(r); toast({ title: "DSAR export ready" }); },
+    onError: (e: Error) => toast({ title: "DSAR failed", description: e.message, variant: "destructive" }),
+  });
+  const erase = useMutation({
+    mutationFn: async () => authedFetch("/workspace/dsar/erasure", await getToken(), {
+      method: "POST", body: JSON.stringify({ subjectEmail: email.trim(), confirm: true }),
+    }),
+    onSuccess: (r: any) => { toast({ title: `Erased ${r.erased} record(s)` }); setExportData(null); },
+    onError: (e: Error) => toast({ title: "Erasure failed", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>GDPR — Data Subject Requests</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-slate-600">
+          Look up everything you store about a data subject (Article 15 access)
+          and execute a right-to-erasure request (Article 17). Workspace owner
+          accounts are protected from erasure.
+        </p>
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium text-slate-700">Subject email</label>
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" data-testid="input-dsar-email" />
+          </div>
+          <Button onClick={() => fetchData.mutate()} disabled={fetchData.isPending || !email} data-testid="button-dsar-export">
+            {fetchData.isPending ? "Loading…" : "Export data"}
+          </Button>
+        </div>
+        {exportData && (
+          <div className="space-y-3">
+            <div className="rounded border bg-slate-50 p-3 text-xs">
+              <div><strong>Request ID:</strong> {exportData.requestId}</div>
+              <div><strong>Matched members:</strong> {exportData.matchedMembers}</div>
+            </div>
+            <pre className="max-h-64 overflow-auto rounded bg-slate-900 p-3 text-xs text-slate-100">
+              {JSON.stringify(exportData.export, null, 2)}
+            </pre>
+            <Button variant="destructive" onClick={() => { if (confirm(`Permanently erase ${email} from this workspace?`)) erase.mutate(); }} disabled={erase.isPending} data-testid="button-dsar-erase">
+              {erase.isPending ? "Erasing…" : "Execute right-to-erasure"}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

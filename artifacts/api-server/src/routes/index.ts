@@ -32,6 +32,7 @@ import tutorialTtsRouter from "./tutorialTts";
 import ssoRouter from "./sso";
 import scimRouter from "./scim";
 import enterpriseRouter from "./enterprise";
+import enterpriseExtraRouter from "./enterpriseExtra";
 
 const router: IRouter = Router();
 
@@ -68,5 +69,6 @@ router.use(tutorialTtsRouter);
 router.use(ssoRouter);
 router.use(scimRouter);
 router.use(enterpriseRouter);
+router.use(enterpriseExtraRouter);
 
 export default router;

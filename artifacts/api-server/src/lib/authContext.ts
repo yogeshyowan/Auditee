@@ -135,6 +135,26 @@ export async function requireWorkspace(req: Request, res: Response, next: NextFu
   // load after planExpiresAt has passed.
   const liveWorkspace = await expirePastDueAnnualPlan(workspace);
   (req as AuthedRequest).ws_ctx = { ...ctx, workspace: liveWorkspace, role };
+  // Enterprise IP allowlist enforcement. Empty list = disabled. The check is
+  // intentionally placed AFTER workspace resolution so it can read per-tenant
+  // policy, and BEFORE any business handler runs.
+  const allow = ((liveWorkspace as { ipAllowlist?: string[] }).ipAllowlist ?? []) as string[];
+  if (allow.length > 0) {
+    const remote = (req.ip ?? "").replace(/^::ffff:/, "");
+    const { ipMatchesAnyCidr } = await import("./ipAllowlist");
+    if (!remote || !ipMatchesAnyCidr(remote, allow)) {
+      // Allow IP-allowlist management itself, so admins can never lock
+      // themselves out permanently from any IP.
+      // Exact-path match (not endsWith) to prevent suffix-based bypass like
+      // /api/anything?/workspace/ip-allowlist or weird path-traversal attempts.
+      const p = req.path;
+      const isAllowlistRoute = p === "/workspace/ip-allowlist" || p === "/api/workspace/ip-allowlist";
+      if (!isAllowlistRoute) {
+        res.status(403).json({ error: "Source IP is not allowed for this workspace.", remote });
+        return;
+      }
+    }
+  }
   next();
 }
 
