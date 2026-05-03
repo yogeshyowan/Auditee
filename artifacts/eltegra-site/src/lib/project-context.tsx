@@ -101,7 +101,12 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   // 1. Keep the currently-selected project if it still exists.
   // 2. Fall back to the first connected non-demo project.
   // 3. Fall back to the first non-demo project (unconnected).
-  // 4. Fall back to the first demo project (so new users always have something to explore).
+  // 4. Otherwise leave projectId = null so the UI shows an empty/onboarding
+  //    state. We deliberately do NOT auto-select a demo project: demo projects
+  //    are read-only ("auditor" role) and silently selecting one means every
+  //    AI generation button 403s for brand-new users with the confusing
+  //    error "Your project role (auditor) is not allowed". Users can still
+  //    pick a demo project explicitly from the project switcher.
   useEffect(() => {
     if (allProjects.length === 0) {
       if (projectId !== null) setProjectId(null);
@@ -114,8 +119,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       setProjectId(connectedProjects[0].id);
     } else if (ownProjects.length > 0) {
       setProjectId(ownProjects[0].id);
-    } else {
-      setProjectId(allProjects[0].id);
+    } else if (projectId !== null) {
+      setProjectId(null);
     }
   }, [allProjects, connectedProjects, projectId]);
 

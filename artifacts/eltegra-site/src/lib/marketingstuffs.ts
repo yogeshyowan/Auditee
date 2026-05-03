@@ -48,6 +48,13 @@ declare global {
 }
 
 export async function msTrack(payload: MsTrackPayload): Promise<void> {
+  // The vendor endpoint does not return CORS headers for non-production
+  // origins (Replit dev domains, localhost, preview links). Firing the
+  // request anyway pollutes the browser console with a CORS error on every
+  // page navigation, which (a) drowns out real defects during development
+  // and (b) confuses anyone debugging the app. Skip the call entirely
+  // outside production builds; in production it succeeds silently.
+  if (!import.meta.env.PROD) return;
   try {
     await fetch(MS_API, {
       method: "POST",
