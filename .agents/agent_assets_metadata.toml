@@ -18,6 +18,42 @@ uri = "file://artifacts/eltegra-site/public/office-bg.png"
 type = "image"
 title = "Blurred enterprise office space"
 
+[[generated]]
+id = "aRuQMPBjsTu3D6pOgbghA"
+uri = "file://artifacts/auditee-tutorial/public/images/ba_stressed.png"
+type = "image"
+title = "Stressed Business Analyst whiteboard sketch"
+
+[[generated]]
+id = "wfqsFulFo0N21eaUBM_Uf"
+uri = "file://artifacts/auditee-tutorial/public/images/cto_overwhelmed.png"
+type = "image"
+title = "Overwhelmed CTO whiteboard sketch"
+
+[[generated]]
+id = "ExLBuOn-EhrtQEprG0PSQ"
+uri = "file://artifacts/auditee-tutorial/public/images/compliance_frantic.png"
+type = "image"
+title = "Frantic Compliance Lead whiteboard sketch"
+
+[[generated]]
+id = "5actoOQmxAC7RHO0g8nQg"
+uri = "file://artifacts/auditee-tutorial/public/images/team_happy.png"
+type = "image"
+title = "Happy team celebrating whiteboard"
+
+[[generated]]
+id = "2hfWCcOaZXNStnc7ZSD8h"
+uri = "file://artifacts/auditee-tutorial/public/images/dashboard_sketch.png"
+type = "image"
+title = "Auditee Dashboard sketch"
+
+[[generated]]
+id = "TJ8uKO3mPyQoZk9OxbTBf"
+uri = "file://artifacts/auditee-tutorial/public/images/payment_sketch.png"
+type = "image"
+title = "Payment Razorpay sketch"
+
 [[outputs]]
 id = "NNDXXJ6TsmUBsgzH3d_U6"
 uri = "file://ABOUT.md"

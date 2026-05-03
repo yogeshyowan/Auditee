@@ -14,23 +14,25 @@ import { CaseWorkflow } from './video_scenes/CaseWorkflow';
 import { CaseConclude } from './video_scenes/CaseConclude';
 import { Scene4 } from './video_scenes/Scene4';
 import { Scene5 } from './video_scenes/Scene5';
+import { ScenePayment } from './video_scenes/ScenePayment';
 import { BackgroundMusic } from './BackgroundMusic';
 import { Captions } from './Captions';
 
 export const SCENE_DURATIONS = {
-  problem: 14000,
-  intro: 11000,
+  problem: 12000,
+  intro: 10000,
   case_intake: 6000,
-  case_requirements: 9500,
-  case_traceability: 9000,
-  case_audit: 9500,
-  case_report: 9500,
-  case_gaps: 7500,
-  case_capa: 8500,
-  case_workflow: 8500,
-  case_conclude: 6000,
-  outcome: 7000,
-  cta: 6000,
+  case_requirements: 8000,
+  case_traceability: 7000,
+  case_audit: 8000,
+  case_report: 8500,
+  case_gaps: 7000,
+  case_capa: 7500,
+  case_workflow: 7000,
+  case_conclude: 5000,
+  outcome: 6000,
+  payment: 8000,
+  cta: 7000,
 };
 
 const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
@@ -46,6 +48,7 @@ const SCENE_COMPONENTS: Record<string, React.ComponentType> = {
   case_workflow: CaseWorkflow,
   case_conclude: CaseConclude,
   outcome: Scene4,
+  payment: ScenePayment,
   cta: Scene5,
 };
 
@@ -98,7 +101,7 @@ export default function VideoTemplate({
             y: ['0%', '-10%', '5%', '0%'],
             scale: [1, 1.1, 0.9, 1],
           }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
           className="absolute bottom-[10%] right-[10%] w-[30vw] h-[30vw] rounded-full opacity-20 blur-[100px]"
@@ -108,7 +111,7 @@ export default function VideoTemplate({
             y: ['0%', '10%', '-5%', '0%'],
             scale: [1, 1.2, 0.8, 1],
           }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         />
       </div>
 

@@ -8,10 +8,13 @@ export function CaseReport() {
       setTimeout(() => setPage(1), 800),
       setTimeout(() => setPage(2), 3300),
       setTimeout(() => setPage(3), 5800),
-      setTimeout(() => setPage(4), 8300),
+      setTimeout(() => setPage(3), 8300),
     ];
     return () => ts.forEach(clearTimeout);
   }, []);
+  
+  const imgCompliance = `${import.meta.env.BASE_URL}images/compliance_frantic.png`;
+
   const pages = [
     {
       header: 'COVER',
@@ -135,6 +138,22 @@ export function CaseReport() {
           );
         })}
       </div>
+      
+      <motion.div
+        className="absolute bottom-[5vh] right-[10vw]"
+        initial={{ opacity: 0, scale: 0.8, y: 50 }}
+        animate={{ opacity: page >= 1 ? 1 : 0, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 15 }}
+      >
+        <img src={imgCompliance} className="w-48 h-48 object-contain sketch-border sketch-shadow p-2 bg-white/10 rounded-full backdrop-blur-md" alt="Compliance Relieved" />
+        <motion.div
+          className="absolute -top-4 -right-4 bg-emerald-500 text-white font-bold text-xl px-4 py-2 rounded-full shadow-lg"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          Relieved!
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 }

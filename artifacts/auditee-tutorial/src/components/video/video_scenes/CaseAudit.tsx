@@ -25,6 +25,9 @@ export function CaseAudit() {
     ];
     return () => ts.forEach(clearTimeout);
   }, []);
+
+  const imgCTO = `${import.meta.env.BASE_URL}images/cto_overwhelmed.png`;
+
   return (
     <motion.div
       className="absolute inset-0 flex flex-col items-center justify-center px-[5vw]"
@@ -45,7 +48,7 @@ export function CaseAudit() {
         AI auditor running over <span className="font-mono text-[var(--color-accent-alt)]">payments/charge.ts</span>
       </motion.h2>
 
-      <div className="grid grid-cols-2 gap-6 w-[80vw]">
+      <div className="grid grid-cols-2 gap-6 w-[80vw] relative">
         <motion.div
           className="bg-black/40 border border-white/10 rounded-xl p-5 font-mono text-[0.95vw] leading-relaxed"
           initial={{ opacity: 0, x: -20 }}
@@ -90,6 +93,22 @@ export function CaseAudit() {
               </motion.div>
             ))}
           </div>
+        </motion.div>
+
+        <motion.div
+          className="absolute -bottom-8 -left-[4vw]"
+          initial={{ opacity: 0, scale: 0.8, rotate: -15 }}
+          animate={{ opacity: phase >= 3 ? 1 : 0, scale: 1, rotate: 5 }}
+          transition={{ type: 'spring', damping: 15 }}
+        >
+          <img src={imgCTO} className="w-[12vw] h-auto object-contain sketch-border sketch-shadow p-2 bg-white/10 rounded-full backdrop-blur-md" alt="CTO Watching" />
+          <motion.div
+            className="absolute -top-4 -right-4 bg-[#facc15] text-slate-900 font-bold text-lg px-3 py-1 rounded-full shadow-lg"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            Caught it!
+          </motion.div>
         </motion.div>
       </div>
     </motion.div>

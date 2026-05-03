@@ -37,9 +37,11 @@ const CUES: Cue[] = [
   { start: 84.5, end: 87.0, text: 'Step 7: Action workflow.' },
   { start: 87.0, end: 93.0, text: 'CAPA tickets flow through Open → In Progress → In Review → Closed.' },
 
-  { start: 93.0, end: 99.0, text: 'From conversation, to a compliant release — in days, not months.' },
-  { start: 99.0, end: 106.0, text: 'Audit-ready. Fully traceable. Continuously compliant.' },
-  { start: 106.0, end: 112.0, text: 'Auditee.site — ship enterprise software with total clarity.' },
+  { start: 93.0, end: 98.0, text: 'And when you\'re ready to scale, Auditee scales with you.' },
+  { start: 98.0, end: 102.0, text: 'Frictionless subscription upgrades right from the app.' },
+
+  { start: 102.0, end: 106.0, text: 'From conversation, to a compliant release — in days, not months.' },
+  { start: 106.0, end: 111.0, text: 'Auditee.site — ship enterprise software with total clarity.' },
 ];
 
 // Words that get a colour highlight

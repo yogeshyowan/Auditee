@@ -21,30 +21,30 @@ export function CaseRequirements() {
   }, []);
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col items-center justify-center px-[5vw]"
+      className="absolute inset-0 flex flex-col items-center justify-center px-[5vw] whiteboard-bg"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.5 }}
     >
       <motion.div
-        className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-accent)] mb-3"
+        className="text-[1.5vw] uppercase tracking-[0.2em] font-display text-violet-500 mb-3"
         initial={{ opacity: 0 }} animate={{ opacity: phase >= 1 ? 1 : 0 }}
       >
         Step 01 · Requirements Finder
       </motion.div>
       <motion.h2
-        className="text-[3vw] font-bold mb-8 text-center"
+        className="text-[3vw] font-bold font-display text-slate-800 mb-8 text-center"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : -10 }}
       >
         Conversation → BRS · PRD · FRD
       </motion.h2>
 
-      <div className="w-[80vw] bg-[var(--color-bg-muted)] border border-white/10 rounded-2xl p-[2vw]">
+      <div className="w-[80vw] bg-white border-2 border-slate-800 rounded-2xl p-[2vw] sketch-shadow sketch-border">
         <div className="grid grid-cols-3 gap-4">
           {reqs.map((r, i) => (
             <motion.div
               key={r.id}
-              className="bg-white/5 border border-white/10 rounded-xl p-4"
+              className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 sketch-border"
               initial={{ opacity: 0, y: 24, scale: 0.9 }}
               animate={{
                 opacity: phase >= i + 2 ? 1 : 0,
@@ -54,16 +54,16 @@ export function CaseRequirements() {
               transition={{ type: 'spring', damping: 18 }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[0.9vw] font-mono text-[var(--color-accent)]">{r.id}</span>
-                <span className="text-[0.75vw] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--color-accent-alt)]/20 text-[var(--color-accent-alt)]">{r.kind}</span>
+                <span className="text-[1.2vw] font-mono text-violet-600">{r.id}</span>
+                <span className="text-[1vw] uppercase tracking-wider px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 font-display">{r.kind}</span>
               </div>
-              <div className="text-[1.05vw] text-white/90 leading-snug mb-2">{r.title}</div>
-              <div className="text-[0.8vw] text-white/40">#{r.tag}</div>
+              <div className="text-[1.4vw] font-body text-slate-800 leading-snug mb-2">{r.title}</div>
+              <div className="text-[1vw] font-display text-slate-400">#{r.tag}</div>
             </motion.div>
           ))}
         </div>
-        <div className="mt-5 flex items-center justify-end gap-2 text-[0.95vw] text-white/60">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="mt-5 flex items-center justify-end gap-2 text-[1.2vw] font-display text-slate-500">
+          <div className="w-3 h-3 rounded-full bg-emerald-400 border border-slate-800 animate-pulse" />
           AI generated · 6 of 24 requirements
         </div>
       </div>

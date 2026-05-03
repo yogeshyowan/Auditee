@@ -1,99 +1,60 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const SITE = `${import.meta.env.BASE_URL}site/home.jpg`;
+const imgDashboard = `${import.meta.env.BASE_URL}images/dashboard_sketch.png`;
 
 export function Scene2() {
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 300),
-      setTimeout(() => setPhase(2), 1500),
-      setTimeout(() => setPhase(3), 3500),
-      setTimeout(() => setPhase(4), 6500),
+      setTimeout(() => setPhase(1), 3000),
+      setTimeout(() => setPhase(2), 8000),
     ];
     return () => timers.forEach(t => clearTimeout(t));
   }, []);
 
-  const pillars = [
-    "Agentic AI Product Management",
-    "Legacy Code Modernization",
-    "Autonomous Compliance · 23+ Frameworks",
-    "One Source of Truth"
-  ];
-
   return (
-    <motion.div
-      className="absolute inset-0 flex p-[4vw] items-center justify-center gap-[3vw]"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.97 }}
+    <motion.div 
+      className="absolute inset-0 flex items-center justify-center whiteboard-bg"
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0, scale: 1.05 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="w-[42%] flex flex-col">
-        <motion.div
-          className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-text-secondary)] mb-3"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : -10 }}
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-10">
+        
+        <motion.h1 
+          className="text-8xl font-display text-slate-800 font-bold"
+          initial={{ opacity: 0, scale: 0.5, rotate: -5 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', bounce: 0.5, duration: 1 }}
         >
-          Meet Auditee
-        </motion.div>
-
-        <motion.h1
-          className="text-[6vw] font-black text-gradient leading-[0.9] mb-6 tracking-tighter"
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: phase >= 1 ? 1 : 0, scale: phase >= 1 ? 1 : 0.85 }}
-          transition={{ type: 'spring', damping: 20 }}
-        >
-          Auditee
+          Meet <span className="text-violet-500">Auditee.</span>
         </motion.h1>
 
-        <motion.p
-          className="text-[1.6vw] text-white/85 mb-6 leading-snug"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: phase >= 2 ? 1 : 0 }}
-        >
-          Ship enterprise software with total clarity — from idea to audit.
-        </motion.p>
-
-        <div className="flex flex-col gap-2.5">
-          {pillars.map((pillar, i) => (
-            <motion.div
-              key={i}
-              className="px-4 py-2.5 rounded-lg border border-[var(--color-accent-alt)]/40 bg-[var(--color-accent-alt)]/10 text-[1.05vw] font-medium"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: phase >= 3 ? 1 : 0, x: phase >= 3 ? 0 : -20 }}
-              transition={{ delay: i * 0.12, duration: 0.5 }}
-            >
-              {pillar}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      <motion.div
-        className="w-[52%] relative"
-        initial={{ opacity: 0, scale: 0.92, x: 40 }}
-        animate={{ opacity: phase >= 2 ? 1 : 0, scale: phase >= 2 ? 1 : 0.92, x: phase >= 2 ? 0 : 40 }}
-        transition={{ type: 'spring', damping: 22 }}
-      >
-        <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-white">
-          <div className="bg-slate-100 px-3 py-2 flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-            <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-            <div className="ml-3 text-[0.85vw] text-slate-500 font-mono">auditee.site</div>
-          </div>
-          <img src={SITE} alt="Auditee.site home" className="w-full block" />
-        </div>
         <motion.div
-          className="absolute -bottom-4 -right-4 px-4 py-2 rounded-full bg-[var(--color-accent)] text-[var(--color-bg-dark)] font-bold text-[1vw] shadow-xl"
-          initial={{ scale: 0 }}
-          animate={{ scale: phase >= 3 ? 1 : 0 }}
-          transition={{ type: 'spring', damping: 14 }}
+          className="mt-8 text-3xl font-body text-slate-600 text-center max-w-4xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={phase >= 1 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.8 }}
         >
-          Live · auditee.site
+          The AI-native control plane for the product development lifecycle.
         </motion.div>
-      </motion.div>
+
+        <motion.div
+          className="mt-12"
+          initial={{ opacity: 0, y: 50 }}
+          animate={phase >= 2 ? { opacity: 1, y: [0, -5, 0] } : { opacity: 0, y: 50 }}
+          transition={phase >= 2 ? {
+            opacity: { duration: 0.5 },
+            y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+          } : { type: 'spring', bounce: 0.4 }}
+        >
+          <img src={imgDashboard} className="w-[40rem] h-auto object-contain sketch-border sketch-shadow p-2" alt="Dashboard Sketch" />
+        </motion.div>
+
+      </div>
     </motion.div>
   );
 }
