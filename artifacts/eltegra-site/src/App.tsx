@@ -51,6 +51,11 @@ import Iec62304 from "@/pages/Iec62304";
 import FdaQmsr from "@/pages/FdaQmsr";
 import IntegrationJira from "@/pages/IntegrationJira";
 import IntegrationAzureDevOps from "@/pages/IntegrationAzureDevOps";
+import Iso26262 from "@/pages/Iso26262";
+import Iso21434 from "@/pages/Iso21434";
+import DpdpAct from "@/pages/DpdpAct";
+import IntegrationGitHub from "@/pages/IntegrationGitHub";
+import IntegrationSlack from "@/pages/IntegrationSlack";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -407,6 +412,20 @@ function Router() {
       <Route path="/integrations/azure-devops" component={IntegrationAzureDevOps} />
       <Route path="/integrations/ado" component={IntegrationAzureDevOps} />
       <Route path="/azure-devops-integration" component={IntegrationAzureDevOps} />
+      <Route path="/iso-26262" component={Iso26262} />
+      <Route path="/iso26262" component={Iso26262} />
+      <Route path="/functional-safety" component={Iso26262} />
+      <Route path="/iso-21434" component={Iso21434} />
+      <Route path="/iso21434" component={Iso21434} />
+      <Route path="/automotive-cybersecurity" component={Iso21434} />
+      <Route path="/un-r155" component={Iso21434} />
+      <Route path="/dpdp-act" component={DpdpAct} />
+      <Route path="/dpdp" component={DpdpAct} />
+      <Route path="/india-data-protection" component={DpdpAct} />
+      <Route path="/integrations/github" component={IntegrationGitHub} />
+      <Route path="/github-integration" component={IntegrationGitHub} />
+      <Route path="/integrations/slack" component={IntegrationSlack} />
+      <Route path="/slack-integration" component={IntegrationSlack} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />

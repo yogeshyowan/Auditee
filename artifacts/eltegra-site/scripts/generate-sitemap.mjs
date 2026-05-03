@@ -111,6 +111,11 @@ const STATIC_ROUTES = [
   { path: "/fda-qmsr",                 priority: 0.90, changefreq: "monthly" },
   { path: "/integrations/jira",        priority: 0.85, changefreq: "monthly" },
   { path: "/integrations/azure-devops",priority: 0.85, changefreq: "monthly" },
+  { path: "/iso-26262",                priority: 0.90, changefreq: "monthly" },
+  { path: "/iso-21434",                priority: 0.90, changefreq: "monthly" },
+  { path: "/dpdp-act",                 priority: 0.90, changefreq: "monthly" },
+  { path: "/integrations/github",      priority: 0.85, changefreq: "monthly" },
+  { path: "/integrations/slack",       priority: 0.80, changefreq: "monthly" },
 
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },
