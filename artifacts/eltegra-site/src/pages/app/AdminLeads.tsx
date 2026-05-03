@@ -40,11 +40,8 @@ const PLAN_BADGE: Record<string, string> = {
 };
 
 interface ResyncResult {
+  started: boolean;
   pending: number;
-  attempted: number;
-  synced: number;
-  failed: number;
-  skipped: number;
 }
 
 interface FetchError extends Error {
@@ -103,6 +100,17 @@ export default function AdminLeadsPage() {
     document.title = "Captured Leads — Auditee";
   }, []);
 
+  // While a background resync is running we poll the captures list so the
+  // admin sees rows flip to "Synced" without manually refreshing. We snapshot
+  // the row IDs and their initial forwardError values at start time so we can
+  // tell when each row has been processed — including failed and skipped
+  // rows that will never have forwardedToFormAt set.
+  const [resyncRun, setResyncRun] = useState<{
+    snapshot: Map<string, string | null>;
+    hardDeadline: number;
+  } | null>(null);
+  const isResyncPolling = resyncRun !== null;
+
   const query = useQuery<{ leads: LeadRow[]; count: number }, FetchError>({
     queryKey: ["admin", "lead-captures"],
     enabled: isLoaded,
@@ -111,7 +119,58 @@ export default function AdminLeadsPage() {
       return authedFetch("/leads/captures/all", token);
     },
     retry: false,
+    refetchInterval: isResyncPolling ? 3000 : false,
   });
+
+  // Decide when the run is finished. A snapshot row is "done" if it's been
+  // synced (forwardedToFormAt set) OR its forwardError changed since we
+  // started (the worker touched it — success or failure both count). We also
+  // bail out at a hard deadline so the UI never gets stuck if e.g. the
+  // server crashes mid-run.
+  useEffect(() => {
+    if (!resyncRun) return;
+    const rowsById = new Map(
+      (query.data?.leads ?? []).map((r) => [r.id, r] as const),
+    );
+
+    let processed = 0;
+    let synced = 0;
+    let failed = 0;
+    for (const [id, initialError] of resyncRun.snapshot) {
+      const row = rowsById.get(id);
+      if (!row) {
+        processed++;
+        continue;
+      }
+      if (row.forwardedToFormAt) {
+        processed++;
+        synced++;
+      } else if ((row.forwardError ?? null) !== (initialError ?? null)) {
+        processed++;
+        failed++;
+      }
+    }
+
+    const total = resyncRun.snapshot.size;
+    const allDone = processed >= total;
+    const timedOut = Date.now() > resyncRun.hardDeadline;
+
+    if (allDone || timedOut) {
+      setResyncRun(null);
+      const parts: string[] = [];
+      if (synced) parts.push(`${synced} synced`);
+      if (failed) parts.push(`${failed} failed`);
+      const stillPending = total - processed;
+      if (stillPending > 0)
+        parts.push(`${stillPending} still pending (timed out)`);
+      if (!parts.length) parts.push("nothing changed");
+      toast({
+        title: timedOut && !allDone ? "Resync stopped" : "Resync complete",
+        description: parts.join(", ") + ".",
+        variant: timedOut && !allDone ? "destructive" : undefined,
+      });
+    }
+  }, [query.data, resyncRun, toast]);
 
   const resyncMutation = useMutation<ResyncResult, FetchError>({
     mutationFn: async () => {
@@ -121,15 +180,22 @@ export default function AdminLeadsPage() {
       });
     },
     onSuccess: (data) => {
-      const parts: string[] = [];
-      if (data.synced) parts.push(`${data.synced} synced`);
-      if (data.failed) parts.push(`${data.failed} failed`);
-      if (data.skipped)
-        parts.push(`${data.skipped} skipped (sheet not configured)`);
-      if (!parts.length) parts.push("nothing to sync");
+      // Snapshot the rows the backend will be processing so we have a stable
+      // completion target even if rows fail or are skipped.
+      const snapshot = new Map<string, string | null>();
+      for (const r of query.data?.leads ?? []) {
+        if (!r.forwardedToFormAt) snapshot.set(r.id, r.forwardError ?? null);
+      }
+      // Generous hard cap (~1.5s/row, min 60s, max 15min) — only used as a
+      // safety net so the UI doesn't poll forever on a stuck server.
+      const estMs = Math.min(
+        15 * 60 * 1000,
+        Math.max(60_000, data.pending * 1500),
+      );
+      setResyncRun({ snapshot, hardDeadline: Date.now() + estMs });
       toast({
-        title: "Resync complete",
-        description: parts.join(", ") + ".",
+        title: "Resync started",
+        description: `${data.pending} row${data.pending === 1 ? "" : "s"} queued. The list will refresh as rows are forwarded.`,
       });
       qc.invalidateQueries({ queryKey: ["admin", "lead-captures"] });
     },
@@ -257,14 +323,20 @@ export default function AdminLeadsPage() {
           </Button>
           <Button
             onClick={() => resyncMutation.mutate()}
-            disabled={resyncMutation.isPending || unforwardedCount === 0}
+            disabled={
+              resyncMutation.isPending ||
+              isResyncPolling ||
+              unforwardedCount === 0
+            }
             data-testid="button-resync-unforwarded"
           >
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${resyncMutation.isPending ? "animate-spin" : ""}`}
+              className={`h-4 w-4 mr-2 ${resyncMutation.isPending || isResyncPolling ? "animate-spin" : ""}`}
             />
             {resyncMutation.isPending
-              ? "Resyncing…"
+              ? "Starting…"
+              : isResyncPolling
+              ? `Resyncing in background (${unforwardedCount} left)`
               : `Resync all unforwarded (${unforwardedCount})`}
           </Button>
         </div>

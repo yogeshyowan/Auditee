@@ -269,55 +269,108 @@ router.post(
       .where(isNull(leadCapturesTable.forwardedToFormAt))
       .orderBy(desc(leadCapturesTable.createdAt));
 
-    let attempted = 0;
-    let synced = 0;
-    let failed = 0;
-    let skipped = 0;
+    const pendingCount = pending.length;
+    const actorId = ctx.userId;
+    const log = req.log;
 
-    // Process sequentially so we don't slam the Google Sheets API and so any
-    // transient quota errors surface as a single failure rather than cascading.
-    for (const row of pending) {
-      const result = await postToGoogleSheet({
-        name: row.name,
-        email: row.email,
-        id: row.clerkUserId ?? row.id,
-        source: row.source,
-        capturedAt: row.createdAt.toISOString(),
-      });
-      if (!result.attempted) {
-        skipped++;
-        continue;
+    // Fire-and-forget: a few hundred sequential Google Sheets appends easily
+    // exceed the proxy's 30–60s request timeout. Kick the work off in the
+    // background and let the admin UI poll /leads/captures/all to watch
+    // forwardedToFormAt fill in. Mirrors the pattern in /leads/capture.
+    void (async () => {
+      let attempted = 0;
+      let synced = 0;
+      let failed = 0;
+      let skipped = 0;
+
+      // Process sequentially so we don't slam the Google Sheets API and so any
+      // transient quota errors surface one at a time rather than cascading.
+      for (const row of pending) {
+        try {
+          const result = await postToGoogleSheet({
+            name: row.name,
+            email: row.email,
+            id: row.clerkUserId ?? row.id,
+            source: row.source,
+            capturedAt: row.createdAt.toISOString(),
+          });
+          if (!result.attempted) {
+            skipped++;
+            // Persist a marker (with attempt timestamp so it's always a fresh
+            // string) so the admin UI can tell the row was processed by this
+            // run and stop polling deterministically — instead of waiting for
+            // its hard deadline. Common cause: GOOGLE_SHEET_WEBHOOK_URL not
+            // configured.
+            await db
+              .update(leadCapturesTable)
+              .set({
+                forwardError: `skipped_sheet_not_configured (at ${new Date().toISOString()})`,
+              })
+              .where(eq(leadCapturesTable.id, row.id));
+            continue;
+          }
+          attempted++;
+          if (result.ok) {
+            synced++;
+            await db
+              .update(leadCapturesTable)
+              .set({ forwardedToFormAt: new Date(), forwardError: null })
+              .where(eq(leadCapturesTable.id, row.id));
+          } else {
+            failed++;
+            // Include the attempt timestamp so repeat failures with the same
+            // underlying error still produce a distinct string. The admin UI
+            // uses this change to detect that a row was processed during the
+            // current resync run, even when the error itself is identical.
+            const base = result.error ?? `status_${result.status ?? "unknown"}`;
+            await db
+              .update(leadCapturesTable)
+              .set({
+                forwardError: `${base} (at ${new Date().toISOString()})`,
+              })
+              .where(eq(leadCapturesTable.id, row.id));
+          }
+        } catch (err) {
+          failed++;
+          const msg = err instanceof Error ? err.message : String(err);
+          log.error({ err: msg, rowId: row.id }, "lead resync row failed");
+          // Persist the failure so it shows up in the admin table instead of
+          // silently disappearing into the server logs.
+          try {
+            await db
+              .update(leadCapturesTable)
+              .set({
+                forwardError:
+                  `exception_${msg} (at ${new Date().toISOString()})`.slice(
+                    0,
+                    500,
+                  ),
+              })
+              .where(eq(leadCapturesTable.id, row.id));
+          } catch (dbErr) {
+            log.error(
+              {
+                err: dbErr instanceof Error ? dbErr.message : String(dbErr),
+                rowId: row.id,
+              },
+              "failed to persist resync exception",
+            );
+          }
+        }
       }
-      attempted++;
-      if (result.ok) {
-        synced++;
-        await db
-          .update(leadCapturesTable)
-          .set({ forwardedToFormAt: new Date(), forwardError: null })
-          .where(eq(leadCapturesTable.id, row.id));
-      } else {
-        failed++;
-        await db
-          .update(leadCapturesTable)
-          .set({
-            forwardError: result.error ?? `status_${result.status ?? "unknown"}`,
-          })
-          .where(eq(leadCapturesTable.id, row.id));
-      }
-    }
 
-    req.log.info(
-      { pending: pending.length, attempted, synced, failed, skipped, actor: ctx.userId },
-      "lead resync run complete",
-    );
-
-    res.json({
-      pending: pending.length,
-      attempted,
-      synced,
-      failed,
-      skipped,
+      log.info(
+        { pending: pendingCount, attempted, synced, failed, skipped, actor: actorId },
+        "lead resync run complete",
+      );
+    })().catch((err) => {
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        "lead resync background task crashed",
+      );
     });
+
+    res.status(202).json({ started: true, pending: pendingCount });
   },
 );
 
