@@ -86,6 +86,11 @@ const STATIC_ROUTES = [
   { path: "/careers",            priority: 0.70, changefreq: "weekly"  },
   { path: "/newsroom",           priority: 0.65, changefreq: "monthly" },
   { path: "/brand",              priority: 0.50, changefreq: "yearly"  },
+  { path: "/webinars",           priority: 0.75, changefreq: "weekly"  },
+  { path: "/help",               priority: 0.70, changefreq: "monthly" },
+  { path: "/migrations",         priority: 0.85, changefreq: "monthly" },
+  { path: "/affiliates",         priority: 0.65, changefreq: "monthly" },
+  { path: "/free-tools",         priority: 0.80, changefreq: "monthly" },
 
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },

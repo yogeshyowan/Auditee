@@ -26,6 +26,11 @@ import BrandKit from "@/pages/BrandKit";
 import Dpa from "@/pages/Dpa";
 import SubProcessors from "@/pages/SubProcessors";
 import Aup from "@/pages/Aup";
+import Webinars from "@/pages/Webinars";
+import HelpCenter from "@/pages/HelpCenter";
+import Migrations from "@/pages/Migrations";
+import Affiliates from "@/pages/Affiliates";
+import FreeTools from "@/pages/FreeTools";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -322,6 +327,18 @@ function Router() {
       <Route path="/aup" component={Aup} />
       <Route path="/acceptable-use" component={Aup} />
       <Route path="/acceptable-use-policy" component={Aup} />
+      <Route path="/webinars" component={Webinars} />
+      <Route path="/events" component={Webinars} />
+      <Route path="/help" component={HelpCenter} />
+      <Route path="/help-center" component={HelpCenter} />
+      <Route path="/support" component={HelpCenter} />
+      <Route path="/migrations" component={Migrations} />
+      <Route path="/migrate" component={Migrations} />
+      <Route path="/affiliates" component={Affiliates} />
+      <Route path="/affiliate-program" component={Affiliates} />
+      <Route path="/referral" component={Affiliates} />
+      <Route path="/free-tools" component={FreeTools} />
+      <Route path="/tools" component={FreeTools} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
