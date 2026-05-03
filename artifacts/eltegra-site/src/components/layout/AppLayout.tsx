@@ -28,9 +28,11 @@ import {
   Beaker,
   FileBadge2,
   Compass,
-  Mailbox
+  Mailbox,
+  PlayCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { TutorialDrawer } from "@/components/TutorialDrawer";
 import { NotificationBell } from "@/components/NotificationBell";
 import { AskAuditeeFloater } from "@/components/AskAuditeeFloater";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
@@ -80,10 +82,41 @@ const ADMIN_NAV_ITEMS = [
 
 const apiBase = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
+// Maps /app/<slug> → tutorial module key. Routes not listed here have no tutorial.
+const ROUTE_TO_MODULE: Record<string, string> = {
+  "/app/sources": "sources",
+  "/app/interview": "interview",
+  "/app/requirements": "requirements",
+  "/app/gaps": "gaps",
+  "/app/traceability": "traceability",
+  "/app/compliance": "compliance",
+  "/app/standards": "compliance",
+  "/app/capa": "capa",
+  "/app/defects": "defects",
+  "/app/tests": "tests",
+  "/app/reports": "reports",
+  "/app/workflows": "workflows",
+  "/app/analytics": "analytics",
+  "/app/recurring-audits": "recurring-audits",
+  "/app/dashboard": "dashboard",
+};
+
+function getModuleForRoute(loc: string): string | null {
+  // Exact match first
+  if (ROUTE_TO_MODULE[loc]) return ROUTE_TO_MODULE[loc];
+  // Prefix match for dynamic routes like /app/compliance/:id
+  for (const [prefix, mod] of Object.entries(ROUTE_TO_MODULE)) {
+    if (loc.startsWith(prefix + "/")) return mod;
+  }
+  return null;
+}
+
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const { projectId, setProjectId, connectedProjects, allProjects, effectiveRole } = useProjectContext();
   const [createOpen, setCreateOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+  const tutorialModule = getModuleForRoute(location);
   const { getToken, isLoaded: isAuthLoaded } = useAuth();
 
   const adminCheck = useQuery<{ isAdmin: boolean }>({
@@ -286,6 +319,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1 ml-64 flex flex-col min-h-screen">
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200 px-6 py-2 flex items-center justify-end gap-2">
+          {tutorialModule && (
+            <button
+              type="button"
+              onClick={() => setTutorialOpen(true)}
+              data-testid="button-watch-tutorial"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-700 px-3 py-1.5 rounded-full border border-violet-200 hover:border-violet-400 hover:bg-violet-50 transition-colors"
+            >
+              <PlayCircle className="h-3.5 w-3.5" />
+              Watch Tutorial
+            </button>
+          )}
           <button
             type="button"
             onClick={() => startTour(navigate)}
@@ -301,6 +345,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       <AskAuditeeFloater />
+
+      <TutorialDrawer
+        open={tutorialOpen}
+        onClose={() => setTutorialOpen(false)}
+        module={tutorialModule}
+      />
     </div>
   );
 }
