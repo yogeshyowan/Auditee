@@ -23,6 +23,22 @@ import AutomatedCompliance from "@/pages/AutomatedCompliance";
 import MissingRequirementsAnalysis from "@/pages/MissingRequirementsAnalysis";
 import TestCaseGeneration from "@/pages/TestCaseGeneration";
 import AiRequirementsManagement from "@/pages/AiRequirementsManagement";
+import RequirementsManagement from "@/pages/RequirementsManagement";
+import BrdGeneration from "@/pages/BrdGeneration";
+import IntelligentDocumentAnalysis from "@/pages/IntelligentDocumentAnalysis";
+import RequirementsLinkedTestCases from "@/pages/RequirementsLinkedTestCases";
+import AiForHealthcare from "@/pages/AiForHealthcare";
+import AiForFinance from "@/pages/AiForFinance";
+import AiForAutomotive from "@/pages/AiForAutomotive";
+import AiForTelecom from "@/pages/AiForTelecom";
+import ForCpo from "@/pages/ForCpo";
+import ForCto from "@/pages/ForCto";
+import ForBusinessAnalyst from "@/pages/ForBusinessAnalyst";
+import ForQaCompliance from "@/pages/ForQaCompliance";
+import DemoVideos from "@/pages/DemoVideos";
+import Faqs from "@/pages/Faqs";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import SignInPage from "@/pages/SignIn";
@@ -218,8 +234,26 @@ function Router() {
       <Route path="/ai-product-development" component={AiProductDevelopment} />
       <Route path="/automated-compliance" component={AutomatedCompliance} />
       <Route path="/ai-requirements-management" component={AiRequirementsManagement} />
+      <Route path="/ai-requirements-generation" component={AiRequirementsManagement} />
+      <Route path="/requirements-management" component={RequirementsManagement} />
+      <Route path="/brd-generation" component={BrdGeneration} />
+      <Route path="/intelligent-document-analysis" component={IntelligentDocumentAnalysis} />
+      <Route path="/requirements-linked-test-cases" component={RequirementsLinkedTestCases} />
       <Route path="/missing-requirements-analysis" component={MissingRequirementsAnalysis} />
       <Route path="/test-case-generation" component={TestCaseGeneration} />
+      <Route path="/ai-for-healthcare" component={AiForHealthcare} />
+      <Route path="/ai-for-finance" component={AiForFinance} />
+      <Route path="/ai-for-automotive" component={AiForAutomotive} />
+      <Route path="/ai-for-telecom" component={AiForTelecom} />
+      <Route path="/cpo" component={ForCpo} />
+      <Route path="/cto" component={ForCto} />
+      <Route path="/business-analyst" component={ForBusinessAnalyst} />
+      <Route path="/qa-and-compliance" component={ForQaCompliance} />
+      <Route path="/demo-videos" component={DemoVideos} />
+      <Route path="/faqs" component={Faqs} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/terms-of-services" component={TermsOfService} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />

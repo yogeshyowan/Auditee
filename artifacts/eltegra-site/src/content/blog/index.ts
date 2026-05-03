@@ -5,6 +5,10 @@ import { post as fromCode } from "./generating-requirements-from-legacy-code";
 import { post as doorsAlternatives } from "./top-10-ibm-doors-alternatives-2026";
 import { post as hipaaChecklist } from "./hipaa-software-compliance-requirements-checklist";
 import { post as pdlcAuditChecklist } from "./enterprise-pdlc-audit-checklist";
+import { post as spreadsheetsBeatRm } from "./why-spreadsheets-still-beat-rm-tools";
+import { post as legacyCobol } from "./legacy-cobol-modernization-with-ai";
+import { post as fifteenPrompts } from "./15-ai-prompts-for-requirements-gathering";
+import { post as poorReqsCostBillions } from "./poor-software-requirements-cost-billions";
 
 export interface BlogPost {
   slug: string;
@@ -28,6 +32,10 @@ export const POSTS: BlogPost[] = [
   doorsAlternatives,
   hipaaChecklist,
   pdlcAuditChecklist,
+  spreadsheetsBeatRm,
+  legacyCobol,
+  fifteenPrompts,
+  poorReqsCostBillions,
 ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
 export function getPost(slug: string): BlogPost | undefined {

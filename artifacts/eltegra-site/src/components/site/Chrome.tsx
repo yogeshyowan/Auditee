@@ -57,16 +57,37 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "Industries",
+    key: "industries",
+    items: [
+      { title: "Healthcare & MedTech", desc: "IEC 62304, HIPAA, FDA Part 11/820, SaMD blueprints.", href: "/ai-for-healthcare" },
+      { title: "Finance & Fintech", desc: "PCI DSS v4, SOC 2, SOX, GLBA, RBI / DPDP, ISO 27001.", href: "/ai-for-finance" },
+      { title: "Automotive & Mobility", desc: "ASPICE, ISO 26262 (ASIL D), ISO 21434, UNECE WP.29.", href: "/ai-for-automotive" },
+      { title: "Telecom & 5G", desc: "3GPP, ETSI NFV, TM Forum, MEF LSO, OSS/BSS modernization.", href: "/ai-for-telecom" },
+    ],
+  },
+  {
+    label: "For your role",
+    key: "roles",
+    items: [
+      { title: "Chief Product Officer", desc: "Portfolio visibility, ROI dashboards, board-grade reporting.", href: "/cpo" },
+      { title: "CTO / VP Engineering", desc: "Legacy modernization, AI tests, gap detection, evidence.", href: "/cto" },
+      { title: "Senior Business Analyst", desc: "Smart Interview, AI BRDs, source-attributed traceability.", href: "/business-analyst" },
+      { title: "QA & Compliance", desc: "AI test generation, recurring audits, CAPA, evidence packs.", href: "/qa-and-compliance" },
+    ],
+  },
+  {
     label: "Resources",
     key: "resources",
     items: [
       { title: "Blog", desc: "Buyer's guides, standards walkthroughs and field notes.", href: "/blog" },
+      { title: "Demo Videos", desc: "14 narrated module tutorials — under 5 minutes each.", href: "/demo-videos" },
+      { title: "FAQs", desc: "Platform, AI, integrations, compliance, security and pricing.", href: "/faqs" },
       { title: "Features", desc: "The complete platform feature set, end-to-end.", href: "/features" },
       { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
       { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
       { title: "Security & Trust", desc: "Encryption, SSO, audit logs, SOC 2 / ISO 27001 / GDPR posture.", href: "/security" },
       { title: "Investor / Sales Deck", desc: "The full Auditee story in slides — vision, traction, GTM.", href: "/auditee-deck/", external: true },
-      { title: "PDLC Coverage", desc: "See how Auditee maps to every lifecycle stage.", href: "/#pdlc" },
     ],
   },
   {
@@ -411,12 +432,19 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-6">Solutions</h4>
+            <h4 className="text-white font-semibold mb-6">Industries</h4>
             <ul className="space-y-4">
-              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-product-teams">For Product Teams</a></li>
-              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-engineering">For Engineering</a></li>
-              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-compliance">For Compliance</a></li>
-              <li><a href="/#solutions" className="hover:text-primary transition-colors" data-testid="link-footer-legacy">Legacy Modernization</a></li>
+              <li><Link href="/ai-for-healthcare" className="hover:text-primary transition-colors" data-testid="link-footer-healthcare">Healthcare & MedTech</Link></li>
+              <li><Link href="/ai-for-finance" className="hover:text-primary transition-colors" data-testid="link-footer-finance">Finance & Fintech</Link></li>
+              <li><Link href="/ai-for-automotive" className="hover:text-primary transition-colors" data-testid="link-footer-automotive">Automotive</Link></li>
+              <li><Link href="/ai-for-telecom" className="hover:text-primary transition-colors" data-testid="link-footer-telecom">Telecom & 5G</Link></li>
+            </ul>
+            <h4 className="text-white font-semibold mt-8 mb-4">For your role</h4>
+            <ul className="space-y-4">
+              <li><Link href="/cpo" className="hover:text-primary transition-colors" data-testid="link-footer-cpo">Chief Product Officer</Link></li>
+              <li><Link href="/cto" className="hover:text-primary transition-colors" data-testid="link-footer-cto">CTO / VP Eng</Link></li>
+              <li><Link href="/business-analyst" className="hover:text-primary transition-colors" data-testid="link-footer-ba">Business Analyst</Link></li>
+              <li><Link href="/qa-and-compliance" className="hover:text-primary transition-colors" data-testid="link-footer-qa">QA & Compliance</Link></li>
             </ul>
           </div>
 
@@ -424,6 +452,8 @@ export function SiteFooter() {
             <h4 className="text-white font-semibold mb-6">Resources</h4>
             <ul className="space-y-4">
               <li><Link href="/blog" className="hover:text-primary transition-colors" data-testid="link-footer-blog">Blog</Link></li>
+              <li><Link href="/demo-videos" className="hover:text-primary transition-colors" data-testid="link-footer-demos">Demo Videos</Link></li>
+              <li><Link href="/faqs" className="hover:text-primary transition-colors" data-testid="link-footer-faqs">FAQs</Link></li>
               <li><Link href="/features" className="hover:text-primary transition-colors" data-testid="link-footer-features">Features</Link></li>
               <li><Link href="/pricing" className="hover:text-primary transition-colors" data-testid="link-footer-pricing">Pricing</Link></li>
               <li><Link href="/roi-calculator" className="hover:text-primary transition-colors" data-testid="link-footer-roi">ROI Calculator</Link></li>
@@ -439,6 +469,11 @@ export function SiteFooter() {
               <li><a href="/about#careers" className="hover:text-primary transition-colors" data-testid="link-footer-careers">Careers</a></li>
               <li><Link href="/contact" className="hover:text-primary transition-colors" data-testid="link-footer-contact">Contact</Link></li>
               <li><Link href="/app" className="hover:text-primary transition-colors" data-testid="link-footer-launch">Launch Platform</Link></li>
+            </ul>
+            <h4 className="text-white font-semibold mt-8 mb-4">Legal</h4>
+            <ul className="space-y-4">
+              <li><Link href="/privacy-policy" className="hover:text-primary transition-colors" data-testid="link-footer-privacy">Privacy Policy</Link></li>
+              <li><Link href="/terms-of-service" className="hover:text-primary transition-colors" data-testid="link-footer-terms">Terms of Service</Link></li>
             </ul>
           </div>
         </div>
