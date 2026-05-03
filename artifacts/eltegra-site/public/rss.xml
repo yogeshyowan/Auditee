@@ -21,6 +21,18 @@
       <category>PDLC</category>
     </item>
     <item>
+      <title>AI Requirements Management: A Buyer&apos;s Guide for 2026</title>
+      <link>https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</link>
+      <guid isPermaLink="true">https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</guid>
+      <pubDate>Wed, 22 Apr 2026 00:00:00 GMT</pubDate>
+      <description>What enterprise teams should look for in an AI-powered requirements management (RM) tool in 2026 — capabilities, integrations, compliance fit, total cost of ownership, and red flags.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>Requirements Management</category>
+      <category>AI</category>
+      <category>Buyer&apos;s Guide</category>
+      <category>Enterprise</category>
+    </item>
+    <item>
       <title>Why Spreadsheets Still Beat Requirements Management Tools (and How AI Finally Fixes It)</title>
       <link>https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools</link>
       <guid isPermaLink="true">https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools</guid>
@@ -34,27 +46,17 @@
       <category>Tooling</category>
     </item>
     <item>
-      <title>AI Requirements Management: A Buyer&apos;s Guide for 2026</title>
-      <link>https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</link>
-      <guid isPermaLink="true">https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</guid>
+      <title>ISO 26262 ASIL Classification: A Practical Guide for Software Teams (2026)</title>
+      <link>https://auditee.site/blog/iso-26262-asil-classification-practical-guide</link>
+      <guid isPermaLink="true">https://auditee.site/blog/iso-26262-asil-classification-practical-guide</guid>
       <pubDate>Wed, 22 Apr 2026 00:00:00 GMT</pubDate>
-      <description>What enterprise teams should look for in an AI-powered requirements management (RM) tool in 2026 — capabilities, integrations, compliance fit, total cost of ownership, and red flags.</description>
+      <description>How to classify automotive software items under ISO 26262 — Severity × Exposure × Controllability, ASIL decomposition, and the documentation auditors actually look for.</description>
       <author>noreply@auditee.site (Auditee Research)</author>
-      <category>Requirements Management</category>
-      <category>AI</category>
-      <category>, </category>
-    </item>
-    <item>
-      <title>Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture</title>
-      <link>https://auditee.site/blog/legacy-cobol-modernization-with-ai</link>
-      <guid isPermaLink="true">https://auditee.site/blog/legacy-cobol-modernization-with-ai</guid>
-      <pubDate>Wed, 15 Apr 2026 00:00:00 GMT</pubDate>
-      <description>A practical playbook for turning 30-year-old COBOL, mainframe Java, PL/SQL and C++ estates into a modern, requirement-driven, traceable codebase — using AI reverse-engineering, not a rewrite.</description>
-      <author>noreply@auditee.site (Auditee Research)</author>
-      <category>Legacy Modernization</category>
-      <category>AI</category>
-      <category>COBOL</category>
-      <category>Architecture</category>
+      <category>ISO 26262</category>
+      <category>Automotive</category>
+      <category>Functional Safety</category>
+      <category>Compliance</category>
+      <category>Standards</category>
     </item>
     <item>
       <title>IEC 62304: Medical Device Software Lifecycle Guide (2026)</title>
@@ -69,6 +71,18 @@
       <category>Standards</category>
     </item>
     <item>
+      <title>Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture</title>
+      <link>https://auditee.site/blog/legacy-cobol-modernization-with-ai</link>
+      <guid isPermaLink="true">https://auditee.site/blog/legacy-cobol-modernization-with-ai</guid>
+      <pubDate>Wed, 15 Apr 2026 00:00:00 GMT</pubDate>
+      <description>A practical playbook for turning 30-year-old COBOL, mainframe Java, PL/SQL and C++ estates into a modern, requirement-driven, traceable codebase — using AI reverse-engineering, not a rewrite.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>Legacy Modernization</category>
+      <category>AI</category>
+      <category>COBOL</category>
+      <category>Architecture</category>
+    </item>
+    <item>
       <title>SOC 2 vs ISO 27001: Which Compliance Framework Should You Choose?</title>
       <link>https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose</link>
       <guid isPermaLink="true">https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose</guid>
@@ -79,6 +93,19 @@
       <category>ISO 27001</category>
       <category>Compliance</category>
       <category>Security</category>
+    </item>
+    <item>
+      <title>DO-178C Software Certification: A 2026 Primer for Avionics Teams</title>
+      <link>https://auditee.site/blog/do-178c-software-certification-2026-primer</link>
+      <guid isPermaLink="true">https://auditee.site/blog/do-178c-software-certification-2026-primer</guid>
+      <pubDate>Wed, 08 Apr 2026 00:00:00 GMT</pubDate>
+      <description>What DO-178C actually requires by Design Assurance Level (DAL A–E), the 71 objectives auditors check, and how AI-native traceability shortens certification by 40%.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>DO-178C</category>
+      <category>Avionics</category>
+      <category>Aerospace</category>
+      <category>Compliance</category>
+      <category>Standards</category>
     </item>
     <item>
       <title>Generating Requirements from Legacy Code: A Modernization Playbook</title>
@@ -105,6 +132,18 @@
       <category>Requirements</category>
     </item>
     <item>
+      <title>The Bidirectional Traceability Matrix: A Complete Guide with Examples</title>
+      <link>https://auditee.site/blog/bidirectional-traceability-matrix-complete-guide</link>
+      <guid isPermaLink="true">https://auditee.site/blog/bidirectional-traceability-matrix-complete-guide</guid>
+      <pubDate>Mon, 30 Mar 2026 00:00:00 GMT</pubDate>
+      <description>What a true bidirectional traceability matrix looks like, why spreadsheet matrices always rot, and how a graph-native approach makes traceability a side-effect of doing the work.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>Traceability</category>
+      <category>Requirements</category>
+      <category>Compliance</category>
+      <category>Standards</category>
+    </item>
+    <item>
       <title>Top 10 IBM DOORS Alternatives in 2026 (and How to Migrate)</title>
       <link>https://auditee.site/blog/top-10-ibm-doors-alternatives-2026</link>
       <guid isPermaLink="true">https://auditee.site/blog/top-10-ibm-doors-alternatives-2026</guid>
@@ -129,6 +168,19 @@
       <category>Software Engineering</category>
     </item>
     <item>
+      <title>The CAPA Lifecycle: From Audit Finding to Verified Closure</title>
+      <link>https://auditee.site/blog/capa-lifecycle-from-finding-to-closure</link>
+      <guid isPermaLink="true">https://auditee.site/blog/capa-lifecycle-from-finding-to-closure</guid>
+      <pubDate>Sat, 21 Mar 2026 00:00:00 GMT</pubDate>
+      <description>A practical CAPA workflow that satisfies ISO 9001, ISO 13485, FDA 21 CFR 820, IATF 16949, AS9100 and SOC 2 — with realistic timelines and the documentation auditors expect.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>CAPA</category>
+      <category>Quality Management</category>
+      <category>Compliance</category>
+      <category>ISO 9001</category>
+      <category>FDA</category>
+    </item>
+    <item>
       <title>HIPAA Software Compliance: The 2026 Requirements Checklist</title>
       <link>https://auditee.site/blog/hipaa-software-compliance-requirements-checklist</link>
       <guid isPermaLink="true">https://auditee.site/blog/hipaa-software-compliance-requirements-checklist</guid>
@@ -139,6 +191,84 @@
       <category>Healthcare</category>
       <category>Compliance</category>
       <category>Checklist</category>
+    </item>
+    <item>
+      <title>Continuous Compliance vs Quarterly Audits: Why the Old Model Is Dead</title>
+      <link>https://auditee.site/blog/continuous-compliance-vs-quarterly-audits</link>
+      <guid isPermaLink="true">https://auditee.site/blog/continuous-compliance-vs-quarterly-audits</guid>
+      <pubDate>Thu, 12 Mar 2026 00:00:00 GMT</pubDate>
+      <description>Why annual or quarterly audits cost more, surface fewer issues, and break more releases than continuous compliance — and the operating model that replaces them.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>Continuous Compliance</category>
+      <category>Audits</category>
+      <category>DevSecOps</category>
+      <category>SOC 2</category>
+      <category>ISO 27001</category>
+    </item>
+    <item>
+      <title>PDLC vs SDLC: Why Product Lifecycle Wins for Regulated Teams</title>
+      <link>https://auditee.site/blog/pdlc-vs-sdlc-for-regulated-teams</link>
+      <guid isPermaLink="true">https://auditee.site/blog/pdlc-vs-sdlc-for-regulated-teams</guid>
+      <pubDate>Wed, 04 Mar 2026 00:00:00 GMT</pubDate>
+      <description>SDLC is necessary but not sufficient in a regulated environment. The PDLC view — Ideation through Governance — is what survives audits, payer demands, and post-market surveillance.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>PDLC</category>
+      <category>SDLC</category>
+      <category>Product Management</category>
+      <category>Compliance</category>
+      <category>MedTech</category>
+    </item>
+    <item>
+      <title>AI Hallucinations in Regulated Software: A Compliance Leader&apos;s Playbook</title>
+      <link>https://auditee.site/blog/ai-hallucinations-in-regulated-software-playbook</link>
+      <guid isPermaLink="true">https://auditee.site/blog/ai-hallucinations-in-regulated-software-playbook</guid>
+      <pubDate>Tue, 24 Feb 2026 00:00:00 GMT</pubDate>
+      <description>Why generic LLMs are a regulatory liability for safety-critical work, and what grounding architecture — citations, retrieval, deterministic constraints — auditors will accept.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>AI</category>
+      <category>LLM</category>
+      <category>Compliance</category>
+      <category>EU AI Act</category>
+      <category>Governance</category>
+    </item>
+    <item>
+      <title>5G Network Compliance: A Practical 3GPP + ETSI + NIST Mapping</title>
+      <link>https://auditee.site/blog/5g-network-compliance-3gpp-etsi-mapping</link>
+      <guid isPermaLink="true">https://auditee.site/blog/5g-network-compliance-3gpp-etsi-mapping</guid>
+      <pubDate>Sun, 15 Feb 2026 00:00:00 GMT</pubDate>
+      <description>How operators and 5G core vendors map their architecture against 3GPP TS 23.501, 33.501, ETSI EN 303 645, and NIST CSF — and where shared traceability cuts months off launch.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>Telecom</category>
+      <category>5G</category>
+      <category>3GPP</category>
+      <category>ETSI</category>
+      <category>NIST CSF</category>
+      <category>Compliance</category>
+    </item>
+    <item>
+      <title>EU AI Act 2026: A Software Team Checklist for High-Risk Systems</title>
+      <link>https://auditee.site/blog/eu-ai-act-2026-software-team-checklist</link>
+      <guid isPermaLink="true">https://auditee.site/blog/eu-ai-act-2026-software-team-checklist</guid>
+      <pubDate>Fri, 06 Feb 2026 00:00:00 GMT</pubDate>
+      <description>What software teams shipping AI features into the EU must do in 2026: risk classification, technical documentation, logging, human oversight, conformity assessment, and post-market monitoring.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>EU AI Act</category>
+      <category>AI Governance</category>
+      <category>Compliance</category>
+      <category>Risk Management</category>
+    </item>
+    <item>
+      <title>From Jira Tickets to Compliant Requirements: A Working Conversion Guide</title>
+      <link>https://auditee.site/blog/from-jira-tickets-to-compliant-requirements</link>
+      <guid isPermaLink="true">https://auditee.site/blog/from-jira-tickets-to-compliant-requirements</guid>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 GMT</pubDate>
+      <description>Why Jira and similar issue trackers are not requirements management — and a step-by-step conversion path that preserves engineering velocity while meeting ISO/IEC/IEEE 29148.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>Requirements</category>
+      <category>Jira</category>
+      <category>ALM</category>
+      <category>ISO/IEC 29148</category>
+      <category>DevOps</category>
     </item>
   </channel>
 </rss>

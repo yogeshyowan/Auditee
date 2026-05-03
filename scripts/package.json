@@ -7,6 +7,7 @@
     "hello": "tsx ./src/hello.ts",
     "seed": "tsx ./src/seed.ts",
     "seed:demo": "tsx ./src/seed-demo-projects.ts",
+    "regen:blog-feeds": "tsx ./src/regenerate-blog-feeds.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

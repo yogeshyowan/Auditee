@@ -21,6 +21,7 @@
       "content_text": "Most teams audit one slice — code, or specs, or controls. The strongest engineering organizations audit the whole Product Development Lifecycle continuously. Here's the working checklist we use with enterprise customers, plus a step-by-step setup in Auditee.",
       "summary": "A practitioner's checklist for auditing the full Product Development Lifecycle — requirements coverage, code-to-spec traceability, ASPICE / ISO 26262 / IEC 62304 / SOC 2 / HIPAA compliance, and CAPA workflows. Step-by-step setup with Auditee.",
       "date_published": "2026-04-30T00:00:00.000Z",
+      "date_modified": "2026-04-30T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -32,28 +33,6 @@
         "Compliance",
         "Checklist",
         "PDLC"
-      ],
-      "language": "en"
-    },
-    {
-      "id": "https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools",
-      "url": "https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools",
-      "title": "Why Spreadsheets Still Beat Requirements Management Tools (and How AI Finally Fixes It)",
-      "content_text": "Forty years after IBM Rational shipped DOORS, the modal requirements tool in industry is still… a spreadsheet. That isn't a tooling failure — it's a UX, speed and lock-in failure. AI changes the equation.",
-      "summary": "After 40 years of DOORS, Jama and Polarion, most teams still default to Excel for requirements. Here's why — and what an AI-native RM platform has to do differently to win.",
-      "date_published": "2026-04-22T00:00:00.000Z",
-      "authors": [
-        {
-          "name": "Auditee Research",
-          "url": "https://auditee.site"
-        }
-      ],
-      "tags": [
-        "Requirements Management",
-        "AI",
-        "DOORS",
-        "Jama",
-        "Tooling"
       ],
       "language": "en"
     },
@@ -74,17 +53,19 @@
       "tags": [
         "Requirements Management",
         "AI",
-        ", "
+        "Buyer's Guide",
+        "Enterprise"
       ],
       "language": "en"
     },
     {
-      "id": "https://auditee.site/blog/legacy-cobol-modernization-with-ai",
-      "url": "https://auditee.site/blog/legacy-cobol-modernization-with-ai",
-      "title": "Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture",
-      "content_text": "Most legacy modernization programs fail because they start by asking 'how do we rewrite this?'. The right question is 'what does this actually do?' — and AI is the first technology that can answer it at scale.",
-      "summary": "A practical playbook for turning 30-year-old COBOL, mainframe Java, PL/SQL and C++ estates into a modern, requirement-driven, traceable codebase — using AI reverse-engineering, not a rewrite.",
-      "date_published": "2026-04-15T00:00:00.000Z",
+      "id": "https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools",
+      "url": "https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools",
+      "title": "Why Spreadsheets Still Beat Requirements Management Tools (and How AI Finally Fixes It)",
+      "content_text": "Forty years after IBM Rational shipped DOORS, the modal requirements tool in industry is still… a spreadsheet. That isn't a tooling failure — it's a UX, speed and lock-in failure. AI changes the equation.",
+      "summary": "After 40 years of DOORS, Jama and Polarion, most teams still default to Excel for requirements. Here's why — and what an AI-native RM platform has to do differently to win.",
+      "date_published": "2026-04-22T00:00:00.000Z",
+      "date_modified": "2026-04-22T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -92,10 +73,34 @@
         }
       ],
       "tags": [
-        "Legacy Modernization",
+        "Requirements Management",
         "AI",
-        "COBOL",
-        "Architecture"
+        "DOORS",
+        "Jama",
+        "Tooling"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "https://auditee.site/blog/iso-26262-asil-classification-practical-guide",
+      "url": "https://auditee.site/blog/iso-26262-asil-classification-practical-guide",
+      "title": "ISO 26262 ASIL Classification: A Practical Guide for Software Teams (2026)",
+      "content_text": "ASIL classification governs every safety argument in your automotive software. Get it wrong and you over-engineer Class B code at ASIL D cost — or under-engineer Class C and lose the audit.",
+      "summary": "How to classify automotive software items under ISO 26262 — Severity × Exposure × Controllability, ASIL decomposition, and the documentation auditors actually look for.",
+      "date_published": "2026-04-22T00:00:00.000Z",
+      "date_modified": "2026-04-22T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "ISO 26262",
+        "Automotive",
+        "Functional Safety",
+        "Compliance",
+        "Standards"
       ],
       "language": "en"
     },
@@ -106,6 +111,7 @@
       "content_text": "IEC 62304 governs every line of software inside a medical device. Here's what the standard actually demands — by class, by phase, by deliverable — and how AI-native platforms close the gap fast.",
       "summary": "A practical guide to IEC 62304 — software safety classification (Class A/B/C), required deliverables, traceability obligations, and how AI-native tools shorten compliance from months to weeks.",
       "date_published": "2026-04-15T00:00:00.000Z",
+      "date_modified": "2026-04-15T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -121,12 +127,35 @@
       "language": "en"
     },
     {
+      "id": "https://auditee.site/blog/legacy-cobol-modernization-with-ai",
+      "url": "https://auditee.site/blog/legacy-cobol-modernization-with-ai",
+      "title": "Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture",
+      "content_text": "Most legacy modernization programs fail because they start by asking 'how do we rewrite this?'. The right question is 'what does this actually do?' — and AI is the first technology that can answer it at scale.",
+      "summary": "A practical playbook for turning 30-year-old COBOL, mainframe Java, PL/SQL and C++ estates into a modern, requirement-driven, traceable codebase — using AI reverse-engineering, not a rewrite.",
+      "date_published": "2026-04-15T00:00:00.000Z",
+      "date_modified": "2026-04-15T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "Legacy Modernization",
+        "AI",
+        "COBOL",
+        "Architecture"
+      ],
+      "language": "en"
+    },
+    {
       "id": "https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose",
       "url": "https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose",
       "title": "SOC 2 vs ISO 27001: Which Compliance Framework Should You Choose?",
       "content_text": "SOC 2 and ISO 27001 are the two most-asked-for compliance attestations on enterprise procurement checklists. Both are achievable; many companies need both. Here's how to choose — and how to do them efficiently.",
       "summary": "A side-by-side comparison of SOC 2 and ISO 27001 — scope, audit cadence, geographic recognition, cost, and how to satisfy both with a single set of controls.",
       "date_published": "2026-04-08T00:00:00.000Z",
+      "date_modified": "2026-04-08T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -142,12 +171,36 @@
       "language": "en"
     },
     {
+      "id": "https://auditee.site/blog/do-178c-software-certification-2026-primer",
+      "url": "https://auditee.site/blog/do-178c-software-certification-2026-primer",
+      "title": "DO-178C Software Certification: A 2026 Primer for Avionics Teams",
+      "content_text": "DO-178C is the unforgiving cousin of IEC 62304 — 71 objectives, 5 design assurance levels, and a certification authority that will not accept ambiguity. Here's the 2026 playbook.",
+      "summary": "What DO-178C actually requires by Design Assurance Level (DAL A–E), the 71 objectives auditors check, and how AI-native traceability shortens certification by 40%.",
+      "date_published": "2026-04-08T00:00:00.000Z",
+      "date_modified": "2026-04-08T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "DO-178C",
+        "Avionics",
+        "Aerospace",
+        "Compliance",
+        "Standards"
+      ],
+      "language": "en"
+    },
+    {
       "id": "https://auditee.site/blog/generating-requirements-from-legacy-code",
       "url": "https://auditee.site/blog/generating-requirements-from-legacy-code",
       "title": "Generating Requirements from Legacy Code: A Modernization Playbook",
       "content_text": "Most enterprise legacy systems have lost their authors and their docs. AI can read the code and produce a structured, standards-aware requirements baseline — the prerequisite for any modernization program.",
       "summary": "How to recover requirements from undocumented legacy code (COBOL, Java EE, .NET Framework, mainframe SQL) using AI — and turn the output into a standards-conformant baseline you can actually maintain.",
       "date_published": "2026-04-01T00:00:00.000Z",
+      "date_modified": "2026-04-01T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -169,6 +222,7 @@
       "content_text": "Skip the LinkedIn-influencer prompt lists. These are 15 prompts Senior BAs are actually pasting into ChatGPT, Claude and (better) into structured tools every day, with the failure modes and the fixes.",
       "summary": "A working library of 15 AI prompts that Senior Business Analysts use for requirements discovery, classification, gap detection, BRD/PRD drafting and stakeholder validation — copy, paste, ship.",
       "date_published": "2026-04-01T00:00:00.000Z",
+      "date_modified": "2026-04-01T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -184,12 +238,35 @@
       "language": "en"
     },
     {
+      "id": "https://auditee.site/blog/bidirectional-traceability-matrix-complete-guide",
+      "url": "https://auditee.site/blog/bidirectional-traceability-matrix-complete-guide",
+      "title": "The Bidirectional Traceability Matrix: A Complete Guide with Examples",
+      "content_text": "Every regulated standard requires bidirectional traceability. Almost every team builds it as a spreadsheet — and almost every team fails the audit because of it. Here's the modern way.",
+      "summary": "What a true bidirectional traceability matrix looks like, why spreadsheet matrices always rot, and how a graph-native approach makes traceability a side-effect of doing the work.",
+      "date_published": "2026-03-30T00:00:00.000Z",
+      "date_modified": "2026-03-30T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "Traceability",
+        "Requirements",
+        "Compliance",
+        "Standards"
+      ],
+      "language": "en"
+    },
+    {
       "id": "https://auditee.site/blog/top-10-ibm-doors-alternatives-2026",
       "url": "https://auditee.site/blog/top-10-ibm-doors-alternatives-2026",
       "title": "Top 10 IBM DOORS Alternatives in 2026 (and How to Migrate)",
       "content_text": "IBM Rational DOORS Classic is approaching its second decade past end-of-major-development. If you're looking to migrate, here's a clear-eyed comparison of the ten most credible alternatives.",
       "summary": "A comprehensive comparison of the leading alternatives to IBM Rational DOORS in 2026 — Jama, Polarion, codeBeamer, Helix RM, Visure, DOORS Next, Jira plugins, and AI-native platforms like Auditee.",
       "date_published": "2026-03-25T00:00:00.000Z",
+      "date_modified": "2026-03-25T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -211,6 +288,7 @@
       "content_text": "Industry research from IBM, Standish, IEEE and Gartner has converged on the same answer for 25 years: requirements defects are the single most expensive class of bug. Here's the math, with sources.",
       "summary": "A research-backed breakdown of what bad requirements actually cost: rework, audit findings, schedule slips, defect leakage and customer churn. With per-team and per-org numbers you can defend.",
       "date_published": "2026-03-25T00:00:00.000Z",
+      "date_modified": "2026-03-25T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -226,12 +304,36 @@
       "language": "en"
     },
     {
+      "id": "https://auditee.site/blog/capa-lifecycle-from-finding-to-closure",
+      "url": "https://auditee.site/blog/capa-lifecycle-from-finding-to-closure",
+      "title": "The CAPA Lifecycle: From Audit Finding to Verified Closure",
+      "content_text": "Corrective and Preventive Actions are the immune system of a regulated organisation. Done well, they kill recurring defects forever. Done poorly, they bury teams in paperwork and still let issues recur.",
+      "summary": "A practical CAPA workflow that satisfies ISO 9001, ISO 13485, FDA 21 CFR 820, IATF 16949, AS9100 and SOC 2 — with realistic timelines and the documentation auditors expect.",
+      "date_published": "2026-03-21T00:00:00.000Z",
+      "date_modified": "2026-03-21T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "CAPA",
+        "Quality Management",
+        "Compliance",
+        "ISO 9001",
+        "FDA"
+      ],
+      "language": "en"
+    },
+    {
       "id": "https://auditee.site/blog/hipaa-software-compliance-requirements-checklist",
       "url": "https://auditee.site/blog/hipaa-software-compliance-requirements-checklist",
       "title": "HIPAA Software Compliance: The 2026 Requirements Checklist",
       "content_text": "HIPAA isn't a checkbox — it's a continuous program. Here's the working checklist we use with healthcare-software customers, broken into Administrative, Physical, and Technical Safeguards, plus 2025 NPRM updates.",
       "summary": "A practitioner's checklist for HIPAA Security and Privacy Rule compliance in software products — Administrative, Physical, and Technical Safeguards, BAAs, breach notification, and 2024–2025 NPRM updates.",
       "date_published": "2026-03-18T00:00:00.000Z",
+      "date_modified": "2026-03-18T00:00:00.000Z",
       "authors": [
         {
           "name": "Auditee Research",
@@ -243,6 +345,144 @@
         "Healthcare",
         "Compliance",
         "Checklist"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "https://auditee.site/blog/continuous-compliance-vs-quarterly-audits",
+      "url": "https://auditee.site/blog/continuous-compliance-vs-quarterly-audits",
+      "title": "Continuous Compliance vs Quarterly Audits: Why the Old Model Is Dead",
+      "content_text": "Quarterly audits compress 90 days of work into the last two weeks of the quarter, ship surprises to the executive team, and leave compliance posture stale 87 of every 90 days. Continuous compliance flips the model.",
+      "summary": "Why annual or quarterly audits cost more, surface fewer issues, and break more releases than continuous compliance — and the operating model that replaces them.",
+      "date_published": "2026-03-12T00:00:00.000Z",
+      "date_modified": "2026-03-12T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "Continuous Compliance",
+        "Audits",
+        "DevSecOps",
+        "SOC 2",
+        "ISO 27001"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "https://auditee.site/blog/pdlc-vs-sdlc-for-regulated-teams",
+      "url": "https://auditee.site/blog/pdlc-vs-sdlc-for-regulated-teams",
+      "title": "PDLC vs SDLC: Why Product Lifecycle Wins for Regulated Teams",
+      "content_text": "Engineering organisations love SDLC because it ends at release. Regulators do not. PDLC carries the artefact through governance and post-market — and that is exactly where most software fails its audit.",
+      "summary": "SDLC is necessary but not sufficient in a regulated environment. The PDLC view — Ideation through Governance — is what survives audits, payer demands, and post-market surveillance.",
+      "date_published": "2026-03-04T00:00:00.000Z",
+      "date_modified": "2026-03-04T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "PDLC",
+        "SDLC",
+        "Product Management",
+        "Compliance",
+        "MedTech"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "https://auditee.site/blog/ai-hallucinations-in-regulated-software-playbook",
+      "url": "https://auditee.site/blog/ai-hallucinations-in-regulated-software-playbook",
+      "title": "AI Hallucinations in Regulated Software: A Compliance Leader's Playbook",
+      "content_text": "An LLM that confidently cites a non-existent requirement is more dangerous than no LLM at all. Here is the architecture and operating model that makes AI usable in a regulated environment.",
+      "summary": "Why generic LLMs are a regulatory liability for safety-critical work, and what grounding architecture — citations, retrieval, deterministic constraints — auditors will accept.",
+      "date_published": "2026-02-24T00:00:00.000Z",
+      "date_modified": "2026-02-24T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "AI",
+        "LLM",
+        "Compliance",
+        "EU AI Act",
+        "Governance"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "https://auditee.site/blog/5g-network-compliance-3gpp-etsi-mapping",
+      "url": "https://auditee.site/blog/5g-network-compliance-3gpp-etsi-mapping",
+      "title": "5G Network Compliance: A Practical 3GPP + ETSI + NIST Mapping",
+      "content_text": "Launching a 5G core means satisfying half a dozen overlapping standards bodies. The teams who survive build a single requirement graph and let the mappings derive from it.",
+      "summary": "How operators and 5G core vendors map their architecture against 3GPP TS 23.501, 33.501, ETSI EN 303 645, and NIST CSF — and where shared traceability cuts months off launch.",
+      "date_published": "2026-02-15T00:00:00.000Z",
+      "date_modified": "2026-02-15T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "Telecom",
+        "5G",
+        "3GPP",
+        "ETSI",
+        "NIST CSF",
+        "Compliance"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "https://auditee.site/blog/eu-ai-act-2026-software-team-checklist",
+      "url": "https://auditee.site/blog/eu-ai-act-2026-software-team-checklist",
+      "title": "EU AI Act 2026: A Software Team Checklist for High-Risk Systems",
+      "content_text": "If your product reaches an EU user and contains an AI system, the EU AI Act applies. Here's the practical 2026 checklist — by role, by stage, by deliverable.",
+      "summary": "What software teams shipping AI features into the EU must do in 2026: risk classification, technical documentation, logging, human oversight, conformity assessment, and post-market monitoring.",
+      "date_published": "2026-02-06T00:00:00.000Z",
+      "date_modified": "2026-02-06T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "EU AI Act",
+        "AI Governance",
+        "Compliance",
+        "Risk Management"
+      ],
+      "language": "en"
+    },
+    {
+      "id": "https://auditee.site/blog/from-jira-tickets-to-compliant-requirements",
+      "url": "https://auditee.site/blog/from-jira-tickets-to-compliant-requirements",
+      "title": "From Jira Tickets to Compliant Requirements: A Working Conversion Guide",
+      "content_text": "Engineering organisations love Jira because it ships work. Auditors hate Jira because it does not specify it. Here is how to bridge the two without slowing the team down.",
+      "summary": "Why Jira and similar issue trackers are not requirements management — and a step-by-step conversion path that preserves engineering velocity while meeting ISO/IEC/IEEE 29148.",
+      "date_published": "2026-01-28T00:00:00.000Z",
+      "date_modified": "2026-01-28T00:00:00.000Z",
+      "authors": [
+        {
+          "name": "Auditee Research",
+          "url": "https://auditee.site"
+        }
+      ],
+      "tags": [
+        "Requirements",
+        "Jira",
+        "ALM",
+        "ISO/IEC 29148",
+        "DevOps"
       ],
       "language": "en"
     }
