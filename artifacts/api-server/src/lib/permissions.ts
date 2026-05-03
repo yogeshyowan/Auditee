@@ -80,7 +80,17 @@ export function permissionsFor(role: string | null | undefined): Permissions {
  * Audit logs and SSO are Enterprise-only. Free and Professional get a clear
  * 402-style upgrade prompt instead of silent failure.
  */
-const ENTERPRISE_ONLY_FEATURES = ["audit_log", "sso"] as const;
+const ENTERPRISE_ONLY_FEATURES = [
+  "audit_log",
+  "sso",
+  "saml",
+  "scim",
+  "siem",
+  "byo_llm",
+  "mfa_policy",
+  "data_residency",
+  "cmk",
+] as const;
 export type EnterpriseFeature = (typeof ENTERPRISE_ONLY_FEATURES)[number];
 
 export function planAllows(plan: PlanTier, feature: EnterpriseFeature): boolean {

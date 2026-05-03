@@ -29,6 +29,9 @@ import billingRouter from "./billing";
 import customStandardsRouter from "./customStandards";
 import gdprRouter from "./gdpr";
 import tutorialTtsRouter from "./tutorialTts";
+import ssoRouter from "./sso";
+import scimRouter from "./scim";
+import enterpriseRouter from "./enterprise";
 
 const router: IRouter = Router();
 
@@ -62,5 +65,8 @@ router.use(billingRouter);
 router.use(customStandardsRouter);
 router.use(gdprRouter);
 router.use(tutorialTtsRouter);
+router.use(ssoRouter);
+router.use(scimRouter);
+router.use(enterpriseRouter);
 
 export default router;

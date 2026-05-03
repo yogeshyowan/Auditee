@@ -29,6 +29,7 @@ import {
   FileBadge2,
   Compass,
   Mailbox,
+  Building2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TutorialDrawer } from "@/components/TutorialDrawer";
@@ -70,6 +71,7 @@ const NAV_ITEMS = [
   { href: "/app/members", label: "Project Members", icon: Users },
   { href: "/app/audit-logs", label: "Audit Log", icon: FileSearch },
   { href: "/app/sso", label: "SSO & Security", icon: KeyRound },
+  { href: "/app/enterprise", label: "Enterprise Settings", icon: Building2 },
 ];
 
 // Internal-admin-only nav items. These are gated by both the workspace

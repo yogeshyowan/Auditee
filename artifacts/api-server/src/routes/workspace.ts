@@ -51,6 +51,13 @@ router.get("/workspace/me", requireAuth, requireWorkspace, async (req, res) => {
     enterpriseFeatures: {
       auditLog: planAllows(planTier, "audit_log"),
       sso: planAllows(planTier, "sso"),
+      saml: planAllows(planTier, "saml"),
+      scim: planAllows(planTier, "scim"),
+      siem: planAllows(planTier, "siem"),
+      byo_llm: planAllows(planTier, "byo_llm"),
+      mfa_policy: planAllows(planTier, "mfa_policy"),
+      data_residency: planAllows(planTier, "data_residency"),
+      cmk: planAllows(planTier, "cmk"),
     },
   });
 });

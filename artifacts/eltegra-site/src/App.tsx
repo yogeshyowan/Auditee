@@ -133,6 +133,7 @@ import Templates from "@/pages/app/Templates";
 import AuditLogs from "@/pages/app/AuditLogs";
 import AdminLeads from "@/pages/app/AdminLeads";
 import Sso from "@/pages/app/Sso";
+import EnterpriseSettings from "@/pages/app/EnterpriseSettings";
 import ProjectMembers from "@/pages/app/ProjectMembers";
 import Security from "@/pages/Security";
 
@@ -257,6 +258,7 @@ function AppRoutes() {
           <Route path="/app/admin/leads" component={AdminLeads} />
           <Route path="/app/members" component={ProjectMembers} />
           <Route path="/app/sso" component={Sso} />
+          <Route path="/app/enterprise" component={EnterpriseSettings} />
           <Route component={NotFound} />
         </Switch>
       </AppLayout>

@@ -57,6 +57,20 @@ export const workspacesTable = pgTable(
     creditsUsed: integer("credits_used").notNull().default(0),
     ssoEnabled: boolean("sso_enabled").notNull().default(false),
     ssoDomain: text("sso_domain"),
+    // ─── Enterprise: SAML 2.0 IdP config (uploaded metadata) ────────────────
+    samlIdpEntityId: text("saml_idp_entity_id"),
+    samlIdpSsoUrl: text("saml_idp_sso_url"),
+    samlIdpX509Cert: text("saml_idp_x509_cert"),
+    samlIdpMetadataXml: text("saml_idp_metadata_xml"),
+    // ─── Enterprise: MFA enforcement policy ────────────────────────────────
+    mfaRequired: boolean("mfa_required").notNull().default(false),
+    // ─── Enterprise: Data residency (informational + future routing) ───────
+    dataRegion: text("data_region").notNull().default("us"),
+    // ─── Enterprise: SIEM / audit-log streaming ────────────────────────────
+    siemWebhookUrl: text("siem_webhook_url"),
+    siemWebhookSecret: text("siem_webhook_secret"),
+    // ─── Enterprise: Customer-managed encryption key id (KMS metadata) ────
+    cmkKid: text("cmk_kid"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

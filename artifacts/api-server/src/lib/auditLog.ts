@@ -1,7 +1,9 @@
 import { randomUUID, createHash } from "node:crypto";
 import type { Request } from "express";
-import { db, auditLogsTable } from "@workspace/db";
+import { db, auditLogsTable, workspacesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { logger } from "./logger";
+import { dispatchToSiem } from "./siemDispatch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,8 +91,58 @@ async function insertAuditRow(
       integrityHash,
       createdAt,
     });
+
+    // Best-effort SIEM streaming. Skipped for the SYSTEM sentinel workspace
+    // and short-circuits without a DB hit for the common case (no webhook).
+    if (workspaceId !== "SYSTEM") {
+      void streamToSiem({
+        id,
+        workspaceId,
+        actorUserId,
+        actorEmail,
+        action,
+        resourceType: resourceType ?? null,
+        resourceId: resourceId ?? null,
+        metadata: metadata ?? null,
+        ip,
+        userAgent: typeof userAgent === "string" ? userAgent.slice(0, 500) : null,
+        integrityHash,
+        createdAt: createdAt.toISOString(),
+      });
+    }
   } catch (err) {
     logger.error({ err }, "[audit_log] insert failed");
+  }
+}
+
+async function streamToSiem(event: {
+  id: string;
+  workspaceId: string;
+  actorUserId: string;
+  actorEmail: string | null;
+  action: string;
+  resourceType: string | null;
+  resourceId: string | null;
+  metadata: Record<string, unknown> | null;
+  ip: string | null;
+  userAgent: string | null;
+  integrityHash: string;
+  createdAt: string;
+}): Promise<void> {
+  try {
+    const rows = await db
+      .select({
+        url: workspacesTable.siemWebhookUrl,
+        secret: workspacesTable.siemWebhookSecret,
+      })
+      .from(workspacesTable)
+      .where(eq(workspacesTable.id, event.workspaceId))
+      .limit(1);
+    const cfg = rows[0];
+    if (!cfg?.url) return;
+    await dispatchToSiem(cfg.url, cfg.secret, event);
+  } catch (err) {
+    logger.warn({ err, eventId: event.id }, "[siem] config lookup failed");
   }
 }
 

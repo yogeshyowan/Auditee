@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, integer, jsonb } from "drizzle-orm/pg-core";
 
 // A configured source from which project artifacts are ingested for auditing.
 // kind: github | zip | folder | jira | jenkins | aws_s3 | gdrive | alm | cloud_server | url
+//     | confluence | gitlab | bitbucket | slack | msteams | servicenow
 // config holds connection details (tokens are NOT returned to the client after creation).
 // status: idle | syncing | ready | error
 export const projectSourcesTable = pgTable("project_sources", {

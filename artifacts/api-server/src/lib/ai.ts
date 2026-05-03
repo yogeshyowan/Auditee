@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
+import { getWorkspaceLlmConfig, type ResolvedLlmConfig } from "./llmConfig.js";
 
 const OPENAI_MODEL = "gpt-4o";
 const OPENROUTER_MODEL = "google/gemini-2.5-flash";
@@ -175,15 +176,45 @@ function anthropicProvider(
   };
 }
 
+/**
+ * Builds a per-workspace BYO-LLM provider, if the workspace has one enabled.
+ * The BYO provider is always tried FIRST in the chain; platform-managed
+ * providers remain as automatic fallback for resilience.
+ */
+function buildByoProvider(
+  cfg: ResolvedLlmConfig | null,
+  mode: "json" | "text",
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens: number,
+): Provider<string> | null {
+  if (!cfg || !cfg.apiKey) return null;
+  const provider = cfg.provider;
+  if (provider === "anthropic") {
+    const client = new Anthropic({ apiKey: cfg.apiKey, baseURL: cfg.baseUrl ?? undefined });
+    const model = cfg.model ?? ANTHROPIC_HAIKU_MODEL;
+    return anthropicProvider(client, model, systemPrompt, userPrompt, maxTokens);
+  }
+  // OpenAI-compatible: openai, azure_openai, bedrock (via gateway), openrouter, custom
+  const client = new OpenAI({ apiKey: cfg.apiKey, baseURL: cfg.baseUrl ?? undefined });
+  const model = cfg.model ?? OPENAI_MODEL;
+  const name = `byo:${provider}`;
+  return mode === "json"
+    ? openAICompatibleJsonProvider(name, client, model, systemPrompt, userPrompt, maxTokens)
+    : openAICompatibleTextProvider(name, client, model, systemPrompt, userPrompt, maxTokens);
+}
+
 export async function jsonCompletion<T>(
   systemPrompt: string,
   userPrompt: string,
-  opts?: { maxTokens?: number },
+  opts?: { maxTokens?: number; workspaceId?: string | null },
 ): Promise<T> {
   const maxTokens = opts?.maxTokens ?? 8192;
   const jsonSystemPrompt = `${systemPrompt}\n\nRespond with a single valid JSON object and no other text.`;
+  const byoCfg = await getWorkspaceLlmConfig(opts?.workspaceId);
 
   const chain: Array<Provider<string> | null> = [
+    buildByoProvider(byoCfg, "json", jsonSystemPrompt, userPrompt, maxTokens),
     openAICompatibleJsonProvider("openai", getOpenAI(), OPENAI_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
     openAICompatibleJsonProvider(
       "openrouter",
@@ -203,10 +234,13 @@ export async function jsonCompletion<T>(
 export async function textCompletion(
   systemPrompt: string,
   userPrompt: string,
+  opts?: { workspaceId?: string | null },
 ): Promise<string> {
   const maxTokens = 8192;
+  const byoCfg = await getWorkspaceLlmConfig(opts?.workspaceId);
 
   const chain: Array<Provider<string> | null> = [
+    buildByoProvider(byoCfg, "text", systemPrompt, userPrompt, maxTokens),
     openAICompatibleTextProvider("openai", getOpenAI(), OPENAI_MODEL, systemPrompt, userPrompt, maxTokens),
     openAICompatibleTextProvider("openrouter", getOpenRouter(), OPENROUTER_MODEL, systemPrompt, userPrompt, maxTokens),
     anthropicProvider(getAnthropic(), ANTHROPIC_HAIKU_MODEL, systemPrompt, userPrompt, maxTokens),

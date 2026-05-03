@@ -262,6 +262,152 @@ export async function ingestRemoteSystem(
       const text = `Work item ${w.id}\nURL: ${w.url}`;
       files.push({ path: `alm/${w.id}.txt`, size: text.length, content: Buffer.from(text, "utf8") });
     }
+  } else if (kind === "confluence") {
+    // Atlassian Confluence Cloud REST API v2 — pull pages from a space.
+    const host = String(cfg.host || "").replace(/\/$/, "");
+    const spaceKey = String(cfg.spaceKey || "");
+    const auth = cfg.email && cfg.token ? `Basic ${Buffer.from(`${cfg.email}:${cfg.token}`).toString("base64")}` : "";
+    if (!host || !spaceKey || !auth) throw new Error("Confluence: host, spaceKey, email and token are required");
+    // Resolve the space id from the human-friendly key.
+    const spacesResp = await safeFetch(`${host}/wiki/api/v2/spaces?keys=${encodeURIComponent(spaceKey)}`, {
+      headers: { Authorization: auth, Accept: "application/json" },
+    });
+    if (!spacesResp.ok) throw new Error(`Confluence: HTTP ${spacesResp.status} resolving space`);
+    const spacesJson = (await spacesResp.json()) as { results: Array<{ id: string; key: string; name: string }> };
+    const space = spacesJson.results?.[0];
+    if (!space) throw new Error(`Confluence: space "${spaceKey}" not found`);
+    const pagesResp = await safeFetch(
+      `${host}/wiki/api/v2/spaces/${space.id}/pages?limit=100&body-format=storage`,
+      { headers: { Authorization: auth, Accept: "application/json" } },
+    );
+    if (!pagesResp.ok) throw new Error(`Confluence: HTTP ${pagesResp.status} listing pages`);
+    const pagesJson = (await pagesResp.json()) as {
+      results: Array<{ id: string; title: string; body?: { storage?: { value?: string } } }>;
+    };
+    summary = `${pagesJson.results.length} page(s) in ${space.key}`;
+    for (const page of pagesJson.results) {
+      const body = page.body?.storage?.value ?? "";
+      const text = `# ${page.title}\n\nPage ID: ${page.id}\nSpace: ${space.key} (${space.name})\n\n${body}`;
+      const safe = page.title.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 120) || page.id;
+      files.push({ path: `confluence/${space.key}/${safe}.html`, size: text.length, content: Buffer.from(text, "utf8") });
+    }
+  } else if (kind === "gitlab") {
+    // GitLab REST API v4 — list project repository tree, fetch text blobs.
+    const host = String(cfg.host || "https://gitlab.com").replace(/\/$/, "");
+    const projectId = encodeURIComponent(String(cfg.projectId || cfg.projectPath || ""));
+    const token = String(cfg.token || "");
+    const branch = String(cfg.branch || "main");
+    if (!projectId || !token) throw new Error("GitLab: projectId (or projectPath) and token are required");
+    const headers = { "PRIVATE-TOKEN": token, Accept: "application/json" } as Record<string, string>;
+    const treeResp = await safeFetch(
+      `${host}/api/v4/projects/${projectId}/repository/tree?recursive=true&per_page=100&ref=${encodeURIComponent(branch)}`,
+      { headers },
+    );
+    if (!treeResp.ok) throw new Error(`GitLab: HTTP ${treeResp.status} listing tree`);
+    const tree = (await treeResp.json()) as Array<{ path: string; type: string; id: string }>;
+    const blobs = tree.filter((t) => t.type === "blob" && !shouldSkip(t.path)).slice(0, 800);
+    let fetched = 0;
+    for (const blob of blobs) {
+      let content: Buffer | null = null;
+      if (isText(blob.path)) {
+        try {
+          const r = await safeFetch(
+            `${host}/api/v4/projects/${projectId}/repository/files/${encodeURIComponent(blob.path)}/raw?ref=${encodeURIComponent(branch)}`,
+            { headers },
+          );
+          if (r.ok) content = Buffer.from(await r.arrayBuffer());
+          fetched++;
+        } catch {
+          content = null;
+        }
+      }
+      files.push({ path: blob.path, size: content?.length ?? 0, content });
+    }
+    summary = `${blobs.length} file(s) indexed from GitLab (${fetched} fetched)`;
+  } else if (kind === "bitbucket") {
+    // Bitbucket Cloud API 2.0 — list source files via /src endpoint.
+    const workspace = String(cfg.workspace || "");
+    const repo = String(cfg.repoSlug || "");
+    const branch = String(cfg.branch || "main");
+    const user = String(cfg.username || "");
+    const token = String(cfg.appPassword || cfg.token || "");
+    if (!workspace || !repo || !user || !token) throw new Error("Bitbucket: workspace, repoSlug, username and appPassword are required");
+    const auth = `Basic ${Buffer.from(`${user}:${token}`).toString("base64")}`;
+    const headers = { Authorization: auth, Accept: "application/json" } as Record<string, string>;
+    // Bitbucket /src is paginated; cap at first 5 pages × ~100 entries.
+    let url: string | null = `https://api.bitbucket.org/2.0/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(repo)}/src/${encodeURIComponent(branch)}/?pagelen=100`;
+    let pages = 0;
+    const entries: Array<{ path: string; type: string; size?: number }> = [];
+    while (url && pages < 5) {
+      const r: Response = await safeFetch(url, { headers });
+      if (!r.ok) throw new Error(`Bitbucket: HTTP ${r.status}`);
+      const j = (await r.json()) as { values: Array<{ path: string; type: string; size?: number }>; next?: string };
+      for (const v of j.values) entries.push(v);
+      url = j.next ?? null;
+      pages++;
+    }
+    summary = `${entries.length} file(s) listed from Bitbucket`;
+    for (const e of entries.filter((x) => x.type === "commit_file" && !shouldSkip(x.path)).slice(0, 400)) {
+      files.push({ path: e.path, size: e.size ?? 0, content: null });
+    }
+  } else if (kind === "slack") {
+    // Slack Web API — list channels and pull recent messages from a channel.
+    const token = String(cfg.token || "");
+    const channel = String(cfg.channel || "");
+    if (!token) throw new Error("Slack: bot token (xoxb-...) is required");
+    const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" } as Record<string, string>;
+    if (channel) {
+      const r = await safeFetch(`https://slack.com/api/conversations.history?channel=${encodeURIComponent(channel)}&limit=200`, { headers });
+      const j = (await r.json()) as { ok: boolean; messages?: Array<{ ts: string; user?: string; text?: string }>; error?: string };
+      if (!j.ok) throw new Error(`Slack: ${j.error || "history failed"}`);
+      summary = `${j.messages?.length ?? 0} message(s) from #${channel}`;
+      for (const m of j.messages ?? []) {
+        const text = `[${new Date(Number(m.ts.split(".")[0]) * 1000).toISOString()}] ${m.user ?? "?"}: ${m.text ?? ""}`;
+        files.push({ path: `slack/${channel}/${m.ts}.txt`, size: text.length, content: Buffer.from(text, "utf8") });
+      }
+    } else {
+      const r = await safeFetch(`https://slack.com/api/conversations.list?limit=200&exclude_archived=true`, { headers });
+      const j = (await r.json()) as { ok: boolean; channels?: Array<{ id: string; name: string; num_members?: number }>; error?: string };
+      if (!j.ok) throw new Error(`Slack: ${j.error || "conversations.list failed"}`);
+      summary = `${j.channels?.length ?? 0} channel(s) discovered`;
+      for (const c of j.channels ?? []) {
+        const text = `Channel: #${c.name}\nID: ${c.id}\nMembers: ${c.num_members ?? "?"}`;
+        files.push({ path: `slack/${c.name}.txt`, size: text.length, content: Buffer.from(text, "utf8") });
+      }
+    }
+  } else if (kind === "msteams") {
+    // Microsoft Graph — list channels of a team. Caller supplies a Graph access token.
+    const token = String(cfg.token || "");
+    const teamId = String(cfg.teamId || "");
+    if (!token || !teamId) throw new Error("MS Teams: token (Graph access token) and teamId are required");
+    const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" } as Record<string, string>;
+    const r = await safeFetch(`https://graph.microsoft.com/v1.0/teams/${encodeURIComponent(teamId)}/channels`, { headers });
+    if (!r.ok) throw new Error(`MS Teams: HTTP ${r.status}`);
+    const j = (await r.json()) as { value: Array<{ id: string; displayName: string; description?: string }> };
+    summary = `${j.value.length} channel(s) discovered`;
+    for (const ch of j.value) {
+      const text = `Channel: ${ch.displayName}\nID: ${ch.id}\nDescription: ${ch.description ?? "-"}`;
+      files.push({ path: `msteams/${ch.displayName.replace(/[^A-Za-z0-9._-]+/g, "_")}.txt`, size: text.length, content: Buffer.from(text, "utf8") });
+    }
+  } else if (kind === "servicenow") {
+    // ServiceNow REST Table API — list records from a table (e.g. incident, change_request).
+    const host = String(cfg.host || "").replace(/\/$/, "");
+    const table = String(cfg.table || "incident");
+    const user = String(cfg.user || "");
+    const password = String(cfg.password || "");
+    if (!host || !user || !password) throw new Error("ServiceNow: host, user and password are required");
+    const auth = `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}`;
+    const r = await safeFetch(`${host}/api/now/table/${encodeURIComponent(table)}?sysparm_limit=100`, {
+      headers: { Authorization: auth, Accept: "application/json" },
+    });
+    if (!r.ok) throw new Error(`ServiceNow: HTTP ${r.status}`);
+    const j = (await r.json()) as { result: Array<Record<string, any>> };
+    summary = `${j.result.length} ${table} record(s)`;
+    for (const rec of j.result) {
+      const id = String(rec.number ?? rec.sys_id ?? randomUUID());
+      const text = `# ${id}\n\n${JSON.stringify(rec, null, 2)}`;
+      files.push({ path: `servicenow/${table}/${id}.json`, size: text.length, content: Buffer.from(text, "utf8") });
+    }
   } else if (kind === "cloud_server" || kind === "url") {
     // Just probe reachability and capture metadata.
     const url = cfg.url || (cfg.host ? `https://${cfg.host}` : "");
