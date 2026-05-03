@@ -1,0 +1,201 @@
+# -----------------------------------------------------------------------------
+# Auditee — Self-hosted Enterprise Helm values
+# Stub values for air-gapped / VPC / on-prem installs. Replace placeholders
+# before applying. All secret material should be sourced from your secret
+# manager (External Secrets / Vault / SealedSecrets) — never commit real
+# values to git.
+# -----------------------------------------------------------------------------
+
+# Global toggles
+global:
+  # Internal cluster domain (used for service-to-service URLs).
+  clusterDomain: cluster.local
+  # Customer-supplied registry. Must mirror the official Auditee images.
+  imageRegistry: registry.example.internal
+  imagePullSecrets:
+    - name: auditee-registry
+
+# -----------------------------------------------------------------------------
+# API server
+# -----------------------------------------------------------------------------
+api:
+  replicaCount: 3
+  image:
+    repository: auditee/api-server
+    tag: "2026.05.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  env:
+    NODE_ENV: production
+    LOG_LEVEL: info
+    # Region pin — one of: in, eu, us, ap
+    DATA_REGION: in
+  envFromSecret: auditee-api-secrets
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 12
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+# -----------------------------------------------------------------------------
+# Web frontend (eltegra-site)
+# -----------------------------------------------------------------------------
+web:
+  replicaCount: 2
+  image:
+    repository: auditee/web
+    tag: "2026.05.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# -----------------------------------------------------------------------------
+# Ingress
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-internal
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  hosts:
+    - host: auditee.example.internal
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /
+          pathType: Prefix
+          service: web
+  tls:
+    - secretName: auditee-tls
+      hosts:
+        - auditee.example.internal
+
+# -----------------------------------------------------------------------------
+# PostgreSQL (Bitnami subchart, can be disabled if you bring your own RDS)
+# -----------------------------------------------------------------------------
+postgresql:
+  enabled: false
+  # If enabled, uncomment auth section and pin a chart version externally.
+  # auth:
+  #   existingSecret: auditee-postgresql
+
+# When postgresql.enabled is false, supply your own DATABASE_URL via the secret.
+externalDatabase:
+  # Reference to an existing Secret with key DATABASE_URL.
+  existingSecret: auditee-api-secrets
+
+# -----------------------------------------------------------------------------
+# Object storage (S3-compatible: AWS S3, MinIO, Ceph RGW)
+# -----------------------------------------------------------------------------
+objectStorage:
+  endpoint: ""        # e.g. https://s3.example.internal
+  bucket: auditee
+  region: us-east-1
+  forcePathStyle: true
+  existingSecret: auditee-api-secrets   # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+
+# -----------------------------------------------------------------------------
+# Encryption — Customer Managed Keys
+# -----------------------------------------------------------------------------
+encryption:
+  # One of: aws-kms, gcp-kms, azure-keyvault, vault-transit, none
+  provider: aws-kms
+  keyRef: ""          # ARN / resource id, supplied via secret in real installs
+  existingSecret: auditee-api-secrets
+
+# -----------------------------------------------------------------------------
+# Identity (SSO / OIDC / SAML)
+# -----------------------------------------------------------------------------
+identity:
+  saml:
+    enabled: false
+    metadataUrl: ""
+  oidc:
+    enabled: false
+    issuer: ""
+    clientId: ""
+    # clientSecret is sourced from existingSecret -> OIDC_CLIENT_SECRET
+
+# -----------------------------------------------------------------------------
+# SIEM streaming
+# -----------------------------------------------------------------------------
+siem:
+  enabled: false
+  # Format: generic | splunk_hec | datadog | elastic
+  format: generic
+  endpoint: ""
+  existingSecret: auditee-api-secrets   # SIEM_AUTH_HEADER
+
+# -----------------------------------------------------------------------------
+# Observability sidecars
+# -----------------------------------------------------------------------------
+observability:
+  prometheus:
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+  logging:
+    json: true
+
+# -----------------------------------------------------------------------------
+# NetworkPolicy
+# -----------------------------------------------------------------------------
+networkPolicy:
+  enabled: true
+  # Tighten in real installs. By default, allow ingress only from the
+  # ingress controller's namespace.
+  ingressFromNamespace: ingress-nginx
+
+# -----------------------------------------------------------------------------
+# Service account & RBAC
+# -----------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# -----------------------------------------------------------------------------
+# Pod security
+# -----------------------------------------------------------------------------
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true

@@ -91,12 +91,14 @@ const SECURITY_PILLARS: { title: string; Icon: typeof Lock; bullets: string[] }[
 ];
 
 const DOCS = [
-  { title: "Data Processing Agreement (DPA)", href: "/contact?topic=dpa", note: "EU SCCs + UK addendum, executable on request." },
-  { title: "Sub-processor list (this page)", href: "#subprocessors", note: "Always reflects current state." },
-  { title: "Security whitepaper (PDF)", href: "/contact?topic=security-whitepaper", note: "Architecture, controls, certifications. Under NDA." },
-  { title: "SOC 2 Type II report", href: "/contact?topic=soc2", note: "Available on request once issued (mid-2026)." },
-  { title: "Penetration test summary", href: "/contact?topic=pentest", note: "Executive summary; full report under NDA." },
-  { title: "BAA (HIPAA)", href: "/contact?topic=baa", note: "Mutually executable on Enterprise." },
+  { title: "Data Processing Agreement (DPA)", href: "/dpa", note: "EU SCCs + UK addendum. Read in full or request signed PDF." },
+  { title: "Master Services Agreement (MSA)", href: "/msa", note: "Pre-signed Enterprise contract. Read in full or request counter-sign." },
+  { title: "Business Associate Agreement (BAA)", href: "/baa", note: "HIPAA. Mutually executable on Enterprise." },
+  { title: "Security whitepaper", href: "/security-whitepaper", note: "Architecture, controls, control mappings. Public summary; full PDF under NDA." },
+  { title: "SOC 2 Type II", href: "/soc2", note: "Programme status, scope, timeline. Report under NDA once issued." },
+  { title: "Penetration test summary", href: "/pentest", note: "Quarterly third-party tests. Full reports under NDA." },
+  { title: "Security questionnaire (CAIQ / SIG Lite)", href: "/security-questionnaire", note: "Pre-answered, searchable, CSV export." },
+  { title: "Sub-processor list", href: "#subprocessors", note: "Always reflects current state. Section below." },
 ];
 
 export default function TrustCenter() {

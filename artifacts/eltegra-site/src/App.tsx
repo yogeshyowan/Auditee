@@ -24,6 +24,12 @@ import Sla from "@/pages/Sla";
 import Newsroom from "@/pages/Newsroom";
 import BrandKit from "@/pages/BrandKit";
 import Dpa from "@/pages/Dpa";
+import Msa from "@/pages/Msa";
+import Baa from "@/pages/Baa";
+import SecurityWhitepaper from "@/pages/SecurityWhitepaper";
+import PentestSummary from "@/pages/PentestSummary";
+import SecurityQuestionnaire from "@/pages/SecurityQuestionnaire";
+import Soc2Report from "@/pages/Soc2Report";
 import SubProcessors from "@/pages/SubProcessors";
 import Aup from "@/pages/Aup";
 import Webinars from "@/pages/Webinars";
@@ -359,6 +365,20 @@ function Router() {
       <Route path="/press-kit" component={BrandKit} />
       <Route path="/dpa" component={Dpa} />
       <Route path="/data-processing-addendum" component={Dpa} />
+      <Route path="/msa" component={Msa} />
+      <Route path="/master-services-agreement" component={Msa} />
+      <Route path="/baa" component={Baa} />
+      <Route path="/business-associate-agreement" component={Baa} />
+      <Route path="/security-whitepaper" component={SecurityWhitepaper} />
+      <Route path="/whitepaper" component={SecurityWhitepaper} />
+      <Route path="/pentest" component={PentestSummary} />
+      <Route path="/penetration-test" component={PentestSummary} />
+      <Route path="/security-questionnaire" component={SecurityQuestionnaire} />
+      <Route path="/caiq" component={SecurityQuestionnaire} />
+      <Route path="/sig" component={SecurityQuestionnaire} />
+      <Route path="/soc2" component={Soc2Report} />
+      <Route path="/soc-2" component={Soc2Report} />
+      <Route path="/soc2-report" component={Soc2Report} />
       <Route path="/sub-processors" component={SubProcessors} />
       <Route path="/subprocessors" component={SubProcessors} />
       <Route path="/aup" component={Aup} />

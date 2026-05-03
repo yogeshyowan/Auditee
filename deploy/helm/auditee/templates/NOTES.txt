@@ -1,0 +1,47 @@
+
+Auditee Enterprise has been installed.
+
+  Release:    {{ .Release.Name }}
+  Namespace:  {{ .Release.Namespace }}
+  App version: {{ .Chart.AppVersion }}
+
+Next steps
+----------
+
+1. Verify the API server is healthy:
+
+     kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/component=api
+     kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "auditee.api.fullname" . }} {{ .Values.api.service.port }}:{{ .Values.api.service.port }}
+     curl -sf http://localhost:{{ .Values.api.service.port }}/api/healthz
+
+2. Configure Identity (SSO):
+
+   Set values.identity.saml.metadataUrl OR values.identity.oidc.{issuer,clientId},
+   then upgrade the release. Workspace owners can finalise SSO under
+   /app/enterprise → SSO tabs.
+
+3. Configure SIEM streaming:
+
+   Set values.siem.{enabled,format,endpoint} and add SIEM_AUTH_HEADER to the
+   secret named in values.api.envFromSecret.
+
+4. Customer-managed keys:
+
+   Set values.encryption.{provider,keyRef} and ensure the Auditee service
+   account has KMS Encrypt/Decrypt permissions to the key.
+
+Documentation
+-------------
+  Trust Center:        https://auditee.site/trust
+  Security whitepaper: https://auditee.site/security-whitepaper
+  Self-host runbook:   https://auditee.site/contact?topic=self-host
+
+Support
+-------
+  P1 24×7:  pager@auditee.site
+  General:  support@auditee.site
+{{- if not .Values.global.imageRegistry }}
+
+WARNING: global.imageRegistry is unset. Set it to your customer-supplied
+mirror registry before applying this chart in an air-gapped environment.
+{{- end }}

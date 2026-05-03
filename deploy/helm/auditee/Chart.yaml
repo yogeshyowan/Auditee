@@ -1,0 +1,36 @@
+apiVersion: v2
+name: auditee
+description: |
+  Auditee — AI-native compliance & PDLC platform. Self-hosted Enterprise install.
+
+  Deploys the API server, the web frontend, optional PostgreSQL (subchart),
+  optional Redis (subchart), and the supporting Kubernetes resources
+  (Ingress, Service, ServiceAccount, ConfigMap, Secret refs, NetworkPolicy,
+  PodDisruptionBudget, HorizontalPodAutoscaler).
+
+  This chart is intended for air-gapped, VPC-only and on-prem Enterprise
+  deployments. Container images are pulled from the customer-supplied
+  registry (see values.image.registry).
+
+type: application
+version: 0.1.0
+appVersion: "2026.05.0"
+kubeVersion: ">=1.27.0-0"
+home: https://auditee.site
+sources:
+  - https://auditee.site
+keywords:
+  - compliance
+  - pdlc
+  - audit
+  - sox
+  - gdpr
+  - hipaa
+  - dpdp
+maintainers:
+  - name: Auditee Platform Engineering
+    email: platform@auditee.site
+icon: https://auditee.site/favicon.png
+annotations:
+  artifacthub.io/license: Commercial
+  artifacthub.io/category: security-compliance
