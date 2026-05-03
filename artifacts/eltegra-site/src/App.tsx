@@ -17,6 +17,10 @@ import Pricing from "@/pages/Pricing";
 import RoiCalculator from "@/pages/RoiCalculator";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
+import Roadmap from "@/pages/Roadmap";
+import Careers from "@/pages/Careers";
+import CookiePolicy from "@/pages/CookiePolicy";
+import Sla from "@/pages/Sla";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -294,6 +298,13 @@ function Router() {
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/roadmap" component={Roadmap} />
+      <Route path="/careers" component={Careers} />
+      <Route path="/jobs" component={Careers} />
+      <Route path="/cookie-policy" component={CookiePolicy} />
+      <Route path="/cookies" component={CookiePolicy} />
+      <Route path="/sla" component={Sla} />
+      <Route path="/service-level-agreement" component={Sla} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />

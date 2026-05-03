@@ -81,9 +81,15 @@ const STATIC_ROUTES = [
   { path: "/demo-videos",   priority: 0.80, changefreq: "monthly" },
   { path: "/faqs",          priority: 0.80, changefreq: "monthly" },
 
+  // ---- company ----
+  { path: "/roadmap",            priority: 0.75, changefreq: "monthly" },
+  { path: "/careers",            priority: 0.70, changefreq: "weekly"  },
+
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },
   { path: "/terms-of-service",   priority: 0.40, changefreq: "yearly" },
+  { path: "/cookie-policy",      priority: 0.40, changefreq: "yearly" },
+  { path: "/sla",                priority: 0.55, changefreq: "yearly" },
 ];
 
 // Per-route image attachments for image-sitemap entries (Google Images).
