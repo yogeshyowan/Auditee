@@ -27,6 +27,7 @@ import testCasesRouter from "./testCases";
 import leadsRouter from "./leads";
 import billingRouter from "./billing";
 import customStandardsRouter from "./customStandards";
+import gdprRouter from "./gdpr";
 
 const router: IRouter = Router();
 
@@ -58,5 +59,6 @@ router.use(testCasesRouter);
 router.use(leadsRouter);
 router.use(billingRouter);
 router.use(customStandardsRouter);
+router.use(gdprRouter);
 
 export default router;

@@ -36,6 +36,7 @@ import {
 } from "../lib/billingPlanSync";
 import { msTrack } from "../lib/marketingstuffs";
 import { logger } from "../lib/logger";
+import { encryptField } from "../lib/fieldEncryption";
 
 const router: IRouter = Router();
 
@@ -646,8 +647,8 @@ async function handleRazorpayEvent(
         currency: p.currency,
         status: p.status,
         method: p.method ?? null,
-        email: p.email ?? null,
-        contact: p.contact ?? null,
+        email: encryptField(p.email ?? null),
+        contact: encryptField(p.contact ?? null),
         capturedAt: p.status === "captured" ? new Date() : null,
         rawEvent: event,
       })

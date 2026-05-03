@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProjectProvider } from "@/lib/project-context";
 import { useLeadCapture } from "@/lib/leadCapture";
 import { useMarketingstuffs } from "@/lib/marketingstuffs";
+import { useIdleTimeout } from "@/lib/useIdleTimeout";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
@@ -185,10 +186,21 @@ function AppRoutes() {
   );
 }
 
+/**
+ * Mounts the idle-timeout watcher only when a user is signed in.
+ * Required by HIPAA § 164.312(a)(2)(iii) and PCI DSS Req 8.2.8.
+ * Signs out after 30 minutes of inactivity with a 2-minute warning toast.
+ */
+function IdleGuard() {
+  useIdleTimeout(30 * 60 * 1000);
+  return null;
+}
+
 function GatedAppRoutes() {
   return (
     <>
       <Show when="signed-in">
+        <IdleGuard />
         <AppRoutes />
       </Show>
       <Show when="signed-out">

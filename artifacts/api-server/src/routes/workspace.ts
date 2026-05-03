@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   db,
@@ -388,6 +388,63 @@ router.post("/workspace/sso", requireAuth, requireWorkspace, async (req, res) =>
     req,
   });
   res.json(updated);
+});
+
+/**
+ * SOC 2 / ISO 27001 evidence export.
+ * GET /api/workspace/audit-logs/export?format=json|csv&from=ISO8601&to=ISO8601
+ *
+ * Returns the audit log as an attachment. Same auth gating as the viewer
+ * (admin+, Enterprise plan). Optional date-range filter.
+ */
+router.get("/workspace/audit-logs/export", requireAuth, requireWorkspace, async (req, res) => {
+  const ctx = (req as Request & { ws_ctx: WorkspaceCtx }).ws_ctx;
+  if (!isAtLeast(canonicalRole(ctx.role), "admin")) {
+    res.status(403).json({ error: "Admin or owner role required to export audit logs." });
+    return;
+  }
+  if (!planAllows(ctx.workspace.plan as PlanTier, "audit_log")) {
+    res.status(402).json({
+      error: "Audit log export is an Enterprise feature.",
+      requiresUpgrade: true,
+    });
+    return;
+  }
+
+  const format = req.query.format === "csv" ? "csv" : "json";
+  const fromDate = req.query.from ? new Date(String(req.query.from)) : null;
+  const toDate = req.query.to ? new Date(String(req.query.to)) : null;
+
+  const conds = [eq(auditLogsTable.workspaceId, ctx.workspace.id)];
+  if (fromDate && !isNaN(fromDate.getTime())) conds.push(gte(auditLogsTable.createdAt, fromDate));
+  if (toDate && !isNaN(toDate.getTime())) conds.push(lte(auditLogsTable.createdAt, toDate));
+
+  const rows = await db
+    .select()
+    .from(auditLogsTable)
+    .where(and(...conds))
+    .orderBy(asc(auditLogsTable.createdAt));
+
+  const dateTag = new Date().toISOString().slice(0, 10);
+  if (format === "csv") {
+    const CSV_COLS = ["id","workspaceId","actorUserId","actorEmail","action","resourceType","resourceId","ip","userAgent","integrityHash","createdAt"] as const;
+    const escape = (v: unknown) => {
+      const s = v == null ? "" : String(v);
+      if (s.includes(",") || s.includes('"') || s.includes("\n")) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+    const lines = [
+      CSV_COLS.join(","),
+      ...rows.map((r) => CSV_COLS.map((c) => escape((r as Record<string, unknown>)[c])).join(",")),
+    ];
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="audit-log-${dateTag}.csv"`);
+    res.send(lines.join("\n"));
+  } else {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Content-Disposition", `attachment; filename="audit-log-${dateTag}.json"`);
+    res.json({ exportedAt: new Date().toISOString(), workspace: ctx.workspace.id, rows });
+  }
 });
 
 router.get("/workspace/audit-logs", requireAuth, requireWorkspace, async (req, res) => {
