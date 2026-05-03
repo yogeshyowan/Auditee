@@ -28,6 +28,12 @@ import {
   recurringAuditsTable,
   codeArtifactsTable,
   traceabilityLinksTable,
+  legacySystemsTable,
+  aiConversationsTable,
+  complianceEvidenceTable,
+  workflowsTable,
+  workflowRunsTable,
+  workflowStepRunsTable,
 } from "./index";
 
 const DEMO_WS_ID = "ws-demo";
@@ -745,6 +751,132 @@ const RECURRING_AUDITS = [
   { id: "ra-bastion-nist",   projectId: "proj-demo-bastion", frameworkId: "fw-nist-csf",    cadence: "weekly",    hourUtc: 4,  notifyTo: "ciso@acme-sec.example",           active: true,  nextRunAt: daysAhead(5),  lastRunAt: daysAgo(2),  lastRunStatus: "success" },
 ];
 
+// ── Legacy systems (global — shared across all workspaces) ─────────────────
+const LEGACY_SYSTEMS = [
+  { id: "legacy-tradecore",     name: "TradeCore Engine",       language: "C#",          description: "Monolithic trade settlement service. .NET Framework 4.6, 1,184 stored procs, deeply tied to SQL Server 2014.",      locScanned: 482000, requirementsExtracted: 614, riskScore: 72, modernizationStatus: "in_progress" },
+  { id: "legacy-patient-ui",    name: "Patient Records UI",     language: "Angular 1.x", description: "AngularJS frontend for legacy patient records, no test coverage, blocking HIPAA audit findings.",                  locScanned:  96000, requirementsExtracted: 211, riskScore: 84, modernizationStatus: "scoping" },
+  { id: "legacy-pricing-lib",   name: "Pricing Library",        language: "C++",         description: "Quant pricing library used by 6 downstream services. Slow to onboard new engineers.",                                  locScanned: 138000, requirementsExtracted:  92, riskScore: 41, modernizationStatus: "stable" },
+  { id: "legacy-claims-adj",    name: "Claims Adjudication",    language: "COBOL",       description: "Mainframe claims adjudication batch jobs. 30-year-old codebase with tribal knowledge concentrated in two engineers.", locScanned: 211000, requirementsExtracted: 367, riskScore: 91, modernizationStatus: "scoping" },
+  { id: "legacy-branch-bank",   name: "Branch Banking Console", language: "Java 6",      description: "Swing desktop console used by 1,200 branch tellers; runs on internal Citrix farm.",                                    locScanned: 174000, requirementsExtracted: 248, riskScore: 58, modernizationStatus: "in_progress" },
+];
+
+// ── AI conversations (Ask Auditee history per anchor project) ──────────────
+const AI_CONVERSATIONS = [
+  { id: "conv-helios-1",  projectId: "proj-demo-helios",  question: "What's blocking our HIPAA audit readiness this sprint?",                  answer: "Two open items: (1) Right-to-erasure SLA — the legacy ITSM bridge is missing the auto-trigger to the erase job (CAPA-HEL-005, due in 28 days). (2) PHI residency replication — EU-West replication is disabled but the runbook hasn't been signed off. Both are tracked in CAPAs and the HIPAA Gap Analysis report.",  confidence: "high",   citations: ["capa-helios-005", "report-helios-hipaa"],  createdAt: daysAgo(1) },
+  { id: "conv-helios-2",  projectId: "proj-demo-helios",  question: "Show me requirements without test coverage.",                              answer: "3 requirements have no linked test cases: HEL-0005 (Right-to-erasure workflow), HEL-0007 (Audit log immutability), HEL-0009 (Break-glass access review). I recommend generating test suites for HEL-0005 first since it's tied to an open critical CAPA.",                                                                                                                  confidence: "high",   citations: ["req-helios-005"],                          createdAt: daysAgo(3) },
+  { id: "conv-orion-1",   projectId: "proj-demo-orion",   question: "Are we ready for the IEC 62304 Class C audit?",                            answer: "Mostly. Software safety classification, risk control measures, and unit test coverage all sit above 85%. Outstanding gap: SOUP (Software of Unknown Provenance) inventory is missing for 4 third-party libs. Until that's logged, the auditor will flag clause 5.3.4.",                                                                                                              confidence: "medium", citations: ["report-orion-62304"],                       createdAt: daysAgo(2) },
+  { id: "conv-orion-2",   projectId: "proj-demo-orion",   question: "Generate a CAPA for the SOUP gap.",                                        answer: "Drafted CAPA-ORI-006: 'Complete SOUP inventory for third-party libs (lodash, axios, openssl, libpng)'. Suggested owner: QA. Suggested due date: 14 days. Tagged to control IEC-62304 §8.1.2. Open the CAPA module to publish.",                                                                                                                                                          confidence: "high",   citations: [],                                          createdAt: daysAgo(2) },
+  { id: "conv-atlas-1",   projectId: "proj-demo-atlas",   question: "What's our PCI DSS 4.0 readiness score?",                                  answer: "Current readiness is 78%. Strongest controls: network segmentation, encryption-at-rest, MFA on admin paths. Weakest: requirement 10.6 (log review automation) and 11.4.1 (IDS/IPS coverage on cardholder VLAN). The PCI Readiness report has the full breakdown.",                                                                                                                  confidence: "high",   citations: ["report-atlas-pci"],                        createdAt: daysAgo(1) },
+  { id: "conv-atlas-2",   projectId: "proj-demo-atlas",   question: "Any defects tied to CAPA-ATL-003?",                                        answer: "Yes — DEF-ATL-1012 (token rotation timing window) and DEF-ATL-1015 (lateral-call audit gap) are both linked. Both are in 'in progress' state with engineering ETA next sprint.",                                                                                                                                                                                                       confidence: "high",   citations: [],                                          createdAt: daysAgo(4) },
+  { id: "conv-vega-1",    projectId: "proj-demo-vega",    question: "Summarise GDPR Article 17 compliance for this project.",                   answer: "Article 17 (right to erasure) is partially compliant. Erasure UX is live in production, but downstream warehouse purge runs on a 90-day cadence — that exceeds the 30-day SLA. Recommended action: shorten the warehouse purge to weekly and add an audit log row per erase event.",                                                                                                  confidence: "medium", citations: ["report-vega-gdpr"],                         createdAt: daysAgo(5) },
+  { id: "conv-vega-2",    projectId: "proj-demo-vega",    question: "Which controls have the most evidence?",                                   answer: "Top 3 by evidence count: GDPR Art.32 (12 items — encryption + access reviews), Art.30 (9 items — RoPA exports), Art.33 (7 items — breach drill records). Lowest coverage: Art.35 DPIA refresh.",                                                                                                                                                                                       confidence: "high",   citations: [],                                          createdAt: daysAgo(6) },
+  { id: "conv-ares-1",    projectId: "proj-demo-ares",    question: "Walk me through the ASIL-D allocation for the brake-by-wire ECU.",         answer: "ECU is decomposed under ISO 26262-9 into ASIL-D (primary actuation) + ASIL-B(D) (redundant monitor). Hardware metrics PMHF and SPFM both clear the ASIL-D budget. Software is partitioned: actuation runs in QM-elevated partition with freedom-from-interference proven via memory protection.",                                                                                       confidence: "high",   citations: ["report-ares-26262"],                       createdAt: daysAgo(2) },
+  { id: "conv-ares-2",    projectId: "proj-demo-ares",    question: "Show open safety defects.",                                                answer: "2 open: DEF-ARE-2031 (watchdog timeout race during diagnostic session — major) and DEF-ARE-2034 (sensor plausibility check disabled in service mode — critical). DEF-ARE-2034 is blocking the next homologation submission.",                                                                                                                                                            confidence: "high",   citations: [],                                          createdAt: daysAgo(3) },
+  { id: "conv-bastion-1", projectId: "proj-demo-bastion", question: "Are we SOC 2 Type II audit-ready?",                                        answer: "Yes for Security and Availability TSCs. Confidentiality TSC has one open item: vendor-management evidence for a sub-processor added 60 days ago is not yet attached to control CC9.2. Recommend uploading the vendor SOC 2 report before the auditor field visit.",                                                                                                                  confidence: "high",   citations: ["report-bastion-soc2"],                     createdAt: daysAgo(1) },
+  { id: "conv-bastion-2", projectId: "proj-demo-bastion", question: "What's the status of NIST CSF 2.0 mapping?",                               answer: "GOVERN, IDENTIFY, PROTECT, DETECT functions are 90%+ mapped. RESPOND is 72% — playbook for ransomware needs a tabletop exercise log. RECOVER is 65% — DR drill scheduled for next month will close the largest gap.",                                                                                                                                                                  confidence: "medium", citations: ["report-bastion-nist"],                     createdAt: daysAgo(4) },
+];
+
+// ── Compliance evidence (AI-asserted artefacts per control) ────────────────
+const COMPLIANCE_EVIDENCE = [
+  { id: "ev-helios-1", projectId: "proj-demo-helios",  controlId: "164.312(a)(1)",  frameworkId: "fw-hipaa",       kind: "requirement", refId: "req-helios-001", refLabel: "HEL-0001 — Encryption at rest for PHI",                source: "trace", status: "verified",     note: "Linked via trace-helios-001"      },
+  { id: "ev-helios-2", projectId: "proj-demo-helios",  controlId: "164.312(b)",     frameworkId: "fw-hipaa",       kind: "requirement", refId: "req-helios-002", refLabel: "HEL-0002 — Immutable audit log retention",              source: "ai",    status: "ai_asserted",  note: "AI audit asserted on " + daysAgo(1).toISOString().slice(0,10) },
+  { id: "ev-helios-3", projectId: "proj-demo-helios",  controlId: "Art.17",         frameworkId: "fw-gdpr",        kind: "report",      refId: "report-helios-hipaa", refLabel: "HIPAA Gap Analysis (AI report)",                   source: "ai",    status: "ai_asserted",  note: "Cited section 3.2 — erasure SLA"  },
+  { id: "ev-orion-1",  projectId: "proj-demo-orion",   controlId: "5.5",            frameworkId: "fw-iec-62304",   kind: "test_result", refId: "tc-orion-001",   refLabel: "TC-ORI-001 — Unit test: dose calc bounds",              source: "trace", status: "verified",     note: "PASS in last build"               },
+  { id: "ev-orion-2",  projectId: "proj-demo-orion",   controlId: "7.1",            frameworkId: "fw-iec-62304",   kind: "requirement", refId: "req-orion-001",  refLabel: "ORI-0001 — Risk control measures for dose overdelivery", source: "trace", status: "verified",     note: ""                                  },
+  { id: "ev-orion-3",  projectId: "proj-demo-orion",   controlId: "8.1.2",          frameworkId: "fw-iec-62304",   kind: "note",        refId: null,             refLabel: "SOUP inventory pending — 4 libs",                       source: "ai",    status: "ai_asserted",  note: "Flagged by AI audit as gap"        },
+  { id: "ev-atlas-1",  projectId: "proj-demo-atlas",   controlId: "3.4",            frameworkId: "fw-pci-dss-4",   kind: "requirement", refId: "req-atlas-001",  refLabel: "ATL-0001 — PAN tokenization at edge",                  source: "trace", status: "verified",     note: ""                                  },
+  { id: "ev-atlas-2",  projectId: "proj-demo-atlas",   controlId: "10.6",           frameworkId: "fw-pci-dss-4",   kind: "report",      refId: "report-atlas-pci", refLabel: "PCI Readiness Report (AI)",                          source: "ai",    status: "ai_asserted",  note: "Log review automation gap"         },
+  { id: "ev-atlas-3",  projectId: "proj-demo-atlas",   controlId: "8.3",            frameworkId: "fw-pci-dss-4",   kind: "file",        refId: null,             refLabel: "MFA enrollment policy v3.pdf",                          source: "user",  status: "verified",     note: "Uploaded by SecOps"                },
+  { id: "ev-vega-1",   projectId: "proj-demo-vega",    controlId: "Art.32",         frameworkId: "fw-gdpr",        kind: "requirement", refId: "req-vega-001",   refLabel: "VEG-0001 — Encryption in transit and at rest",          source: "trace", status: "verified",     note: ""                                  },
+  { id: "ev-vega-2",   projectId: "proj-demo-vega",    controlId: "Art.30",         frameworkId: "fw-gdpr",        kind: "file",        refId: null,             refLabel: "RoPA-export-Q1.xlsx",                                   source: "user",  status: "verified",     note: ""                                  },
+  { id: "ev-vega-3",   projectId: "proj-demo-vega",    controlId: "Art.17",         frameworkId: "fw-gdpr",        kind: "note",        refId: null,             refLabel: "Warehouse purge cadence exceeds 30-day SLA",            source: "ai",    status: "ai_asserted",  note: "Flagged for CAPA"                  },
+  { id: "ev-ares-1",   projectId: "proj-demo-ares",    controlId: "Part 9 §5",      frameworkId: "fw-iso-26262",   kind: "requirement", refId: "req-ares-001",   refLabel: "ARE-0001 — ASIL-D decomposition for brake-by-wire ECU", source: "trace", status: "verified",     note: ""                                  },
+  { id: "ev-ares-2",   projectId: "proj-demo-ares",    controlId: "Part 6 §7",      frameworkId: "fw-iso-26262",   kind: "test_result", refId: "tc-ares-001",    refLabel: "TC-ARE-001 — HIL: brake actuator response under fault", source: "trace", status: "verified",     note: "PASS"                              },
+  { id: "ev-ares-3",   projectId: "proj-demo-ares",    controlId: "Part 4 §7",      frameworkId: "fw-iso-26262",   kind: "report",      refId: "report-ares-26262", refLabel: "ISO 26262 Functional Safety Assessment",            source: "ai",    status: "ai_asserted",  note: ""                                  },
+  { id: "ev-bastion-1",projectId: "proj-demo-bastion", controlId: "CC6.1",          frameworkId: "fw-soc2",        kind: "requirement", refId: "req-bastion-001",refLabel: "BAS-0001 — Logical access controls baseline",           source: "trace", status: "verified",     note: ""                                  },
+  { id: "ev-bastion-2",projectId: "proj-demo-bastion", controlId: "CC7.2",          frameworkId: "fw-soc2",        kind: "report",      refId: "report-bastion-soc2", refLabel: "SOC 2 Type II Readiness",                          source: "ai",    status: "ai_asserted",  note: ""                                  },
+  { id: "ev-bastion-3",projectId: "proj-demo-bastion", controlId: "CC9.2",          frameworkId: "fw-soc2",        kind: "note",        refId: null,             refLabel: "Vendor SOC 2 report pending for new sub-processor",     source: "ai",    status: "ai_asserted",  note: "Open finding"                      },
+];
+
+// ── Workflows (compliance workflow templates + an in-flight run) ───────────
+const WORKFLOWS = [
+  {
+    id: "wf-capa-triage",
+    name: "CAPA Triage & Closure",
+    description: "Standard CAPA lifecycle: triage → root-cause → action plan → verification → closure.",
+    version: 1,
+    status: "active",
+    trigger: "on_capa_created",
+    definition: {
+      steps: [
+        { id: "s1", name: "Triage severity & owner",        type: "task" as const,      assignee: "Quality",   dueOffsetDays: 2 },
+        { id: "s2", name: "Root cause analysis (5-Whys)",   type: "task" as const,      assignee: "Engineering", dueOffsetDays: 7 },
+        { id: "s3", name: "Draft action plan",              type: "ai_action" as const, aiPrompt: "Suggest containment + corrective + preventive actions for this CAPA.", outputKey: "draftPlan" },
+        { id: "s4", name: "QA approval",                    type: "approval" as const,  assignee: "QA Lead",   dueOffsetDays: 3 },
+        { id: "s5", name: "Verify effectiveness (30 days)", type: "stop" as const,      blockedUntil: [{ expr: "daysSinceImplementation >= 30", reason: "Minimum 30-day verification window" }] },
+        { id: "s6", name: "Close CAPA",                     type: "task" as const,      assignee: "Quality",   dueOffsetDays: 1 },
+      ],
+    },
+  },
+  {
+    id: "wf-audit-followup",
+    name: "Audit Finding Follow-Up",
+    description: "Convert audit findings into tracked actions with owner, evidence, and management review.",
+    version: 1,
+    status: "active",
+    trigger: "on_audit_completed",
+    definition: {
+      steps: [
+        { id: "s1", name: "Categorise findings",       type: "ai_action" as const, aiPrompt: "Group findings by control family and severity.", outputKey: "groupedFindings" },
+        { id: "s2", name: "Assign owners",             type: "task" as const,      assignee: "Compliance", dueOffsetDays: 3 },
+        { id: "s3", name: "Collect evidence",          type: "task" as const,      assignee: "Engineering", dueOffsetDays: 14 },
+        { id: "s4", name: "Management review",         type: "approval" as const,  assignee: "CISO",       dueOffsetDays: 5 },
+      ],
+    },
+  },
+  {
+    id: "wf-req-change",
+    name: "Requirement Change Control",
+    description: "Impact-assess and approve changes to baselined requirements.",
+    version: 1,
+    status: "active",
+    trigger: "on_requirement_status_change",
+    definition: {
+      steps: [
+        { id: "s1", name: "Impact analysis (downstream tests, code, controls)", type: "ai_action" as const, aiPrompt: "List all artefacts impacted by this requirement change.", outputKey: "impact" },
+        { id: "s2", name: "CAB review",                                          type: "approval" as const,  assignee: "Change Board", dueOffsetDays: 5 },
+        { id: "s3", name: "Update traceability",                                 type: "task" as const,      assignee: "Quality",      dueOffsetDays: 2 },
+      ],
+    },
+  },
+];
+
+const WORKFLOW_RUNS = [
+  { id: "wfr-helios-capa-005", workflowId: "wf-capa-triage",    projectId: "proj-demo-helios",  status: "blocked",   currentStepId: "s5", blockedReason: "Awaiting 30-day verification window", context: { capaId: "capa-helios-005" }, startedBy: "system",                  startedAt: daysAgo(12), completedAt: null },
+  { id: "wfr-orion-audit-q2",  workflowId: "wf-audit-followup", projectId: "proj-demo-orion",   status: "running",   currentStepId: "s3", blockedReason: null,                                  context: { auditId: "ra-orion-62304" }, startedBy: "qa@acme-health.example",  startedAt: daysAgo(6),  completedAt: null },
+  { id: "wfr-bastion-soc2",    workflowId: "wf-audit-followup", projectId: "proj-demo-bastion", status: "completed", currentStepId: "s4", blockedReason: null,                                  context: { auditId: "ra-bastion-soc2" }, startedBy: "ciso@acme-sec.example",  startedAt: daysAgo(20), completedAt: daysAgo(2) },
+];
+
+const WORKFLOW_STEP_RUNS = [
+  // wfr-helios-capa-005
+  { id: "wsr-helios-1", runId: "wfr-helios-capa-005", stepId: "s1", stepName: "Triage severity & owner",        stepType: "task",      status: "done",        assignee: "Quality",     output: { severity: "critical", owner: "Privacy" }, blockedReason: null,                                       dueAt: daysAgo(10), startedAt: daysAgo(12), completedAt: daysAgo(11) },
+  { id: "wsr-helios-2", runId: "wfr-helios-capa-005", stepId: "s2", stepName: "Root cause analysis (5-Whys)",   stepType: "task",      status: "done",        assignee: "Engineering", output: { rootCause: "ITSM bridge missing direct API call" }, blockedReason: null,                            dueAt: daysAgo(5),  startedAt: daysAgo(11), completedAt: daysAgo(6) },
+  { id: "wsr-helios-3", runId: "wfr-helios-capa-005", stepId: "s3", stepName: "Draft action plan",              stepType: "ai_action", status: "done",        assignee: null,          output: { draftPlan: "Replace ITSM hand-off with direct API; auto-trigger erase job." }, blockedReason: null, dueAt: null,        startedAt: daysAgo(6),  completedAt: daysAgo(6) },
+  { id: "wsr-helios-4", runId: "wfr-helios-capa-005", stepId: "s4", stepName: "QA approval",                    stepType: "approval",  status: "done",        assignee: "QA Lead",     output: { approvedBy: "QA Lead", at: daysAgo(4).toISOString() }, blockedReason: null,                       dueAt: daysAgo(3),  startedAt: daysAgo(6),  completedAt: daysAgo(4) },
+  { id: "wsr-helios-5", runId: "wfr-helios-capa-005", stepId: "s5", stepName: "Verify effectiveness (30 days)", stepType: "stop",      status: "blocked",     assignee: null,          output: {},                                                  blockedReason: "Minimum 30-day verification window",       dueAt: daysAhead(26), startedAt: daysAgo(4), completedAt: null },
+  { id: "wsr-helios-6", runId: "wfr-helios-capa-005", stepId: "s6", stepName: "Close CAPA",                     stepType: "task",      status: "pending",     assignee: "Quality",     output: {},                                                  blockedReason: null,                                       dueAt: daysAhead(27), startedAt: daysAhead(26), completedAt: null },
+  // wfr-orion-audit-q2
+  { id: "wsr-orion-1",  runId: "wfr-orion-audit-q2",  stepId: "s1", stepName: "Categorise findings",            stepType: "ai_action", status: "done",        assignee: null,          output: { groupedFindings: { soup: 4, classification: 0, risk: 1 } }, blockedReason: null,                           dueAt: null,        startedAt: daysAgo(6),  completedAt: daysAgo(6) },
+  { id: "wsr-orion-2",  runId: "wfr-orion-audit-q2",  stepId: "s2", stepName: "Assign owners",                  stepType: "task",      status: "done",        assignee: "Compliance",  output: { assignments: 5 },                                  blockedReason: null,                                       dueAt: daysAgo(3),  startedAt: daysAgo(6),  completedAt: daysAgo(4) },
+  { id: "wsr-orion-3",  runId: "wfr-orion-audit-q2",  stepId: "s3", stepName: "Collect evidence",               stepType: "task",      status: "in_progress", assignee: "Engineering", output: {},                                                  blockedReason: null,                                       dueAt: daysAhead(8), startedAt: daysAgo(4),  completedAt: null },
+  { id: "wsr-orion-4",  runId: "wfr-orion-audit-q2",  stepId: "s4", stepName: "Management review",              stepType: "approval",  status: "pending",     assignee: "CISO",        output: {},                                                  blockedReason: null,                                       dueAt: daysAhead(13), startedAt: daysAhead(8), completedAt: null },
+  // wfr-bastion-soc2 (all done)
+  { id: "wsr-bastion-1",runId: "wfr-bastion-soc2",    stepId: "s1", stepName: "Categorise findings",            stepType: "ai_action", status: "done",        assignee: null,          output: { groupedFindings: { security: 0, availability: 0, confidentiality: 1 } }, blockedReason: null,             dueAt: null,         startedAt: daysAgo(20), completedAt: daysAgo(20) },
+  { id: "wsr-bastion-2",runId: "wfr-bastion-soc2",    stepId: "s2", stepName: "Assign owners",                  stepType: "task",      status: "done",        assignee: "Compliance",  output: { assignments: 1 },                                  blockedReason: null,                                       dueAt: daysAgo(17), startedAt: daysAgo(20), completedAt: daysAgo(18) },
+  { id: "wsr-bastion-3",runId: "wfr-bastion-soc2",    stepId: "s3", stepName: "Collect evidence",               stepType: "task",      status: "done",        assignee: "Engineering", output: { evidenceItems: 3 },                                blockedReason: null,                                       dueAt: daysAgo(6),  startedAt: daysAgo(18), completedAt: daysAgo(7) },
+  { id: "wsr-bastion-4",runId: "wfr-bastion-soc2",    stepId: "s4", stepName: "Management review",              stepType: "approval",  status: "done",        assignee: "CISO",        output: { approvedBy: "CISO", at: daysAgo(2).toISOString() }, blockedReason: null,                                      dueAt: daysAgo(1),  startedAt: daysAgo(7),  completedAt: daysAgo(2) },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
@@ -799,11 +931,31 @@ export async function seedDemoProjects() {
   if (RECURRING_AUDITS.length > 0) {
     await db.insert(recurringAuditsTable).values(RECURRING_AUDITS).onConflictDoNothing();
   }
+  if (LEGACY_SYSTEMS.length > 0) {
+    await db.insert(legacySystemsTable).values(LEGACY_SYSTEMS).onConflictDoNothing();
+  }
+  if (AI_CONVERSATIONS.length > 0) {
+    await db.insert(aiConversationsTable).values(AI_CONVERSATIONS).onConflictDoNothing();
+  }
+  if (COMPLIANCE_EVIDENCE.length > 0) {
+    await db.insert(complianceEvidenceTable).values(COMPLIANCE_EVIDENCE).onConflictDoNothing();
+  }
+  if (WORKFLOWS.length > 0) {
+    await db.insert(workflowsTable).values(WORKFLOWS).onConflictDoNothing();
+  }
+  if (WORKFLOW_RUNS.length > 0) {
+    await db.insert(workflowRunsTable).values(WORKFLOW_RUNS).onConflictDoNothing();
+  }
+  if (WORKFLOW_STEP_RUNS.length > 0) {
+    await db.insert(workflowStepRunsTable).values(WORKFLOW_STEP_RUNS).onConflictDoNothing();
+  }
 
   console.log(
     `Demo seed complete: ${PROJECTS.length} projects, ${REQUIREMENTS.length} requirements, ${allPdlc.length} PDLC stages, ` +
     `${PROJECT_SOURCES.length} sources, ${DEFECTS.length} defects, ${CAPA_ACTIONS.length} CAPAs, ${TEST_CASES.length} test cases, ` +
-    `${CODE_ARTIFACTS.length} code artifacts, ${TRACE_LINKS.length} trace links, ${AI_REPORTS.length} AI reports, ${RECURRING_AUDITS.length} recurring audits. ` +
+    `${CODE_ARTIFACTS.length} code artifacts, ${TRACE_LINKS.length} trace links, ${AI_REPORTS.length} AI reports, ${RECURRING_AUDITS.length} recurring audits, ` +
+    `${LEGACY_SYSTEMS.length} legacy systems, ${AI_CONVERSATIONS.length} AI conversations, ${COMPLIANCE_EVIDENCE.length} evidence rows, ` +
+    `${WORKFLOWS.length} workflows, ${WORKFLOW_RUNS.length} runs, ${WORKFLOW_STEP_RUNS.length} step runs. ` +
     `Anchors: ${ANCHORS.join(", ")}.`,
   );
 }
