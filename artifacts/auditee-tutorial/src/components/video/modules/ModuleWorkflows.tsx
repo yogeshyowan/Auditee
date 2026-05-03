@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { BackgroundMusic } from '../BackgroundMusic';
+import { AppShell } from '../AppShell';
 import { TimedCaptions, TimedCue } from '../TimedCaptions';
 import { getStory } from '@/lib/demoUseCases';
 
@@ -146,6 +147,7 @@ export function ModuleWorkflows() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[var(--color-bg-dark)] font-display text-white">
       <BackgroundMusic />
+      <AppShell slug="workflows" story={story} currentScene={currentSceneKey} />
       <div className="absolute inset-0 pointer-events-none">
         <motion.div className="absolute top-[20%] left-[10%] w-[40vw] h-[40vw] rounded-full opacity-20 blur-[80px]"
           style={{ background: 'var(--color-accent)' }}
