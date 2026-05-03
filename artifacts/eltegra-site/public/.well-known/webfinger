@@ -1,0 +1,31 @@
+{
+  "subject": "acct:auditee@auditee.site",
+  "aliases": [
+    "https://auditee.site/",
+    "https://auditee.site/about",
+    "https://github.com/auditee",
+    "https://www.linkedin.com/company/auditee"
+  ],
+  "links": [
+    {
+      "rel": "http://webfinger.net/rel/profile-page",
+      "type": "text/html",
+      "href": "https://auditee.site/"
+    },
+    {
+      "rel": "http://webfinger.net/rel/avatar",
+      "type": "image/svg+xml",
+      "href": "https://auditee.site/logo.svg"
+    },
+    {
+      "rel": "self",
+      "type": "application/activity+json",
+      "href": "https://auditee.site/.well-known/webfinger"
+    },
+    {
+      "rel": "http://schemas.google.com/g/2010#updates-from",
+      "type": "application/rss+xml",
+      "href": "https://auditee.site/rss.xml"
+    }
+  ]
+}

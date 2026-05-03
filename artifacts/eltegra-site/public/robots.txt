@@ -210,3 +210,9 @@ Sitemap: https://auditee.site/sitemap.xml
 Sitemap: https://auditee.site/sitemap-news.xml
 Sitemap: https://auditee.site/sitemap-index.xml
 Host: https://auditee.site
+
+# --- IndexNow (Bing, Yandex, Naver, Seznam, Yep) ----------------------------
+# Sub-minute push indexing. The key file lives at the site root and inside
+# /.well-known/ so both Microsoft's spec and Yandex's variant find it. Pings
+# are sent server-side from the API on content publish events.
+# Key: 9b29720ecabe4483a792805fb8e621ed

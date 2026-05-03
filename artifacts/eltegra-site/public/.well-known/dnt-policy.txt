@@ -1,0 +1,29 @@
+Auditee DNT Policy (EFF DNT Policy 1.0)
+========================================
+
+Auditee respects the W3C "Do Not Track" (DNT) browser signal as
+defined by the Electronic Frontier Foundation's DNT Policy v1.0
+(https://www.eff.org/dnt-policy).
+
+Effective: 2025-01-01
+Site: https://auditee.site
+
+When a visitor sends DNT: 1 (or the equivalent Sec-GPC: 1 / Global
+Privacy Control signal):
+
+1. We do not log their IP address beyond what is required to serve
+   the request, and we discard any retained log within 10 days.
+2. We do not set, read or share any third-party tracking cookie or
+   identifier for the purpose of cross-site profiling.
+3. We do not pass identifying information to advertising networks,
+   analytics processors, or fingerprinting services.
+4. First-party essential cookies (session, CSRF, theme, preferences)
+   are still set so the site works.
+5. Aggregate, de-identified statistics may still be computed for
+   internal capacity planning, provided no record can be re-linked
+   to an individual visitor.
+6. We honor opt-out via the Global Privacy Control header
+   (Sec-GPC: 1) identically to DNT: 1.
+
+Compliance & contact: privacy@auditee.site
+Full privacy policy: https://auditee.site/privacy-policy
