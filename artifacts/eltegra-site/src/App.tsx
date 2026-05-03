@@ -31,6 +31,11 @@ import HelpCenter from "@/pages/HelpCenter";
 import Migrations from "@/pages/Migrations";
 import Affiliates from "@/pages/Affiliates";
 import FreeTools from "@/pages/FreeTools";
+import CompareHub from "@/pages/CompareHub";
+import IndustriesHub from "@/pages/IndustriesHub";
+import ForStartups from "@/pages/ForStartups";
+import ForEnterprise from "@/pages/ForEnterprise";
+import TemplatesPage from "@/pages/Templates";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -339,6 +344,17 @@ function Router() {
       <Route path="/referral" component={Affiliates} />
       <Route path="/free-tools" component={FreeTools} />
       <Route path="/tools" component={FreeTools} />
+      <Route path="/compare" component={CompareHub} />
+      <Route path="/comparisons" component={CompareHub} />
+      <Route path="/alternatives" component={CompareHub} />
+      <Route path="/industries" component={IndustriesHub} />
+      <Route path="/sectors" component={IndustriesHub} />
+      <Route path="/for-startups" component={ForStartups} />
+      <Route path="/startups" component={ForStartups} />
+      <Route path="/for-enterprise" component={ForEnterprise} />
+      <Route path="/enterprise" component={ForEnterprise} />
+      <Route path="/templates" component={TemplatesPage} />
+      <Route path="/template-library" component={TemplatesPage} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />

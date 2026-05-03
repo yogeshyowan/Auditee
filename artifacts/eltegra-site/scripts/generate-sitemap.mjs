@@ -50,6 +50,7 @@ const STATIC_ROUTES = [
   { path: "/qa-and-compliance",              priority: 0.80, changefreq: "monthly" },
 
   // ---- industries ----
+  { path: "/industries",         priority: 0.85, changefreq: "monthly" },
   { path: "/ai-for-healthcare",  priority: 0.85, changefreq: "monthly" },
   { path: "/ai-for-finance",     priority: 0.85, changefreq: "monthly" },
   { path: "/ai-for-automotive",  priority: 0.85, changefreq: "monthly" },
@@ -61,6 +62,7 @@ const STATIC_ROUTES = [
   { path: "/business-analyst",   priority: 0.75, changefreq: "monthly" },
 
   // ---- comparisons ----
+  { path: "/compare",            priority: 0.85, changefreq: "monthly" },
   { path: "/compare/doors",      priority: 0.85, changefreq: "monthly" },
   { path: "/compare/jama",       priority: 0.85, changefreq: "monthly" },
   { path: "/compare/polarion",   priority: 0.85, changefreq: "monthly" },
@@ -91,6 +93,9 @@ const STATIC_ROUTES = [
   { path: "/migrations",         priority: 0.85, changefreq: "monthly" },
   { path: "/affiliates",         priority: 0.65, changefreq: "monthly" },
   { path: "/free-tools",         priority: 0.80, changefreq: "monthly" },
+  { path: "/templates",          priority: 0.80, changefreq: "monthly" },
+  { path: "/for-startups",       priority: 0.75, changefreq: "monthly" },
+  { path: "/for-enterprise",     priority: 0.85, changefreq: "monthly" },
 
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },
