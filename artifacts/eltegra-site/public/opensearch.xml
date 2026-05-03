@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
+                      xmlns:moz="http://www.mozilla.org/2006/browser/search/">
+  <ShortName>Auditee</ShortName>
+  <LongName>Auditee — AI PDLC, Requirements & Compliance</LongName>
+  <Description>Search Auditee documentation, blog and product pages.</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <OutputEncoding>UTF-8</OutputEncoding>
+  <Language>en</Language>
+  <Image height="16" width="16" type="image/svg+xml">https://auditee.site/favicon.svg</Image>
+  <Image height="64" width="64" type="image/svg+xml">https://auditee.site/favicon.svg</Image>
+  <Url type="text/html"
+       method="get"
+       template="https://auditee.site/blog?q={searchTerms}" />
+  <Url type="application/opensearchdescription+xml"
+       rel="self"
+       template="https://auditee.site/opensearch.xml" />
+  <moz:SearchForm>https://auditee.site/blog</moz:SearchForm>
+  <Developer>Auditee</Developer>
+  <Contact>hello@auditee.site</Contact>
+  <Tags>auditee compliance requirements pdlc audit ai</Tags>
+  <SyndicationRight>open</SyndicationRight>
+  <AdultContent>false</AdultContent>
+</OpenSearchDescription>

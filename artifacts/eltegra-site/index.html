@@ -71,6 +71,21 @@
          "change password" deep link from breach notifications. -->
     <link rel="alternate" type="text/html" href="/.well-known/change-password" />
 
+    <!-- OpenSearch — Firefox and Bing offer a one-click "Add to search"
+         from this descriptor and surface a sitelinks search box from it. -->
+    <link
+      rel="search"
+      type="application/opensearchdescription+xml"
+      title="Auditee"
+      href="/opensearch.xml"
+    />
+
+    <!-- Microsoft pinned-site / Live Tile config (Windows + Edge legacy
+         and Outlook share previews). -->
+    <meta name="msapplication-TileColor" content="#0f172a" />
+    <meta name="msapplication-TileImage" content="/favicon.svg" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Auditee" />
@@ -118,6 +133,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+    <!-- GA4 / GTM endpoints — saves the TLS round-trip on first analytics hit
+         and improves Core Web Vitals INP measurement. -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+    <!-- Razorpay Checkout endpoints — pre-warmed so opening the checkout
+         modal from /pricing doesn't pay a full handshake on click. -->
+    <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+    <link rel="dns-prefetch" href="https://api.razorpay.com" />
+    <link rel="dns-prefetch" href="https://lumberjack.razorpay.com" />
     <link rel="preload" as="image" href="/hero-network.png" fetchpriority="high" />
     <!-- Preload the Google Fonts stylesheet so first-paint text isn't blocked
          by the synchronous CSS request (Semrush "Render-blocking resources"). -->
