@@ -134,13 +134,14 @@ async function streamToSiem(event: {
       .select({
         url: workspacesTable.siemWebhookUrl,
         secret: workspacesTable.siemWebhookSecret,
+        format: workspacesTable.siemFormat,
       })
       .from(workspacesTable)
       .where(eq(workspacesTable.id, event.workspaceId))
       .limit(1);
     const cfg = rows[0];
     if (!cfg?.url) return;
-    await dispatchToSiem(cfg.url, cfg.secret, event);
+    await dispatchToSiem(cfg.url, cfg.secret, event, (cfg.format ?? "generic") as "generic" | "splunk_hec" | "datadog" | "elastic");
   } catch (err) {
     logger.warn({ err, eventId: event.id }, "[siem] config lookup failed");
   }

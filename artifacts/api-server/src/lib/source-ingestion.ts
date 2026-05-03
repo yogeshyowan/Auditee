@@ -408,6 +408,66 @@ export async function ingestRemoteSystem(
       const text = `# ${id}\n\n${JSON.stringify(rec, null, 2)}`;
       files.push({ path: `servicenow/${table}/${id}.json`, size: text.length, content: Buffer.from(text, "utf8") });
     }
+  } else if (kind === "custom_rest") {
+    // Generic REST adapter — Enterprise customers point at any JSON endpoint
+    // and tell us how to find the items array + which fields to capture as
+    // the per-item id and title. This unblocks "we have a homegrown ALM /
+    // ticketing system" without us writing a bespoke connector for each one.
+    //
+    // cfg shape:
+    //   url:        string (required) — full REST endpoint
+    //   method?:    "GET" | "POST"   (default GET)
+    //   headers?:   Record<string,string> — sent as-is (use for auth)
+    //   body?:      string — only for POST
+    //   itemsPath?: dot/bracket path inside the JSON response that points to
+    //               the items array (default: response itself if it's an array,
+    //               or `data`/`results`/`items` if those exist)
+    //   idField?:   field name on each item to use as the file's id
+    //               (default: id | sys_id | key | uuid)
+    //   titleField?: field name to use in the human-readable header (default: title|name|summary)
+    const url = String(cfg.url || "");
+    if (!url) throw new Error("Custom REST: 'url' is required");
+    const method = (String(cfg.method || "GET").toUpperCase() === "POST") ? "POST" : "GET";
+    const headers: Record<string, string> = { Accept: "application/json", ...(cfg.headers ?? {}) };
+    const init: RequestInit = { method, headers };
+    if (method === "POST" && cfg.body) {
+      init.body = typeof cfg.body === "string" ? cfg.body : JSON.stringify(cfg.body);
+      if (!headers["Content-Type"]) headers["Content-Type"] = "application/json";
+    }
+    const r = await safeFetch(url, init);
+    if (!r.ok) throw new Error(`Custom REST: HTTP ${r.status}`);
+    const j = await r.json();
+    // Resolve items array.
+    function resolvePath(root: any, path: string): any {
+      const parts = path.replace(/\[(\d+)\]/g, ".$1").split(".").filter(Boolean);
+      return parts.reduce((acc, p) => (acc == null ? acc : acc[p]), root);
+    }
+    let items: any[] | null = null;
+    if (cfg.itemsPath && typeof cfg.itemsPath === "string") {
+      const v = resolvePath(j, cfg.itemsPath);
+      if (Array.isArray(v)) items = v;
+    } else if (Array.isArray(j)) {
+      items = j;
+    } else if (j && typeof j === "object") {
+      for (const k of ["data", "results", "items", "value", "records"]) {
+        if (Array.isArray((j as any)[k])) { items = (j as any)[k]; break; }
+      }
+    }
+    if (!items) throw new Error("Custom REST: could not locate items array — set itemsPath in config");
+    const idField = String(cfg.idField || "");
+    const titleField = String(cfg.titleField || "");
+    const idCandidates = idField ? [idField] : ["id", "sys_id", "key", "uuid", "_id"];
+    const titleCandidates = titleField ? [titleField] : ["title", "name", "summary", "subject"];
+    summary = `${items.length} record(s) from custom REST`;
+    let i = 0;
+    for (const item of items.slice(0, 500)) {
+      i++;
+      const id = String(idCandidates.map((f) => item?.[f]).find((v) => v != null) ?? `row-${i}`);
+      const title = String(titleCandidates.map((f) => item?.[f]).find((v) => v != null) ?? id);
+      const text = `# ${id} — ${title}\n\n${JSON.stringify(item, null, 2)}`;
+      const safeId = id.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 120);
+      files.push({ path: `custom_rest/${safeId}.json`, size: text.length, content: Buffer.from(text, "utf8") });
+    }
   } else if (kind === "cloud_server" || kind === "url") {
     // Just probe reachability and capture metadata.
     const url = cfg.url || (cfg.host ? `https://${cfg.host}` : "");

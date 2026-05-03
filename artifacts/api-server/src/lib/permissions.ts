@@ -84,6 +84,7 @@ const ENTERPRISE_ONLY_FEATURES = [
   "audit_log",
   "sso",
   "saml",
+  "oidc",
   "scim",
   "siem",
   "byo_llm",

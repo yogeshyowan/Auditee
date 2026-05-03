@@ -137,9 +137,11 @@ router.delete("/workspace/scim-tokens/:id", requireAuth, requireWorkspace, async
 });
 
 // ─── SIEM webhook config + test ───────────────────────────────────────────
+const SIEM_FORMATS = ["generic", "splunk_hec", "datadog", "elastic"] as const;
 const SiemBody = z.object({
   url: z.string().trim().url().max(2048).nullable(),
   secret: z.string().trim().min(8).max(512).nullable().optional(),
+  format: z.enum(SIEM_FORMATS).optional(),
 });
 
 router.post("/workspace/siem", requireAuth, requireWorkspace, async (req, res) => {
@@ -149,12 +151,16 @@ router.post("/workspace/siem", requireAuth, requireWorkspace, async (req, res) =
   const body = SiemBody.parse(req.body);
   await db
     .update(workspacesTable)
-    .set({ siemWebhookUrl: body.url, siemWebhookSecret: body.secret ?? null })
+    .set({
+      siemWebhookUrl: body.url,
+      siemWebhookSecret: body.secret ?? null,
+      ...(body.format ? { siemFormat: body.format } : {}),
+    })
     .where(eq(workspacesTable.id, ctx.workspace.id));
   await auditLog({
     workspaceId: ctx.workspace.id, actorUserId: ctx.userId, actorEmail: ctx.email,
     action: "siem.configured", resourceType: "workspace", resourceId: ctx.workspace.id,
-    metadata: { hasUrl: Boolean(body.url), hasSecret: Boolean(body.secret) }, req,
+    metadata: { hasUrl: Boolean(body.url), hasSecret: Boolean(body.secret), format: body.format ?? null }, req,
   });
   res.json({ ok: true });
 });
@@ -181,7 +187,12 @@ router.post("/workspace/siem/test", requireAuth, requireWorkspace, async (req, r
     integrityHash: createHash("sha256").update(randomUUID()).digest("hex"),
     createdAt: new Date().toISOString(),
   };
-  await dispatchToSiem(ctx.workspace.siemWebhookUrl, ctx.workspace.siemWebhookSecret, event);
+  await dispatchToSiem(
+    ctx.workspace.siemWebhookUrl,
+    ctx.workspace.siemWebhookSecret,
+    event,
+    (ctx.workspace.siemFormat ?? "generic") as "generic" | "splunk_hec" | "datadog" | "elastic",
+  );
   res.json({ ok: true, dispatched: true });
 });
 
@@ -305,6 +316,46 @@ router.post("/workspace/region", requireAuth, requireWorkspace, async (req, res)
     metadata: { from: ctx.workspace.dataRegion, to: body.dataRegion }, req,
   });
   res.json({ dataRegion: body.dataRegion });
+});
+
+// ─── OIDC SSO config ─────────────────────────────────────────────────────
+const OidcBody = z.object({
+  oidcIssuer: z.string().trim().url().max(2048).nullable(),
+  oidcClientId: z.string().trim().min(1).max(512).nullable(),
+  oidcClientSecret: z.string().trim().max(2048).nullable().optional(),
+});
+router.get("/workspace/oidc-config", requireAuth, requireWorkspace, async (req, res) => {
+  const ctx = ctxOf(req);
+  const gate = ensureAdminEnterprise(ctx, "oidc");
+  if (!gate.ok) { res.status(gate.status).json(gate.body); return; }
+  res.json({
+    oidcIssuer: ctx.workspace.oidcIssuer,
+    oidcClientId: ctx.workspace.oidcClientId,
+    hasClientSecret: Boolean(ctx.workspace.oidcClientSecretEncrypted),
+  });
+});
+router.post("/workspace/oidc-config", requireAuth, requireWorkspace, async (req, res) => {
+  const ctx = ctxOf(req);
+  const gate = ensureAdminEnterprise(ctx, "oidc");
+  if (!gate.ok) { res.status(gate.status).json(gate.body); return; }
+  const body = OidcBody.parse(req.body);
+  const set: Record<string, unknown> = {
+    oidcIssuer: body.oidcIssuer,
+    oidcClientId: body.oidcClientId,
+  };
+  // Only overwrite the encrypted secret when the admin explicitly sends a
+  // non-empty new value. Sending `null` clears it; omitting/empty leaves it.
+  if (body.oidcClientSecret === null) set.oidcClientSecretEncrypted = null;
+  else if (body.oidcClientSecret && body.oidcClientSecret.length > 0) {
+    set.oidcClientSecretEncrypted = encryptField(body.oidcClientSecret);
+  }
+  await db.update(workspacesTable).set(set).where(eq(workspacesTable.id, ctx.workspace.id));
+  await auditLog({
+    workspaceId: ctx.workspace.id, actorUserId: ctx.userId, actorEmail: ctx.email,
+    action: "oidc.configured", resourceType: "workspace", resourceId: ctx.workspace.id,
+    metadata: { hasIssuer: Boolean(body.oidcIssuer), hasClientId: Boolean(body.oidcClientId) }, req,
+  });
+  res.json({ ok: true });
 });
 
 // ─── Customer-managed encryption key id ──────────────────────────────────

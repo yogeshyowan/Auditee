@@ -69,6 +69,15 @@ export const workspacesTable = pgTable(
     // ─── Enterprise: SIEM / audit-log streaming ────────────────────────────
     siemWebhookUrl: text("siem_webhook_url"),
     siemWebhookSecret: text("siem_webhook_secret"),
+    // Payload shape sent to the SIEM. One of: generic | splunk_hec | datadog | elastic.
+    // Default 'generic' preserves the original Auditee-native JSON shape.
+    siemFormat: text("siem_format").notNull().default("generic"),
+    // ─── Enterprise: OIDC SSO (in addition to SAML) ────────────────────────
+    // Issuer URL is used for OIDC discovery (.well-known/openid-configuration).
+    // clientSecret is stored encrypted via fieldEncryption helpers.
+    oidcIssuer: text("oidc_issuer"),
+    oidcClientId: text("oidc_client_id"),
+    oidcClientSecretEncrypted: text("oidc_client_secret_encrypted"),
     // ─── Enterprise: Customer-managed encryption key id (KMS metadata) ────
     cmkKid: text("cmk_kid"),
     // ─── Enterprise: Network allowlist — array of CIDR strings ─────────────

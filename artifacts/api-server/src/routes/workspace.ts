@@ -52,6 +52,7 @@ router.get("/workspace/me", requireAuth, requireWorkspace, async (req, res) => {
       auditLog: planAllows(planTier, "audit_log"),
       sso: planAllows(planTier, "sso"),
       saml: planAllows(planTier, "saml"),
+      oidc: planAllows(planTier, "oidc"),
       scim: planAllows(planTier, "scim"),
       siem: planAllows(planTier, "siem"),
       byo_llm: planAllows(planTier, "byo_llm"),

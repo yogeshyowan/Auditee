@@ -176,6 +176,7 @@ export default function EnterpriseSettingsPage() {
       <Tabs defaultValue="saml">
         <TabsList className="flex-wrap">
           <TabsTrigger value="saml" data-testid="tab-saml"><KeyRound className="mr-1 h-4 w-4" /> SAML SSO</TabsTrigger>
+          <TabsTrigger value="oidc" data-testid="tab-oidc"><KeyRound className="mr-1 h-4 w-4" /> OIDC SSO</TabsTrigger>
           <TabsTrigger value="scim" data-testid="tab-scim"><ShieldCheck className="mr-1 h-4 w-4" /> SCIM</TabsTrigger>
           <TabsTrigger value="siem" data-testid="tab-siem"><Webhook className="mr-1 h-4 w-4" /> SIEM</TabsTrigger>
           <TabsTrigger value="llm" data-testid="tab-llm"><BrainCircuit className="mr-1 h-4 w-4" /> BYO-LLM</TabsTrigger>
@@ -190,6 +191,7 @@ export default function EnterpriseSettingsPage() {
         </TabsList>
 
         <TabsContent value="saml"><SamlPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
+        <TabsContent value="oidc"><OidcPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
         <TabsContent value="scim"><ScimPanel getToken={getToken} toast={toast} /></TabsContent>
         <TabsContent value="siem"><SiemPanel ws={ws} getToken={getToken} toast={toast} onSaved={refresh} /></TabsContent>
         <TabsContent value="llm"><LlmPanel getToken={getToken} toast={toast} /></TabsContent>
@@ -334,10 +336,11 @@ function ScimPanel({ getToken, toast }: any) {
 function SiemPanel({ ws, getToken, toast, onSaved }: any) {
   const [url, setUrl] = useState(ws.siemWebhookUrl ?? "");
   const [secret, setSecret] = useState("");
+  const [format, setFormat] = useState<string>(ws.siemFormat ?? "generic");
 
   const save = useMutation({
     mutationFn: async () => authedFetch("/workspace/siem", await getToken(), {
-      method: "POST", body: JSON.stringify({ url: url.trim() || null, secret: secret.trim() || null }),
+      method: "POST", body: JSON.stringify({ url: url.trim() || null, secret: secret.trim() || null, format }),
     }),
     onSuccess: () => { toast({ title: "SIEM webhook saved" }); setSecret(""); onSaved(); },
     onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
@@ -360,6 +363,21 @@ function SiemPanel({ ws, getToken, toast, onSaved }: any) {
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">HMAC secret (write-only; leave blank to keep current)</label>
           <Input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="••••••••" data-testid="input-siem-secret" />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Payload format</label>
+          <select
+            value={format}
+            onChange={(e) => setFormat(e.target.value)}
+            data-testid="select-siem-format"
+            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="generic">Generic JSON (Auditee native)</option>
+            <option value="splunk_hec">Splunk HEC envelope</option>
+            <option value="datadog">Datadog Logs</option>
+            <option value="elastic">Elastic Common Schema (ECS)</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-500">Splunk HEC also receives the secret as a Splunk-token Authorization header.</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => save.mutate()} disabled={save.isPending} data-testid="button-save-siem">
@@ -788,6 +806,67 @@ function DsarPanel({ getToken, toast }: any) {
             </Button>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── OIDC SSO ───────────────────────────────────────────────────────────
+function OidcPanel({ ws, getToken, toast, onSaved }: any) {
+  const [issuer, setIssuer] = useState(ws.oidcIssuer ?? "");
+  const [clientId, setClientId] = useState(ws.oidcClientId ?? "");
+  const [clientSecret, setClientSecret] = useState("");
+  const [cfg, setCfg] = useState<{ hasClientSecret: boolean } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await authedFetch("/workspace/oidc-config", await getToken());
+        setCfg(r);
+      } catch { /* ignore */ }
+    })();
+  }, [getToken]);
+
+  const save = useMutation({
+    mutationFn: async () => authedFetch("/workspace/oidc-config", await getToken(), {
+      method: "POST",
+      body: JSON.stringify({
+        oidcIssuer: issuer.trim() || null,
+        oidcClientId: clientId.trim() || null,
+        oidcClientSecret: clientSecret.length > 0 ? clientSecret : undefined,
+      }),
+    }),
+    onSuccess: () => { toast({ title: "OIDC saved" }); setClientSecret(""); onSaved(); },
+    onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
+  });
+
+  const loginUrl = `${import.meta.env.BASE_URL}api/sso/oidc/${ws.id}/login`;
+  const callbackUrl = `${window.location.origin}${import.meta.env.BASE_URL}api/sso/oidc/${ws.id}/callback`;
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>OIDC SSO (OpenID Connect)</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-slate-600">
+          Authorization Code flow with PKCE. Configure your IdP (Okta, Auth0, Azure AD, Google Workspace, Keycloak) with the
+          callback URL below, then paste the issuer URL and client credentials.
+        </p>
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
+          <div><strong>Redirect / callback URL:</strong> <code className="break-all">{callbackUrl}</code></div>
+          <div className="mt-1"><strong>Login URL (start sign-in):</strong> <code className="break-all">{loginUrl}</code></div>
+        </div>
+        <Field label="Issuer URL" value={issuer} onChange={setIssuer} placeholder="https://example.okta.com" testId="input-oidc-issuer" />
+        <Field label="Client ID" value={clientId} onChange={setClientId} placeholder="0oab1c2d3e..." testId="input-oidc-client-id" />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">
+            Client secret (write-only; leave blank to keep current{cfg?.hasClientSecret ? " — currently set" : " — not set"})
+          </label>
+          <Input type="password" value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} placeholder="••••••••" data-testid="input-oidc-secret" />
+          <p className="mt-1 text-xs text-slate-500">Public clients (PKCE only, no secret) are supported — leave blank.</p>
+        </div>
+        <Button onClick={() => save.mutate()} disabled={save.isPending} data-testid="button-save-oidc">
+          {save.isPending ? "Saving…" : "Save OIDC config"}
+        </Button>
       </CardContent>
     </Card>
   );
