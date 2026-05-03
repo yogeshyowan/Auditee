@@ -110,7 +110,22 @@ const TUTORIAL_BASE = "/auditee-tutorial/";
 
 export default function DemoVideos() {
   const pageTitle = "Demo Videos — Watch Auditee in Action | Auditee";
-  const pageDesc = "14 narrated tutorials walking real demo projects — Helios, Orion, Apollo, Ares, Atlas, Nova and more — across Sources, Smart Interview, Requirements, Gaps, Traceability, Compliance, CAPA, Defects, Tests, Reports, Workflows, Analytics and Recurring Audits.";
+  const pageDesc = `${MODULES.length} narrated tutorials walking real demo projects — Helios, Orion, Apollo, Ares, Atlas, Nova and more — across Sources, Smart Interview, Requirements, Gaps, Traceability, Compliance, CAPA, Defects, Tests, Reports, Workflows, Analytics, Recurring Audits, Legacy Modernisation, PDLC and Ask Auditee.`;
+  const SITE = "https://auditee.site";
+  const itemListLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Auditee — Demo Videos",
+    description: pageDesc,
+    numberOfItems: MODULES.length,
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    itemListElement: MODULES.map((m, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${SITE}/demo-videos/${m.slug}`,
+      name: `${m.title} — ${m.project}`,
+    })),
+  };
   return (
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900">
       <SEO
@@ -118,7 +133,10 @@ export default function DemoVideos() {
         description={pageDesc}
         path="/demo-videos"
         keywords={["Auditee demo", "AI requirements demo", "compliance platform tutorial"]}
-        jsonLd={breadcrumbsLd([{ name: "Home", path: "/" }, { name: "Demo Videos", path: "/demo-videos" }])}
+        jsonLd={[
+          breadcrumbsLd([{ name: "Home", path: "/" }, { name: "Demo Videos", path: "/demo-videos" }]),
+          itemListLd,
+        ]}
       />
       <Navigation />
       <main className="pt-28 pb-24">
@@ -128,7 +146,7 @@ export default function DemoVideos() {
             Demo videos
           </h1>
           <p className="mt-4 text-lg text-slate-600">
-            14 narrated tutorials — under 5 minutes each — walking through real demo projects from healthcare, automotive,
+            {MODULES.length} narrated tutorials — under 5 minutes each — walking through real demo projects from healthcare, automotive,
             banking, fintech and security. Watch a single feature or run the whole tour end-to-end.
           </p>
           <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
