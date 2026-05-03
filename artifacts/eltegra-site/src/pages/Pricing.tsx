@@ -255,6 +255,87 @@ export default function Pricing() {
           faqLd(
             FAQS.slice(0, 5).map((f) => ({ q: f.q, a: f.a })),
           ),
+          // Product + Offer schema per tier. Google surfaces these in
+          // pricing-comparison rich results and AI answer engines (Perplexity,
+          // ChatGPT) cite them when answering "how much does Auditee cost".
+          // Free tier omits price (Google rejects offers with price=0 in
+          // some locales); Enterprise omits price ("contact sales" pattern).
+          ...TIERS.filter((t) => t.planKey !== "free" && t.planKey !== "enterprise").map((t) => ({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: `Auditee ${t.name}`,
+            description: t.blurb,
+            brand: { "@type": "Brand", name: "Auditee" },
+            category: "BusinessApplication",
+            url: "https://auditee.site/pricing",
+            image: "https://auditee.site/opengraph.jpg",
+            offers: [
+              {
+                "@type": "Offer",
+                name: `${t.name} (Monthly)`,
+                price: String(t.monthlyInr),
+                priceCurrency: "INR",
+                priceSpecification: {
+                  "@type": "UnitPriceSpecification",
+                  price: t.monthlyInr,
+                  priceCurrency: "INR",
+                  unitCode: "MON",
+                  referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" },
+                },
+                availability: "https://schema.org/InStock",
+                url: "https://auditee.site/pricing",
+                priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
+                seller: { "@type": "Organization", name: "Auditee", url: "https://auditee.site/" },
+              },
+              {
+                "@type": "Offer",
+                name: `${t.name} (Annual)`,
+                price: String(t.annualInr),
+                priceCurrency: "INR",
+                priceSpecification: {
+                  "@type": "UnitPriceSpecification",
+                  price: t.annualInr,
+                  priceCurrency: "INR",
+                  unitCode: "ANN",
+                  referenceQuantity: { "@type": "QuantitativeValue", value: 12, unitCode: "MON" },
+                },
+                availability: "https://schema.org/InStock",
+                url: "https://auditee.site/pricing",
+                priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
+                seller: { "@type": "Organization", name: "Auditee", url: "https://auditee.site/" },
+              },
+            ],
+          })),
+          // Service schema for the AI compliance / requirements offering.
+          // Helps AI answer engines categorise Auditee against competitors
+          // (DOORS, Jama, Polarion) when answering "best ASPICE tool" etc.
+          {
+            "@context": "https://schema.org",
+            "@type": "Service",
+            name: "Auditee — AI PDLC, Requirements & Compliance Automation",
+            serviceType: "AI-powered Application Lifecycle Management & compliance automation",
+            provider: { "@type": "Organization", name: "Auditee", url: "https://auditee.site/" },
+            areaServed: ["IN", "AE", "SA", "GB", "DE", "FR", "ES", "IE", "NL", "US", "CA", "AU", "SG", "JP"],
+            audience: { "@type": "BusinessAudience", audienceType: "Engineering, QA and Compliance teams" },
+            offers: {
+              "@type": "AggregateOffer",
+              priceCurrency: "INR",
+              lowPrice: "0",
+              highPrice: "79990",
+              offerCount: "5",
+              url: "https://auditee.site/pricing",
+            },
+            hasOfferCatalog: {
+              "@type": "OfferCatalog",
+              name: "Auditee plans",
+              itemListElement: TIERS.map((t) => ({
+                "@type": "Offer",
+                itemOffered: { "@type": "Service", name: `Auditee ${t.name}` },
+                price: String(t.monthlyInr),
+                priceCurrency: "INR",
+              })),
+            },
+          },
         ]}
       />
       {/* Slim nav */}

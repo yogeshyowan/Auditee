@@ -59,6 +59,18 @@
     <!-- PWA / installability (Lighthouse + Semrush "Web app manifest"). -->
     <link rel="manifest" href="/manifest.webmanifest" />
 
+    <!-- IndieWeb / Fediverse identity verification. Mirrors Organization
+         sameAs in JSON-LD, but rel=me is what Mastodon, Bluesky, GitHub
+         and most identity-discovery crawlers actually consume. -->
+    <link rel="me" href="https://github.com/auditee" />
+    <link rel="me" href="https://www.linkedin.com/company/auditee" />
+    <link rel="me" href="mailto:hello@auditee.site" />
+
+    <!-- W3C "A Well-Known URL for Changing Passwords". 1Password / Bitwarden
+         / iCloud Keychain / Google Password Manager use this to surface a
+         "change password" deep link from breach notifications. -->
+    <link rel="alternate" type="text/html" href="/.well-known/change-password" />
+
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Auditee" />
