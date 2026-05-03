@@ -116,6 +116,11 @@ const STATIC_ROUTES = [
   { path: "/dpdp-act",                 priority: 0.90, changefreq: "monthly" },
   { path: "/integrations/github",      priority: 0.85, changefreq: "monthly" },
   { path: "/integrations/slack",       priority: 0.80, changefreq: "monthly" },
+  { path: "/gdpr",                     priority: 0.90, changefreq: "monthly" },
+  { path: "/soc-2",                    priority: 0.90, changefreq: "monthly" },
+  { path: "/iso-27001",                priority: 0.90, changefreq: "monthly" },
+  { path: "/integrations/gitlab",      priority: 0.85, changefreq: "monthly" },
+  { path: "/integrations/confluence",  priority: 0.80, changefreq: "monthly" },
 
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },

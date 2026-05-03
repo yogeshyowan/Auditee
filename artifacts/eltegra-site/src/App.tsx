@@ -56,6 +56,11 @@ import Iso21434 from "@/pages/Iso21434";
 import DpdpAct from "@/pages/DpdpAct";
 import IntegrationGitHub from "@/pages/IntegrationGitHub";
 import IntegrationSlack from "@/pages/IntegrationSlack";
+import Gdpr from "@/pages/Gdpr";
+import Soc2 from "@/pages/Soc2";
+import Iso27001 from "@/pages/Iso27001";
+import IntegrationGitLab from "@/pages/IntegrationGitLab";
+import IntegrationConfluence from "@/pages/IntegrationConfluence";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -426,6 +431,19 @@ function Router() {
       <Route path="/github-integration" component={IntegrationGitHub} />
       <Route path="/integrations/slack" component={IntegrationSlack} />
       <Route path="/slack-integration" component={IntegrationSlack} />
+      <Route path="/gdpr" component={Gdpr} />
+      <Route path="/eu-gdpr" component={Gdpr} />
+      <Route path="/uk-gdpr" component={Gdpr} />
+      <Route path="/soc-2" component={Soc2} />
+      <Route path="/soc2" component={Soc2} />
+      <Route path="/soc-2-type-ii" component={Soc2} />
+      <Route path="/iso-27001" component={Iso27001} />
+      <Route path="/iso27001" component={Iso27001} />
+      <Route path="/isms" component={Iso27001} />
+      <Route path="/integrations/gitlab" component={IntegrationGitLab} />
+      <Route path="/gitlab-integration" component={IntegrationGitLab} />
+      <Route path="/integrations/confluence" component={IntegrationConfluence} />
+      <Route path="/confluence-integration" component={IntegrationConfluence} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
