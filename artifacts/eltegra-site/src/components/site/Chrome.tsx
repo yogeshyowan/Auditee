@@ -83,7 +83,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Blog", desc: "Buyer's guides, standards walkthroughs and field notes.", href: "/blog" },
       { title: "Whitepapers", desc: "Long-form work on standards, architecture and industry briefs.", href: "/whitepapers" },
       { title: "Use Cases", desc: "12 concrete jobs Auditee does — from BRD drafting to RM-tool replacement.", href: "/use-cases" },
-      { title: "Demo Videos", desc: "14 narrated module tutorials — under 5 minutes each.", href: "/demo-videos" },
+      { title: "Demo Videos", desc: "17 narrated module tutorials — under 5 minutes each.", href: "/demo-videos" },
       { title: "FAQs", desc: "Platform, AI, integrations, compliance, security and pricing.", href: "/faqs" },
       { title: "Glossary", desc: "45+ definitions — BRD, ASIL, IEC 62304, SOUP, ReqIF and more.", href: "/glossary" },
       { title: "Case Studies", desc: "How healthcare, fintech, automotive and telecom teams use Auditee.", href: "/case-studies" },

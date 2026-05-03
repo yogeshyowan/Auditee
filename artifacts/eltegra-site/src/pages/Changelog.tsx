@@ -46,7 +46,7 @@ const ENTRIES: Entry[] = [
       { tag: "New", text: "Role pages: CPO, CTO, Business Analyst, QA & Compliance." },
       { tag: "New", text: "Product pages: BRD generation, intelligent document analysis, requirements-linked test cases, requirements management." },
       { tag: "New", text: "FAQs page with FAQPage JSON-LD across seven categories." },
-      { tag: "New", text: "Demo videos page with 14 narrated module tutorials." },
+      { tag: "New", text: "Demo videos page with 17 narrated module tutorials." },
       { tag: "Improved", text: "Top-nav mega-menu now includes Industries and For-your-role groups." },
       { tag: "Fixed", text: "Accessibility fix: replaced nested Button-in-Link CTAs with Button asChild + Link / anchor pattern." },
     ],
