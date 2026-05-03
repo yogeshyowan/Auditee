@@ -61,6 +61,11 @@ import Soc2 from "@/pages/Soc2";
 import Iso27001 from "@/pages/Iso27001";
 import IntegrationGitLab from "@/pages/IntegrationGitLab";
 import IntegrationConfluence from "@/pages/IntegrationConfluence";
+import Hipaa from "@/pages/Hipaa";
+import Dora from "@/pages/Dora";
+import EuAiAct from "@/pages/EuAiAct";
+import IntegrationServiceNow from "@/pages/IntegrationServiceNow";
+import IntegrationMicrosoftTeams from "@/pages/IntegrationMicrosoftTeams";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -444,6 +449,19 @@ function Router() {
       <Route path="/gitlab-integration" component={IntegrationGitLab} />
       <Route path="/integrations/confluence" component={IntegrationConfluence} />
       <Route path="/confluence-integration" component={IntegrationConfluence} />
+      <Route path="/hipaa" component={Hipaa} />
+      <Route path="/hipaa-compliance" component={Hipaa} />
+      <Route path="/dora" component={Dora} />
+      <Route path="/dora-regulation" component={Dora} />
+      <Route path="/digital-operational-resilience-act" component={Dora} />
+      <Route path="/eu-ai-act" component={EuAiAct} />
+      <Route path="/ai-act" component={EuAiAct} />
+      <Route path="/eu-2024-1689" component={EuAiAct} />
+      <Route path="/integrations/servicenow" component={IntegrationServiceNow} />
+      <Route path="/servicenow-integration" component={IntegrationServiceNow} />
+      <Route path="/integrations/microsoft-teams" component={IntegrationMicrosoftTeams} />
+      <Route path="/integrations/teams" component={IntegrationMicrosoftTeams} />
+      <Route path="/microsoft-teams-integration" component={IntegrationMicrosoftTeams} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />

@@ -121,6 +121,11 @@ const STATIC_ROUTES = [
   { path: "/iso-27001",                priority: 0.90, changefreq: "monthly" },
   { path: "/integrations/gitlab",      priority: 0.85, changefreq: "monthly" },
   { path: "/integrations/confluence",  priority: 0.80, changefreq: "monthly" },
+  { path: "/hipaa",                          priority: 0.90, changefreq: "monthly" },
+  { path: "/dora",                           priority: 0.90, changefreq: "monthly" },
+  { path: "/eu-ai-act",                      priority: 0.90, changefreq: "monthly" },
+  { path: "/integrations/servicenow",        priority: 0.85, changefreq: "monthly" },
+  { path: "/integrations/microsoft-teams",   priority: 0.85, changefreq: "monthly" },
 
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },
