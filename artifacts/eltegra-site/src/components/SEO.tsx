@@ -181,7 +181,51 @@ export function SEO(props: SEOProps) {
     setLink("alternate", fullUrl, { name: "hreflang", value: "x-default" });
 
     // JSON-LD
-    const lds = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+    const userLds = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+
+    // Auto-emit BreadcrumbList for any non-root page that didn't already
+    // declare one. Derives crumb labels from URL segments (kebab-case →
+    // Title Case). Google surfaces the breadcrumb trail in SERP snippets
+    // instead of the raw URL when this is present, and AI answer engines
+    // use it for site-hierarchy context. Skipped on "/" (just Home is
+    // noise) and skipped if the page already provides a BreadcrumbList
+    // (e.g. Pricing) to avoid duplicates. Same shape as breadcrumbsLd().
+    const trimmedPath = path.replace(/^\/+|\/+$/g, "");
+    const hasUserBreadcrumb = userLds.some(
+      (d) => (d as Record<string, unknown>)["@type"] === "BreadcrumbList",
+    );
+    const autoBreadcrumb: Record<string, unknown>[] = [];
+    if (trimmedPath && !hasUserBreadcrumb) {
+      const segments = trimmedPath.split("/").filter(Boolean);
+      const crumbs: { name: string; url: string }[] = [
+        { name: "Home", url: `${SITE_URL}/` },
+      ];
+      let acc = "";
+      for (const seg of segments) {
+        acc += `/${seg}`;
+        const name = seg
+          .split("-")
+          .map((w) =>
+            /^(ai|api|sso|qa|sla|saas|pdlc|capa|aspice|iso|iec|fda|cmmi|hipaa|soc|brd|crm|erp|kpi|csv|json|xml|html|css|js|ts|cto|cpo|ceo|cio|ciso)$/i.test(w)
+              ? w.toUpperCase()
+              : w.charAt(0).toUpperCase() + w.slice(1),
+          )
+          .join(" ");
+        crumbs.push({ name, url: `${SITE_URL}${acc}` });
+      }
+      autoBreadcrumb.push({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: crumbs.map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: c.name,
+          item: c.url,
+        })),
+      });
+    }
+    const lds = [...autoBreadcrumb, ...userLds];
+
     lds.forEach((data, i) => {
       const id = `seo-jsonld-${i}`;
       let el = document.head.querySelector<HTMLScriptElement>(`script#${id}`);
