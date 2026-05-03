@@ -89,6 +89,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Case Studies", desc: "How healthcare, fintech, automotive and telecom teams use Auditee.", href: "/case-studies" },
       { title: "Integrations", desc: "40+ connectors — DOORS, Jama, Jira, GitHub, Okta, OpenAI, Snowflake.", href: "/integrations" },
       { title: "Changelog", desc: "Monthly release notes — what shipped and what improved.", href: "/changelog" },
+      { title: "Developers", desc: "REST API, webhooks, SDKs, model routing and vector stores.", href: "/developers" },
+      { title: "Status", desc: "Live platform status across IN / EU / US plus shared services.", href: "/status" },
+      { title: "Partners", desc: "Implementation, GRC, technology, channel and sovereignty tracks.", href: "/partners" },
       { title: "Trust Center", desc: "Sub-processors, certifications, DPA and responsible disclosure.", href: "/trust" },
       { title: "Features", desc: "The complete platform feature set, end-to-end.", href: "/features" },
       { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
@@ -474,6 +477,9 @@ export function SiteFooter() {
               <li><Link href="/integrations" className="hover:text-primary transition-colors" data-testid="link-footer-integrations">Integrations</Link></li>
               <li><Link href="/glossary" className="hover:text-primary transition-colors" data-testid="link-footer-glossary">Glossary</Link></li>
               <li><Link href="/changelog" className="hover:text-primary transition-colors" data-testid="link-footer-changelog">Changelog</Link></li>
+              <li><Link href="/developers" className="hover:text-primary transition-colors" data-testid="link-footer-developers">Developers</Link></li>
+              <li><Link href="/status" className="hover:text-primary transition-colors" data-testid="link-footer-status">Status</Link></li>
+              <li><Link href="/partners" className="hover:text-primary transition-colors" data-testid="link-footer-partners">Partners</Link></li>
               <li><Link href="/trust" className="hover:text-primary transition-colors" data-testid="link-footer-trust">Trust Center</Link></li>
               <li><Link href="/demo-videos" className="hover:text-primary transition-colors" data-testid="link-footer-demos">Demo Videos</Link></li>
               <li><Link href="/faqs" className="hover:text-primary transition-colors" data-testid="link-footer-faqs">FAQs</Link></li>

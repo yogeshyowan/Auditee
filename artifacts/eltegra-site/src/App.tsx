@@ -49,6 +49,9 @@ import TrustCenter from "@/pages/TrustCenter";
 import Changelog from "@/pages/Changelog";
 import UseCases from "@/pages/UseCases";
 import Whitepapers from "@/pages/Whitepapers";
+import Developers from "@/pages/Developers";
+import Partners from "@/pages/Partners";
+import Status from "@/pages/Status";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import SignInPage from "@/pages/SignIn";
@@ -281,6 +284,12 @@ function Router() {
       <Route path="/solutions" component={UseCases} />
       <Route path="/whitepapers" component={Whitepapers} />
       <Route path="/resources" component={Whitepapers} />
+      <Route path="/developers" component={Developers} />
+      <Route path="/docs" component={Developers} />
+      <Route path="/partners" component={Partners} />
+      <Route path="/partner-program" component={Partners} />
+      <Route path="/status" component={Status} />
+      <Route path="/uptime" component={Status} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />
