@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { bootstrapFrameworks } from "./lib/bootstrap-frameworks";
 import { bootstrapGapRequirements } from "./lib/bootstrap-gap-requirements";
+import { bootstrapDemoProjects } from "./lib/bootstrap-demo-projects";
 import { backfillUnforwardedLeads } from "./lib/leadCaptureBackfill";
 import { startScheduler } from "./lib/scheduler";
 
@@ -31,6 +32,9 @@ app.listen(port, (err) => {
   // Runs in the background so it never blocks request handling.
   void bootstrapFrameworks();
   void bootstrapGapRequirements();
+  // Idempotently ensure the built-in demo projects (with full per-module
+  // sample data) exist so every new workspace sees them in the project picker.
+  void bootstrapDemoProjects();
   // Best-effort: flush any lead_captures rows that were stored before the
   // Google Sheet integration was wired up. No-op once everything is forwarded.
   void backfillUnforwardedLeads().catch((err) =>
