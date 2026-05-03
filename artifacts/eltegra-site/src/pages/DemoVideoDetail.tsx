@@ -330,6 +330,27 @@ export default function DemoVideoDetail() {
             </div>
           </Card>
 
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
+            <a
+              href={`${TUTORIAL_BASE}?shorts=${module.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 text-white px-4 py-2 hover:bg-slate-700 transition-colors"
+              data-testid="link-watch-short"
+            >
+              📱 Watch as 38-second Short
+            </a>
+            <a
+              href={`${TUTORIAL_BASE}?full=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white text-slate-900 px-4 py-2 hover:bg-slate-100 transition-colors"
+              data-testid="link-watch-full"
+            >
+              ▶ Play full ~6-min tour
+            </a>
+          </div>
+
           <section className="mt-10">
             <h2 className="font-display text-2xl font-bold text-slate-950 mb-4">
               Step by step on the {module.project.split(" — ")[0]} demo project

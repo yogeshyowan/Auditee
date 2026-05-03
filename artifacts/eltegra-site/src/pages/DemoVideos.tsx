@@ -127,8 +127,13 @@ export default function DemoVideos() {
           </p>
           <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
             <Button asChild size="lg" className="gap-2" data-testid="demo-cta-full-tour">
-              <a href={TUTORIAL_BASE} target="_blank" rel="noopener noreferrer">
-                Play full tour <Play className="w-4 h-4" />
+              <a href={`${TUTORIAL_BASE}?full=1`} target="_blank" rel="noopener noreferrer">
+                Play full tour (~6 min) <Play className="w-4 h-4" />
+              </a>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="gap-2" data-testid="demo-cta-shorts">
+              <a href={`${TUTORIAL_BASE}?shorts=`} target="_blank" rel="noopener noreferrer">
+                📱 Watch as Shorts
               </a>
             </Button>
             <Button asChild size="lg" variant="outline">
