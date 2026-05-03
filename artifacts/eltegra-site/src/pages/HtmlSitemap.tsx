@@ -57,8 +57,45 @@ const SECTIONS: Array<{ heading: string; links: Array<{ href: string; label: str
     ],
   },
   {
-    heading: "Standards",
-    links: [{ href: "/standards", label: "Standards library (ASPICE, ISO 26262, IEC 62304, FDA QMSR, MDR, DORA, DPDP, SOC 2…)" }],
+    heading: "Standards & regulations",
+    links: [
+      { href: "/standards", label: "Standards library (overview)" },
+      { href: "/aspice", label: "Automotive SPICE / ASPICE 4.0" },
+      { href: "/iso-26262", label: "ISO 26262 (functional safety)" },
+      { href: "/iso-21434", label: "ISO 21434 / UN R155 (automotive cyber)" },
+      { href: "/iec-62304", label: "IEC 62304 (medical device software)" },
+      { href: "/fda-qmsr", label: "FDA QMSR / 21 CFR 820" },
+      { href: "/iso-27001", label: "ISO 27001 (ISMS)" },
+      { href: "/soc-2", label: "SOC 2 (Type II)" },
+      { href: "/hipaa", label: "HIPAA" },
+      { href: "/gdpr", label: "GDPR (EU / UK)" },
+      { href: "/dpdp-act", label: "DPDP Act (India)" },
+      { href: "/dora", label: "DORA (EU operational resilience)" },
+      { href: "/eu-ai-act", label: "EU AI Act" },
+    ],
+  },
+  {
+    heading: "Demo videos by module",
+    links: [
+      { href: "/demo-videos", label: "All demo videos" },
+      { href: "/demo-videos/dashboard", label: "Dashboard — Helios" },
+      { href: "/demo-videos/sources", label: "Project Sources — Orion" },
+      { href: "/demo-videos/interview", label: "Smart Interview — Aesop" },
+      { href: "/demo-videos/requirements", label: "AI Requirements — Apollo" },
+      { href: "/demo-videos/gaps", label: "Gap Detection — Ares" },
+      { href: "/demo-videos/traceability", label: "Traceability — Titan" },
+      { href: "/demo-videos/compliance", label: "Compliance — Nexus" },
+      { href: "/demo-videos/capa", label: "CAPA — Vega" },
+      { href: "/demo-videos/defects", label: "Defects — Sterling" },
+      { href: "/demo-videos/tests", label: "Test Cases — Bastion" },
+      { href: "/demo-videos/reports", label: "AI Reports — Atlas" },
+      { href: "/demo-videos/workflows", label: "Workflows — Aegis" },
+      { href: "/demo-videos/analytics", label: "Analytics — Cipher" },
+      { href: "/demo-videos/recurring-audits", label: "Recurring Audits — Nova" },
+      { href: "/demo-videos/legacy", label: "Legacy Modernisation — Mercury" },
+      { href: "/demo-videos/pdlc", label: "PDLC Pipeline — Phoenix" },
+      { href: "/demo-videos/ask", label: "Ask Auditee — Sirius" },
+    ],
   },
   {
     heading: "Resources",
@@ -68,7 +105,6 @@ const SECTIONS: Array<{ heading: string; links: Array<{ href: string; label: str
       { href: "/customers", label: "Customers" },
       { href: "/whitepapers", label: "Whitepapers" },
       { href: "/webinars", label: "Webinars" },
-      { href: "/demo-videos", label: "Demo videos" },
       { href: "/templates", label: "Templates" },
       { href: "/free-tools", label: "Free tools" },
       { href: "/roi-calculator", label: "ROI calculator" },
@@ -77,6 +113,7 @@ const SECTIONS: Array<{ heading: string; links: Array<{ href: string; label: str
       { href: "/help", label: "Help center" },
       { href: "/changelog", label: "Changelog" },
       { href: "/roadmap", label: "Roadmap" },
+      { href: "/community", label: "Community" },
     ],
   },
   {
@@ -94,25 +131,59 @@ const SECTIONS: Array<{ heading: string; links: Array<{ href: string; label: str
   {
     heading: "Trust & legal",
     links: [
-      { href: "/trust", label: "Trust center" },
+      { href: "/trust-center", label: "Trust center" },
       { href: "/security", label: "Security" },
-      { href: "/vdp", label: "Vulnerability disclosure" },
-      { href: "/sla", label: "SLA" },
-      { href: "/status", label: "Status" },
+      { href: "/security-whitepaper", label: "Security whitepaper" },
+      { href: "/pentest", label: "Penetration test summary" },
+      { href: "/security-questionnaire", label: "Security questionnaire (CAIQ / SIG)" },
+      { href: "/soc2-report", label: "SOC 2 report request" },
+      { href: "/vulnerability-disclosure", label: "Vulnerability disclosure" },
+      { href: "/sla", label: "Service-level agreement" },
+      { href: "/status", label: "Status / uptime" },
       { href: "/privacy-policy", label: "Privacy policy" },
       { href: "/terms-of-service", label: "Terms of service" },
-      { href: "/cookies", label: "Cookie policy" },
+      { href: "/cookie-policy", label: "Cookie policy" },
       { href: "/dpa", label: "Data Processing Addendum" },
+      { href: "/msa", label: "Master Services Agreement" },
+      { href: "/baa", label: "Business Associate Agreement" },
       { href: "/sub-processors", label: "Sub-processors" },
       { href: "/aup", label: "Acceptable Use Policy" },
+      { href: "/refund-policy", label: "Refund policy" },
+      { href: "/cancellation-policy", label: "Cancellation policy" },
+      { href: "/accessibility", label: "Accessibility statement" },
     ],
   },
   {
     heading: "Developers & integrations",
     links: [
       { href: "/developers", label: "Developer docs" },
-      { href: "/integrations", label: "Integrations" },
+      { href: "/integrations", label: "All integrations" },
+      { href: "/integrations/jira", label: "Jira" },
+      { href: "/integrations/azure-devops", label: "Azure DevOps" },
+      { href: "/integrations/github", label: "GitHub" },
+      { href: "/integrations/gitlab", label: "GitLab" },
+      { href: "/integrations/confluence", label: "Confluence" },
+      { href: "/integrations/slack", label: "Slack" },
+      { href: "/integrations/microsoft-teams", label: "Microsoft Teams" },
+      { href: "/integrations/servicenow", label: "ServiceNow" },
       { href: "/use-cases", label: "Use cases" },
+    ],
+  },
+  {
+    heading: "Feeds & machine-readable",
+    links: [
+      { href: "/sitemap.xml", label: "XML sitemap (canonical)" },
+      { href: "/sitemap-index.xml", label: "Sitemap index" },
+      { href: "/sitemap-news.xml", label: "Google News sitemap" },
+      { href: "/sitemap-video.xml", label: "Video sitemap" },
+      { href: "/sitemap-images.xml", label: "Image sitemap" },
+      { href: "/rss.xml", label: "Blog RSS 2.0 feed" },
+      { href: "/atom.xml", label: "Blog Atom feed" },
+      { href: "/feed.json", label: "Blog JSON Feed" },
+      { href: "/llms.txt", label: "llms.txt (LLM-friendly index)" },
+      { href: "/llms-full.txt", label: "llms-full.txt (full content)" },
+      { href: "/robots.txt", label: "robots.txt" },
+      { href: "/opensearch.xml", label: "OpenSearch description" },
     ],
   },
 ];
@@ -156,11 +227,18 @@ export default function HtmlSitemap() {
               <div key={s.heading}>
                 <h2 className="font-display font-bold text-lg text-slate-950 mb-3">{s.heading}</h2>
                 <ul className="space-y-1.5">
-                  {s.links.map((l) => (
-                    <li key={l.href}>
-                      <Link href={l.href} className="text-sm text-slate-700 hover:text-primary hover:underline">{l.label}</Link>
-                    </li>
-                  ))}
+                  {s.links.map((l) => {
+                    const isStaticAsset = /\.(xml|txt|json|webmanifest)$/i.test(l.href);
+                    return (
+                      <li key={l.href}>
+                        {isStaticAsset ? (
+                          <a href={l.href} className="text-sm text-slate-700 hover:text-primary hover:underline">{l.label}</a>
+                        ) : (
+                          <Link href={l.href} className="text-sm text-slate-700 hover:text-primary hover:underline">{l.label}</Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
