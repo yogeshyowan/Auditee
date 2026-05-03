@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { Navigation, SiteFooter } from "@/components/site/Chrome";
+import { SEO, breadcrumbsLd } from "@/components/SEO";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,12 +54,28 @@ const SUBPROCESSORS = [
 ];
 
 export default function SecurityPage() {
-  useEffect(() => {
-    document.title = "Security & Trust — Auditee";
-  }, []);
-
   return (
     <>
+      <SEO
+        title="Security & Trust — SOC 2, ISO 27001, GDPR, HIPAA"
+        description="Auditee's security posture: SOC 2 Type II (in progress), ISO/IEC 27001:2022 designed-for, GDPR + UK GDPR, HIPAA-ready, encryption at rest and in transit, SSO/SAML, audit logs, multi-region data residency (IN / EU / US) and responsible vulnerability disclosure."
+        path="/security"
+        keywords={[
+          "Auditee security",
+          "SOC 2 Type II",
+          "ISO 27001",
+          "GDPR compliance",
+          "HIPAA",
+          "SSO SAML",
+          "data residency",
+          "encryption",
+          "responsible disclosure",
+        ]}
+        jsonLd={breadcrumbsLd([
+          { name: "Home", path: "/" },
+          { name: "Security & Trust", path: "/security" },
+        ])}
+      />
       <Navigation />
       <main>
         <section className="bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 py-24 text-white">
