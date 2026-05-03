@@ -358,6 +358,81 @@
         }
       }
     </script>
+
+    <!-- Structured data: LocalBusiness (Morningscore: NAP for local SEO,
+         Google Business Profile alignment, knowledge-panel address card) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "@id": "https://auditee.site/#localbusiness",
+        "name": "Qwikstuffs Pvt. Ltd. (Auditee)",
+        "legalName": "Qwikstuffs Pvt. Ltd.",
+        "alternateName": "Auditee",
+        "url": "https://auditee.site/",
+        "logo": "https://auditee.site/logo.svg",
+        "image": "https://auditee.site/opengraph.jpg",
+        "telephone": "+91-83100-42593",
+        "email": "hello@auditee.site",
+        "priceRange": "₹₹",
+        "currenciesAccepted": "INR, USD, EUR, GBP, AED",
+        "paymentAccepted": "Credit Card, Debit Card, UPI, Net Banking, Bank Transfer",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "E2, Devi Building, Metu Street, Iyyapanthangal",
+          "addressLocality": "Chennai",
+          "addressRegion": "Tamil Nadu",
+          "postalCode": "600077",
+          "addressCountry": "IN"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 13.0345,
+          "longitude": 80.1188
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "09:30",
+            "closes": "18:30"
+          }
+        ],
+        "areaServed": ["IN", "AE", "SA", "GB", "DE", "FR", "ES", "IE", "NL", "US", "CA", "AU", "SG", "JP"],
+        "parentOrganization": { "@id": "https://auditee.site/#organization" },
+        "sameAs": [
+          "https://github.com/auditee",
+          "https://www.linkedin.com/company/auditee"
+        ]
+      }
+    </script>
+
+    <!-- Structured data: VideoObject (Morningscore: video-rich snippet
+         eligibility for the Auditee explainer / product tutorial). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "@id": "https://auditee.site/#explainer-video",
+        "name": "Auditee — AI-native PDLC Platform Tutorial",
+        "description": "Walkthrough of Auditee: how the AI-native platform unifies requirements management, source code, compliance audits and CAPA workflows into a single living knowledge graph. Covers ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, HIPAA and FDA QMSR.",
+        "thumbnailUrl": [
+          "https://auditee.site/opengraph.jpg"
+        ],
+        "uploadDate": "2026-01-15T09:00:00+05:30",
+        "duration": "PT4M30S",
+        "contentUrl": "https://auditee.site/auditee-tutorial",
+        "embedUrl": "https://auditee.site/auditee-tutorial",
+        "publisher": { "@id": "https://auditee.site/#organization" },
+        "inLanguage": "en",
+        "isFamilyFriendly": true,
+        "regionsAllowed": "IN, AE, SA, GB, DE, FR, ES, IE, NL, US, CA, AU, SG, JP",
+        "potentialAction": {
+          "@type": "WatchAction",
+          "target": "https://auditee.site/auditee-tutorial"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
