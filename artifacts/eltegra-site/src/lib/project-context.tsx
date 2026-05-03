@@ -26,6 +26,8 @@ export interface ConnectedProject {
   sourceCount: number;
   readySourceCount: number;
   effectiveRole?: ProjectRole | null;
+  /** True for the built-in example projects that are visible to every user. */
+  isDemo?: boolean;
 }
 
 interface ProjectContextType {
@@ -74,12 +76,13 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         sourceCount: typeof p.sourceCount === "number" ? p.sourceCount : 0,
         readySourceCount: typeof p.readySourceCount === "number" ? p.readySourceCount : 0,
         effectiveRole: (p.effectiveRole ?? null) as ProjectRole | null,
+        isDemo: Boolean(p.isDemo),
       })),
     [projects],
   );
 
   const connectedProjects = useMemo(
-    () => allProjects.filter((p) => p.sourceCount > 0),
+    () => allProjects.filter((p) => p.sourceCount > 0 && !p.isDemo),
     [allProjects],
   );
 
@@ -94,12 +97,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     allProjects.find((p) => p.id === projectId)?.effectiveRole ??
     null;
 
-  // Auto-select a sensible default project. Rules:
-  // - If the currently-selected project still exists in `allProjects` (whether
-  //   connected or not — a freshly-created project starts with 0 sources and
-  //   should remain selectable), keep it.
-  // - Otherwise fall back to the first *connected* project, or null if there
-  //   are no projects at all.
+  // Auto-select a sensible default project. Priority:
+  // 1. Keep the currently-selected project if it still exists.
+  // 2. Fall back to the first connected non-demo project.
+  // 3. Fall back to the first non-demo project (unconnected).
+  // 4. Fall back to the first demo project (so new users always have something to explore).
   useEffect(() => {
     if (allProjects.length === 0) {
       if (projectId !== null) setProjectId(null);
@@ -107,8 +109,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }
     const stillExists = allProjects.some((p) => p.id === projectId);
     if (stillExists) return;
+    const ownProjects = allProjects.filter((p) => !p.isDemo);
     if (connectedProjects.length > 0) {
       setProjectId(connectedProjects[0].id);
+    } else if (ownProjects.length > 0) {
+      setProjectId(ownProjects[0].id);
     } else {
       setProjectId(allProjects[0].id);
     }

@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, index, boolean } from "drizzle-orm/pg-core";
 import { workspacesTable } from "./workspaces";
 
 export const projectsTable = pgTable(
@@ -13,6 +13,12 @@ export const projectsTable = pgTable(
     description: text("description").notNull(),
     owner: text("owner"),
     complianceScore: integer("compliance_score").notNull().default(0),
+    /**
+     * Demo projects are seeded at startup and are visible (read-only, auditor
+     * role) to every authenticated user regardless of workspace. They belong to
+     * the system workspace `ws-demo` and can never be mutated via the API.
+     */
+    isDemo: boolean("is_demo").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

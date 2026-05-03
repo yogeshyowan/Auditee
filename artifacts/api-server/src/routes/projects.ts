@@ -126,28 +126,32 @@ router.get("/projects", requireAuth, requireWorkspace, async (req, res) => {
       .from(projectMembersTable)
       .where(eq(projectMembersTable.userId, ws.userId));
     allowedProjectIds = memberships.map((m) => m.projectId);
-    if (allowedProjectIds.length === 0) {
-      res.json([]);
-      return;
-    }
   }
 
-  const conds = [eq(projectsTable.workspaceId, ws.workspace.id)];
-  if (allowedProjectIds) conds.push(inArray(projectsTable.id, allowedProjectIds));
+  // Fetch workspace-owned projects and demo projects in parallel.
+  const wsConds = [
+    eq(projectsTable.workspaceId, ws.workspace.id),
+    eq(projectsTable.isDemo, false),
+  ];
+  if (allowedProjectIds) wsConds.push(inArray(projectsTable.id, allowedProjectIds));
 
-  const rows = await db
-    .select({
-      id: projectsTable.id,
-      name: projectsTable.name,
-      slug: projectsTable.slug,
-      description: projectsTable.description,
-      owner: projectsTable.owner,
-      complianceScore: projectsTable.complianceScore,
-      createdAt: projectsTable.createdAt,
-    })
-    .from(projectsTable)
-    .where(and(...conds))
-    .orderBy(projectsTable.createdAt);
+  const projectCols = {
+    id: projectsTable.id,
+    name: projectsTable.name,
+    slug: projectsTable.slug,
+    description: projectsTable.description,
+    owner: projectsTable.owner,
+    complianceScore: projectsTable.complianceScore,
+    isDemo: projectsTable.isDemo,
+    createdAt: projectsTable.createdAt,
+  };
+
+  const [wsRows, demoRows] = await Promise.all([
+    db.select(projectCols).from(projectsTable).where(and(...wsConds)).orderBy(projectsTable.createdAt),
+    db.select(projectCols).from(projectsTable).where(eq(projectsTable.isDemo, true)).orderBy(projectsTable.name),
+  ]);
+
+  const rows = [...wsRows, ...demoRows];
 
   if (rows.length === 0) {
     res.json([]);
@@ -190,8 +194,11 @@ router.get("/projects", requireAuth, requireWorkspace, async (req, res) => {
       requirementCount: reqMap.get(r.id) ?? 0,
       sourceCount: srcMap.get(r.id) ?? 0,
       readySourceCount: readyMap.get(r.id) ?? 0,
-      effectiveRole:
-        wsRole === "owner" || wsRole === "admin" ? ("manager" as ProjectRole) : roleMap.get(r.id) ?? null,
+      effectiveRole: r.isDemo
+        ? ("auditor" as ProjectRole)
+        : wsRole === "owner" || wsRole === "admin"
+          ? ("manager" as ProjectRole)
+          : roleMap.get(r.id) ?? null,
     })),
   );
 });

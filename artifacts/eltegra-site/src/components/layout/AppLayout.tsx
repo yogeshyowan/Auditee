@@ -128,7 +128,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   // freshly-created projects with 0 sources still appear in the switcher button.
   const currentProject =
     allProjects.find((p) => p.id === projectId) ?? connectedProjects[0] ?? allProjects[0];
-  const unconnected = allProjects.filter((p) => p.sourceCount === 0);
+  const ownProjects = allProjects.filter((p) => !p.isDemo);
+  const demoProjects = allProjects.filter((p) => p.isDemo);
+  const unconnected = ownProjects.filter((p) => p.sourceCount === 0);
 
   return (
     <div className="min-h-[100dvh] flex bg-slate-50">
@@ -148,11 +150,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
               <ChevronDown className="h-4 w-4 text-slate-500 flex-shrink-0" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[260px]">
+            <DropdownMenuContent className="w-[280px] max-h-[70vh] overflow-y-auto">
+              {/* ── Your projects ── */}
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-500">
-                Connected projects
+                Your projects
               </DropdownMenuLabel>
-              {connectedProjects.length === 0 ? (
+              {connectedProjects.length === 0 && unconnected.length === 0 ? (
                 <div className="px-2 py-3 text-xs text-slate-500">
                   None yet. Go to{" "}
                   <Link href="/app/sources" className="text-primary underline">
@@ -161,26 +164,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   to connect a repository or upload files.
                 </div>
               ) : (
-                connectedProjects.map((project) => (
-                  <DropdownMenuItem
-                    key={project.id}
-                    onClick={() => setProjectId(project.id)}
-                    className={projectId === project.id ? "bg-slate-100 font-semibold" : ""}
-                    data-testid={`project-option-${project.id}`}
-                  >
-                    <span className="flex-1 truncate">{project.name}</span>
-                    <Badge variant="outline" className="text-[10px] ml-2">
-                      {project.sourceCount} src
-                    </Badge>
-                  </DropdownMenuItem>
-                ))
-              )}
-              {unconnected.length > 0 && (
                 <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-400">
-                    Not connected ({unconnected.length})
-                  </DropdownMenuLabel>
+                  {connectedProjects.map((project) => (
+                    <DropdownMenuItem
+                      key={project.id}
+                      onClick={() => setProjectId(project.id)}
+                      className={projectId === project.id ? "bg-slate-100 font-semibold" : ""}
+                      data-testid={`project-option-${project.id}`}
+                    >
+                      <span className="flex-1 truncate">{project.name}</span>
+                      <Badge variant="outline" className="text-[10px] ml-2">
+                        {project.sourceCount} src
+                      </Badge>
+                    </DropdownMenuItem>
+                  ))}
                   {unconnected.map((project) => (
                     <DropdownMenuItem
                       key={project.id}
@@ -204,6 +201,29 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Plus className="h-4 w-4 mr-2" />
                 New project
               </DropdownMenuItem>
+
+              {/* ── Demo / example projects ── */}
+              {demoProjects.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-400">
+                    Example projects (read-only)
+                  </DropdownMenuLabel>
+                  {demoProjects.map((project) => (
+                    <DropdownMenuItem
+                      key={project.id}
+                      onClick={() => setProjectId(project.id)}
+                      className={`${projectId === project.id ? "bg-slate-100 font-semibold" : ""}`}
+                      data-testid={`project-option-${project.id}`}
+                    >
+                      <span className="flex-1 truncate text-slate-700">{project.name}</span>
+                      <Badge className="text-[10px] ml-2 bg-violet-100 text-violet-700 border-0 shrink-0">
+                        demo
+                      </Badge>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           {effectiveRole && (

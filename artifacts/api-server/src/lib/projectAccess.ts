@@ -51,6 +51,12 @@ export async function loadProjectAccess(
     .where(eq(projectsTable.id, projectId))
     .limit(1);
   if (!project) return null;
+
+  // Demo projects are readable (auditor role) by every authenticated user.
+  if ((project as any).isDemo) {
+    return { project, effectiveRole: "auditor", fromWorkspace: false };
+  }
+
   if (project.workspaceId !== ws.workspace.id) return null;
 
   const wsRole = canonicalRole(ws.role);
