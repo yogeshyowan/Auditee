@@ -128,6 +128,46 @@
          the right asset variant without parsing the legacy User-Agent string. -->
     <meta http-equiv="Accept-CH" content="Sec-CH-UA-Platform-Version, Sec-CH-UA-Model, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Full-Version-List" />
 
+    <!-- Permissions-Policy: deny every powerful browser feature we don't use.
+         Reduces our supply-chain attack surface (any future third-party script
+         can't silently access camera/mic/geo) and is a Lighthouse "Best
+         Practices" + Semrush "Browser permissions" check. `payment=(self)`
+         keeps the Payment Request API available for Razorpay Checkout. -->
+    <meta
+      http-equiv="Permissions-Policy"
+      content="accelerometer=(), ambient-light-sensor=(), autoplay=(self), battery=(), camera=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(self), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), navigation-override=(), payment=(self &quot;https://checkout.razorpay.com&quot;), picture-in-picture=(), publickey-credentials-get=(self), screen-wake-lock=(), serial=(), sync-xhr=(), usb=(), web-share=(self), xr-spatial-tracking=(), interest-cohort=()"
+    />
+
+    <!-- Speculation Rules — Chrome 121+ pre-renders the listed routes when
+         the user is likely to navigate (hover, pointerdown). Result: the
+         first-byte and full DOM are ready by the time they click → INP/LCP
+         on those pages becomes effectively instant. Lighthouse 12 audits
+         this under "Speculative loading". moderate eagerness so we don't
+         pre-render the entire site on every page load. -->
+    <script type="speculationrules">
+      {
+        "prerender": [
+          {
+            "where": {
+              "and": [
+                { "href_matches": "/*" },
+                { "not": { "href_matches": "/app/*" } },
+                { "not": { "href_matches": "/.well-known/*" } },
+                { "not": { "selector_matches": "[rel~=nofollow]" } }
+              ]
+            },
+            "eagerness": "moderate"
+          }
+        ],
+        "prefetch": [
+          {
+            "urls": ["/pricing", "/features", "/sign-in", "/sign-up", "/blog", "/contact"],
+            "eagerness": "conservative"
+          }
+        ]
+      }
+    </script>
+
     <!-- Performance hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
