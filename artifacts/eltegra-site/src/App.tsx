@@ -91,6 +91,7 @@ import ForCto from "@/pages/ForCto";
 import ForBusinessAnalyst from "@/pages/ForBusinessAnalyst";
 import ForQaCompliance from "@/pages/ForQaCompliance";
 import DemoVideos from "@/pages/DemoVideos";
+import DemoVideoDetail from "@/pages/DemoVideoDetail";
 import Faqs from "@/pages/Faqs";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
@@ -320,6 +321,7 @@ function Router() {
       <Route path="/business-analyst" component={ForBusinessAnalyst} />
       <Route path="/qa-and-compliance" component={ForQaCompliance} />
       <Route path="/demo-videos" component={DemoVideos} />
+      <Route path="/demo-videos/:slug" component={DemoVideoDetail} />
       <Route path="/faqs" component={Faqs} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />

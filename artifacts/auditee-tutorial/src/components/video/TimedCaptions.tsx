@@ -45,6 +45,35 @@ const HIGHLIGHTS: Record<string, string> = {
   'OTA':          '#38bdf8',
   'DHF':          '#facc15',
   'TestRail':     '#34d399',
+  'Helios':       '#facc15',
+  'Orion':        '#facc15',
+  'Aesop':        '#facc15',
+  'Apollo':       '#facc15',
+  'Ares':         '#facc15',
+  'Titan':        '#facc15',
+  'Nexus':        '#facc15',
+  'Vega':         '#facc15',
+  'Sterling':     '#facc15',
+  'Bastion':      '#facc15',
+  'Atlas':        '#facc15',
+  'Aegis':        '#facc15',
+  'Cipher':       '#facc15',
+  'Nova':         '#facc15',
+  'ReqIF':        '#38bdf8',
+  'HITRUST':      '#fb923c',
+  'SOTIF':        '#fb923c',
+  'MiFID':        '#fb923c',
+  'CFTC':         '#fb923c',
+  'PCI-DSS':      '#fb923c',
+  'SOC':          '#fb923c',
+  'BMS':          '#38bdf8',
+  'ADAS':         '#38bdf8',
+  'PLC':          '#38bdf8',
+  'EHR':          '#38bdf8',
+  'eCRF':         '#38bdf8',
+  'VASP':         '#fb923c',
+  'UPI':          '#38bdf8',
+  'Riya':         '#facc15',
 };
 
 const CHAR_RATE_PER_SEC = 38;
@@ -201,12 +230,24 @@ function useHdVoiceNarration(cues: TimedCue[], activeIdx: number, muted: boolean
       el.src = url;
       el.currentTime = 0;
       el.volume = 1.0;
+      // Notify the background music to duck while narration is playing.
+      const onPlay = () => window.dispatchEvent(new Event('auditee:narration:start'));
+      const onEndOrPause = () => window.dispatchEvent(new Event('auditee:narration:end'));
+      el.addEventListener('playing', onPlay);
+      el.addEventListener('pause', onEndOrPause);
+      el.addEventListener('ended', onEndOrPause);
       el.play().catch(() => {/* gesture not granted yet */});
+      return () => {
+        el.removeEventListener('playing', onPlay);
+        el.removeEventListener('pause', onEndOrPause);
+        el.removeEventListener('ended', onEndOrPause);
+      };
     })();
 
     return () => {
       cancelled = true;
       try { el.pause(); } catch {/* */}
+      window.dispatchEvent(new Event('auditee:narration:end'));
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }

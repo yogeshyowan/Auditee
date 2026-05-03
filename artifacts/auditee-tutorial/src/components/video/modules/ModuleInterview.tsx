@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { BackgroundMusic } from '../BackgroundMusic';
 import { TimedCaptions, TimedCue } from '../TimedCaptions';
+import { getStory } from '@/lib/demoUseCases';
 
+const story = getStory('interview');
 const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000 };
 const TOTAL_MS = 23000;
 
-const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Step two. Priya is the PM on SmartInhaler Connect — Auditee interviews her live." },
-  { startMs: 5000,  endMs: 12000, text: "Twelve targeted questions: patient population, dose modes, BLE pairing, market — EU plus US plus India." },
-  { startMs: 12000, endMs: 18000, text: "Every answer becomes a structured BRS, PRD, or FRD requirement, with full conversation provenance." },
-  { startMs: 18000, endMs: 23000, text: "Auditee classifies the device — IEC 62304 Class B. Ready for the full requirement set." },
-];
+const CUES: TimedCue[] = story.cues;
 
 const questions = [
   { q: "What is the primary user action this feature must support?", delay: 400 },
@@ -32,16 +29,16 @@ function Scene1() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-accent)] mb-4"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        Step 01 · Smart Interview
+        {story.hero.kicker}
       </motion.div>
       <motion.h2 className="text-[4vw] font-black text-center leading-tight mb-6"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', damping: 20 }}>
-        From conversation
-        <br /><span style={{ color: 'var(--color-accent)' }}>to structured requirements.</span>
+        {story.hero.lineA}
+        <br /><span style={{ color: 'var(--color-accent)' }}>{story.hero.lineB}</span>
       </motion.h2>
       <motion.p className="text-[1.4vw] text-white/60 text-center max-w-[50vw]"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-        AI asks the right questions — standards-aware and context-sensitive — so nothing gets missed.
+        {story.hero.subtitle}
       </motion.p>
     </motion.div>
   );
@@ -140,9 +137,9 @@ function Scene4() {
     <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-center" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14 }}>
-        <div className="text-[7vw] font-black text-[var(--color-accent)]">18</div>
-        <div className="text-[2vw] font-semibold text-white/80 -mt-2">Requirements Elicited</div>
-        <div className="text-[1.2vw] text-white/40 mt-3">BRS · PRD · FRD · full provenance chain</div>
+        <div className="text-[7vw] font-black text-[var(--color-accent)]">{story.finale.stat}</div>
+        <div className="text-[2vw] font-semibold text-white/80 -mt-2">{story.finale.label}</div>
+        <div className="text-[1.2vw] text-white/40 mt-3">{story.finale.sub}</div>
       </motion.div>
     </motion.div>
   );

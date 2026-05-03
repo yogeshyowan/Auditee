@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { BackgroundMusic } from '../BackgroundMusic';
 import { TimedCaptions, TimedCue } from '../TimedCaptions';
+import { getStory } from '@/lib/demoUseCases';
 
+const story = getStory('reports');
 const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000 };
 const TOTAL_MS = 23000;
 
-const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Step ten. Acme needs a Design History File for the FDA 510(k) submission." },
-  { startMs: 5000,  endMs: 12000, text: "One click. 247-page DHF generated in four minutes — every section pulled from live reqs, tests, and risk file." },
-  { startMs: 12000, endMs: 18000, text: "Safety Plan, HARA, post-market surveillance, audit packet — pick any, generate, sign." },
-  { startMs: 18000, endMs: 23000, text: "Weeks of manual writing — done. Ready for the FDA reviewer." },
-];
+const CUES: TimedCue[] = story.cues;
 
 const reportTypes = [
   { name: 'Safety Plan', std: 'ISO 26262', pages: 42 },
@@ -29,16 +26,16 @@ function Scene1() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-accent)] mb-4"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        Step 01 · AI Reports
+        {story.hero.kicker}
       </motion.div>
       <motion.h2 className="text-[4vw] font-black text-center leading-tight mb-6"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', damping: 20 }}>
-        Audit documents
-        <br /><span style={{ color: 'var(--color-accent)' }}>in one click.</span>
+        {story.hero.lineA}
+        <br /><span style={{ color: 'var(--color-accent)' }}>{story.hero.lineB}</span>
       </motion.h2>
       <motion.p className="text-[1.4vw] text-white/60 text-center max-w-[50vw]"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-        Safety Plans, HARA, TARA, Cybersecurity Plans — generated from your live project graph, not a blank template.
+        {story.hero.subtitle}
       </motion.p>
     </motion.div>
   );
@@ -125,9 +122,9 @@ function Scene4() {
     <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-center" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14 }}>
-        <div className="text-[7vw] font-black text-[var(--color-accent)]">42</div>
-        <div className="text-[2vw] font-semibold text-white/80 -mt-2">Pages Generated</div>
-        <div className="text-[1.2vw] text-white/40 mt-3">Safety Plan · 100% from live project data</div>
+        <div className="text-[7vw] font-black text-[var(--color-accent)]">{story.finale.stat}</div>
+        <div className="text-[2vw] font-semibold text-white/80 -mt-2">{story.finale.label}</div>
+        <div className="text-[1.2vw] text-white/40 mt-3">{story.finale.sub}</div>
       </motion.div>
     </motion.div>
   );

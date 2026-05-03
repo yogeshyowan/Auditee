@@ -3,27 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { BackgroundMusic } from '../BackgroundMusic';
 import { TimedCaptions, TimedCue } from '../TimedCaptions';
+import { getStory } from '@/lib/demoUseCases';
 
+const story = getStory('dashboard');
 const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000 };
 const TOTAL_MS = 23000;
 
-const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Step fourteen. The exec view for SmartInhaler Connect — at a glance." },
-  { startMs: 5000,  endMs: 12000, text: "Five framework rings, CAPA aging, open gaps, recent activity — Priya sees everything in one screen." },
-  { startMs: 12000, endMs: 18000, text: "Daily summary email tells the team what changed overnight — no login required." },
-  { startMs: 18000, endMs: 23000, text: "SmartInhaler Connect — green light to ship. Audit-ready. Always." },
-];
+const CUES: TimedCue[] = story.cues;
 
 const rings = [
-  { label: 'ISO 26262', pct: 84, color: '#a78bfa' },
-  { label: 'SOC 2', pct: 88, color: '#38bdf8' },
-  { label: 'IEC 62304', pct: 91, color: '#34d399' },
+  { label: 'HIPAA', pct: 92, color: '#a78bfa' },
+  { label: 'DPDP', pct: 88, color: '#38bdf8' },
+  { label: 'SOC 2', pct: 87, color: '#34d399' },
 ];
 
 const healthCards = [
-  { label: 'Open Gaps', val: '3', severity: 'high', color: '#f87171' },
+  { label: 'Open Gaps', val: '4', severity: 'high', color: '#f87171' },
   { label: 'Open CAPAs', val: '2', severity: 'medium', color: '#fb923c' },
-  { label: 'Test Coverage', val: '91%', severity: 'good', color: '#34d399' },
+  { label: 'Evidence Fresh', val: '96%', severity: 'good', color: '#34d399' },
   { label: 'Days to Audit', val: '14', severity: 'neutral', color: '#38bdf8' },
 ];
 
@@ -54,16 +51,16 @@ function Scene1() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-accent)] mb-4"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        Step 01 · Dashboard
+        {story.hero.kicker}
       </motion.div>
       <motion.h2 className="text-[4vw] font-black text-center leading-tight mb-6"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', damping: 20 }}>
-        Your project health —
-        <br /><span style={{ color: 'var(--color-accent)' }}>one screen, always live.</span>
+        {story.hero.lineA}
+        <br /><span style={{ color: 'var(--color-accent)' }}>{story.hero.lineB}</span>
       </motion.h2>
       <motion.p className="text-[1.4vw] text-white/60 text-center max-w-[50vw]"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-        Framework coverage rings, open gaps, CAPA aging, and a daily summary email — audit-ready every morning.
+        {story.hero.subtitle}
       </motion.p>
     </motion.div>
   );
@@ -165,9 +162,9 @@ function Scene4() {
     <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-center" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14 }}>
-        <div className="text-[7vw] font-black text-[var(--color-accent)]">84%</div>
-        <div className="text-[2vw] font-semibold text-white/80 -mt-2">Audit-Ready</div>
-        <div className="text-[1.2vw] text-white/40 mt-3">3 frameworks · 14 days to next audit</div>
+        <div className="text-[7vw] font-black text-[var(--color-accent)]">{story.finale.stat}</div>
+        <div className="text-[2vw] font-semibold text-white/80 -mt-2">{story.finale.label}</div>
+        <div className="text-[1.2vw] text-white/40 mt-3">{story.finale.sub}</div>
       </motion.div>
     </motion.div>
   );

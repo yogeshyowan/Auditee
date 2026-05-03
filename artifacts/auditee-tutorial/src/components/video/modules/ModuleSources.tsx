@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { BackgroundMusic } from '../BackgroundMusic';
 import { TimedCaptions, TimedCue } from '../TimedCaptions';
+import { getStory } from '@/lib/demoUseCases';
 
-const SCENE_DURATIONS = { scene1: 5000, scene2: 6000, scene3: 6000, scene4: 5000 };
-const TOTAL_MS = 22000;
+const story = getStory('sources');
+const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000 };
+const TOTAL_MS = 23000;
 
-const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Step one. Acme Health is shipping SmartInhaler Connect — let's wire up their tools." },
-  { startMs: 5000,  endMs: 11000, text: "Pull from GitHub firmware, Jira, IBM DOORS legacy specs, and twelve clinical evaluation PDFs." },
-  { startMs: 11000, endMs: 17000, text: "Auditee parses everything in seconds — reqs, code, standards — into one graph." },
-  { startMs: 17000, endMs: 22000, text: "Six sources connected. 247 requirements. Ready for Step two." },
-];
+const CUES: TimedCue[] = story.cues;
 
 const connectors = [
   { name: 'IBM DOORS', color: '#38bdf8' },
@@ -29,16 +26,16 @@ function Scene1() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-accent)] mb-4"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        Step 01 · Project Sources
+        {story.hero.kicker}
       </motion.div>
       <motion.h2 className="text-[4vw] font-black text-center leading-tight mb-6"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', damping: 20 }}>
-        One platform.
-        <br /><span style={{ color: 'var(--color-accent)' }}>All your data sources.</span>
+        {story.hero.lineA}
+        <br /><span style={{ color: 'var(--color-accent)' }}>{story.hero.lineB}</span>
       </motion.h2>
       <motion.p className="text-[1.4vw] text-white/60 text-center max-w-[50vw]"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-        Connect RM tools, code repos, and doc archives — nothing else works until sources are in.
+        {story.hero.subtitle}
       </motion.p>
     </motion.div>
   );
@@ -122,9 +119,9 @@ function Scene4() {
     <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-center" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14 }}>
-        <div className="text-[7vw] font-black text-[var(--color-accent)]">6</div>
-        <div className="text-[2vw] font-semibold text-white/80 -mt-2">Sources Connected</div>
-        <div className="text-[1.2vw] text-white/40 mt-3">247 requirements · 1,840 files · 12 standards</div>
+        <div className="text-[7vw] font-black text-[var(--color-accent)]">{story.finale.stat}</div>
+        <div className="text-[2vw] font-semibold text-white/80 -mt-2">{story.finale.label}</div>
+        <div className="text-[1.2vw] text-white/40 mt-3">{story.finale.sub}</div>
       </motion.div>
     </motion.div>
   );

@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { BackgroundMusic } from '../BackgroundMusic';
 import { TimedCaptions, TimedCue } from '../TimedCaptions';
+import { getStory } from '@/lib/demoUseCases';
 
+const story = getStory('traceability');
 const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000 };
 const TOTAL_MS = 23000;
 
-const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Step five. Walk the SmartInhaler trace graph — one requirement, end to end." },
-  { startMs: 5000,  endMs: 12000, text: "PRD-014, real-time dose count: links to fw_dose.c, three unit tests, two integration tests, zero open defects." },
-  { startMs: 12000, endMs: 18000, text: "Click any node — see what's covered, what's broken, what's missing. Instantly." },
-  { startMs: 18000, endMs: 23000, text: "247 requirements, full chain visibility. Acme's auditors will love this." },
-];
+const CUES: TimedCue[] = story.cues;
 
 const nodes = [
   { id: 'BRS-001', type: 'req', x: '10%', y: '38%', color: '#a78bfa' },
@@ -36,16 +33,16 @@ function Scene1() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-accent)] mb-4"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        Step 01 · Traceability Graph
+        {story.hero.kicker}
       </motion.div>
       <motion.h2 className="text-[4vw] font-black text-center leading-tight mb-6"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', damping: 20 }}>
-        From requirement
-        <br /><span style={{ color: 'var(--color-accent)' }}>to evidence — one click.</span>
+        {story.hero.lineA}
+        <br /><span style={{ color: 'var(--color-accent)' }}>{story.hero.lineB}</span>
       </motion.h2>
       <motion.p className="text-[1.4vw] text-white/60 text-center max-w-[50vw]"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-        Every node in the graph is a live link. Click any requirement to see exactly what implements it.
+        {story.hero.subtitle}
       </motion.p>
     </motion.div>
   );
@@ -135,9 +132,9 @@ function Scene4() {
     <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-center" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14 }}>
-        <div className="text-[7vw] font-black text-[var(--color-accent)]">91%</div>
-        <div className="text-[2vw] font-semibold text-white/80 -mt-2">Traceability Coverage</div>
-        <div className="text-[1.2vw] text-white/40 mt-3">Req → code → test → audit · fully linked</div>
+        <div className="text-[7vw] font-black text-[var(--color-accent)]">{story.finale.stat}</div>
+        <div className="text-[2vw] font-semibold text-white/80 -mt-2">{story.finale.label}</div>
+        <div className="text-[1.2vw] text-white/40 mt-3">{story.finale.sub}</div>
       </motion.div>
     </motion.div>
   );

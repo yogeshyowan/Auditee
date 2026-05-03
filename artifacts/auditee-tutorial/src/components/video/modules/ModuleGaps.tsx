@@ -3,16 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 import { BackgroundMusic } from '../BackgroundMusic';
 import { TimedCaptions, TimedCue } from '../TimedCaptions';
+import { getStory } from '@/lib/demoUseCases';
 
+const story = getStory('gaps');
 const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000 };
 const TOTAL_MS = 23000;
 
-const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Step four. Auditee scans SmartInhaler's spec and firmware code side by side." },
-  { startMs: 5000,  endMs: 12000, text: "Eighteen gaps surfaced — no low-battery alarm requirement, no fallback for BLE failure mid-dose." },
-  { startMs: 12000, endMs: 18000, text: "Untraced firmware files, missing tests, ISO 14971 hazards without mitigations — all flagged." },
-  { startMs: 18000, endMs: 23000, text: "All eighteen gaps closed before the FDA pre-submission meeting. Crisis averted." },
-];
+const CUES: TimedCue[] = story.cues;
 
 const gaps = [
   { file: 'src/brake/EmergencyController.ts', req: 'BRS-001', severity: 'Critical', issue: 'No unit test for 10ms latency bound' },
@@ -28,16 +25,16 @@ function Scene1() {
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-[1.1vw] uppercase tracking-[0.3em] text-[var(--color-accent)] mb-4"
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        Step 01 · Gap Detection
+        {story.hero.kicker}
       </motion.div>
       <motion.h2 className="text-[4vw] font-black text-center leading-tight mb-6"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: 'spring', damping: 20 }}>
-        Find coverage gaps
-        <br /><span style={{ color: 'var(--color-accent)' }}>before release.</span>
+        {story.hero.lineA}
+        <br /><span style={{ color: 'var(--color-accent)' }}>{story.hero.lineB}</span>
       </motion.h2>
       <motion.p className="text-[1.4vw] text-white/60 text-center max-w-[50vw]"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-        AI scans your entire codebase against every requirement — automatically, on every commit.
+        {story.hero.subtitle}
       </motion.p>
     </motion.div>
   );
@@ -121,9 +118,9 @@ function Scene4() {
     <motion.div className="absolute inset-0 flex flex-col items-center justify-center"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
       <motion.div className="text-center" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 14 }}>
-        <div className="text-[7vw] font-black" style={{ color: '#f87171' }}>3</div>
-        <div className="text-[2vw] font-semibold text-white/80 -mt-2">Gaps Found</div>
-        <div className="text-[1.2vw] text-white/40 mt-3">Fix before release · auto-linked to CAPA</div>
+        <div className="text-[7vw] font-black" style={{ color: '#f87171' }}>{story.finale.stat}</div>
+        <div className="text-[2vw] font-semibold text-white/80 -mt-2">{story.finale.label}</div>
+        <div className="text-[1.2vw] text-white/40 mt-3">{story.finale.sub}</div>
       </motion.div>
     </motion.div>
   );
