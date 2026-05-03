@@ -85,6 +85,13 @@
     <!-- WebFinger (Fediverse identity discovery). Allows lookups like
          @auditee@auditee.site from Mastodon, Bluesky bridge, etc. -->
     <link rel="alternate" type="application/jrd+json" href="/.well-known/webfinger" />
+    <link rel="lrdd" type="application/xrd+xml" href="/.well-known/host-meta" />
+
+    <!-- Modern feed alternates: Atom (preferred by NetNewsWire/Feedly) and
+         JSON Feed (jsonfeed.org/version/1.1, used by modern readers). RSS
+         remains the canonical link below for legacy readers. -->
+    <link rel="alternate" type="application/atom+xml" title="Auditee Blog (Atom)" href="/atom.xml" />
+    <link rel="alternate" type="application/feed+json" title="Auditee Blog (JSON Feed)" href="/feed.json" />
 
     <!-- OpenSearch — Firefox and Bing offer a one-click "Add to search"
          from this descriptor and surface a sitelinks search box from it. -->

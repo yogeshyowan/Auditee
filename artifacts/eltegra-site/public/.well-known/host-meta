@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
+  <Subject>https://auditee.site</Subject>
+  <Link rel="lrdd" type="application/jrd+json" template="https://auditee.site/.well-known/webfinger?resource={uri}" />
+  <Link rel="http://nodeinfo.diaspora.software/ns/schema/2.1" href="https://auditee.site/nodeinfo/2.1.json" />
+</XRD>

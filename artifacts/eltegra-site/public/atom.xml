@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <title>Auditee Blog</title>
+  <subtitle>Practitioner research on AI-native requirements management, compliance automation, audit, and software lifecycle modernization.</subtitle>
+  <link rel="self" type="application/atom+xml" href="https://auditee.site/atom.xml" />
+  <link rel="alternate" type="text/html" href="https://auditee.site/blog" />
+  <id>https://auditee.site/atom.xml</id>
+  <updated>2026-04-30T00:00:00.000Z</updated>
+  <generator uri="https://auditee.site" version="1.0">Auditee Atom generator</generator>
+  <icon>https://auditee.site/favicon.svg</icon>
+  <logo>https://auditee.site/logo.svg</logo>
+  <rights>© 2026 Eltegra Technologies Pvt. Ltd.</rights>
+  <entry>
+    <title>The Enterprise PDLC Audit Checklist: How to Run Requirements, Code &amp; Compliance Audits with Auditee</title>
+    <id>https://auditee.site/blog/enterprise-pdlc-audit-checklist</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/enterprise-pdlc-audit-checklist" />
+    <updated>2026-04-30T00:00:00.000Z</updated>
+    <published>2026-04-30T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A practitioner&apos;s checklist for auditing the full Product Development Lifecycle — requirements coverage, code-to-spec traceability, ASPICE / ISO 26262 / IEC 62304 / SOC 2 / HIPAA compliance, and CAPA workflows. Step-by-step setup with Auditee.</summary>
+    <category term="Audit" />
+    <category term="Compliance" />
+    <category term="Checklist" />
+    <category term="PDLC" />
+  </entry>
+  <entry>
+    <title>Why Spreadsheets Still Beat Requirements Management Tools (and How AI Finally Fixes It)</title>
+    <id>https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools" />
+    <updated>2026-04-22T00:00:00.000Z</updated>
+    <published>2026-04-22T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">After 40 years of DOORS, Jama and Polarion, most teams still default to Excel for requirements. Here&apos;s why — and what an AI-native RM platform has to do differently to win.</summary>
+    <category term="Requirements Management" />
+    <category term="AI" />
+    <category term="DOORS" />
+    <category term="Jama" />
+    <category term="Tooling" />
+  </entry>
+  <entry>
+    <title>AI Requirements Management: A Buyer&apos;s Guide for 2026</title>
+    <id>https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/ai-requirements-management-buyers-guide-2026" />
+    <updated>2026-04-28T00:00:00.000Z</updated>
+    <published>2026-04-22T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">What enterprise teams should look for in an AI-powered requirements management (RM) tool in 2026 — capabilities, integrations, compliance fit, total cost of ownership, and red flags.</summary>
+    <category term="Requirements Management" />
+    <category term="AI" />
+    <category term=", " />
+  </entry>
+  <entry>
+    <title>Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture</title>
+    <id>https://auditee.site/blog/legacy-cobol-modernization-with-ai</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/legacy-cobol-modernization-with-ai" />
+    <updated>2026-04-15T00:00:00.000Z</updated>
+    <published>2026-04-15T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A practical playbook for turning 30-year-old COBOL, mainframe Java, PL/SQL and C++ estates into a modern, requirement-driven, traceable codebase — using AI reverse-engineering, not a rewrite.</summary>
+    <category term="Legacy Modernization" />
+    <category term="AI" />
+    <category term="COBOL" />
+    <category term="Architecture" />
+  </entry>
+  <entry>
+    <title>IEC 62304: Medical Device Software Lifecycle Guide (2026)</title>
+    <id>https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide" />
+    <updated>2026-04-15T00:00:00.000Z</updated>
+    <published>2026-04-15T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A practical guide to IEC 62304 — software safety classification (Class A/B/C), required deliverables, traceability obligations, and how AI-native tools shorten compliance from months to weeks.</summary>
+    <category term="IEC 62304" />
+    <category term="Medical Devices" />
+    <category term="Compliance" />
+    <category term="Standards" />
+  </entry>
+  <entry>
+    <title>SOC 2 vs ISO 27001: Which Compliance Framework Should You Choose?</title>
+    <id>https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose" />
+    <updated>2026-04-08T00:00:00.000Z</updated>
+    <published>2026-04-08T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A side-by-side comparison of SOC 2 and ISO 27001 — scope, audit cadence, geographic recognition, cost, and how to satisfy both with a single set of controls.</summary>
+    <category term="SOC 2" />
+    <category term="ISO 27001" />
+    <category term="Compliance" />
+    <category term="Security" />
+  </entry>
+  <entry>
+    <title>Generating Requirements from Legacy Code: A Modernization Playbook</title>
+    <id>https://auditee.site/blog/generating-requirements-from-legacy-code</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/generating-requirements-from-legacy-code" />
+    <updated>2026-04-01T00:00:00.000Z</updated>
+    <published>2026-04-01T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">How to recover requirements from undocumented legacy code (COBOL, Java EE, .NET Framework, mainframe SQL) using AI — and turn the output into a standards-conformant baseline you can actually maintain.</summary>
+    <category term="Legacy Modernization" />
+    <category term="Requirements" />
+    <category term="AI" />
+    <category term="COBOL" />
+  </entry>
+  <entry>
+    <title>15 AI Prompts Senior BAs Actually Use for Requirements Gathering</title>
+    <id>https://auditee.site/blog/15-ai-prompts-for-requirements-gathering</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/15-ai-prompts-for-requirements-gathering" />
+    <updated>2026-04-01T00:00:00.000Z</updated>
+    <published>2026-04-01T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A working library of 15 AI prompts that Senior Business Analysts use for requirements discovery, classification, gap detection, BRD/PRD drafting and stakeholder validation — copy, paste, ship.</summary>
+    <category term="Business Analysis" />
+    <category term="AI Prompts" />
+    <category term="BRD" />
+    <category term="Requirements" />
+  </entry>
+  <entry>
+    <title>Top 10 IBM DOORS Alternatives in 2026 (and How to Migrate)</title>
+    <id>https://auditee.site/blog/top-10-ibm-doors-alternatives-2026</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/top-10-ibm-doors-alternatives-2026" />
+    <updated>2026-03-25T00:00:00.000Z</updated>
+    <published>2026-03-25T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A comprehensive comparison of the leading alternatives to IBM Rational DOORS in 2026 — Jama, Polarion, codeBeamer, Helix RM, Visure, DOORS Next, Jira plugins, and AI-native platforms like Auditee.</summary>
+    <category term="IBM DOORS" />
+    <category term="Requirements Management" />
+    <category term="Migration" />
+    <category term="Comparison" />
+  </entry>
+  <entry>
+    <title>Poor Software Requirements Cost the Industry Billions — Here&apos;s the Math</title>
+    <id>https://auditee.site/blog/poor-software-requirements-cost-billions</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/poor-software-requirements-cost-billions" />
+    <updated>2026-03-25T00:00:00.000Z</updated>
+    <published>2026-03-25T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A research-backed breakdown of what bad requirements actually cost: rework, audit findings, schedule slips, defect leakage and customer churn. With per-team and per-org numbers you can defend.</summary>
+    <category term="Requirements" />
+    <category term="ROI" />
+    <category term="Research" />
+    <category term="Software Engineering" />
+  </entry>
+  <entry>
+    <title>HIPAA Software Compliance: The 2026 Requirements Checklist</title>
+    <id>https://auditee.site/blog/hipaa-software-compliance-requirements-checklist</id>
+    <link rel="alternate" type="text/html" href="https://auditee.site/blog/hipaa-software-compliance-requirements-checklist" />
+    <updated>2026-03-18T00:00:00.000Z</updated>
+    <published>2026-03-18T00:00:00.000Z</published>
+    <author><name>Auditee Research</name></author>
+    <summary type="text">A practitioner&apos;s checklist for HIPAA Security and Privacy Rule compliance in software products — Administrative, Physical, and Technical Safeguards, BAAs, breach notification, and 2024–2025 NPRM updates.</summary>
+    <category term="HIPAA" />
+    <category term="Healthcare" />
+    <category term="Compliance" />
+    <category term="Checklist" />
+  </entry>
+</feed>

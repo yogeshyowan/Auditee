@@ -1,0 +1,28 @@
+{
+  "version": "2.1",
+  "software": {
+    "name": "auditee",
+    "version": "1.0.0",
+    "repository": "https://github.com/auditee",
+    "homepage": "https://auditee.site"
+  },
+  "protocols": ["activitypub"],
+  "services": {
+    "inbound": [],
+    "outbound": ["atom1.0", "rss2.0"]
+  },
+  "openRegistrations": true,
+  "usage": {
+    "users": { "total": 1, "activeMonth": 1, "activeHalfyear": 1 },
+    "localPosts": 0,
+    "localComments": 0
+  },
+  "metadata": {
+    "nodeName": "Auditee",
+    "nodeDescription": "AI-native compliance and product development lifecycle platform.",
+    "maintainer": { "name": "Auditee", "email": "hello@auditee.site" },
+    "langs": ["en"],
+    "tosUrl": "https://auditee.site/terms-of-service",
+    "privacyPolicyUrl": "https://auditee.site/privacy-policy"
+  }
+}
