@@ -39,6 +39,12 @@ import DemoVideos from "@/pages/DemoVideos";
 import Faqs from "@/pages/Faqs";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
+import CompareDoors from "@/pages/CompareDoors";
+import CompareJama from "@/pages/CompareJama";
+import ComparePolarion from "@/pages/ComparePolarion";
+import Integrations from "@/pages/Integrations";
+import Glossary from "@/pages/Glossary";
+import CaseStudies from "@/pages/CaseStudies";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import SignInPage from "@/pages/SignIn";
@@ -254,6 +260,15 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/terms-of-services" component={TermsOfService} />
+      <Route path="/compare/doors" component={CompareDoors} />
+      <Route path="/compare/ibm-doors" component={CompareDoors} />
+      <Route path="/compare/jama" component={CompareJama} />
+      <Route path="/compare/jama-connect" component={CompareJama} />
+      <Route path="/compare/polarion" component={ComparePolarion} />
+      <Route path="/integrations" component={Integrations} />
+      <Route path="/glossary" component={Glossary} />
+      <Route path="/case-studies" component={CaseStudies} />
+      <Route path="/customers" component={CaseStudies} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />

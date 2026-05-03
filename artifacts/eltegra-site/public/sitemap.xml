@@ -3,118 +3,69 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://auditee.site/</loc>
-    <lastmod>2026-04-30</lastmod>
+    <lastmod>2026-05-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.00</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee — AI-native enterprise PDLC platform</image:title></image:image>
     <image:image><image:loc>https://auditee.site/hero-network.png</image:loc><image:title>Auditee living knowledge graph</image:title></image:image>
   </url>
-  <url>
-    <loc>https://auditee.site/features</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/ai-product-development</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/automated-compliance</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/ai-requirements-management</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/missing-requirements-analysis</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/test-case-generation</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/pricing</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.90</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/roi-calculator</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/about</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.60</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/contact</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</loc>
-    <lastmod>2026-04-28</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide</loc>
-    <lastmod>2026-04-15</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose</loc>
-    <lastmod>2026-04-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog/generating-requirements-from-legacy-code</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog/top-10-ibm-doors-alternatives-2026</loc>
-    <lastmod>2026-03-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog/hipaa-software-compliance-requirements-checklist</loc>
-    <lastmod>2026-03-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.70</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/blog/enterprise-pdlc-audit-checklist</loc>
-    <lastmod>2026-04-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
+
+  <!-- Platform / product -->
+  <url><loc>https://auditee.site/features</loc><lastmod>2026-05-03</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
+  <url><loc>https://auditee.site/ai-product-development</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/automated-compliance</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/ai-requirements-management</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/requirements-management</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/brd-generation</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/intelligent-document-analysis</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/requirements-linked-test-cases</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/missing-requirements-analysis</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://auditee.site/test-case-generation</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+
+  <!-- Industries -->
+  <url><loc>https://auditee.site/ai-for-healthcare</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/ai-for-finance</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/ai-for-automotive</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/ai-for-telecom</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+
+  <!-- Roles -->
+  <url><loc>https://auditee.site/cpo</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://auditee.site/cto</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://auditee.site/business-analyst</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://auditee.site/qa-and-compliance</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+
+  <!-- Compare -->
+  <url><loc>https://auditee.site/compare/doors</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/compare/jama</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/compare/polarion</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+
+  <!-- Resources -->
+  <url><loc>https://auditee.site/integrations</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/glossary</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://auditee.site/case-studies</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://auditee.site/demo-videos</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://auditee.site/faqs</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://auditee.site/pricing</loc><lastmod>2026-05-03</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://auditee.site/roi-calculator</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://auditee.site/about</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://auditee.site/contact</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/security</loc><lastmod>2026-05-03</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+
+  <!-- Legal -->
+  <url><loc>https://auditee.site/privacy-policy</loc><lastmod>2026-05-03</lastmod><changefreq>yearly</changefreq><priority>0.30</priority></url>
+  <url><loc>https://auditee.site/terms-of-service</loc><lastmod>2026-05-03</lastmod><changefreq>yearly</changefreq><priority>0.30</priority></url>
+
+  <!-- Blog -->
+  <url><loc>https://auditee.site/blog</loc><lastmod>2026-05-03</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</loc><lastmod>2026-04-28</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools</loc><lastmod>2026-04-22</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide</loc><lastmod>2026-04-15</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/legacy-cobol-modernization-with-ai</loc><lastmod>2026-04-15</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose</loc><lastmod>2026-04-08</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/generating-requirements-from-legacy-code</loc><lastmod>2026-04-01</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/15-ai-prompts-for-requirements-gathering</loc><lastmod>2026-04-01</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/poor-software-requirements-cost-billions</loc><lastmod>2026-03-25</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/top-10-ibm-doors-alternatives-2026</loc><lastmod>2026-03-25</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/hipaa-software-compliance-requirements-checklist</loc><lastmod>2026-03-18</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://auditee.site/blog/enterprise-pdlc-audit-checklist</loc><lastmod>2026-04-30</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
 </urlset>

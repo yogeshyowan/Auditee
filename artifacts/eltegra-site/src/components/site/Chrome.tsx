@@ -83,11 +83,23 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Blog", desc: "Buyer's guides, standards walkthroughs and field notes.", href: "/blog" },
       { title: "Demo Videos", desc: "14 narrated module tutorials — under 5 minutes each.", href: "/demo-videos" },
       { title: "FAQs", desc: "Platform, AI, integrations, compliance, security and pricing.", href: "/faqs" },
+      { title: "Glossary", desc: "45+ definitions — BRD, ASIL, IEC 62304, SOUP, ReqIF and more.", href: "/glossary" },
+      { title: "Case Studies", desc: "How healthcare, fintech, automotive and telecom teams use Auditee.", href: "/case-studies" },
+      { title: "Integrations", desc: "40+ connectors — DOORS, Jama, Jira, GitHub, Okta, OpenAI, Snowflake.", href: "/integrations" },
       { title: "Features", desc: "The complete platform feature set, end-to-end.", href: "/features" },
       { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
       { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
       { title: "Security & Trust", desc: "Encryption, SSO, audit logs, SOC 2 / ISO 27001 / GDPR posture.", href: "/security" },
       { title: "Investor / Sales Deck", desc: "The full Auditee story in slides — vision, traction, GTM.", href: "/auditee-deck/", external: true },
+    ],
+  },
+  {
+    label: "Compare",
+    key: "compare",
+    items: [
+      { title: "Auditee vs IBM DOORS", desc: "Connect over OSLC / ReqIF; AI-native authoring DOORS doesn't have.", href: "/compare/doors" },
+      { title: "Auditee vs Jama Connect", desc: "AI-native authoring + native Jama bidirectional connector.", href: "/compare/jama" },
+      { title: "Auditee vs Siemens Polarion", desc: "Same compliance posture without the implementation services bill.", href: "/compare/polarion" },
     ],
   },
   {
@@ -452,6 +464,9 @@ export function SiteFooter() {
             <h4 className="text-white font-semibold mb-6">Resources</h4>
             <ul className="space-y-4">
               <li><Link href="/blog" className="hover:text-primary transition-colors" data-testid="link-footer-blog">Blog</Link></li>
+              <li><Link href="/case-studies" className="hover:text-primary transition-colors" data-testid="link-footer-cases">Case Studies</Link></li>
+              <li><Link href="/integrations" className="hover:text-primary transition-colors" data-testid="link-footer-integrations">Integrations</Link></li>
+              <li><Link href="/glossary" className="hover:text-primary transition-colors" data-testid="link-footer-glossary">Glossary</Link></li>
               <li><Link href="/demo-videos" className="hover:text-primary transition-colors" data-testid="link-footer-demos">Demo Videos</Link></li>
               <li><Link href="/faqs" className="hover:text-primary transition-colors" data-testid="link-footer-faqs">FAQs</Link></li>
               <li><Link href="/features" className="hover:text-primary transition-colors" data-testid="link-footer-features">Features</Link></li>
@@ -459,6 +474,12 @@ export function SiteFooter() {
               <li><Link href="/roi-calculator" className="hover:text-primary transition-colors" data-testid="link-footer-roi">ROI Calculator</Link></li>
               <li><Link href="/security" className="hover:text-primary transition-colors" data-testid="link-footer-security">Security & Trust</Link></li>
               <li><a href="/auditee-deck/" target="_blank" rel="noopener" className="hover:text-primary transition-colors" data-testid="link-footer-deck">Investor Deck</a></li>
+            </ul>
+            <h4 className="text-white font-semibold mt-8 mb-4">Compare</h4>
+            <ul className="space-y-4">
+              <li><Link href="/compare/doors" className="hover:text-primary transition-colors" data-testid="link-footer-vs-doors">vs IBM DOORS</Link></li>
+              <li><Link href="/compare/jama" className="hover:text-primary transition-colors" data-testid="link-footer-vs-jama">vs Jama Connect</Link></li>
+              <li><Link href="/compare/polarion" className="hover:text-primary transition-colors" data-testid="link-footer-vs-polarion">vs Siemens Polarion</Link></li>
             </ul>
           </div>
 
