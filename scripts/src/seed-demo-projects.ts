@@ -20,6 +20,14 @@ import {
   projectsTable,
   requirementsTable,
   pdlcStagesTable,
+  projectSourcesTable,
+  defectsTable,
+  capaActionsTable,
+  testCasesTable,
+  aiReportsTable,
+  recurringAuditsTable,
+  codeArtifactsTable,
+  traceabilityLinksTable,
 } from "@workspace/db";
 
 const DEMO_WS_ID = "ws-demo";
@@ -364,6 +372,380 @@ const PDLC_DATA: Record<string, { completions: [number,number,number,number,numb
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Per-module demo data for the six anchor projects.
+// Anchor projects span all four verticals so every module page shows a rich,
+// cross-industry sample when viewed in demo mode.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ANCHORS = [
+  "proj-demo-helios",
+  "proj-demo-orion",
+  "proj-demo-atlas",
+  "proj-demo-vega",
+  "proj-demo-ares",
+  "proj-demo-bastion",
+] as const;
+
+const NOW = new Date();
+const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86400_000);
+const daysAhead = (d: number) => new Date(NOW.getTime() + d * 86400_000);
+
+// ── Project sources ─────────────────────────────────────────────────────────
+const PROJECT_SOURCES = [
+  // Helios
+  { id: "src-helios-github",  projectId: "proj-demo-helios",  kind: "github",  label: "acme-health/helios-onboarding",   status: "ready", fileCount: 4821, byteCount: 18_400_000, lastSyncAt: daysAgo(1) },
+  { id: "src-helios-jira",    projectId: "proj-demo-helios",  kind: "jira",    label: "Jira — HEL board",                status: "ready", fileCount: 612,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-helios-gdrive",  projectId: "proj-demo-helios",  kind: "gdrive",  label: "Google Drive — Helios SOPs",      status: "ready", fileCount: 84,   byteCount: 124_900_000, lastSyncAt: daysAgo(2) },
+  // Orion
+  { id: "src-orion-github",   projectId: "proj-demo-orion",   kind: "github",  label: "acme-health/orion-firmware",      status: "ready", fileCount: 1542, byteCount: 9_300_000,   lastSyncAt: daysAgo(1) },
+  { id: "src-orion-ado",      projectId: "proj-demo-orion",   kind: "alm",     label: "Azure DevOps — Orion FW Bugs",    status: "ready", fileCount: 318,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-orion-zip",      projectId: "proj-demo-orion",   kind: "zip",     label: "DHF-Orion-v3.2.zip",              status: "ready", fileCount: 247,  byteCount: 88_100_000,  lastSyncAt: daysAgo(7) },
+  // Atlas
+  { id: "src-atlas-github",   projectId: "proj-demo-atlas",   kind: "github",  label: "acme-fin/atlas-settlement",       status: "ready", fileCount: 6210, byteCount: 41_200_000,  lastSyncAt: daysAgo(0) },
+  { id: "src-atlas-jira",     projectId: "proj-demo-atlas",   kind: "jira",    label: "Jira — ATL board",                status: "ready", fileCount: 974,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-atlas-jenkins",  projectId: "proj-demo-atlas",   kind: "jenkins", label: "Jenkins — atlas-ci",              status: "ready", fileCount: 0,    byteCount: 0,           lastSyncAt: daysAgo(0) },
+  // Vega
+  { id: "src-vega-github",    projectId: "proj-demo-vega",    kind: "github",  label: "acme-ins/vega-claims",            status: "ready", fileCount: 3210, byteCount: 22_700_000,  lastSyncAt: daysAgo(1) },
+  { id: "src-vega-jira",      projectId: "proj-demo-vega",    kind: "jira",    label: "Jira — VEG board",                status: "ready", fileCount: 540,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  // Ares
+  { id: "src-ares-github",    projectId: "proj-demo-ares",    kind: "github",  label: "acme-auto/ares-adas",             status: "ready", fileCount: 8420, byteCount: 64_500_000,  lastSyncAt: daysAgo(0) },
+  { id: "src-ares-ado",       projectId: "proj-demo-ares",    kind: "alm",     label: "Azure DevOps — Ares Defects",     status: "ready", fileCount: 1102, byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-ares-folder",    projectId: "proj-demo-ares",    kind: "folder",  label: "ASPICE Workproducts",             status: "ready", fileCount: 412,  byteCount: 152_300_000, lastSyncAt: daysAgo(3) },
+  // Bastion
+  { id: "src-bastion-github", projectId: "proj-demo-bastion", kind: "github",  label: "acme-sec/bastion-cspm",           status: "ready", fileCount: 2940, byteCount: 19_100_000,  lastSyncAt: daysAgo(0) },
+  { id: "src-bastion-jira",   projectId: "proj-demo-bastion", kind: "jira",    label: "Jira — BST board",                status: "ready", fileCount: 388,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-bastion-aws",    projectId: "proj-demo-bastion", kind: "aws_s3",  label: "S3 — bastion-evidence-locker",    status: "ready", fileCount: 1854, byteCount: 412_800_000, lastSyncAt: daysAgo(1) },
+];
+
+// ── Defects ─────────────────────────────────────────────────────────────────
+type DefectSpec = {
+  id: string; projectId: string; sourceId: string; externalSystem: string;
+  externalId: string; key: string; externalUrl?: string;
+  title: string; description: string;
+  status: string; severity: string; priority: string; component: string;
+  raisedAt: Date; resolvedAt?: Date | null;
+};
+const DEFECTS: DefectSpec[] = [
+  // Helios — Jira HEL
+  { id: "def-helios-001", projectId: "proj-demo-helios", sourceId: "src-helios-jira", externalSystem: "jira", externalId: "HEL-1042", key: "HEL-1042", title: "Onboarding step skipped after browser back-button", description: "Patients pressing the browser back-button on the consent step bypass HIPAA consent capture in 0.4% of sessions.", status: "open",        severity: "critical", priority: "p1", component: "Onboarding Flow",   raisedAt: daysAgo(4) },
+  { id: "def-helios-002", projectId: "proj-demo-helios", sourceId: "src-helios-jira", externalSystem: "jira", externalId: "HEL-1051", key: "HEL-1051", title: "PHI audit log timestamp drift on EU edge nodes",      description: "EU-West edge nodes log PHI read events with up to 7s clock drift, breaking 7-year retention chain-of-custody.", status: "in_progress", severity: "major",    priority: "p2", component: "Audit Log",        raisedAt: daysAgo(9) },
+  { id: "def-helios-003", projectId: "proj-demo-helios", sourceId: "src-helios-jira", externalSystem: "jira", externalId: "HEL-1067", key: "HEL-1067", title: "Right-to-erasure workflow stalls at ITSM handoff",   description: "GDPR erasure tickets routed to legacy ITSM never trigger the downstream erase job; 3 tickets exceeded 30-day SLA.", status: "open",        severity: "major",    priority: "p1", component: "Privacy",         raisedAt: daysAgo(2) },
+  { id: "def-helios-004", projectId: "proj-demo-helios", sourceId: "src-helios-jira", externalSystem: "jira", externalId: "HEL-0993", key: "HEL-0993", title: "Session timeout warning not announced to screen reader", description: "WCAG 2.2 SC 4.1.3: 30-min idle timeout warning toast not announced — affects screen-reader users.", status: "resolved", severity: "minor", priority: "p3", component: "Accessibility", raisedAt: daysAgo(21), resolvedAt: daysAgo(6) },
+  { id: "def-helios-005", projectId: "proj-demo-helios", sourceId: "src-helios-jira", externalSystem: "jira", externalId: "HEL-1078", key: "HEL-1078", title: "ID upload accepts expired documents",                description: "Government ID OCR step accepts documents whose expiry date has passed, bypassing identity-verification policy.", status: "open",        severity: "major",    priority: "p2", component: "Intake",          raisedAt: daysAgo(1) },
+  { id: "def-helios-006", projectId: "proj-demo-helios", sourceId: "src-helios-jira", externalSystem: "jira", externalId: "HEL-1085", key: "HEL-1085", title: "P95 onboarding completion regressed to 4m48s",       description: "Last release degraded P95 completion from 3m58s to 4m48s — breaches HEL-0006 SLA.", status: "in_progress", severity: "major",    priority: "p2", component: "Performance",     raisedAt: daysAgo(0) },
+
+  // Orion — ADO
+  { id: "def-orion-001", projectId: "proj-demo-orion", sourceId: "src-orion-ado", externalSystem: "azure_devops", externalId: "8841", key: "ORN-8841", title: "OTA programmer session retains key after timeout",     description: "Mutual-cert OTA programmer session keeps AES-128 key in RAM 18s past session-end — risk of replay if device reboots in window.", status: "in_progress", severity: "critical", priority: "p1", component: "Telemetry",        raisedAt: daysAgo(5) },
+  { id: "def-orion-002", projectId: "proj-demo-orion", sourceId: "src-orion-ado", externalSystem: "azure_devops", externalId: "8855", key: "ORN-8855", title: "Therapy inhibit latency 240ms on -10°C corner",         description: "Closed-loop inhibit measured at 240ms at -10°C ambient — exceeds 200ms requirement (ORN-0002).", status: "open", severity: "critical", priority: "p1", component: "Firmware/Detect",  raisedAt: daysAgo(3) },
+  { id: "def-orion-003", projectId: "proj-demo-orion", sourceId: "src-orion-ado", externalSystem: "azure_devops", externalId: "8861", key: "ORN-8861", title: "FreeRTOS heap fragmentation after 72h",                 description: "Long-soak test shows FreeRTOS heap fragmenting to 14% after 72h, risking malloc failures during therapy events.", status: "in_progress", severity: "major", priority: "p2", component: "RTOS",             raisedAt: daysAgo(8) },
+  { id: "def-orion-004", projectId: "proj-demo-orion", sourceId: "src-orion-ado", externalSystem: "azure_devops", externalId: "8702", key: "ORN-8702", title: "DHF link missing for v3.2.1 firmware build",          description: "Firmware revision hash for v3.2.1 not auto-linked to DHF — manual workaround applied; root cause TBD.", status: "resolved",    severity: "major",    priority: "p2", component: "Build/Trace",      raisedAt: daysAgo(30), resolvedAt: daysAgo(12) },
+  { id: "def-orion-005", projectId: "proj-demo-orion", sourceId: "src-orion-ado", externalSystem: "azure_devops", externalId: "8870", key: "ORN-8870", title: "Programmer UI mis-renders Cyrillic patient names",     description: "Patient names with Cyrillic chars render as mojibake in the device programmer UI.", status: "open",        severity: "minor",    priority: "p3", component: "Programmer UI",   raisedAt: daysAgo(1) },
+  { id: "def-orion-006", projectId: "proj-demo-orion", sourceId: "src-orion-ado", externalSystem: "azure_devops", externalId: "8878", key: "ORN-8878", title: "PMS telemetry dropouts on 4G hand-off",                description: "Post-market surveillance feed loses 0.7% of telemetry packets on cellular hand-off events.", status: "open",        severity: "major",    priority: "p2", component: "PMS",              raisedAt: daysAgo(0) },
+
+  // Atlas — Jira ATL
+  { id: "def-atlas-001", projectId: "proj-demo-atlas", sourceId: "src-atlas-jira", externalSystem: "jira", externalId: "ATL-2204", key: "ATL-2204", title: "Pre-trade gate latency p99 = 1.4ms",                  description: "Pre-trade risk gate p99 latency drifted from 0.8ms to 1.4ms after Kafka client upgrade — risks missing T+1 cut-off.", status: "in_progress", severity: "critical", priority: "p1", component: "RiskGate",        raisedAt: daysAgo(2) },
+  { id: "def-atlas-002", projectId: "proj-demo-atlas", sourceId: "src-atlas-jira", externalSystem: "jira", externalId: "ATL-2197", key: "ATL-2197", title: "Tokeniser leaks PAN to debug log under retry",       description: "Under DB retry, payment tokeniser logs raw PAN to debug.log — direct PCI DSS 4.0 Req 3.5.1 breach.", status: "open",        severity: "critical", priority: "p1", component: "Tokeniser",       raisedAt: daysAgo(1) },
+  { id: "def-atlas-003", projectId: "proj-demo-atlas", sourceId: "src-atlas-jira", externalSystem: "jira", externalId: "ATL-2188", key: "ATL-2188", title: "Recon break alerts duplicated for split fills",      description: "Three-way reconciliation generates duplicate break alerts for partially-filled trades — Ops noise.", status: "in_progress", severity: "major",    priority: "p2", component: "Reconciliation",  raisedAt: daysAgo(7) },
+  { id: "def-atlas-004", projectId: "proj-demo-atlas", sourceId: "src-atlas-jira", externalSystem: "jira", externalId: "ATL-2150", key: "ATL-2150", title: "DR drill: failover RTO measured 18m",                description: "Q1 DR exercise measured RTO of 18m vs 15m requirement (ATL-0006); root cause = stale DNS TTL.", status: "resolved",    severity: "major",    priority: "p2", component: "SRE",             raisedAt: daysAgo(50), resolvedAt: daysAgo(24) },
+  { id: "def-atlas-005", projectId: "proj-demo-atlas", sourceId: "src-atlas-jira", externalSystem: "jira", externalId: "ATL-2210", key: "ATL-2210", title: "Settlement throughput drops to 38k/min under GC",   description: "JVM GC pauses on settlement-engine reduce throughput to 38k/min for ~12s — fails ATL-0004 P99 SLA.", status: "open",        severity: "major",    priority: "p2", component: "SettlementEngine", raisedAt: daysAgo(0) },
+  { id: "def-atlas-006", projectId: "proj-demo-atlas", sourceId: "src-atlas-jira", externalSystem: "jira", externalId: "ATL-2215", key: "ATL-2215", title: "Audit log gap during Kafka rebalance",               description: "Settlement audit-log Kafka consumer drops 200ms of records during partition rebalance — SOC 2 finding.", status: "open",        severity: "major",    priority: "p1", component: "AuditLog",        raisedAt: daysAgo(0) },
+
+  // Vega — Jira VEG
+  { id: "def-vega-001", projectId: "proj-demo-vega", sourceId: "src-vega-jira", externalSystem: "jira", externalId: "VEG-934", key: "VEG-934", title: "Auto-triage misroutes commercial property claims",     description: "ML triage misroutes 2.1% of commercial property claims to personal-lines pod — re-work cost ~₹4.2L/mo.", status: "open",        severity: "major", priority: "p2", component: "Triage",          raisedAt: daysAgo(3) },
+  { id: "def-vega-002", projectId: "proj-demo-vega", sourceId: "src-vega-jira", externalSystem: "jira", externalId: "VEG-940", key: "VEG-940", title: "Fraud score model drift: F1 dropped 0.81→0.74",         description: "Monthly model monitoring shows F1 drift on fraud scorer; suspected data drift on commercial auto segment.", status: "in_progress", severity: "major", priority: "p2", component: "FraudML",         raisedAt: daysAgo(6) },
+  { id: "def-vega-003", projectId: "proj-demo-vega", sourceId: "src-vega-jira", externalSystem: "jira", externalId: "VEG-948", key: "VEG-948", title: "GDPR Art.22 rationale truncated above 4 KB",            description: "Adjudication rationale text gets truncated at 4 KB in customer-facing portal; breaches XAI requirement (VEG-0003).", status: "open",        severity: "major", priority: "p1", component: "Adjudication",    raisedAt: daysAgo(1) },
+  { id: "def-vega-004", projectId: "proj-demo-vega", sourceId: "src-vega-jira", externalSystem: "jira", externalId: "VEG-911", key: "VEG-911", title: "Retention job purged audit logs 6 months early",       description: "Mis-configured retention policy deleted ~120k audit log rows 6 months before 7-year horizon. CAPA opened.", status: "resolved",    severity: "critical", priority: "p1", component: "AuditLog",        raisedAt: daysAgo(45), resolvedAt: daysAgo(20) },
+  { id: "def-vega-005", projectId: "proj-demo-vega", sourceId: "src-vega-jira", externalSystem: "jira", externalId: "VEG-955", key: "VEG-955", title: "Self-service portal upload rejects HEIC images",        description: "Portal claim-evidence uploader rejects HEIC images from iOS users — accessibility/usability issue.", status: "open",        severity: "minor", priority: "p3", component: "Portal",          raisedAt: daysAgo(0) },
+  { id: "def-vega-006", projectId: "proj-demo-vega", sourceId: "src-vega-jira", externalSystem: "jira", externalId: "VEG-960", key: "VEG-960", title: "SIU dashboard misses high-risk flags after restart",   description: "Special Investigations Unit dashboard fails to surface fraud-flagged claims for ~5min after pod restart.", status: "in_progress", severity: "major", priority: "p2", component: "SIU Dashboard",   raisedAt: daysAgo(0) },
+
+  // Ares — ADO
+  { id: "def-ares-001", projectId: "proj-demo-ares", sourceId: "src-ares-ado", externalSystem: "azure_devops", externalId: "11204", key: "ARES-11204", title: "Lane-keep assist drift on faded lane markings",       description: "Perception model exhibits 14cm lane-centre drift on heavily-faded markings — exceeds ASIL D safety goal.", status: "in_progress", severity: "critical", priority: "p1", component: "Perception",      raisedAt: daysAgo(4) },
+  { id: "def-ares-002", projectId: "proj-demo-ares", sourceId: "src-ares-ado", externalSystem: "azure_devops", externalId: "11211", key: "ARES-11211", title: "MISRA C++ violation count regressed to 47",            description: "Static analysis shows 47 MISRA C++ 2008 violations introduced in path-planner refactor — fails ASPICE SUP.10.", status: "open",        severity: "major",    priority: "p2", component: "PathPlanner",     raisedAt: daysAgo(2) },
+  { id: "def-ares-003", projectId: "proj-demo-ares", sourceId: "src-ares-ado", externalSystem: "azure_devops", externalId: "11220", key: "ARES-11220", title: "ECU bootloader fails CRC check on cold start",         description: "Cold-start CRC verification of bootloader image fails 1 in ~4000 starts — root cause TBD.", status: "open",        severity: "critical", priority: "p1", component: "Bootloader",      raisedAt: daysAgo(1) },
+  { id: "def-ares-004", projectId: "proj-demo-ares", sourceId: "src-ares-ado", externalSystem: "azure_devops", externalId: "11150", key: "ARES-11150", title: "CAN bus arbitration timeouts on test-rig 4",          description: "CAN-FD test-rig 4 reports occasional 200µs arbitration timeouts; not reproducible on rig 1-3.", status: "resolved",    severity: "minor",    priority: "p3", component: "CAN/HW",           raisedAt: daysAgo(35), resolvedAt: daysAgo(15) },
+  { id: "def-ares-005", projectId: "proj-demo-ares", sourceId: "src-ares-ado", externalSystem: "azure_devops", externalId: "11225", key: "ARES-11225", title: "OTA update package 2 MB above flash budget",          description: "v4.7 OTA package exceeds reserved flash partition by 2 MB — release blocked pending compression.", status: "in_progress", severity: "major",    priority: "p2", component: "OTA",              raisedAt: daysAgo(0) },
+  { id: "def-ares-006", projectId: "proj-demo-ares", sourceId: "src-ares-ado", externalSystem: "azure_devops", externalId: "11230", key: "ARES-11230", title: "Cybersecurity: TLS 1.2 fallback enabled on diag port", description: "Diag port allows TLS 1.2 fallback — violates ISO 21434 cyber requirement; needs hardening.", status: "open",        severity: "critical", priority: "p1", component: "DiagPort",         raisedAt: daysAgo(0) },
+
+  // Bastion — Jira BST
+  { id: "def-bastion-001", projectId: "proj-demo-bastion", sourceId: "src-bastion-jira", externalSystem: "jira", externalId: "BST-512", key: "BST-512", title: "Critical CVE auto-ticket missed 4h SLA",         description: "CVE-2026-1248 was triaged in 6h12m vs 4h SLA (BST-0004) — paging escalation rule mis-configured.", status: "in_progress", severity: "major",    priority: "p2", component: "VulnMgmt",        raisedAt: daysAgo(2) },
+  { id: "def-bastion-002", projectId: "proj-demo-bastion", sourceId: "src-bastion-jira", externalSystem: "jira", externalId: "BST-518", key: "BST-518", title: "Drift: prod IAM role grew 12 unused permissions", description: "CSPM drift report shows prod-eks-app role accumulated 12 unused permissions — violates least-privilege baseline.", status: "open",        severity: "major",    priority: "p2", component: "IAM Drift",       raisedAt: daysAgo(3) },
+  { id: "def-bastion-003", projectId: "proj-demo-bastion", sourceId: "src-bastion-jira", externalSystem: "jira", externalId: "BST-524", key: "BST-524", title: "False-positive storm on S3 public-bucket scanner", description: "S3 public-bucket scanner emitted 412 false positives after AWS API change — noise drowning real findings.", status: "in_progress", severity: "major",    priority: "p2", component: "Scanner",         raisedAt: daysAgo(5) },
+  { id: "def-bastion-004", projectId: "proj-demo-bastion", sourceId: "src-bastion-jira", externalSystem: "jira", externalId: "BST-481", key: "BST-481", title: "Evidence locker S3 versioning was disabled",     description: "Quarterly review found versioning OFF on bastion-evidence-locker — re-enabled, full audit trail re-built.", status: "resolved",    severity: "critical", priority: "p1", component: "EvidenceLocker",  raisedAt: daysAgo(60), resolvedAt: daysAgo(28) },
+  { id: "def-bastion-005", projectId: "proj-demo-bastion", sourceId: "src-bastion-jira", externalSystem: "jira", externalId: "BST-528", key: "BST-528", title: "NIST CSF 2.0 RC.RP-2 evidence not auto-collected", description: "NIST CSF 2.0 control RC.RP-2 (recovery plan testing) evidence requires manual upload — needs automation.", status: "open",        severity: "minor",    priority: "p3", component: "Compliance",      raisedAt: daysAgo(1) },
+  { id: "def-bastion-006", projectId: "proj-demo-bastion", sourceId: "src-bastion-jira", externalSystem: "jira", externalId: "BST-533", key: "BST-533", title: "GuardDuty findings ingested 22 min late",        description: "GuardDuty -> Bastion ingestion lagged 22 min during us-east-1 event — exceeded 15-min detection SLA.", status: "in_progress", severity: "major",    priority: "p2", component: "Ingestion",       raisedAt: daysAgo(0) },
+];
+
+// ── CAPA actions ────────────────────────────────────────────────────────────
+const CAPA_ACTIONS = [
+  { id: "capa-helios-001", projectId: "proj-demo-helios", code: "CAPA-HEL-001", title: "Block back-button bypass of HIPAA consent",          description: "Add server-side state guard so /consent cannot be skipped via browser back. Linked to HEL-1042.", severity: "critical", status: "in_progress", owner: "Avery Kim",       source: "ai_audit",   evidenceCount: 4, tags: ["hipaa","onboarding"], dueAt: daysAhead(7),  frameworkId: "fw-hipaa",       controlCode: "164.308(a)(4)" },
+  { id: "capa-helios-002", projectId: "proj-demo-helios", code: "CAPA-HEL-002", title: "Resolve 7s clock drift on EU edge nodes",              description: "Deploy chrony with strict step thresholds on EU-West edge nodes; alert on >100ms drift.",         severity: "high",     status: "in_progress", owner: "SRE",             source: "inspection", evidenceCount: 2, tags: ["audit","time-sync"], dueAt: daysAhead(14), frameworkId: "fw-hipaa",       controlCode: "164.312(b)" },
+  { id: "capa-helios-003", projectId: "proj-demo-helios", code: "CAPA-HEL-003", title: "Reject expired ID documents at OCR step",              description: "OCR step must reject documents with past expiry dates and route to human review.",                severity: "high",     status: "open",        owner: "Avery Kim",       source: "manual",     evidenceCount: 0, tags: ["intake"],            dueAt: daysAhead(10), frameworkId: "fw-hipaa",       controlCode: "164.514(d)" },
+  { id: "capa-helios-004", projectId: "proj-demo-helios", code: "CAPA-HEL-004", title: "Restore P95 < 4 min onboarding SLO",                   description: "Profile and remediate regression introduced in v2.18; gate releases on synthetic SLO check.",      severity: "high",     status: "open",        owner: "Performance",     source: "manual",     evidenceCount: 0, tags: ["performance"],       dueAt: daysAhead(21), frameworkId: null,             controlCode: null },
+  { id: "capa-helios-005", projectId: "proj-demo-helios", code: "CAPA-HEL-005", title: "Erasure SLA: ITSM bridge for 30-day GDPR window",      description: "Replace legacy ITSM hand-off with direct API call; auto-trigger erase job on ticket creation.",   severity: "critical", status: "open",        owner: "Privacy",         source: "ai_audit",   evidenceCount: 1, tags: ["gdpr","erasure"],    dueAt: daysAhead(28), frameworkId: "fw-gdpr",        controlCode: "Art.17" },
+
+  { id: "capa-orion-001",  projectId: "proj-demo-orion",  code: "CAPA-ORN-001", title: "Wipe OTA session keys at session-end",                 description: "Ensure AES-128 OTA session key is zeroized within 100ms of session-end. Linked to ORN-8841.",     severity: "critical", status: "in_progress", owner: "Security Eng",    source: "ai_audit",   evidenceCount: 3, tags: ["security","ota"],    dueAt: daysAhead(14), frameworkId: "fw-iec-62304",   controlCode: "5.5.3" },
+  { id: "capa-orion-002",  projectId: "proj-demo-orion",  code: "CAPA-ORN-002", title: "Meet 200ms inhibit latency at all corners",            description: "Optimise interrupt path to meet 200ms requirement at -10°C. Re-run V&V at all 6 thermal corners.", severity: "critical", status: "open",        owner: "Firmware Team",   source: "manual",     evidenceCount: 0, tags: ["timing","safety"],   dueAt: daysAhead(30), frameworkId: "fw-iec-62304",   controlCode: "5.6.1" },
+  { id: "capa-orion-003",  projectId: "proj-demo-orion",  code: "CAPA-ORN-003", title: "FreeRTOS heap fragmentation mitigation",               description: "Switch heap_5 → static-pool allocator for therapy-critical tasks; document SOUP impact.",          severity: "high",     status: "in_progress", owner: "Firmware Team",   source: "manual",     evidenceCount: 1, tags: ["soup","rtos"],       dueAt: daysAhead(45), frameworkId: "fw-iec-62304",   controlCode: "8.1.2" },
+  { id: "capa-orion-004",  projectId: "proj-demo-orion",  code: "CAPA-ORN-004", title: "Auto-link firmware revision to DHF",                   description: "CI step shall publish revision-hash → DHF entry to traceability service on every release tag.",     severity: "medium",   status: "done",        owner: "QA",              source: "ai_audit",   evidenceCount: 5, tags: ["dhf","traceability"],closedAt: daysAgo(8), frameworkId: "fw-21cfr-820",controlCode: "820.30(j)" },
+  { id: "capa-orion-005",  projectId: "proj-demo-orion",  code: "CAPA-ORN-005", title: "PMS feed packet-loss < 0.1% on cellular hand-off",     description: "Add adaptive retry & batched upload to bring PMS feed loss below 0.1% during 4G hand-off.",        severity: "high",     status: "open",        owner: "Regulatory Affairs",source: "manual",   evidenceCount: 0, tags: ["pms"],               dueAt: daysAhead(60), frameworkId: "fw-eu-mdr-2017-745", controlCode: "Annex III" },
+
+  { id: "capa-atlas-001",  projectId: "proj-demo-atlas",  code: "CAPA-ATL-001", title: "Eliminate PAN logging under retry",                     description: "Tokeniser must scrub PAN from all log paths including DB-retry exception traces. Audit log infra.", severity: "critical", status: "in_progress", owner: "Payments Eng",    source: "ai_audit",   evidenceCount: 2, tags: ["pci"],               dueAt: daysAhead(7),  frameworkId: "fw-pci-dss-4",   controlCode: "3.5.1" },
+  { id: "capa-atlas-002",  projectId: "proj-demo-atlas",  code: "CAPA-ATL-002", title: "Restore pre-trade gate p99 ≤ 1ms",                      description: "Roll back Kafka client upgrade or pin to v3.5.x; add p99 SLO alert.",                              severity: "critical", status: "open",        owner: "Marcus Chen",     source: "manual",     evidenceCount: 0, tags: ["latency"],           dueAt: daysAhead(5),  frameworkId: null,             controlCode: null },
+  { id: "capa-atlas-003",  projectId: "proj-demo-atlas",  code: "CAPA-ATL-003", title: "Eliminate audit log gap during Kafka rebalance",        description: "Switch to cooperative-sticky assignor and tune session.timeout.ms to prevent 200ms audit gaps.",   severity: "high",     status: "open",        owner: "Platform",        source: "ai_audit",   evidenceCount: 1, tags: ["soc2","audit"],      dueAt: daysAhead(21), frameworkId: "fw-soc2",        controlCode: "CC7.2" },
+  { id: "capa-atlas-004",  projectId: "proj-demo-atlas",  code: "CAPA-ATL-004", title: "Q1 DR drill RTO regression",                            description: "Reduce DNS TTL on settlement endpoints to 60s; pre-warm replica cache.",                          severity: "high",     status: "done",        owner: "SRE",             source: "manual",     evidenceCount: 4, tags: ["dr"],                closedAt: daysAgo(20),frameworkId: "fw-dora",       controlCode: "Art.11" },
+  { id: "capa-atlas-005",  projectId: "proj-demo-atlas",  code: "CAPA-ATL-005", title: "GC tuning to sustain 50k trades/min",                   description: "Migrate JVM to ZGC; validate at 60k trades/min in staging.",                                       severity: "medium",   status: "in_progress", owner: "SettlementEngine",source: "manual",     evidenceCount: 1, tags: ["performance"],       dueAt: daysAhead(30), frameworkId: null,             controlCode: null },
+
+  { id: "capa-vega-001",   projectId: "proj-demo-vega",   code: "CAPA-VEG-001", title: "Re-train fraud scorer on commercial-auto segment",      description: "Refresh training set with last 90d commercial-auto data; target F1 ≥ 0.80.",                       severity: "high",     status: "in_progress", owner: "Fraud Ops",       source: "ai_audit",   evidenceCount: 2, tags: ["ml-drift"],          dueAt: daysAhead(21), frameworkId: null,             controlCode: null },
+  { id: "capa-vega-002",   projectId: "proj-demo-vega",   code: "CAPA-VEG-002", title: "Fix GDPR Art.22 rationale truncation",                  description: "Increase rationale field to 32 KB; add explicit truncation marker if exceeded.",                  severity: "critical", status: "open",        owner: "Adjudication",    source: "ai_audit",   evidenceCount: 0, tags: ["gdpr","xai"],        dueAt: daysAhead(10), frameworkId: "fw-gdpr",        controlCode: "Art.22" },
+  { id: "capa-vega-003",   projectId: "proj-demo-vega",   code: "CAPA-VEG-003", title: "Audit log retention policy guardrail",                  description: "Add retention policy linter + 4-eyes approval before any retention setting can decrease.",         severity: "critical", status: "done",        owner: "Compliance",      source: "inspection", evidenceCount: 6, tags: ["audit","retention"], closedAt: daysAgo(20),frameworkId: "fw-soc2",       controlCode: "CC7.3" },
+  { id: "capa-vega-004",   projectId: "proj-demo-vega",   code: "CAPA-VEG-004", title: "Retrain triage classifier — commercial property",      description: "Add commercial property exemplars; reduce mis-route to <0.5%.",                                    severity: "medium",   status: "open",        owner: "Priya Natarajan", source: "manual",     evidenceCount: 0, tags: ["triage"],            dueAt: daysAhead(30), frameworkId: null,             controlCode: null },
+  { id: "capa-vega-005",   projectId: "proj-demo-vega",   code: "CAPA-VEG-005", title: "SIU dashboard cold-start cache pre-warm",               description: "Pre-warm cache on pod startup; surface flagged claims within 30s of restart.",                     severity: "medium",   status: "in_progress", owner: "SIU Dashboard",   source: "manual",     evidenceCount: 1, tags: ["resilience"],        dueAt: daysAhead(14), frameworkId: null,             controlCode: null },
+
+  { id: "capa-ares-001",   projectId: "proj-demo-ares",   code: "CAPA-ARES-001", title: "Lane-keep drift on faded markings — model rev",       description: "Augment perception training set with faded-marking imagery; re-validate against ASIL D safety goal.", severity: "critical", status: "in_progress", owner: "Perception",  source: "ai_audit",   evidenceCount: 3, tags: ["asil-d","perception"],dueAt: daysAhead(45), frameworkId: "fw-iso-26262",   controlCode: "Part 6 §7" },
+  { id: "capa-ares-002",   projectId: "proj-demo-ares",   code: "CAPA-ARES-002", title: "MISRA C++ violation cleanup in path-planner",         description: "Remediate 47 MISRA C++ 2008 violations; reinstate static-analysis gate in CI.",                    severity: "high",     status: "in_progress", owner: "PathPlanner",  source: "inspection", evidenceCount: 1, tags: ["aspice","misra"],     dueAt: daysAhead(30), frameworkId: "fw-aspice-4",    controlCode: "SUP.10" },
+  { id: "capa-ares-003",   projectId: "proj-demo-ares",   code: "CAPA-ARES-003", title: "Bootloader CRC failure — root cause",                  description: "Instrument cold-start path; capture flash signal-integrity traces; deliver root cause within 30d.", severity: "critical", status: "open",        owner: "Bootloader",   source: "manual",     evidenceCount: 0, tags: ["bootloader","safety"],dueAt: daysAhead(30), frameworkId: "fw-iso-26262",   controlCode: "Part 5 §7" },
+  { id: "capa-ares-004",   projectId: "proj-demo-ares",   code: "CAPA-ARES-004", title: "OTA package size — compression strategy",              description: "Adopt brotli-11 + delta-update encoding to fit OTA package within reserved flash partition.",      severity: "high",     status: "open",        owner: "OTA",          source: "manual",     evidenceCount: 0, tags: ["ota"],                dueAt: daysAhead(20), frameworkId: null,             controlCode: null },
+  { id: "capa-ares-005",   projectId: "proj-demo-ares",   code: "CAPA-ARES-005", title: "Disable TLS 1.2 fallback on diag port",                description: "Enforce TLS 1.3 only; add cyber-test case in regression suite.",                                  severity: "critical", status: "in_progress", owner: "Security Eng", source: "ai_audit",   evidenceCount: 2, tags: ["iso21434","cyber"],   dueAt: daysAhead(10), frameworkId: null,             controlCode: null },
+
+  { id: "capa-bastion-001",projectId: "proj-demo-bastion",code: "CAPA-BST-001", title: "Fix 4h critical-CVE paging escalation",                description: "Re-configure PagerDuty escalation ladder; add CVE-criticality routing rule + SLO alert at 3h45.",  severity: "high",     status: "in_progress", owner: "SecOps",          source: "ai_audit",   evidenceCount: 2, tags: ["vuln-mgmt","sla"],   dueAt: daysAhead(7),  frameworkId: "fw-soc2",        controlCode: "CC7.2" },
+  { id: "capa-bastion-002",projectId: "proj-demo-bastion",code: "CAPA-BST-002", title: "IAM least-privilege drift — auto-prune",                description: "Auto-detect & propose pruning of unused IAM permissions every 30 days via policy-as-code.",        severity: "high",     status: "open",        owner: "Tariq Hassan",    source: "ai_audit",   evidenceCount: 0, tags: ["iam","least-privilege"],dueAt: daysAhead(30),frameworkId: "fw-iso-27001",  controlCode: "A.5.15" },
+  { id: "capa-bastion-003",projectId: "proj-demo-bastion",code: "CAPA-BST-003", title: "S3 scanner false-positive suppression",                 description: "Update scanner ruleset post AWS API change; tune confidence thresholds.",                          severity: "medium",   status: "in_progress", owner: "Scanner",         source: "manual",     evidenceCount: 1, tags: ["scanner"],           dueAt: daysAhead(14), frameworkId: null,             controlCode: null },
+  { id: "capa-bastion-004",projectId: "proj-demo-bastion",code: "CAPA-BST-004", title: "S3 versioning enforcement on evidence locker",          description: "Enforce S3 Object Lock + versioning on all evidence-locker buckets via SCP.",                      severity: "critical", status: "done",        owner: "EvidenceLocker",  source: "inspection", evidenceCount: 7, tags: ["audit","s3"],        closedAt: daysAgo(28),frameworkId: "fw-iso-27001", controlCode: "A.8.13" },
+  { id: "capa-bastion-005",projectId: "proj-demo-bastion",code: "CAPA-BST-005", title: "Automate NIST CSF 2.0 RC.RP-2 evidence",                description: "Auto-collect recovery-plan-test evidence from chaos exercises; map to RC.RP-2 control.",            severity: "low",      status: "open",        owner: "Compliance",      source: "manual",     evidenceCount: 0, tags: ["nist-csf"],          dueAt: daysAhead(45), frameworkId: "fw-nist-csf",    controlCode: "RC.RP-2" },
+];
+
+// ── Test cases ──────────────────────────────────────────────────────────────
+const TEST_CASES = [
+  // Helios
+  { id: "tc-helios-001", projectId: "proj-demo-helios", requirementId: "req-helios-001", title: "Verify gov-ID accepted (happy path)",                     type: "functional", level: "system", discipline: "functional", paradigm: "procedural",         mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "passing",  steps: ["Navigate to /onboarding","Upload valid passport","Pass OCR","Submit"], expected: "Onboarding state advances to 'consent'.", lastRunAt: daysAgo(1), lastRunNote: "Passed on staging build 4821." },
+  { id: "tc-helios-002", projectId: "proj-demo-helios", requirementId: "req-helios-001", title: "Reject expired government ID",                             type: "negative",   level: "system", discipline: "negative",   paradigm: "procedural",         mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Upload expired passport","Pass OCR","Submit"], expected: "Request rejected, user prompted to upload current ID.", lastRunAt: daysAgo(0), lastRunNote: "Currently failing — links to HEL-1078." },
+  { id: "tc-helios-003", projectId: "proj-demo-helios", requirementId: "req-helios-002", title: "Consent capture survives back-button",                     type: "negative",   level: "acceptance", discipline: "regression", paradigm: "procedural",   mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Reach consent","Press browser back","Re-enter onboarding"], expected: "Consent is required again before any PHI write.", lastRunAt: daysAgo(0), lastRunNote: "Bug HEL-1042 reproduces." },
+  { id: "tc-helios-004", projectId: "proj-demo-helios", requirementId: "req-helios-004", title: "Audit log captures actor + reason for PHI read",          type: "functional", level: "integration", discipline: "regulatory", paradigm: "bdd",         mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Authenticate as clinician","GET /patient/:id","Inspect audit log"], expected: "Audit row contains actor, ts, reason.", gherkin: "Given a clinician\nWhen they read patient PHI\nThen the audit log records actor, timestamp and reason", lastRunAt: daysAgo(2), lastRunNote: "" },
+  { id: "tc-helios-005", projectId: "proj-demo-helios", requirementId: "req-helios-006", title: "P95 onboarding completion < 4 minutes",                    type: "non_functional", level: "operational", discipline: "performance", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "high", status: "failing",  steps: ["Run k6 onboarding scenario, 200 VUs, 30 min"], expected: "P95 < 240s.", lastRunAt: daysAgo(0), lastRunNote: "Last run P95 = 288s — see HEL-1085." },
+  { id: "tc-helios-006", projectId: "proj-demo-helios", requirementId: "req-helios-007", title: "PHI encryption KMS key alias is HSM-backed",               type: "functional", level: "system", discipline: "security",   paradigm: "procedural",         mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["aws kms describe-key --key-id <alias>","Assert Origin = AWS_CLOUDHSM"], expected: "Origin == AWS_CLOUDHSM.", lastRunAt: daysAgo(7), lastRunNote: "" },
+  { id: "tc-helios-007", projectId: "proj-demo-helios", requirementId: "req-helios-008", title: "Idle session terminates at 30 min",                       type: "functional", level: "acceptance", discipline: "security",  paradigm: "procedural",        mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "passing",  steps: ["Login","Idle 28 min","Verify warning at 28m","Idle further","Verify logout at 30m"], expected: "Warning + logout at correct times.", lastRunAt: daysAgo(3), lastRunNote: "" },
+
+  // Orion
+  { id: "tc-orion-001", projectId: "proj-demo-orion", requirementId: "req-orion-002", title: "Therapy inhibit latency at 25 °C corner",                   type: "non_functional", level: "system", discipline: "reliability", paradigm: "procedural",   mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Inject oversensing event","Measure detect→inhibit latency"], expected: "Latency < 200 ms (3-sigma).", lastRunAt: daysAgo(2), lastRunNote: "" },
+  { id: "tc-orion-002", projectId: "proj-demo-orion", requirementId: "req-orion-002", title: "Therapy inhibit latency at -10 °C corner",                  type: "non_functional", level: "system", discipline: "reliability", paradigm: "procedural",   mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Cool DUT to -10°C","Inject oversensing event","Measure latency"], expected: "Latency < 200 ms.", lastRunAt: daysAgo(0), lastRunNote: "Last run = 240 ms — see ORN-8855." },
+  { id: "tc-orion-003", projectId: "proj-demo-orion", requirementId: "req-orion-003", title: "OTA programmer mTLS handshake — happy path",                type: "functional", level: "integration", discipline: "security",  paradigm: "procedural",        mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Initiate OTA programmer session with valid cert chain"], expected: "Session established with AES-128 keys.", lastRunAt: daysAgo(5), lastRunNote: "" },
+  { id: "tc-orion-004", projectId: "proj-demo-orion", requirementId: "req-orion-003", title: "OTA programmer mTLS — revoked client cert",                 type: "negative",   level: "integration", discipline: "security",  paradigm: "procedural",        mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Present revoked client cert","Initiate session"], expected: "Connection refused, OCSP/CRL check logged.", lastRunAt: daysAgo(5), lastRunNote: "" },
+  { id: "tc-orion-005", projectId: "proj-demo-orion", requirementId: "req-orion-004", title: "Firmware revision auto-links to DHF",                       type: "functional", level: "integration", discipline: "regulatory", paradigm: "procedural",       mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "passing",  steps: ["Tag firmware v3.x.y","Run release pipeline","Inspect DHF entry"], expected: "DHF entry contains revision hash + V&V refs.", lastRunAt: daysAgo(8), lastRunNote: "Validates CAPA-ORN-004." },
+  { id: "tc-orion-006", projectId: "proj-demo-orion", requirementId: "req-orion-005", title: "FreeRTOS SOUP — CVE diff vs SBOM",                          type: "functional", level: "integration", discipline: "regulatory", paradigm: "exploratory",      mode: "static",  sourceKind: "requirement", priority: "high",     status: "draft",    steps: ["Run sbom-diff against current FreeRTOS 10.5.1"], expected: "Documented residual risks; no unaddressed CVEs.", lastRunAt: null, lastRunNote: "" },
+
+  // Atlas
+  { id: "tc-atlas-001", projectId: "proj-demo-atlas", requirementId: "req-atlas-001", title: "Pre-trade gate enforces credit limit",                       type: "functional", level: "system", discipline: "functional", paradigm: "bdd",                mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Submit order exceeding credit limit"], expected: "Order rejected with REASON_CREDIT_BREACH.", gherkin: "Given a client with credit limit X\nWhen they submit an order Y > X\nThen the order is rejected with REASON_CREDIT_BREACH", lastRunAt: daysAgo(1), lastRunNote: "" },
+  { id: "tc-atlas-002", projectId: "proj-demo-atlas", requirementId: "req-atlas-003", title: "PAN never appears in any service log",                      type: "negative",   level: "operational", discipline: "security",  paradigm: "exploratory",       mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Submit transaction; force DB retry","grep all logs for PAN regex"], expected: "Zero matches.", lastRunAt: daysAgo(0), lastRunNote: "Found PAN in debug.log — ATL-2197." },
+  { id: "tc-atlas-003", projectId: "proj-demo-atlas", requirementId: "req-atlas-004", title: "Settlement throughput sustained 50k tx/min for 30 min",      type: "non_functional", level: "operational", discipline: "performance", paradigm: "procedural",   mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Load 50k tx/min for 30 min","Capture P99 latency + throughput"], expected: "P99 < 1s, throughput stable.", lastRunAt: daysAgo(0), lastRunNote: "GC pauses dropped to 38k/min — ATL-2210." },
+  { id: "tc-atlas-004", projectId: "proj-demo-atlas", requirementId: "req-atlas-005", title: "Daily three-way reconciliation balances",                    type: "functional", level: "integration", discipline: "functional", paradigm: "procedural",       mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "passing",  steps: ["Run EOD recon job"], expected: "Books, custodian, clearer all agree to the cent.", lastRunAt: daysAgo(1), lastRunNote: "" },
+  { id: "tc-atlas-005", projectId: "proj-demo-atlas", requirementId: "req-atlas-006", title: "DR drill: failover RTO ≤ 15 min",                            type: "non_functional", level: "operational", discipline: "reliability", paradigm: "procedural",  mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Trigger region failover","Measure restoration of trading"], expected: "RTO ≤ 15m, RPO ≤ 1m.", lastRunAt: daysAgo(20), lastRunNote: "Q2 drill = 13m12s; Q1 was 18m (CAPA-ATL-004)." },
+  { id: "tc-atlas-006", projectId: "proj-demo-atlas", requirementId: "req-atlas-002", title: "T+1 settlement window honoured for in-scope assets",        type: "functional", level: "system", discipline: "regulatory", paradigm: "procedural",         mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Run end-of-day batch","Verify trade settlement timestamps"], expected: "All in-scope trades settled by T+1 cut-off.", lastRunAt: daysAgo(1), lastRunNote: "" },
+
+  // Vega
+  { id: "tc-vega-001", projectId: "proj-demo-vega", requirementId: "req-vega-001", title: "Auto-triage routes correctly per claim type",                     type: "functional", level: "integration", discipline: "functional", paradigm: "procedural",       mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Submit 500 mixed-type claims","Verify pod assignment"], expected: "Mis-route < 0.5%.", lastRunAt: daysAgo(2), lastRunNote: "Mis-route = 2.1% — VEG-934." },
+  { id: "tc-vega-002", projectId: "proj-demo-vega", requirementId: "req-vega-002", title: "Fraud scorer F1 ≥ 0.80 on hold-out",                            type: "non_functional", level: "operational", discipline: "reliability", paradigm: "functional_property",mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Score hold-out set","Compute F1"], expected: "F1 ≥ 0.80.", lastRunAt: daysAgo(0), lastRunNote: "Last F1 = 0.74." },
+  { id: "tc-vega-003", projectId: "proj-demo-vega", requirementId: "req-vega-003", title: "Adjudication rationale shown to user (GDPR Art.22)",            type: "functional", level: "acceptance", discipline: "regulatory", paradigm: "bdd",              mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Trigger automated decision","Open customer portal","Inspect rationale"], expected: "Full rationale visible without truncation.", gherkin: "Given an automated adjudication decision\nWhen the customer views their claim\nThen they can read the full machine rationale", lastRunAt: daysAgo(1), lastRunNote: "Rationale truncated > 4 KB — VEG-948." },
+  { id: "tc-vega-004", projectId: "proj-demo-vega", requirementId: "req-vega-004", title: "Audit log retention enforced 7 years",                          type: "functional", level: "operational", discipline: "regulatory", paradigm: "procedural",      mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Inspect retention policy","Verify Object Lock duration"], expected: "Object Lock = 7 years; alarm if drifted.", lastRunAt: daysAgo(5), lastRunNote: "Validates CAPA-VEG-003." },
+  { id: "tc-vega-005", projectId: "proj-demo-vega", requirementId: "req-vega-005", title: "Self-service portal accepts HEIC + JPEG + PDF uploads",         type: "functional", level: "acceptance", discipline: "usability",  paradigm: "procedural",       mode: "dynamic", sourceKind: "requirement", priority: "medium",   status: "failing",  steps: ["Upload HEIC, JPEG, PDF samples"], expected: "All accepted; previews rendered.", lastRunAt: daysAgo(0), lastRunNote: "HEIC rejected — VEG-955." },
+
+  // Ares
+  { id: "tc-ares-001", projectId: "proj-demo-ares", requirementId: null, title: "Lane-keep: < 10 cm drift on standard markings",                            type: "non_functional", level: "system", discipline: "reliability", paradigm: "procedural",   mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Run open-loop drive scenario, well-marked highway"], expected: "Mean drift < 10 cm.", lastRunAt: daysAgo(2), lastRunNote: "" },
+  { id: "tc-ares-002", projectId: "proj-demo-ares", requirementId: null, title: "Lane-keep: < 10 cm drift on faded markings",                              type: "non_functional", level: "system", discipline: "reliability", paradigm: "procedural",   mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Run open-loop drive scenario, faded markings"], expected: "Mean drift < 10 cm.", lastRunAt: daysAgo(0), lastRunNote: "Mean drift = 14 cm — ARES-11204." },
+  { id: "tc-ares-003", projectId: "proj-demo-ares", requirementId: null, title: "Static analysis: zero MISRA C++ violations on path-planner",              type: "functional", level: "unit",   discipline: "regulatory", paradigm: "procedural",         mode: "static",  sourceKind: "code",        priority: "high",     status: "failing",  steps: ["Run cppcheck/MISRA","Inspect violation count for path-planner module"], expected: "Zero violations.", lastRunAt: daysAgo(2), lastRunNote: "47 violations — ARES-11211." },
+  { id: "tc-ares-004", projectId: "proj-demo-ares", requirementId: null, title: "Bootloader CRC verifies on cold start (1000 cycles)",                     type: "functional", level: "integration", discipline: "reliability", paradigm: "procedural",   mode: "dynamic", sourceKind: "code",        priority: "critical", status: "failing",  steps: ["Cold-cycle DUT 1000 times","Log boot CRC result"], expected: "1000/1000 pass.", lastRunAt: daysAgo(1), lastRunNote: "1 in ~4000 fails — ARES-11220." },
+  { id: "tc-ares-005", projectId: "proj-demo-ares", requirementId: null, title: "OTA package size within reserved partition",                              type: "functional", level: "system", discipline: "functional", paradigm: "procedural",         mode: "static",  sourceKind: "report",      priority: "high",     status: "failing",  steps: ["Inspect OTA artefact size vs partition manifest"], expected: "Size ≤ partition.", lastRunAt: daysAgo(0), lastRunNote: "2 MB over budget — ARES-11225." },
+  { id: "tc-ares-006", projectId: "proj-demo-ares", requirementId: null, title: "Diag port refuses TLS < 1.3",                                              type: "negative",   level: "integration", discipline: "security",   paradigm: "procedural",      mode: "dynamic", sourceKind: "code",        priority: "critical", status: "failing",  steps: ["Connect to diag port forcing TLS 1.2"], expected: "Connection refused.", lastRunAt: daysAgo(0), lastRunNote: "Currently allows TLS 1.2 — ARES-11230." },
+
+  // Bastion
+  { id: "tc-bastion-001", projectId: "proj-demo-bastion", requirementId: "req-bastion-001", title: "CSPM CIS scan completes within 15 min window",        type: "non_functional", level: "operational", discipline: "performance", paradigm: "procedural",  mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Trigger full CIS scan across all accounts"], expected: "Completes within 15 min.", lastRunAt: daysAgo(0), lastRunNote: "" },
+  { id: "tc-bastion-002", projectId: "proj-demo-bastion", requirementId: "req-bastion-001", title: "Critical CIS finding auto-creates ticket < 5 min",     type: "functional", level: "integration", discipline: "functional", paradigm: "bdd",              mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "passing",  steps: ["Inject mock critical finding","Wait 5 min"], expected: "Ticket created in linked tracker.", gherkin: "Given a critical CIS finding\nWhen detected by CSPM\nThen a ticket is auto-created within 5 minutes", lastRunAt: daysAgo(1), lastRunNote: "" },
+  { id: "tc-bastion-003", projectId: "proj-demo-bastion", requirementId: "req-bastion-002", title: "SOC 2 evidence ingestion daily success",               type: "functional", level: "operational", discipline: "regulatory", paradigm: "procedural",      mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "passing",  steps: ["Inspect last 7d evidence ingest jobs"], expected: "All succeed; failures retried < 1h.", lastRunAt: daysAgo(0), lastRunNote: "" },
+  { id: "tc-bastion-004", projectId: "proj-demo-bastion", requirementId: "req-bastion-004", title: "Vuln SLA: critical CVE triaged ≤ 4h",                  type: "non_functional", level: "operational", discipline: "reliability", paradigm: "procedural",   mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Compute MTTR for last 30d critical CVEs"], expected: "MTTR ≤ 4h.", lastRunAt: daysAgo(2), lastRunNote: "Mean = 5.4h — BST-512." },
+  { id: "tc-bastion-005", projectId: "proj-demo-bastion", requirementId: "req-bastion-003", title: "NIST CSF 2.0 maturity self-assessment",                type: "functional", level: "operational", discipline: "regulatory", paradigm: "exploratory",     mode: "static",  sourceKind: "report",      priority: "high",     status: "draft",    steps: ["Score each function against Tier 3 criteria"], expected: "All six functions ≥ Tier 3.", lastRunAt: null, lastRunNote: "" },
+  { id: "tc-bastion-006", projectId: "proj-demo-bastion", requirementId: null,            title: "Evidence locker S3 bucket has Object Lock enabled",     type: "functional", level: "operational", discipline: "security",   paradigm: "procedural",      mode: "static",  sourceKind: "code",        priority: "critical", status: "passing",  steps: ["aws s3api get-object-lock-configuration --bucket bastion-evidence-locker"], expected: "ObjectLockEnabled = Enabled.", lastRunAt: daysAgo(7), lastRunNote: "Validates CAPA-BST-004." },
+];
+
+// ── Code artifacts + traceability links ─────────────────────────────────────
+const CODE_ARTIFACTS = [
+  { id: "ca-helios-1", projectId: "proj-demo-helios", filePath: "src/onboarding/consent.ts",          language: "typescript", symbol: "captureConsent",         kind: "function", repoUrl: "https://github.com/acme-health/helios-onboarding/blob/main/src/onboarding/consent.ts" },
+  { id: "ca-helios-2", projectId: "proj-demo-helios", filePath: "src/audit/phiAuditLog.ts",           language: "typescript", symbol: "PhiAuditLogger",         kind: "class",    repoUrl: "https://github.com/acme-health/helios-onboarding/blob/main/src/audit/phiAuditLog.ts" },
+  { id: "ca-helios-3", projectId: "proj-demo-helios", filePath: "src/auth/sessionTimeout.ts",         language: "typescript", symbol: "enforceIdleTimeout",     kind: "function", repoUrl: "https://github.com/acme-health/helios-onboarding/blob/main/src/auth/sessionTimeout.ts" },
+  { id: "ca-helios-4", projectId: "proj-demo-helios", filePath: "src/encryption/kms.ts",              language: "typescript", symbol: "PhiKmsClient",           kind: "class",    repoUrl: "https://github.com/acme-health/helios-onboarding/blob/main/src/encryption/kms.ts" },
+  { id: "ca-helios-5", projectId: "proj-demo-helios", filePath: "src/intake/idVerification.ts",       language: "typescript", symbol: "verifyGovId",            kind: "function", repoUrl: "https://github.com/acme-health/helios-onboarding/blob/main/src/intake/idVerification.ts" },
+  { id: "ca-orion-1",  projectId: "proj-demo-orion",  filePath: "firmware/src/therapy/inhibit.c",     language: "c",          symbol: "therapy_inhibit_isr",    kind: "function", repoUrl: "https://github.com/acme-health/orion-firmware/blob/main/firmware/src/therapy/inhibit.c" },
+  { id: "ca-orion-2",  projectId: "proj-demo-orion",  filePath: "firmware/src/comms/ota_session.c",   language: "c",          symbol: "ota_session_open",       kind: "function", repoUrl: "https://github.com/acme-health/orion-firmware/blob/main/firmware/src/comms/ota_session.c" },
+  { id: "ca-orion-3",  projectId: "proj-demo-orion",  filePath: "firmware/src/dhf/release_link.c",    language: "c",          symbol: "publish_dhf_link",       kind: "function", repoUrl: "https://github.com/acme-health/orion-firmware/blob/main/firmware/src/dhf/release_link.c" },
+  { id: "ca-orion-4",  projectId: "proj-demo-orion",  filePath: "firmware/src/rtos/heap_static.c",    language: "c",          symbol: "static_pool_alloc",      kind: "function", repoUrl: "https://github.com/acme-health/orion-firmware/blob/main/firmware/src/rtos/heap_static.c" },
+  { id: "ca-atlas-1",  projectId: "proj-demo-atlas",  filePath: "services/risk-gate/src/Gate.java",   language: "java",       symbol: "PreTradeRiskGate",       kind: "class",    repoUrl: "https://github.com/acme-fin/atlas-settlement/blob/main/services/risk-gate/src/Gate.java" },
+  { id: "ca-atlas-2",  projectId: "proj-demo-atlas",  filePath: "services/tokeniser/src/Tokeniser.java", language: "java",    symbol: "PanTokeniser",           kind: "class",    repoUrl: "https://github.com/acme-fin/atlas-settlement/blob/main/services/tokeniser/src/Tokeniser.java" },
+  { id: "ca-atlas-3",  projectId: "proj-demo-atlas",  filePath: "services/recon/src/ThreeWay.java",   language: "java",       symbol: "ThreeWayReconciler",     kind: "class",    repoUrl: "https://github.com/acme-fin/atlas-settlement/blob/main/services/recon/src/ThreeWay.java" },
+  { id: "ca-atlas-4",  projectId: "proj-demo-atlas",  filePath: "services/dr/src/Failover.java",      language: "java",       symbol: "RegionFailover",         kind: "class",    repoUrl: "https://github.com/acme-fin/atlas-settlement/blob/main/services/dr/src/Failover.java" },
+  { id: "ca-vega-1",   projectId: "proj-demo-vega",   filePath: "src/triage/router.py",               language: "python",     symbol: "ClaimsRouter",           kind: "class",    repoUrl: "https://github.com/acme-ins/vega-claims/blob/main/src/triage/router.py" },
+  { id: "ca-vega-2",   projectId: "proj-demo-vega",   filePath: "src/fraud/scorer.py",                language: "python",     symbol: "FraudScorer",            kind: "class",    repoUrl: "https://github.com/acme-ins/vega-claims/blob/main/src/fraud/scorer.py" },
+  { id: "ca-vega-3",   projectId: "proj-demo-vega",   filePath: "src/adjudication/explain.py",        language: "python",     symbol: "build_rationale",        kind: "function", repoUrl: "https://github.com/acme-ins/vega-claims/blob/main/src/adjudication/explain.py" },
+  { id: "ca-vega-4",   projectId: "proj-demo-vega",   filePath: "src/audit/retention.py",             language: "python",     symbol: "RetentionGuard",         kind: "class",    repoUrl: "https://github.com/acme-ins/vega-claims/blob/main/src/audit/retention.py" },
+  { id: "ca-ares-1",   projectId: "proj-demo-ares",   filePath: "perception/src/lane_keep.cpp",       language: "cpp",        symbol: "LaneKeepEstimator",      kind: "class",    repoUrl: "https://github.com/acme-auto/ares-adas/blob/main/perception/src/lane_keep.cpp" },
+  { id: "ca-ares-2",   projectId: "proj-demo-ares",   filePath: "planner/src/path_planner.cpp",       language: "cpp",        symbol: "PathPlanner",            kind: "class",    repoUrl: "https://github.com/acme-auto/ares-adas/blob/main/planner/src/path_planner.cpp" },
+  { id: "ca-ares-3",   projectId: "proj-demo-ares",   filePath: "boot/src/bootloader.c",              language: "c",          symbol: "verify_image_crc",       kind: "function", repoUrl: "https://github.com/acme-auto/ares-adas/blob/main/boot/src/bootloader.c" },
+  { id: "ca-ares-4",   projectId: "proj-demo-ares",   filePath: "diag/src/diag_tls.c",                language: "c",          symbol: "diag_tls_handshake",     kind: "function", repoUrl: "https://github.com/acme-auto/ares-adas/blob/main/diag/src/diag_tls.c" },
+  { id: "ca-bastion-1",projectId: "proj-demo-bastion",filePath: "scanner/src/cis_scan.go",            language: "go",         symbol: "CisScanner",             kind: "class",    repoUrl: "https://github.com/acme-sec/bastion-cspm/blob/main/scanner/src/cis_scan.go" },
+  { id: "ca-bastion-2",projectId: "proj-demo-bastion",filePath: "scanner/src/auto_ticket.go",         language: "go",         symbol: "AutoTicket",             kind: "function", repoUrl: "https://github.com/acme-sec/bastion-cspm/blob/main/scanner/src/auto_ticket.go" },
+  { id: "ca-bastion-3",projectId: "proj-demo-bastion",filePath: "vuln/src/sla_tracker.go",            language: "go",         symbol: "SlaTracker",             kind: "class",    repoUrl: "https://github.com/acme-sec/bastion-cspm/blob/main/vuln/src/sla_tracker.go" },
+  { id: "ca-bastion-4",projectId: "proj-demo-bastion",filePath: "evidence/src/object_lock.go",        language: "go",         symbol: "EnsureObjectLock",       kind: "function", repoUrl: "https://github.com/acme-sec/bastion-cspm/blob/main/evidence/src/object_lock.go" },
+];
+
+const TRACE_LINKS = [
+  // Helios
+  { id: "tl-helios-1", requirementId: "req-helios-002", codeArtifactId: "ca-helios-1", kind: "implements" },
+  { id: "tl-helios-2", requirementId: "req-helios-004", codeArtifactId: "ca-helios-2", kind: "implements" },
+  { id: "tl-helios-3", requirementId: "req-helios-008", codeArtifactId: "ca-helios-3", kind: "implements" },
+  { id: "tl-helios-4", requirementId: "req-helios-007", codeArtifactId: "ca-helios-4", kind: "implements" },
+  { id: "tl-helios-5", requirementId: "req-helios-001", codeArtifactId: "ca-helios-5", kind: "implements" },
+  // Orion
+  { id: "tl-orion-1",  requirementId: "req-orion-002",  codeArtifactId: "ca-orion-1",  kind: "implements" },
+  { id: "tl-orion-2",  requirementId: "req-orion-003",  codeArtifactId: "ca-orion-2",  kind: "implements" },
+  { id: "tl-orion-3",  requirementId: "req-orion-004",  codeArtifactId: "ca-orion-3",  kind: "implements" },
+  { id: "tl-orion-4",  requirementId: "req-orion-005",  codeArtifactId: "ca-orion-4",  kind: "implements" },
+  // Atlas
+  { id: "tl-atlas-1",  requirementId: "req-atlas-001",  codeArtifactId: "ca-atlas-1",  kind: "implements" },
+  { id: "tl-atlas-2",  requirementId: "req-atlas-003",  codeArtifactId: "ca-atlas-2",  kind: "implements" },
+  { id: "tl-atlas-3",  requirementId: "req-atlas-005",  codeArtifactId: "ca-atlas-3",  kind: "implements" },
+  { id: "tl-atlas-4",  requirementId: "req-atlas-006",  codeArtifactId: "ca-atlas-4",  kind: "implements" },
+  // Vega
+  { id: "tl-vega-1",   requirementId: "req-vega-001",   codeArtifactId: "ca-vega-1",   kind: "implements" },
+  { id: "tl-vega-2",   requirementId: "req-vega-002",   codeArtifactId: "ca-vega-2",   kind: "implements" },
+  { id: "tl-vega-3",   requirementId: "req-vega-003",   codeArtifactId: "ca-vega-3",   kind: "implements" },
+  { id: "tl-vega-4",   requirementId: "req-vega-004",   codeArtifactId: "ca-vega-4",   kind: "implements" },
+  // Ares
+  { id: "tl-ares-1",   requirementId: "req-ares-001",   codeArtifactId: "ca-ares-1",   kind: "implements" },
+  { id: "tl-ares-2",   requirementId: "req-ares-002",   codeArtifactId: "ca-ares-2",   kind: "implements" },
+  { id: "tl-ares-3",   requirementId: "req-ares-003",   codeArtifactId: "ca-ares-3",   kind: "implements" },
+  { id: "tl-ares-4",   requirementId: "req-ares-004",   codeArtifactId: "ca-ares-4",   kind: "implements" },
+  // Bastion
+  { id: "tl-bastion-1",requirementId: "req-bastion-001",codeArtifactId: "ca-bastion-1",kind: "implements" },
+  { id: "tl-bastion-2",requirementId: "req-bastion-001",codeArtifactId: "ca-bastion-2",kind: "implements" },
+  { id: "tl-bastion-3",requirementId: "req-bastion-004",codeArtifactId: "ca-bastion-3",kind: "implements" },
+  { id: "tl-bastion-4",requirementId: "req-bastion-002",codeArtifactId: "ca-bastion-4",kind: "implements" },
+];
+
+// ── AI reports ──────────────────────────────────────────────────────────────
+function reportContent(title: string, summary: string, sections: { id: string; heading: string; body: string }[], evidence: { id: string; label: string; source: string }[]) {
+  return { title, executiveSummary: summary, sections, evidence };
+}
+
+const AI_REPORTS = [
+  { id: "rep-helios-1", projectId: "proj-demo-helios", frameworkId: "fw-hipaa",     kind: "compliance_audit",      tone: "regulator", title: "HIPAA Security Rule — Q1 Audit",                  status: "finalised",
+    content: reportContent("HIPAA Security Rule — Q1 Audit",
+      "Helios is broadly aligned with HIPAA Security Rule §164.308–§164.312. Two material gaps are tracked under CAPA-HEL-001 (consent bypass) and CAPA-HEL-005 (erasure SLA).",
+      [
+        { id: "s1", heading: "Administrative Safeguards", body: "Workforce training records up to date; access reviews quarterly. CAPA-HEL-001 open against 164.308(a)(4)." },
+        { id: "s2", heading: "Technical Safeguards",      body: "PHI encrypted at rest (HSM); session timeout enforced; audit log integrity controls in place." },
+        { id: "s3", heading: "Findings & Recommendations", body: "Close CAPA-HEL-001 within 7 days; deploy chrony to remediate audit-log clock drift (CAPA-HEL-002)." },
+      ],
+      [
+        { id: "e1", label: "HEL-0004 — PHI read audit log",  source: "requirement" },
+        { id: "e2", label: "HEL-0007 — HSM encryption",       source: "requirement" },
+        { id: "e3", label: "PhiAuditLogger.ts",                source: "code" },
+      ]),
+  },
+  { id: "rep-helios-2", projectId: "proj-demo-helios", frameworkId: "fw-gdpr",      kind: "exec_brief",            tone: "executive", title: "GDPR Readiness — Executive Brief", status: "draft",
+    content: reportContent("GDPR Readiness — Executive Brief",
+      "EU patient data is now resident in EU-West with replication disabled. Right-to-erasure SLA at risk due to legacy ITSM bridge.",
+      [
+        { id: "s1", heading: "Strengths",   body: "Data residency, consent capture, audit trail." },
+        { id: "s2", heading: "Risks",        body: "Erasure 30-day SLA breaches in 3 cases this quarter (CAPA-HEL-005)." },
+      ],
+      [{ id: "e1", label: "HEL-0005 — Right-to-erasure", source: "requirement" }]),
+  },
+
+  { id: "rep-orion-1",  projectId: "proj-demo-orion",  frameworkId: "fw-iec-62304", kind: "compliance_audit",      tone: "regulator", title: "IEC 62304 — Software Lifecycle Audit",            status: "finalised",
+    content: reportContent("IEC 62304 — Software Lifecycle Audit",
+      "Orion firmware classified Class C with full DHF traceability. SOUP validation in progress (FreeRTOS 10.5.1).",
+      [
+        { id: "s1", heading: "Software Safety Classification", body: "Orion firmware components controlling therapy delivery are classified Class C per IEC 62304 §4.3." },
+        { id: "s2", heading: "Verification & Validation",       body: "All Class C requirements have V&V coverage. Two tests currently failing (-10°C latency)." },
+        { id: "s3", heading: "SOUP Management",                  body: "FreeRTOS 10.5.1 validation in progress — see CAPA-ORN-003 for residual risk treatment." },
+      ],
+      [{ id: "e1", label: "ORN-0001 — Class C classification", source: "requirement" }, { id: "e2", label: "DHF release-link CI step", source: "code" }]),
+  },
+  { id: "rep-orion-2",  projectId: "proj-demo-orion",  frameworkId: "fw-21cfr-820", kind: "traceability",          tone: "technical", title: "FDA 21 CFR 820.30 Traceability Matrix",           status: "draft",
+    content: reportContent("FDA 21 CFR 820.30 Traceability Matrix",
+      "Bidirectional traceability complete for 5 of 6 requirements; ORN-0006 (PMS) pending implementation.",
+      [{ id: "s1", heading: "Coverage", body: "Reqs → Code → Tests → DHF coverage at 83%." }],
+      [{ id: "e1", label: "DHF v3.2", source: "report" }]),
+  },
+
+  { id: "rep-atlas-1",  projectId: "proj-demo-atlas",  frameworkId: "fw-pci-dss-4", kind: "compliance_audit",      tone: "regulator", title: "PCI DSS 4.0 — Continuous Audit",                  status: "finalised",
+    content: reportContent("PCI DSS 4.0 — Continuous Audit",
+      "Network segmentation validated; tokenisation in place; one open finding on PAN logging under retry (ATL-2197 / CAPA-ATL-001).",
+      [
+        { id: "s1", heading: "Cardholder Data Environment", body: "CDE micro-segmented; quarterly pen-test pending Jul-26." },
+        { id: "s2", heading: "Findings",                     body: "PAN appears in debug.log under DB retry — critical CAPA in progress." },
+      ],
+      [{ id: "e1", label: "ATL-0003 — Tokenisation", source: "requirement" }, { id: "e2", label: "PanTokeniser.java", source: "code" }]),
+  },
+  { id: "rep-atlas-2",  projectId: "proj-demo-atlas",  frameworkId: "fw-soc2",      kind: "exec_brief",            tone: "executive", title: "SOC 2 Type II — Mid-Period Brief",               status: "draft",
+    content: reportContent("SOC 2 Type II — Mid-Period Brief",
+      "Q1 DR drill remediated; audit-log gap on Kafka rebalance is the single open material finding.",
+      [{ id: "s1", heading: "Trust Service Criteria", body: "Security, Availability, Processing Integrity green; Confidentiality has one open finding (CAPA-ATL-003)." }],
+      [{ id: "e1", label: "Q1 DR drill report", source: "report" }]),
+  },
+
+  { id: "rep-vega-1",   projectId: "proj-demo-vega",   frameworkId: "fw-gdpr",      kind: "compliance_audit",      tone: "regulator", title: "GDPR Art.22 — Automated Decisioning Review",      status: "finalised",
+    content: reportContent("GDPR Art.22 — Automated Decisioning Review",
+      "Adjudication explainability mostly in place; truncation bug breaches Art.22 transparency (VEG-948 / CAPA-VEG-002).",
+      [{ id: "s1", heading: "Explainability", body: "Rationale generated for every automated decision; portal currently truncates at 4 KB." }],
+      [{ id: "e1", label: "VEG-0003 — XAI requirement", source: "requirement" }]),
+  },
+  { id: "rep-vega-2",   projectId: "proj-demo-vega",   frameworkId: "fw-soc2",      kind: "requirements_summary",  tone: "technical", title: "Vega Requirements & V&V Summary",                status: "draft",
+    content: reportContent("Vega Requirements & V&V Summary",
+      "5 requirements; 2 currently failing V&V (triage mis-route, fraud F1 drift).",
+      [{ id: "s1", heading: "Status", body: "Implemented: 2 · In review: 2 · Verified: 1." }],
+      [{ id: "e1", label: "Vega test suite", source: "test_suite" }]),
+  },
+
+  { id: "rep-ares-1",   projectId: "proj-demo-ares",   frameworkId: "fw-iso-26262", kind: "compliance_audit",      tone: "regulator", title: "ISO 26262 — ASIL D Lane-Keep Safety Case",        status: "finalised",
+    content: reportContent("ISO 26262 — ASIL D Lane-Keep Safety Case",
+      "Open ASIL D finding on faded-marking lane-keep drift (ARES-11204). Safety case cannot be closed until CAPA-ARES-001 is complete.",
+      [
+        { id: "s1", heading: "Safety Goal SG-LK-01", body: "Lateral drift ≤ 10 cm at 100 km/h. Currently failing on faded markings." },
+        { id: "s2", heading: "FMEDA",                 body: "Diagnostic coverage = 99.1% — meets ASIL D target." },
+      ],
+      [{ id: "e1", label: "FMEDA report v1.4", source: "report" }, { id: "e2", label: "lane_keep.cpp", source: "code" }]),
+  },
+  { id: "rep-ares-2",   projectId: "proj-demo-ares",   frameworkId: "fw-aspice-4",  kind: "exec_brief",            tone: "executive", title: "ASPICE 4.0 — SUP.10 Configuration Mgmt Brief",   status: "draft",
+    content: reportContent("ASPICE 4.0 — SUP.10 Configuration Mgmt Brief",
+      "Path-planner refactor regressed MISRA C++ count to 47; CI gate to be reinstated as part of CAPA-ARES-002.",
+      [{ id: "s1", heading: "Findings", body: "47 MISRA violations introduced by recent refactor." }],
+      [{ id: "e1", label: "Static analysis run", source: "report" }]),
+  },
+
+  { id: "rep-bastion-1",projectId: "proj-demo-bastion",frameworkId: "fw-soc2",      kind: "compliance_audit",      tone: "regulator", title: "SOC 2 Type II — All 5 TSC Continuous Audit",     status: "finalised",
+    content: reportContent("SOC 2 Type II — All 5 TSC Continuous Audit",
+      "All TSC operating effectively; SLA breach on critical CVE triage (BST-512 / CAPA-BST-001) is the only open material finding.",
+      [{ id: "s1", heading: "Trust Service Criteria", body: "Security, Availability, Confidentiality, Processing Integrity, Privacy — all green except CC7.2." }],
+      [{ id: "e1", label: "BST-0004 — Vuln SLA", source: "requirement" }]),
+  },
+  { id: "rep-bastion-2",projectId: "proj-demo-bastion",frameworkId: "fw-nist-csf",  kind: "exec_brief",            tone: "executive", title: "NIST CSF 2.0 Maturity Brief",                    status: "draft",
+    content: reportContent("NIST CSF 2.0 Maturity Brief",
+      "All six functions at Tier 3 (Repeatable). RC.RP-2 evidence collection still manual — see CAPA-BST-005.",
+      [{ id: "s1", heading: "Function Scores", body: "Govern T3 · Identify T3 · Protect T3 · Detect T3 · Respond T3 · Recover T3." }],
+      [{ id: "e1", label: "NIST CSF 2.0 self-assessment", source: "report" }]),
+  },
+];
+
+// ── Recurring audits ────────────────────────────────────────────────────────
+const RECURRING_AUDITS = [
+  { id: "ra-helios-hipaa",   projectId: "proj-demo-helios",  frameworkId: "fw-hipaa",       cadence: "weekly",    hourUtc: 13, notifyTo: "compliance@acme-health.example",  active: true,  nextRunAt: daysAhead(2),  lastRunAt: daysAgo(5),  lastRunStatus: "success" },
+  { id: "ra-orion-62304",    projectId: "proj-demo-orion",   frameworkId: "fw-iec-62304",   cadence: "weekly",    hourUtc: 13, notifyTo: "qa@acme-health.example",          active: true,  nextRunAt: daysAhead(3),  lastRunAt: daysAgo(4),  lastRunStatus: "success" },
+  { id: "ra-atlas-pci",      projectId: "proj-demo-atlas",   frameworkId: "fw-pci-dss-4",   cadence: "daily",     hourUtc: 6,  notifyTo: "secops@acme-fin.example",         active: true,  nextRunAt: daysAhead(1),  lastRunAt: daysAgo(0),  lastRunStatus: "success" },
+  { id: "ra-vega-gdpr",      projectId: "proj-demo-vega",    frameworkId: "fw-gdpr",        cadence: "monthly",   hourUtc: 9,  notifyTo: "privacy@acme-ins.example",        active: true,  nextRunAt: daysAhead(20), lastRunAt: daysAgo(10), lastRunStatus: "success" },
+  { id: "ra-ares-26262",     projectId: "proj-demo-ares",    frameworkId: "fw-iso-26262",   cadence: "weekly",    hourUtc: 13, notifyTo: "safety@acme-auto.example",        active: true,  nextRunAt: daysAhead(4),  lastRunAt: daysAgo(3),  lastRunStatus: "warning" },
+  { id: "ra-bastion-soc2",   projectId: "proj-demo-bastion", frameworkId: "fw-soc2",        cadence: "daily",     hourUtc: 4,  notifyTo: "ciso@acme-sec.example",           active: true,  nextRunAt: daysAhead(1),  lastRunAt: daysAgo(0),  lastRunStatus: "success" },
+  { id: "ra-bastion-nist",   projectId: "proj-demo-bastion", frameworkId: "fw-nist-csf",    cadence: "weekly",    hourUtc: 4,  notifyTo: "ciso@acme-sec.example",           active: true,  nextRunAt: daysAhead(5),  lastRunAt: daysAgo(2),  lastRunStatus: "success" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -392,8 +774,37 @@ async function seedDemoProjects() {
     await db.insert(pdlcStagesTable).values(allPdlc).onConflictDoNothing();
   }
 
+  // Per-module data for the six anchor projects.
+  if (PROJECT_SOURCES.length > 0) {
+    await db.insert(projectSourcesTable).values(PROJECT_SOURCES).onConflictDoNothing();
+  }
+  if (DEFECTS.length > 0) {
+    await db.insert(defectsTable).values(DEFECTS).onConflictDoNothing();
+  }
+  if (CAPA_ACTIONS.length > 0) {
+    await db.insert(capaActionsTable).values(CAPA_ACTIONS).onConflictDoNothing();
+  }
+  if (TEST_CASES.length > 0) {
+    await db.insert(testCasesTable).values(TEST_CASES).onConflictDoNothing();
+  }
+  if (CODE_ARTIFACTS.length > 0) {
+    await db.insert(codeArtifactsTable).values(CODE_ARTIFACTS).onConflictDoNothing();
+  }
+  if (TRACE_LINKS.length > 0) {
+    await db.insert(traceabilityLinksTable).values(TRACE_LINKS).onConflictDoNothing();
+  }
+  if (AI_REPORTS.length > 0) {
+    await db.insert(aiReportsTable).values(AI_REPORTS).onConflictDoNothing();
+  }
+  if (RECURRING_AUDITS.length > 0) {
+    await db.insert(recurringAuditsTable).values(RECURRING_AUDITS).onConflictDoNothing();
+  }
+
   console.log(
-    `Demo seed complete: ${PROJECTS.length} projects, ${REQUIREMENTS.length} requirements, ${allPdlc.length} PDLC stages.`,
+    `Demo seed complete: ${PROJECTS.length} projects, ${REQUIREMENTS.length} requirements, ${allPdlc.length} PDLC stages, ` +
+    `${PROJECT_SOURCES.length} sources, ${DEFECTS.length} defects, ${CAPA_ACTIONS.length} CAPAs, ${TEST_CASES.length} test cases, ` +
+    `${CODE_ARTIFACTS.length} code artifacts, ${TRACE_LINKS.length} trace links, ${AI_REPORTS.length} AI reports, ${RECURRING_AUDITS.length} recurring audits. ` +
+    `Anchors: ${ANCHORS.join(", ")}.`,
   );
   process.exit(0);
 }
