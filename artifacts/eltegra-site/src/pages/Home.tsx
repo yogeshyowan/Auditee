@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -36,6 +37,81 @@ const staggerContainer = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
+
+function ClickbaitHook() {
+  const [dismissed, setDismissed] = useState(false);
+  const [seats, setSeats] = useState(37);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("auditee.hook_dismissed") === "1") {
+        setDismissed(true);
+      }
+    } catch {
+      /* sessionStorage may be blocked */
+    }
+    const tick = setInterval(() => {
+      setSeats((s) => (s > 12 ? s - 1 : s));
+    }, 19000);
+    return () => clearInterval(tick);
+  }, []);
+
+  function dismiss() {
+    setDismissed(true);
+    try {
+      sessionStorage.setItem("auditee.hook_dismissed", "1");
+    } catch {
+      /* noop */
+    }
+  }
+
+  if (dismissed) return null;
+
+  return (
+    <motion.aside
+      initial={{ y: -40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed top-16 inset-x-2 sm:inset-x-4 z-40 mx-auto max-w-5xl rounded-2xl border border-amber-300/70 bg-gradient-to-r from-amber-50 via-white to-emerald-50 shadow-xl shadow-amber-200/30 backdrop-blur"
+      data-testid="clickbait-hook"
+      role="complementary"
+      aria-label="Limited free access offer"
+    >
+      <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-red-700">
+          <span className="flex h-1.5 w-1.5 rounded-full bg-red-600 animate-pulse" />
+          Live now
+        </span>
+        <p className="flex-1 min-w-[14rem] text-sm sm:text-base text-slate-800 font-medium">
+          <span className="font-display font-bold text-slate-950">
+            Your next audit could close in 48 hours, not 6 weeks.
+          </span>{" "}
+          <span className="text-slate-600">
+            Free forever for the first <strong className="text-emerald-700">{seats}</strong>{" "}
+            teams that sign up today — no card, full platform.
+          </span>
+        </p>
+        <Link href="/sign-up" data-testid="hook-cta-signup">
+          <Button
+            size="sm"
+            className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-sm font-semibold shadow-md shadow-emerald-600/30"
+          >
+            Claim my free seat
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Button>
+        </Link>
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss offer"
+          className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          data-testid="hook-dismiss"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </motion.aside>
+  );
+}
 
 function Hero() {
   return (
@@ -727,6 +803,7 @@ export default function Home() {
         jsonLd={[HOME_FAQ_LD]}
       />
       <Navigation />
+      <ClickbaitHook />
       <main>
         <Hero />
         <StatStrip />

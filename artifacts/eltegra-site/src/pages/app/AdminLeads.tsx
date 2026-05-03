@@ -24,7 +24,20 @@ interface LeadRow {
   forwardedToFormAt: string | null;
   forwardError: string | null;
   createdAt: string;
+  workspaceId: string | null;
+  workspaceName: string | null;
+  plan: string | null;
+  planActivatedAt: string | null;
+  planExpiresAt: string | null;
+  workspaceCreatedAt: string | null;
 }
+
+const PLAN_BADGE: Record<string, string> = {
+  free: "bg-slate-100 text-slate-700",
+  standard: "bg-emerald-100 text-emerald-800",
+  professional: "bg-indigo-100 text-indigo-800",
+  enterprise: "bg-amber-100 text-amber-800",
+};
 
 interface ResyncResult {
   pending: number;
@@ -147,6 +160,11 @@ export default function AdminLeadsPage() {
       "name",
       "email",
       "clerkUserId",
+      "workspaceName",
+      "plan",
+      "planActivatedAt",
+      "planExpiresAt",
+      "workspaceCreatedAt",
       "syncedAt",
       "forwardError",
     ];
@@ -157,6 +175,11 @@ export default function AdminLeadsPage() {
         r.name,
         r.email,
         r.clerkUserId ?? "",
+        r.workspaceName ?? "",
+        r.plan ?? "",
+        r.planActivatedAt ?? "",
+        r.planExpiresAt ?? "",
+        r.workspaceCreatedAt ?? "",
         r.forwardedToFormAt ?? "",
         r.forwardError ?? "",
       ]
@@ -271,6 +294,8 @@ export default function AdminLeadsPage() {
                   <th className="p-3">Source</th>
                   <th className="p-3">Name</th>
                   <th className="p-3">Email</th>
+                  <th className="p-3">Workspace</th>
+                  <th className="p-3">Plan</th>
                   <th className="p-3">Sheet sync</th>
                 </tr>
               </thead>
@@ -278,7 +303,7 @@ export default function AdminLeadsPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       className="p-8 text-center text-slate-400"
                       data-testid="empty-state"
                     >
@@ -309,6 +334,41 @@ export default function AdminLeadsPage() {
                       <td className="p-3 text-slate-700">{r.name}</td>
                       <td className="p-3 text-slate-700 font-mono text-xs">
                         {r.email}
+                      </td>
+                      <td className="p-3 text-slate-600 text-xs">
+                        {r.workspaceName ? (
+                          <span title={r.workspaceId ?? ""}>
+                            {r.workspaceName}
+                            {r.workspaceCreatedAt && (
+                              <span className="block text-[10px] text-slate-400">
+                                joined{" "}
+                                {new Date(
+                                  r.workspaceCreatedAt,
+                                ).toLocaleDateString()}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {r.plan ? (
+                          <Badge
+                            className={`capitalize ${PLAN_BADGE[r.plan] ?? "bg-slate-100 text-slate-700"}`}
+                            title={
+                              r.planExpiresAt
+                                ? `Expires ${new Date(r.planExpiresAt).toLocaleDateString()}`
+                                : r.planActivatedAt
+                                  ? `Activated ${new Date(r.planActivatedAt).toLocaleDateString()}`
+                                  : ""
+                            }
+                          >
+                            {r.plan}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-300 text-xs">—</span>
+                        )}
                       </td>
                       <td className="p-3">
                         {synced ? (

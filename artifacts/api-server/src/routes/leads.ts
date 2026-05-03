@@ -1,7 +1,13 @@
 import { Router, type IRouter } from "express";
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, isNull } from "drizzle-orm";
-import { db, leadCapturesTable, type LeadCaptureSource } from "@workspace/db";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import {
+  db,
+  leadCapturesTable,
+  workspacesTable,
+  workspaceMembersTable,
+  type LeadCaptureSource,
+} from "@workspace/db";
 import { CaptureLeadBody } from "@workspace/api-zod";
 import type { Request } from "express";
 import {
@@ -171,7 +177,74 @@ router.get(
       .select()
       .from(leadCapturesTable)
       .orderBy(desc(leadCapturesTable.createdAt));
-    res.json({ leads: rows, count: rows.length });
+
+    // Enrich each capture with the matching workspace (by clerk user id when
+    // present, otherwise by member email). Owners are surfaced first because
+    // a single user can be a member of multiple workspaces; we want the one
+    // they actually pay for / created.
+    const userIds = Array.from(
+      new Set(rows.map((r) => r.clerkUserId).filter((v): v is string => !!v)),
+    );
+    const emails = Array.from(new Set(rows.map((r) => r.email.toLowerCase())));
+
+    const ownerWorkspaces = userIds.length
+      ? await db
+          .select()
+          .from(workspacesTable)
+          .where(
+            sql`${workspacesTable.ownerUserId} IN (${sql.join(
+              userIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})`,
+          )
+      : [];
+    const memberRows = emails.length
+      ? await db
+          .select({
+            email: workspaceMembersTable.email,
+            workspace: workspacesTable,
+          })
+          .from(workspaceMembersTable)
+          .innerJoin(
+            workspacesTable,
+            eq(workspaceMembersTable.workspaceId, workspacesTable.id),
+          )
+          .where(
+            sql`LOWER(${workspaceMembersTable.email}) IN (${sql.join(
+              emails.map((e) => sql`${e}`),
+              sql`, `,
+            )})`,
+          )
+      : [];
+
+    const byOwnerId = new Map(ownerWorkspaces.map((w) => [w.ownerUserId, w]));
+    const byMemberEmail = new Map<string, (typeof workspacesTable.$inferSelect)>();
+    for (const m of memberRows) {
+      const k = (m.email ?? "").toLowerCase();
+      if (k && !byMemberEmail.has(k)) byMemberEmail.set(k, m.workspace);
+    }
+
+    const enriched = rows.map((r) => {
+      const ws =
+        (r.clerkUserId ? byOwnerId.get(r.clerkUserId) : undefined) ??
+        byMemberEmail.get(r.email.toLowerCase()) ??
+        null;
+      return {
+        ...r,
+        workspaceId: ws?.id ?? null,
+        workspaceName: ws?.name ?? null,
+        plan: ws?.plan ?? null,
+        planActivatedAt: ws?.planActivatedAt
+          ? ws.planActivatedAt.toISOString()
+          : null,
+        planExpiresAt: ws?.planExpiresAt
+          ? ws.planExpiresAt.toISOString()
+          : null,
+        workspaceCreatedAt: ws?.createdAt ? ws.createdAt.toISOString() : null,
+      };
+    });
+
+    res.json({ leads: enriched, count: enriched.length });
   },
 );
 
