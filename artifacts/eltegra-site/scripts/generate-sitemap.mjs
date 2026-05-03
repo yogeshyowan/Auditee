@@ -2,10 +2,16 @@
 /**
  * Build-time sitemap.xml generator for the Auditee marketing site.
  *
- * Reads the canonical route list below and the blog post catalogue from
- * src/content/blog/, and writes public/sitemap.xml so every published URL is
- * discoverable by crawlers. Runs automatically as a `prebuild` step and can
- * also be invoked manually after adding a blog post.
+ * SINGLE SOURCE OF TRUTH for the sitemap. Reads the canonical route list
+ * below and the blog post catalogue from src/content/blog/, and writes
+ * public/sitemap.xml so every published URL is discoverable. Also emits
+ * <image:image> entries for the homepage and any blog post that declares
+ * a heroImage. Runs automatically as a `prebuild` step and can be invoked
+ * manually with `pnpm --filter @workspace/eltegra-site run sitemap`.
+ *
+ * KEEP IN SYNC with src/App.tsx whenever a new public marketing route is
+ * added. App-internal routes under /app/* and auth routes are excluded
+ * (they are noindex via robots.txt + per-page meta).
  */
 import { promises as fs } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -16,21 +22,84 @@ const root = path.resolve(__dirname, "..");
 const SITE = "https://auditee.site";
 const today = new Date().toISOString().slice(0, 10);
 
-// Canonical marketing routes. KEEP IN SYNC with src/App.tsx.
+// Canonical marketing routes. Sub-arrays declare known aliases so the
+// generator can collapse them to the canonical URL only (aliases get a
+// 301 from the SPA via wouter; we don't want both indexed). The first
+// entry of each `aliases` group is the canonical.
 const STATIC_ROUTES = [
-  { path: "/", priority: 1.0, changefreq: "weekly" },
-  { path: "/features", priority: 0.9, changefreq: "weekly" },
-  { path: "/ai-product-development", priority: 0.85, changefreq: "monthly" },
-  { path: "/automated-compliance", priority: 0.85, changefreq: "monthly" },
-  { path: "/ai-requirements-management", priority: 0.85, changefreq: "monthly" },
-  { path: "/missing-requirements-analysis", priority: 0.8, changefreq: "monthly" },
-  { path: "/test-case-generation", priority: 0.8, changefreq: "monthly" },
-  { path: "/pricing", priority: 0.9, changefreq: "monthly" },
-  { path: "/roi-calculator", priority: 0.8, changefreq: "monthly" },
-  { path: "/about", priority: 0.6, changefreq: "monthly" },
-  { path: "/contact", priority: 0.7, changefreq: "monthly" },
-  { path: "/blog", priority: 0.95, changefreq: "weekly" },
+  // ---- core ----
+  { path: "/",                         priority: 1.00, changefreq: "weekly" },
+  { path: "/features",                 priority: 0.90, changefreq: "weekly" },
+  { path: "/pricing",                  priority: 0.95, changefreq: "weekly" },
+  { path: "/roi-calculator",           priority: 0.80, changefreq: "monthly" },
+  { path: "/about",                    priority: 0.60, changefreq: "monthly" },
+  { path: "/contact",                  priority: 0.70, changefreq: "monthly" },
+  { path: "/security",                 priority: 0.85, changefreq: "monthly" },
+
+  // ---- products ----
+  { path: "/ai-product-development",         priority: 0.85, changefreq: "monthly" },
+  { path: "/automated-compliance",           priority: 0.85, changefreq: "monthly" },
+  { path: "/ai-requirements-management",     priority: 0.85, changefreq: "monthly" },
+  { path: "/ai-requirements-generation",     priority: 0.80, changefreq: "monthly" },
+  { path: "/missing-requirements-analysis",  priority: 0.80, changefreq: "monthly" },
+  { path: "/test-case-generation",           priority: 0.80, changefreq: "monthly" },
+  { path: "/requirements-linked-test-cases", priority: 0.75, changefreq: "monthly" },
+  { path: "/requirements-management",        priority: 0.85, changefreq: "monthly" },
+  { path: "/intelligent-document-analysis",  priority: 0.75, changefreq: "monthly" },
+  { path: "/brd-generation",                 priority: 0.80, changefreq: "monthly" },
+  { path: "/qa-and-compliance",              priority: 0.80, changefreq: "monthly" },
+
+  // ---- industries ----
+  { path: "/ai-for-healthcare",  priority: 0.85, changefreq: "monthly" },
+  { path: "/ai-for-finance",     priority: 0.85, changefreq: "monthly" },
+  { path: "/ai-for-automotive",  priority: 0.85, changefreq: "monthly" },
+  { path: "/ai-for-telecom",     priority: 0.85, changefreq: "monthly" },
+
+  // ---- roles ----
+  { path: "/cpo",                priority: 0.75, changefreq: "monthly" },
+  { path: "/cto",                priority: 0.75, changefreq: "monthly" },
+  { path: "/business-analyst",   priority: 0.75, changefreq: "monthly" },
+
+  // ---- comparisons ----
+  { path: "/compare/doors",      priority: 0.85, changefreq: "monthly" },
+  { path: "/compare/jama",       priority: 0.85, changefreq: "monthly" },
+  { path: "/compare/polarion",   priority: 0.85, changefreq: "monthly" },
+
+  // ---- resources ----
+  { path: "/blog",          priority: 0.95, changefreq: "weekly" },
+  { path: "/integrations",  priority: 0.85, changefreq: "monthly" },
+  { path: "/glossary",      priority: 0.75, changefreq: "monthly" },
+  { path: "/case-studies",  priority: 0.85, changefreq: "monthly" },
+  { path: "/customers",     priority: 0.75, changefreq: "monthly" },
+  { path: "/use-cases",     priority: 0.85, changefreq: "monthly" },
+  { path: "/whitepapers",   priority: 0.80, changefreq: "monthly" },
+  { path: "/changelog",     priority: 0.70, changefreq: "weekly" },
+  { path: "/trust",         priority: 0.80, changefreq: "monthly" },
+  { path: "/developers",    priority: 0.85, changefreq: "monthly" },
+  { path: "/partners",      priority: 0.75, changefreq: "monthly" },
+  { path: "/status",        priority: 0.60, changefreq: "daily"   },
+  { path: "/demo-videos",   priority: 0.80, changefreq: "monthly" },
+  { path: "/faqs",          priority: 0.80, changefreq: "monthly" },
+
+  // ---- legal ----
+  { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },
+  { path: "/terms-of-service",   priority: 0.40, changefreq: "yearly" },
 ];
+
+// Per-route image attachments for image-sitemap entries (Google Images).
+const ROUTE_IMAGES = {
+  "/": [
+    { loc: `${SITE}/opengraph.jpg`,    title: "Auditee — AI-native enterprise PDLC platform" },
+    { loc: `${SITE}/hero-network.png`, title: "Auditee living knowledge graph" },
+  ],
+  "/features":     [{ loc: `${SITE}/opengraph.jpg`, title: "Auditee feature set" }],
+  "/pricing":      [{ loc: `${SITE}/opengraph.jpg`, title: "Auditee pricing" }],
+  "/security":     [{ loc: `${SITE}/opengraph.jpg`, title: "Auditee security & trust" }],
+  "/trust":        [{ loc: `${SITE}/opengraph.jpg`, title: "Auditee Trust Center" }],
+  "/developers":   [{ loc: `${SITE}/opengraph.jpg`, title: "Auditee for developers" }],
+  "/use-cases":    [{ loc: `${SITE}/opengraph.jpg`, title: "Auditee use cases" }],
+  "/case-studies": [{ loc: `${SITE}/opengraph.jpg`, title: "Auditee case studies" }],
+};
 
 async function loadBlogPosts() {
   const dir = path.join(root, "src/content/blog");
@@ -39,10 +108,12 @@ async function loadBlogPosts() {
   for (const f of files) {
     if (f === "index.ts" || !f.endsWith(".ts")) continue;
     const src = await fs.readFile(path.join(dir, f), "utf8");
-    const slug = pick(src, /slug:\s*"([^"]+)"/);
+    const slug = pick(src, /\bslug:\s*"([^"]+)"/);
     const date = pick(src, /\bdate:\s*"([^"]+)"/);
     const updated = pick(src, /\bupdated:\s*"([^"]+)"/);
-    if (slug && date) posts.push({ slug, date, lastmod: updated || date });
+    const title = pick(src, /\btitle:\s*"([^"]+)"/);
+    const heroImage = pick(src, /\bheroImage:\s*"([^"]+)"/);
+    if (slug && date) posts.push({ slug, date, lastmod: updated || date, title, heroImage });
   }
   return posts.sort((a, b) => (a.date < b.date ? 1 : -1));
 }
@@ -73,33 +144,40 @@ function urlEntry(loc, lastmod, changefreq, priority, images = []) {
   </url>`;
 }
 
+function absoluteImage(src) {
+  if (!src) return null;
+  if (/^https?:\/\//.test(src)) return src;
+  return `${SITE}${src.startsWith("/") ? "" : "/"}${src}`;
+}
+
 async function main() {
   const posts = await loadBlogPosts();
 
   const entries = [
-    ...STATIC_ROUTES.map((r) => {
-      const images =
-        r.path === "/"
-          ? [
-              { loc: `${SITE}/opengraph.jpg`, title: "Auditee — AI-native enterprise PDLC platform" },
-              { loc: `${SITE}/hero-network.png`, title: "Auditee living knowledge graph" },
-            ]
-          : [];
-      return urlEntry(`${SITE}${r.path}`, today, r.changefreq, r.priority, images);
+    ...STATIC_ROUTES.map((r) =>
+      urlEntry(`${SITE}${r.path}`, today, r.changefreq, r.priority, ROUTE_IMAGES[r.path] ?? []),
+    ),
+    ...posts.map((p) => {
+      const images = [];
+      const hero = absoluteImage(p.heroImage);
+      if (hero) images.push({ loc: hero, title: p.title ?? `Auditee blog: ${p.slug}` });
+      return urlEntry(`${SITE}/blog/${p.slug}`, p.lastmod, "monthly", 0.7, images);
     }),
-    ...posts.map((p) => urlEntry(`${SITE}/blog/${p.slug}`, p.lastmod, "monthly", 0.7)),
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${entries.join("\n")}
 </urlset>
 `;
 
   const out = path.join(root, "public/sitemap.xml");
   await fs.writeFile(out, xml, "utf8");
-  console.log(`[sitemap] wrote ${entries.length} URLs to ${path.relative(root, out)}`);
+  console.log(
+    `[sitemap] wrote ${entries.length} URLs (${STATIC_ROUTES.length} static + ${posts.length} posts) to ${path.relative(root, out)}`,
+  );
 }
 
 main().catch((err) => {
