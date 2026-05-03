@@ -1266,6 +1266,332 @@ const MORE_COMPLIANCE_EVIDENCE = [
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// COVERAGE_* — purely additive rows that ensure every enum value of every
+// module-table is exercised by at least one demo row, and every bootstrapped
+// compliance framework is touched by at least one recurring audit + evidence
+// + AI report. Filling these gaps lets the UI render every status pill,
+// badge, and framework header against real demo data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Sources: fill missing kinds (cloud_server, url) and missing statuses
+// (idle, syncing, error). Spread across projects.
+const COVERAGE_PROJECT_SOURCES = [
+  { id: "src-helios-cloud",  projectId: "proj-demo-helios",  kind: "cloud_server", label: "On-Prem App Server (helios-prod-01)", status: "ready",   fileCount: 312,  byteCount: 24_500_000,  lastSyncAt: daysAgo(2) },
+  { id: "src-vega-url",      projectId: "proj-demo-vega",    kind: "url",          label: "Public API Spec — vega/openapi.yaml", status: "ready",   fileCount: 1,    byteCount: 184_000,     lastSyncAt: daysAgo(1) },
+  { id: "src-sterling-url",  projectId: "proj-demo-sterling",kind: "url",          label: "Confluence — Sterling Architecture",   status: "ready",   fileCount: 47,   byteCount: 2_400_000,   lastSyncAt: daysAgo(4) },
+  { id: "src-cipher-syncing",projectId: "proj-demo-cipher",  kind: "github",       label: "acme-sec/cipher-policies",             status: "syncing", fileCount: 0,    byteCount: 0,           lastSyncAt: null },
+  { id: "src-titan-error",   projectId: "proj-demo-titan",   kind: "jenkins",      label: "Jenkins — titan-build (auth failed)",  status: "error",   fileCount: 0,    byteCount: 0,           lastSyncAt: daysAgo(6) },
+  { id: "src-apollo-idle",   projectId: "proj-demo-apollo",  kind: "aws_s3",       label: "S3 — apollo-cold-evidence",            status: "idle",    fileCount: 0,    byteCount: 0,           lastSyncAt: null },
+];
+
+// Test cases: cover every missing enum value:
+//   type:  negative, acceptance
+//   level: (already all 5 covered)
+//   discipline: compatibility, accessibility, uat
+//   paradigm: oo_state
+//   sourceKind: design, architecture, project, manual
+//   status: blocked
+//   priority: low
+const COVERAGE_TEST_CASES = [
+  {
+    id: "tc-cov-helios-01", projectId: "proj-demo-helios", requirementId: null,
+    title: "Onboarding wizard remains keyboard-navigable when JAWS is active",
+    type: "acceptance", level: "acceptance", discipline: "accessibility", paradigm: "bdd",
+    mode: "dynamic", sourceKind: "design",
+    sourceRefs: [{ kind: "design", id: "fig-onboarding-v3", label: "Figma — Onboarding v3" }],
+    preconditions: "Latest UAT build deployed; JAWS 2025 reader installed.",
+    steps: ["Open onboarding wizard", "Tab through all fields", "Activate consent checkbox via Space"],
+    expected: "All controls reachable and announced; no keyboard trap.",
+    gherkin: "Given a screen-reader user\nWhen they tab through the consent step\nThen every control is announced and focusable",
+    status: "passing", priority: "low", tags: ["wcag-2.2", "jaws"], createdBy: "Auditee AI",
+    lastRunNote: "Verified by accessibility QA, no AXE violations.",
+  },
+  {
+    id: "tc-cov-orion-01", projectId: "proj-demo-orion", requirementId: null,
+    title: "Negative — corrupt firmware image must be rejected at boot",
+    type: "negative", level: "system", discipline: "negative", paradigm: "oo_state",
+    mode: "dynamic", sourceKind: "architecture",
+    sourceRefs: [{ kind: "architecture", id: "arch-orion-bootloader", label: "Bootloader state machine" }],
+    preconditions: "Test bench with bit-flipped firmware blob.",
+    steps: ["Flash corrupt image", "Power-cycle device", "Observe boot LED + UART log"],
+    expected: "Bootloader stays in SAFE state; UART logs CRC mismatch; no crash.",
+    status: "blocked", priority: "critical", tags: ["bootloader", "iec-62304-class-c"],
+    createdBy: "Auditee AI",
+    lastRunNote: "Blocked: awaiting hardware bench slot.",
+  },
+  {
+    id: "tc-cov-bastion-01", projectId: "proj-demo-bastion", requirementId: null,
+    title: "UAT — CISO can approve a SOC 2 evidence pack end-to-end",
+    type: "acceptance", level: "acceptance", discipline: "uat", paradigm: "exploratory",
+    mode: "dynamic", sourceKind: "manual",
+    sourceRefs: [],
+    preconditions: "Stage env; demo SOC 2 framework loaded; CISO test account.",
+    steps: ["Sign in as CISO", "Open SOC 2 → CC6.1", "Review 3 evidence rows", "Approve pack"],
+    expected: "All evidence verified; control flips to met; audit log entry written.",
+    status: "draft", priority: "medium", tags: ["uat", "soc2"],
+    createdBy: "ciso@acme-sec.example",
+    lastRunNote: "",
+  },
+  {
+    id: "tc-cov-atlas-01", projectId: "proj-demo-atlas", requirementId: null,
+    title: "Compatibility — settlement engine works on Java 17 + 21",
+    type: "acceptance", level: "integration", discipline: "compatibility", paradigm: "procedural",
+    mode: "dynamic", sourceKind: "project",
+    sourceRefs: [{ kind: "project", id: "proj-demo-atlas", label: "Atlas runtime matrix" }],
+    preconditions: "CI matrix configured for jdk17 + jdk21.",
+    steps: ["Run regression suite on jdk17", "Run regression suite on jdk21", "Diff outputs"],
+    expected: "Identical settlement output across both JVMs.",
+    status: "passing", priority: "high", tags: ["compat", "jvm"],
+    createdBy: "Auditee AI",
+    lastRunNote: "Last green run: 2h ago.",
+  },
+  {
+    id: "tc-cov-vega-01", projectId: "proj-demo-vega", requirementId: null,
+    title: "Static review — claims model card matches EU AI Act Art. 13 disclosures",
+    type: "non_functional" as const, level: "system", discipline: "regulatory", paradigm: "procedural",
+    mode: "static", sourceKind: "report",
+    sourceRefs: [{ kind: "report", id: "rep-vega-ai-act", label: "EU AI Act readiness report" }],
+    preconditions: "Model card v2.1 finalised.",
+    steps: ["Walk through model card", "Map each section to AI Act Art. 13", "Note gaps"],
+    expected: "All 9 disclosure items present and accurate.",
+    status: "passing", priority: "medium", tags: ["ai-act", "review"],
+    createdBy: "Auditee AI",
+    lastRunNote: "Reviewed by Compliance + Data Science.",
+  },
+];
+
+// Workflows: add a manual-trigger workflow with a `branch` step type, and
+// runs covering `failed` + `cancelled` statuses.
+const COVERAGE_WORKFLOWS = [
+  {
+    id: "wf-source-onboard",
+    name: "New Source Onboarding",
+    description: "Manually-triggered intake flow when a new repo / drive / API source is connected.",
+    version: 1,
+    status: "active",
+    trigger: "manual",
+    definition: {
+      steps: [
+        { id: "s1", name: "Initial AI scan",        type: "ai_action" as const, aiPrompt: "Catalogue the source and detect framework hints.", outputKey: "scanReport" },
+        { id: "s2", name: "Score adequacy",         type: "branch" as const,    branches: [{ when: "scanReport.score >= 80", goto: "s4" }] },
+        { id: "s3", name: "Manual triage",          type: "task" as const,      assignee: "Compliance", dueOffsetDays: 3 },
+        { id: "s4", name: "Promote to baseline",    type: "approval" as const,  assignee: "Quality", dueOffsetDays: 2 },
+        { id: "s5", name: "Hold for owner sign-off",type: "stop" as const,      blockedUntil: [{ expr: "owner.signedOff == true", reason: "Awaiting source owner sign-off" }] },
+      ],
+    },
+  },
+];
+
+const COVERAGE_WORKFLOW_RUNS = [
+  { id: "wfr-cipher-onboard", workflowId: "wf-source-onboard", projectId: "proj-demo-cipher", status: "failed",    currentStepId: "s1", blockedReason: null,                              context: { sourceId: "src-cipher-syncing" }, startedBy: "sec@acme-sec.example",  startedAt: daysAgo(3), completedAt: daysAgo(3) },
+  { id: "wfr-titan-onboard",  workflowId: "wf-source-onboard", projectId: "proj-demo-titan",  status: "cancelled", currentStepId: "s2", blockedReason: "Cancelled by user — wrong repo", context: { sourceId: "src-titan-error" },    startedBy: "ops@acme-ind.example",   startedAt: daysAgo(5), completedAt: daysAgo(5) },
+];
+
+const COVERAGE_WORKFLOW_STEP_RUNS = [
+  { id: "wsr-cipher-onb-1", runId: "wfr-cipher-onboard", stepId: "s1", stepName: "Initial AI scan",     stepType: "ai_action", status: "failed",    assignee: null,         output: { error: "GitHub token rejected: 401 Unauthorized" }, blockedReason: null,                              dueAt: null, startedAt: daysAgo(3), completedAt: daysAgo(3) },
+  { id: "wsr-titan-onb-1",  runId: "wfr-titan-onboard",  stepId: "s1", stepName: "Initial AI scan",     stepType: "ai_action", status: "done",      assignee: null,         output: { score: 42, hints: ["IEC 61511"] },                  blockedReason: null,                              dueAt: null, startedAt: daysAgo(5), completedAt: daysAgo(5) },
+  { id: "wsr-titan-onb-2",  runId: "wfr-titan-onboard",  stepId: "s2", stepName: "Score adequacy",      stepType: "branch",    status: "cancelled", assignee: null,         output: { branchTaken: "default", reason: "score < 80" },     blockedReason: "Cancelled by user — wrong repo", dueAt: null, startedAt: daysAgo(5), completedAt: daysAgo(5) },
+];
+
+// Recurring audits: one row per framework that is bootstrapped but not yet
+// referenced by the existing demo seed. Distributes ~30 frameworks across
+// the 14 projects by domain affinity, and varies cadence + lastRunStatus
+// to cover those enums.
+const COVERAGE_RECURRING_AUDITS = [
+  // Healthcare / Med-Dev / Clinical
+  { id: "ra-orion-13485",    projectId: "proj-demo-orion",   frameworkId: "fw-iso-13485",          cadence: "monthly",   hourUtc: 13, notifyTo: "qa@acme-health.example",        active: true,  lastRunAt: daysAgo(8),  lastRunStatus: "success", nextRunAt: daysAhead(22) },
+  { id: "ra-orion-14971",    projectId: "proj-demo-orion",   frameworkId: "fw-iso-14971",          cadence: "monthly",   hourUtc: 13, notifyTo: "risk@acme-health.example",      active: true,  lastRunAt: daysAgo(9),  lastRunStatus: "warning", nextRunAt: daysAhead(21) },
+  { id: "ra-orion-60601",    projectId: "proj-demo-orion",   frameworkId: "fw-iec-60601",          cadence: "quarterly", hourUtc: 14, notifyTo: "qa@acme-health.example",        active: true,  lastRunAt: daysAgo(40), lastRunStatus: "success", nextRunAt: daysAhead(50) },
+  { id: "ra-orion-21cfr807", projectId: "proj-demo-orion",   frameworkId: "fw-21cfr-807",          cadence: "quarterly", hourUtc: 14, notifyTo: "regulatory@acme-health.example",active: true,  lastRunAt: daysAgo(60), lastRunStatus: "success", nextRunAt: daysAhead(30) },
+  { id: "ra-orion-21cfr814", projectId: "proj-demo-orion",   frameworkId: "fw-21cfr-814",          cadence: "quarterly", hourUtc: 14, notifyTo: "regulatory@acme-health.example",active: false, lastRunAt: daysAgo(80), lastRunStatus: "warning", nextRunAt: daysAhead(10) },
+  { id: "ra-helios-62366",   projectId: "proj-demo-helios",  frameworkId: "fw-iec-62366",          cadence: "monthly",   hourUtc: 13, notifyTo: "ux@acme-health.example",        active: true,  lastRunAt: daysAgo(11), lastRunStatus: "success", nextRunAt: daysAhead(19) },
+  { id: "ra-aesop-14155",    projectId: "proj-demo-aesop",   frameworkId: "fw-iso-14155",          cadence: "monthly",   hourUtc: 12, notifyTo: "clinops@acme-clin.example",     active: true,  lastRunAt: daysAgo(7),  lastRunStatus: "success", nextRunAt: daysAhead(23) },
+  { id: "ra-aesop-ivdr",     projectId: "proj-demo-aesop",   frameworkId: "fw-eu-ivdr-2017-746",   cadence: "quarterly", hourUtc: 12, notifyTo: "regulatory@acme-clin.example",  active: true,  lastRunAt: daysAgo(35), lastRunStatus: "warning", nextRunAt: daysAhead(55) },
+
+  // Automotive / Aerospace
+  { id: "ra-ares-21434",     projectId: "proj-demo-ares",    frameworkId: "fw-iso-21434",          cadence: "monthly",   hourUtc: 8,  notifyTo: "cyber@acme-auto.example",       active: true,  lastRunAt: daysAgo(4),  lastRunStatus: "warning", nextRunAt: daysAhead(26) },
+  { id: "ra-ares-aspice-cy", projectId: "proj-demo-ares",    frameworkId: "fw-aspice-cyber",       cadence: "monthly",   hourUtc: 8,  notifyTo: "cyber@acme-auto.example",       active: true,  lastRunAt: daysAgo(15), lastRunStatus: "success", nextRunAt: daysAhead(15) },
+  { id: "ra-ares-do178c",    projectId: "proj-demo-ares",    frameworkId: "fw-do-178c",            cadence: "quarterly", hourUtc: 9,  notifyTo: "fnsafety@acme-auto.example",    active: true,  lastRunAt: daysAgo(70), lastRunStatus: "success", nextRunAt: daysAhead(20) },
+  { id: "ra-apollo-13849",   projectId: "proj-demo-apollo",  frameworkId: "fw-iso-13849",          cadence: "monthly",   hourUtc: 9,  notifyTo: "fnsafety@acme-auto.example",    active: true,  lastRunAt: daysAgo(6),  lastRunStatus: "success", nextRunAt: daysAhead(24) },
+  { id: "ra-apollo-1012",    projectId: "proj-demo-apollo",  frameworkId: "fw-ieee-1012",          cadence: "quarterly", hourUtc: 9,  notifyTo: "vandv@acme-auto.example",       active: true,  lastRunAt: daysAgo(45), lastRunStatus: "warning", nextRunAt: daysAhead(45) },
+
+  // Industrial / Energy / Robotics / Rail
+  { id: "ra-titan-61131",    projectId: "proj-demo-titan",   frameworkId: "fw-iec-61131-3",        cadence: "monthly",   hourUtc: 6,  notifyTo: "controls@acme-ind.example",     active: true,  lastRunAt: daysAgo(10), lastRunStatus: "success", nextRunAt: daysAhead(20) },
+  { id: "ra-titan-60204",    projectId: "proj-demo-titan",   frameworkId: "fw-iec-60204-1",        cadence: "quarterly", hourUtc: 6,  notifyTo: "elec@acme-ind.example",         active: true,  lastRunAt: daysAgo(50), lastRunStatus: "success", nextRunAt: daysAhead(40) },
+  { id: "ra-titan-10218",    projectId: "proj-demo-titan",   frameworkId: "fw-iso-10218-1",        cadence: "quarterly", hourUtc: 6,  notifyTo: "robotics@acme-ind.example",     active: true,  lastRunAt: daysAgo(75), lastRunStatus: "warning", nextRunAt: daysAhead(15) },
+  { id: "ra-titan-isa95",    projectId: "proj-demo-titan",   frameworkId: "fw-isa-95",             cadence: "monthly",   hourUtc: 6,  notifyTo: "mes@acme-ind.example",          active: true,  lastRunAt: daysAgo(5),  lastRunStatus: "success", nextRunAt: daysAhead(25) },
+  { id: "ra-titan-nerc",     projectId: "proj-demo-titan",   frameworkId: "fw-nerc-cip",           cadence: "quarterly", hourUtc: 6,  notifyTo: "energy@acme-ind.example",       active: true,  lastRunAt: daysAgo(82), lastRunStatus: "failure", nextRunAt: daysAhead(8)  },
+  { id: "ra-titan-api1164",  projectId: "proj-demo-titan",   frameworkId: "fw-api-1164",           cadence: "quarterly", hourUtc: 6,  notifyTo: "pipeline@acme-ind.example",     active: true,  lastRunAt: daysAgo(85), lastRunStatus: "warning", nextRunAt: daysAhead(5)  },
+  { id: "ra-titan-en50128",  projectId: "proj-demo-titan",   frameworkId: "fw-en-50128",           cadence: "quarterly", hourUtc: 7,  notifyTo: "rail@acme-ind.example",         active: true,  lastRunAt: daysAgo(55), lastRunStatus: "success", nextRunAt: daysAhead(35) },
+  { id: "ra-titan-en50126",  projectId: "proj-demo-titan",   frameworkId: "fw-en-50126",           cadence: "quarterly", hourUtc: 7,  notifyTo: "rail@acme-ind.example",         active: true,  lastRunAt: daysAgo(58), lastRunStatus: "success", nextRunAt: daysAhead(32) },
+  { id: "ra-titan-en50129",  projectId: "proj-demo-titan",   frameworkId: "fw-en-50129",           cadence: "quarterly", hourUtc: 7,  notifyTo: "rail@acme-ind.example",         active: true,  lastRunAt: daysAgo(62), lastRunStatus: "warning", nextRunAt: daysAhead(28) },
+  { id: "ra-titan-en50657",  projectId: "proj-demo-titan",   frameworkId: "fw-en-50657",           cadence: "quarterly", hourUtc: 7,  notifyTo: "rail@acme-ind.example",         active: false, lastRunAt: daysAgo(90), lastRunStatus: "success", nextRunAt: daysAhead(0)  },
+
+  // Security / SaaS / Banking / Insurance / Architecture / Process
+  { id: "ra-bastion-nis2",   projectId: "proj-demo-bastion", frameworkId: "fw-nis2",               cadence: "monthly",   hourUtc: 11, notifyTo: "ciso@acme-sec.example",         active: true,  lastRunAt: daysAgo(3),  lastRunStatus: "success", nextRunAt: daysAhead(27) },
+  { id: "ra-bastion-27002",  projectId: "proj-demo-bastion", frameworkId: "fw-iso-27002",          cadence: "monthly",   hourUtc: 11, notifyTo: "ciso@acme-sec.example",         active: true,  lastRunAt: daysAgo(12), lastRunStatus: "warning", nextRunAt: daysAhead(18) },
+  { id: "ra-bastion-730",    projectId: "proj-demo-bastion", frameworkId: "fw-ieee-730",           cadence: "quarterly", hourUtc: 11, notifyTo: "qa@acme-sec.example",           active: true,  lastRunAt: daysAgo(48), lastRunStatus: "success", nextRunAt: daysAhead(42) },
+  { id: "ra-aegis-29119",    projectId: "proj-demo-aegis",   frameworkId: "fw-ieee-29119",         cadence: "monthly",   hourUtc: 10, notifyTo: "qa@acme-sec.example",           active: true,  lastRunAt: daysAgo(13), lastRunStatus: "success", nextRunAt: daysAhead(17) },
+  { id: "ra-cipher-828",     projectId: "proj-demo-cipher",  frameworkId: "fw-ieee-828",           cadence: "quarterly", hourUtc: 10, notifyTo: "devops@acme-sec.example",       active: true,  lastRunAt: daysAgo(52), lastRunStatus: "warning", nextRunAt: daysAhead(38) },
+  { id: "ra-cipher-iso",     projectId: "proj-demo-cipher",  frameworkId: "fw-iso",                cadence: "monthly",   hourUtc: 10, notifyTo: "compliance@acme-sec.example",   active: true,  lastRunAt: daysAgo(14), lastRunStatus: "success", nextRunAt: daysAhead(16) },
+  { id: "ra-sterling-9001",  projectId: "proj-demo-sterling",frameworkId: "fw-iso-9001",           cadence: "quarterly", hourUtc: 11, notifyTo: "qa@acme-bank.example",          active: true,  lastRunAt: daysAgo(65), lastRunStatus: "success", nextRunAt: daysAhead(25) },
+  { id: "ra-atlas-cmmi",     projectId: "proj-demo-atlas",   frameworkId: "fw-cmmi-3",             cadence: "quarterly", hourUtc: 12, notifyTo: "process@acme-fin.example",      active: true,  lastRunAt: daysAgo(72), lastRunStatus: "warning", nextRunAt: daysAhead(18) },
+  { id: "ra-atlas-42010",    projectId: "proj-demo-atlas",   frameworkId: "fw-iso-iec-ieee-42010", cadence: "quarterly", hourUtc: 12, notifyTo: "arch@acme-fin.example",         active: true,  lastRunAt: daysAgo(68), lastRunStatus: "success", nextRunAt: daysAhead(22) },
+  { id: "ra-atlas-1016",     projectId: "proj-demo-atlas",   frameworkId: "fw-ieee-1016",          cadence: "quarterly", hourUtc: 12, notifyTo: "arch@acme-fin.example",         active: true,  lastRunAt: daysAgo(70), lastRunStatus: "success", nextRunAt: daysAhead(20) },
+  { id: "ra-vega-31000",     projectId: "proj-demo-vega",    frameworkId: "fw-iso-31000",          cadence: "monthly",   hourUtc: 9,  notifyTo: "risk@acme-ins.example",         active: true,  lastRunAt: daysAgo(16), lastRunStatus: "warning", nextRunAt: daysAhead(14) },
+  { id: "ra-vega-aiact",     projectId: "proj-demo-vega",    frameworkId: "fw-eu-ai-act",          cadence: "monthly",   hourUtc: 9,  notifyTo: "ai-gov@acme-ins.example",       active: true,  lastRunAt: daysAgo(2),  lastRunStatus: "warning", nextRunAt: daysAhead(28) },
+  { id: "ra-vega-1063",      projectId: "proj-demo-vega",    frameworkId: "fw-ieee-1063",          cadence: "quarterly", hourUtc: 9,  notifyTo: "docs@acme-ins.example",         active: false, lastRunAt: daysAgo(95), lastRunStatus: "failure", nextRunAt: daysAhead(0)  },
+  { id: "ra-nova-aiact",     projectId: "proj-demo-nova",    frameworkId: "fw-eu-ai-act",          cadence: "monthly",   hourUtc: 8,  notifyTo: "compliance@acme-crypto.example",active: true,  lastRunAt: daysAgo(4),  lastRunStatus: "success", nextRunAt: daysAhead(26) },
+];
+
+// Compliance evidence: cover missing kinds (file, screenshot) + missing
+// status (rejected). Also drops one evidence row per uncovered framework so
+// every framework header has at least one populated row.
+const COVERAGE_EVIDENCE = [
+  // file kind
+  { id: "ev-cov-file-1",       projectId: "proj-demo-orion",   controlId: "ctrl-13485-7-3",    frameworkId: "fw-iso-13485",          kind: "file",       refId: "dhf-orion-v3.2",   refLabel: "DHF-Orion-v3.2.zip", source: "user",  status: "verified",    note: "Design History File frozen for V3.2 release." },
+  { id: "ev-cov-file-2",       projectId: "proj-demo-aegis",   controlId: "ctrl-iam-pwd-policy", frameworkId: "fw-iso-27002",        kind: "file",       refId: "policy-pwd-v4",    refLabel: "Password-Policy-v4.pdf", source: "user", status: "verified",    note: "Approved by CISO 2026-04-12." },
+  // screenshot kind
+  { id: "ev-cov-screen-1",     projectId: "proj-demo-bastion", controlId: "ctrl-soc2-cc7-1",   frameworkId: "fw-soc2",               kind: "screenshot", refId: "scr-grafana",      refLabel: "Grafana — anomaly alert page", source: "user", status: "verified",    note: "Captured during 2026-Q1 SOC 2 audit walkthrough." },
+  { id: "ev-cov-screen-2",     projectId: "proj-demo-vega",    controlId: "ctrl-aiact-art13", frameworkId: "fw-eu-ai-act",          kind: "screenshot", refId: "scr-modelcard",    refLabel: "Model card disclosure UI", source: "user", status: "verified",    note: "EU AI Act Art. 13 disclosure surfaced in UI." },
+  // rejected status
+  { id: "ev-cov-rejected-1",   projectId: "proj-demo-orion",   controlId: "ctrl-62304-5-1",    frameworkId: "fw-iec-62304",          kind: "report",     refId: "rep-orion-old",    refLabel: "Stale audit report (2024)", source: "ai", status: "rejected",    note: "Rejected — superseded by 2026 audit; kept for history." },
+  { id: "ev-cov-rejected-2",   projectId: "proj-demo-titan",   controlId: "ctrl-nerc-cip-005", frameworkId: "fw-nerc-cip",           kind: "note",       refId: null,               refLabel: "Verbal claim by ops lead", source: "ai",  status: "rejected",    note: "Rejected — needs corroborating log evidence." },
+
+  // One verified evidence row per uncovered framework (UI gets non-empty header).
+  { id: "ev-cov-fw-14971",     projectId: "proj-demo-orion",   controlId: "ctrl-14971-7",      frameworkId: "fw-iso-14971",          kind: "file",       refId: "rmf-orion",        refLabel: "Risk Management File — Orion v3.2", source: "user",  status: "verified",    note: "RMF includes hazard analysis + risk control evaluation." },
+  { id: "ev-cov-fw-60601",     projectId: "proj-demo-orion",   controlId: "ctrl-60601-15",     frameworkId: "fw-iec-60601",          kind: "report",     refId: "rep-emc",          refLabel: "EMC test report (TÜV)", source: "user",  status: "verified",    note: "Class B EMC certificate issued." },
+  { id: "ev-cov-fw-21cfr807",  projectId: "proj-demo-orion",   controlId: "ctrl-807-est",      frameworkId: "fw-21cfr-807",          kind: "note",       refId: null,               refLabel: "FDA Establishment Reg # 1234567", source: "user", status: "verified",    note: "Renewed 2026-01-15." },
+  { id: "ev-cov-fw-21cfr814",  projectId: "proj-demo-orion",   controlId: "ctrl-814-pma",      frameworkId: "fw-21cfr-814",          kind: "file",       refId: "pma-submission",   refLabel: "PMA submission package", source: "user",  status: "ai_asserted", note: "AI-extracted from submission cover letter." },
+  { id: "ev-cov-fw-62366",     projectId: "proj-demo-helios",  controlId: "ctrl-62366-5",      frameworkId: "fw-iec-62366",          kind: "report",     refId: "rep-usability",    refLabel: "Summative usability test report", source: "user",  status: "verified",    note: "15 representative users, no critical use errors." },
+  { id: "ev-cov-fw-14155",     projectId: "proj-demo-aesop",   controlId: "ctrl-14155-9",      frameworkId: "fw-iso-14155",          kind: "file",       refId: "cip-v2",           refLabel: "Clinical Investigation Plan v2", source: "user",  status: "verified",    note: "IRB-approved." },
+  { id: "ev-cov-fw-ivdr",      projectId: "proj-demo-aesop",   controlId: "ctrl-ivdr-anx9",    frameworkId: "fw-eu-ivdr-2017-746",   kind: "report",     refId: "rep-pe",           refLabel: "Performance Evaluation Report", source: "ai",  status: "ai_asserted", note: "Awaiting clinical reviewer sign-off." },
+  { id: "ev-cov-fw-21434",     projectId: "proj-demo-ares",    controlId: "ctrl-21434-tara",   frameworkId: "fw-iso-21434",          kind: "report",     refId: "rep-tara",         refLabel: "TARA — Ares ADAS", source: "ai",   status: "verified",    note: "Threat & risk analysis completed." },
+  { id: "ev-cov-fw-aspice-cy", projectId: "proj-demo-ares",    controlId: "ctrl-aspice-cy-1",  frameworkId: "fw-aspice-cyber",       kind: "file",       refId: "wp-cy",            refLabel: "Cybersecurity work products", source: "user",  status: "verified",    note: "Work products completed for SEC.1–SEC.4." },
+  { id: "ev-cov-fw-do178c",    projectId: "proj-demo-ares",    controlId: "ctrl-do178c-psac",  frameworkId: "fw-do-178c",            kind: "file",       refId: "psac",             refLabel: "Plan for SW Aspects of Certification", source: "user", status: "verified", note: "DAL B; PSAC reviewed." },
+  { id: "ev-cov-fw-13849",     projectId: "proj-demo-apollo",  controlId: "ctrl-13849-pl",     frameworkId: "fw-iso-13849",          kind: "report",     refId: "rep-pl-d",         refLabel: "PL=d verification report", source: "user",  status: "verified",    note: "MTTFd + DCavg both meet PL=d." },
+  { id: "ev-cov-fw-1012",      projectId: "proj-demo-apollo",  controlId: "ctrl-1012-vp",      frameworkId: "fw-ieee-1012",          kind: "file",       refId: "svp",              refLabel: "System V&V Plan v1.4", source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-61131",     projectId: "proj-demo-titan",   controlId: "ctrl-61131-st",     frameworkId: "fw-iec-61131-3",        kind: "file",       refId: "st-prog",          refLabel: "ST programs — controller A", source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-60204",     projectId: "proj-demo-titan",   controlId: "ctrl-60204-est",    frameworkId: "fw-iec-60204-1",        kind: "report",     refId: "rep-elec",         refLabel: "Electrical safety inspection", source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-10218",     projectId: "proj-demo-titan",   controlId: "ctrl-10218-cell",   frameworkId: "fw-iso-10218-1",        kind: "report",     refId: "rep-cell",         refLabel: "Robot cell safeguarding report", source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-isa95",     projectId: "proj-demo-titan",   controlId: "ctrl-isa95-l3",     frameworkId: "fw-isa-95",             kind: "file",       refId: "mes-spec",         refLabel: "MES ↔ ERP integration spec", source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-api1164",   projectId: "proj-demo-titan",   controlId: "ctrl-api1164-cy",   frameworkId: "fw-api-1164",           kind: "report",     refId: "rep-api1164",      refLabel: "Pipeline cyber posture report", source: "ai",   status: "ai_asserted", note: "" },
+  { id: "ev-cov-fw-en50128",   projectId: "proj-demo-titan",   controlId: "ctrl-en50128-sil4", frameworkId: "fw-en-50128",           kind: "file",       refId: "sil4-evidence",    refLabel: "SIL 4 evidence pack",  source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-en50126",   projectId: "proj-demo-titan",   controlId: "ctrl-en50126-rams", frameworkId: "fw-en-50126",           kind: "report",     refId: "rep-rams",         refLabel: "RAMS plan",            source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-en50129",   projectId: "proj-demo-titan",   controlId: "ctrl-en50129-sac",  frameworkId: "fw-en-50129",           kind: "file",       refId: "sac",              refLabel: "Safety Case",          source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-en50657",   projectId: "proj-demo-titan",   controlId: "ctrl-en50657-sw",   frameworkId: "fw-en-50657",           kind: "report",     refId: "rep-rs",           refLabel: "Rolling-stock SW assessment", source: "user", status: "verified",   note: "" },
+  { id: "ev-cov-fw-nis2",      projectId: "proj-demo-bastion", controlId: "ctrl-nis2-art21",   frameworkId: "fw-nis2",               kind: "file",       refId: "nis2-policy",      refLabel: "NIS2 risk management policy", source: "user", status: "verified",    note: "" },
+  { id: "ev-cov-fw-27002",     projectId: "proj-demo-bastion", controlId: "ctrl-27002-a8",     frameworkId: "fw-iso-27002",          kind: "report",     refId: "rep-a8",           refLabel: "Annex A.8 controls evidence", source: "user", status: "verified",    note: "" },
+  { id: "ev-cov-fw-730",       projectId: "proj-demo-bastion", controlId: "ctrl-730-sqap",     frameworkId: "fw-ieee-730",           kind: "file",       refId: "sqap",             refLabel: "Software Quality Assurance Plan", source: "user", status: "verified",  note: "" },
+  { id: "ev-cov-fw-29119",     projectId: "proj-demo-aegis",   controlId: "ctrl-29119-tp",     frameworkId: "fw-ieee-29119",         kind: "file",       refId: "tp",               refLabel: "Test Plan — Aegis IAM",  source: "user",  status: "verified",    note: "" },
+  { id: "ev-cov-fw-828",       projectId: "proj-demo-cipher",  controlId: "ctrl-828-cmp",      frameworkId: "fw-ieee-828",           kind: "file",       refId: "cmp",              refLabel: "Configuration Management Plan", source: "user", status: "verified",  note: "" },
+  { id: "ev-cov-fw-iso",       projectId: "proj-demo-cipher",  controlId: "ctrl-iso-master",   frameworkId: "fw-iso",                kind: "note",       refId: null,               refLabel: "ISO master register", source: "user",  status: "verified",    note: "Cross-references all ISO programs." },
+  { id: "ev-cov-fw-9001",      projectId: "proj-demo-sterling",controlId: "ctrl-9001-7",       frameworkId: "fw-iso-9001",           kind: "report",     refId: "rep-mr",           refLabel: "Management review minutes", source: "user", status: "verified",    note: "" },
+  { id: "ev-cov-fw-cmmi",      projectId: "proj-demo-atlas",   controlId: "ctrl-cmmi3-pp",     frameworkId: "fw-cmmi-3",             kind: "report",     refId: "rep-sca",          refLabel: "SCAMPI-A appraisal", source: "user",  status: "verified",    note: "Achieved Maturity Level 3." },
+  { id: "ev-cov-fw-42010",     projectId: "proj-demo-atlas",   controlId: "ctrl-42010-arch",   frameworkId: "fw-iso-iec-ieee-42010", kind: "file",       refId: "arch-desc",        refLabel: "Architecture Description (4+1)", source: "user", status: "verified",  note: "" },
+  { id: "ev-cov-fw-1016",      projectId: "proj-demo-atlas",   controlId: "ctrl-1016-sdd",     frameworkId: "fw-ieee-1016",          kind: "file",       refId: "sdd",              refLabel: "Software Design Description", source: "user", status: "verified",    note: "" },
+  { id: "ev-cov-fw-31000",     projectId: "proj-demo-vega",    controlId: "ctrl-31000-rmp",    frameworkId: "fw-iso-31000",          kind: "file",       refId: "rmp",              refLabel: "Enterprise risk management policy", source: "user", status: "verified",  note: "" },
+  { id: "ev-cov-fw-aiact",     projectId: "proj-demo-vega",    controlId: "ctrl-aiact-anx4",   frameworkId: "fw-eu-ai-act",          kind: "report",     refId: "rep-tech-doc",     refLabel: "Annex IV technical documentation", source: "ai", status: "ai_asserted", note: "" },
+  { id: "ev-cov-fw-1063",      projectId: "proj-demo-vega",    controlId: "ctrl-1063-userdoc", frameworkId: "fw-ieee-1063",          kind: "file",       refId: "user-guide",       refLabel: "User documentation v3", source: "user",  status: "verified",    note: "" },
+];
+
+// AI reports: cover under-used frameworks via the four `kind` values, and
+// hit the `regulator` tone variant.
+const COVERAGE_AI_REPORTS = [
+  {
+    id: "rep-cov-vega-aiact", projectId: "proj-demo-vega", frameworkId: "fw-eu-ai-act",
+    kind: "compliance_audit", tone: "regulator", title: "EU AI Act readiness — Vega Claims AI",
+    status: "draft",
+    content: {
+      title: "EU AI Act readiness — Vega Claims AI",
+      subtitle: "High-risk AI system under Annex III §5(b)",
+      executiveSummary: "Vega Claims AI is in scope as a high-risk system. 7 of 9 Title III obligations are met or partially met; transparency (Art. 13) and post-market monitoring (Art. 72) require closure before EU market deployment.",
+      sections: [
+        { id: "s1", heading: "Risk management system (Art. 9)", body: "ISO 31000-aligned RMS in place; iterative throughout lifecycle; residual risk register signed off by CRO.", citations: ["ev-cov-fw-31000"] },
+        { id: "s2", heading: "Transparency & user disclosures (Art. 13)", body: "Model card surfaces purpose, accuracy, intended users, and limitations. Gap: human-oversight instructions not yet in claimant-facing UI.", citations: ["tc-cov-vega-01", "ev-cov-fw-aiact"] },
+        { id: "s3", heading: "Technical documentation (Annex IV)", body: "AI-asserted draft compiled; needs human review before notified-body submission.", citations: [] },
+      ],
+      evidence: [
+        { id: "ev-cov-fw-aiact",  label: "Annex IV technical documentation", source: "AI" },
+        { id: "ev-cov-fw-31000",  label: "Enterprise risk management policy", source: "User" },
+      ],
+    },
+  },
+  {
+    id: "rep-cov-titan-rail", projectId: "proj-demo-titan", frameworkId: "fw-en-50128",
+    kind: "traceability", tone: "technical", title: "EN 50128 SIL 4 traceability snapshot",
+    status: "finalised",
+    content: {
+      title: "EN 50128 SIL 4 traceability snapshot",
+      subtitle: "Requirements ↔ design ↔ code ↔ tests for the rail-signalling subsystem",
+      executiveSummary: "100% of SIL 4 software requirements trace to design, code, and at least one test (62 of 62). 4 tests blocked pending bench availability.",
+      sections: [
+        { id: "s1", heading: "Coverage matrix",   body: "62 requirements · 58 design elements · 71 code units · 184 test cases.", citations: [] },
+        { id: "s2", heading: "Open items",        body: "4 system-level tests blocked on hardware bench. No requirement is unverified.", citations: ["tc-cov-orion-01"] },
+      ],
+      evidence: [
+        { id: "ev-cov-fw-en50128", label: "SIL 4 evidence pack", source: "User" },
+        { id: "ev-cov-fw-en50129", label: "Safety Case", source: "User" },
+      ],
+    },
+  },
+  {
+    id: "rep-cov-orion-rsum", projectId: "proj-demo-orion", frameworkId: "fw-iso-13485",
+    kind: "requirements_summary", tone: "executive", title: "ISO 13485 design-input summary — Orion v3.2",
+    status: "finalised",
+    content: {
+      title: "ISO 13485 design-input summary — Orion v3.2",
+      executiveSummary: "All 47 design inputs reviewed and approved by R&D and Regulatory; 3 carried over from V3.1 design history.",
+      sections: [
+        { id: "s1", heading: "Highlights", body: "Battery-life input tightened from ≥7d to ≥10d; Bluetooth pairing input clarified.", citations: [] },
+      ],
+      evidence: [{ id: "ev-cov-fw-14971", label: "Risk Management File", source: "User" }],
+    },
+  },
+  {
+    id: "rep-cov-atlas-arch", projectId: "proj-demo-atlas", frameworkId: "fw-iso-iec-ieee-42010",
+    kind: "exec_brief", tone: "executive", title: "Architecture description conformance — Atlas",
+    status: "draft",
+    content: {
+      title: "Architecture description conformance — Atlas",
+      executiveSummary: "Atlas architecture description conforms to ISO/IEC/IEEE 42010 with 4+1 views; one viewpoint (Operational) needs stakeholder concerns updated for T+1 mandate.",
+      sections: [
+        { id: "s1", heading: "Stakeholder concerns", body: "12 of 13 concerns mapped to viewpoints.", citations: ["ev-cov-fw-42010"] },
+      ],
+      evidence: [{ id: "ev-cov-fw-42010", label: "Architecture Description (4+1)", source: "User" }],
+    },
+  },
+];
+
+// AI conversations: cover `low` confidence + a global (project-less) row.
+const COVERAGE_AI_CONVERSATIONS = [
+  {
+    id: "conv-cov-low-1", projectId: "proj-demo-titan",
+    question: "Does our pipeline cyber posture meet API 1164 Section 6 requirements?",
+    answer:
+      "Partially. Section 6.3 (network segmentation) is met based on the firewall configuration evidence, but Section 6.5 (incident response runbooks) needs explicit pipeline-incident scenarios — current runbook is generic. Confidence is low because only 1 of 4 expected control documents was found in the indexed sources.",
+    confidence: "low",
+    citations: ["src-titan-folder", "ev-cov-fw-api1164"],
+  },
+  {
+    id: "conv-cov-low-2", projectId: "proj-demo-vega",
+    question: "Are we exposed to EU AI Act fines if we deploy Vega in Q3?",
+    answer:
+      "Likely yes. Vega meets most Title III obligations but Article 13 transparency disclosures and Article 72 post-market monitoring are open. A Q3 deployment without closing these would expose the company to administrative fines under Art. 99. Confidence is low pending notified-body interpretation.",
+    confidence: "low",
+    citations: ["rep-cov-vega-aiact"],
+  },
+  {
+    id: "conv-cov-global-1", projectId: null,
+    question: "Across all our demo projects, which framework has the lowest evidence coverage?",
+    answer:
+      "Across the 14 demo projects, NERC CIP (titan) and EU IVDR (aesop) currently have the lowest verified-evidence ratio — both have one rejected or AI-asserted row pending human verification. SOC 2 (bastion) and IEC 62304 (orion) have the highest verified coverage.",
+    confidence: "medium",
+    citations: ["ev-cov-rejected-2", "ev-cov-fw-ivdr"],
+  },
+];
+
 export async function seedDemoProjects() {
   await ensureDemoWorkspace();
 
@@ -1292,14 +1618,14 @@ export async function seedDemoProjects() {
   }
 
   // Per-module data for all 14 demo projects.
-  const allSources           = [...PROJECT_SOURCES,   ...MORE_PROJECT_SOURCES];
+  const allSources           = [...PROJECT_SOURCES,   ...MORE_PROJECT_SOURCES, ...COVERAGE_PROJECT_SOURCES];
   const allDefects           = [...DEFECTS,           ...MORE_DEFECTS];
   const allCapas             = [...CAPA_ACTIONS,      ...MORE_CAPA_ACTIONS];
-  const allTestCases         = [...TEST_CASES,        ...MORE_TEST_CASES];
+  const allTestCases         = [...TEST_CASES,        ...MORE_TEST_CASES,      ...COVERAGE_TEST_CASES];
   const allCodeArtifacts     = [...CODE_ARTIFACTS,    ...MORE_CODE_ARTIFACTS];
   const allTraceLinks        = [...TRACE_LINKS,       ...MORE_TRACE_LINKS];
-  const allAiReports         = [...AI_REPORTS,        ...MORE_AI_REPORTS];
-  const allRecurringAudits   = [...RECURRING_AUDITS,  ...MORE_RECURRING_AUDITS];
+  const allAiReports         = [...AI_REPORTS,        ...MORE_AI_REPORTS,      ...COVERAGE_AI_REPORTS];
+  const allRecurringAudits   = [...RECURRING_AUDITS,  ...MORE_RECURRING_AUDITS,...COVERAGE_RECURRING_AUDITS];
 
   if (allSources.length > 0) {
     await db.insert(projectSourcesTable).values(allSources).onConflictDoNothing();
@@ -1328,22 +1654,25 @@ export async function seedDemoProjects() {
   if (LEGACY_SYSTEMS.length > 0) {
     await db.insert(legacySystemsTable).values(LEGACY_SYSTEMS).onConflictDoNothing();
   }
-  const allConversations = [...AI_CONVERSATIONS, ...MORE_AI_CONVERSATIONS];
-  const allEvidence      = [...COMPLIANCE_EVIDENCE, ...MORE_COMPLIANCE_EVIDENCE];
+  const allConversations = [...AI_CONVERSATIONS, ...MORE_AI_CONVERSATIONS, ...COVERAGE_AI_CONVERSATIONS];
+  const allEvidence      = [...COMPLIANCE_EVIDENCE, ...MORE_COMPLIANCE_EVIDENCE, ...COVERAGE_EVIDENCE];
+  const allWorkflows     = [...WORKFLOWS, ...COVERAGE_WORKFLOWS];
+  const allWorkflowRuns  = [...WORKFLOW_RUNS, ...COVERAGE_WORKFLOW_RUNS];
+  const allWorkflowStepRuns = [...WORKFLOW_STEP_RUNS, ...COVERAGE_WORKFLOW_STEP_RUNS];
   if (allConversations.length > 0) {
     await db.insert(aiConversationsTable).values(allConversations).onConflictDoNothing();
   }
   if (allEvidence.length > 0) {
     await db.insert(complianceEvidenceTable).values(allEvidence).onConflictDoNothing();
   }
-  if (WORKFLOWS.length > 0) {
-    await db.insert(workflowsTable).values(WORKFLOWS).onConflictDoNothing();
+  if (allWorkflows.length > 0) {
+    await db.insert(workflowsTable).values(allWorkflows).onConflictDoNothing();
   }
-  if (WORKFLOW_RUNS.length > 0) {
-    await db.insert(workflowRunsTable).values(WORKFLOW_RUNS).onConflictDoNothing();
+  if (allWorkflowRuns.length > 0) {
+    await db.insert(workflowRunsTable).values(allWorkflowRuns).onConflictDoNothing();
   }
-  if (WORKFLOW_STEP_RUNS.length > 0) {
-    await db.insert(workflowStepRunsTable).values(WORKFLOW_STEP_RUNS).onConflictDoNothing();
+  if (allWorkflowStepRuns.length > 0) {
+    await db.insert(workflowStepRunsTable).values(allWorkflowStepRuns).onConflictDoNothing();
   }
 
   console.log(
@@ -1351,7 +1680,7 @@ export async function seedDemoProjects() {
     `${allSources.length} sources, ${allDefects.length} defects, ${allCapas.length} CAPAs, ${allTestCases.length} test cases, ` +
     `${allCodeArtifacts.length} code artifacts, ${allTraceLinks.length} trace links, ${allAiReports.length} AI reports, ${allRecurringAudits.length} recurring audits, ` +
     `${LEGACY_SYSTEMS.length} legacy systems, ${allConversations.length} AI conversations, ${allEvidence.length} evidence rows, ` +
-    `${WORKFLOWS.length} workflows, ${WORKFLOW_RUNS.length} runs, ${WORKFLOW_STEP_RUNS.length} step runs. ` +
+    `${allWorkflows.length} workflows, ${allWorkflowRuns.length} runs, ${allWorkflowStepRuns.length} step runs. ` +
     `All 14 demo projects covered.`,
   );
 }
