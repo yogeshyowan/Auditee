@@ -106,6 +106,11 @@ const STATIC_ROUTES = [
   { path: "/refund-policy",      priority: 0.40, changefreq: "yearly"  },
   { path: "/cancellation-policy",priority: 0.40, changefreq: "yearly"  },
   { path: "/shipping-policy",    priority: 0.40, changefreq: "yearly"  },
+  { path: "/aspice",                   priority: 0.90, changefreq: "monthly" },
+  { path: "/iec-62304",                priority: 0.90, changefreq: "monthly" },
+  { path: "/fda-qmsr",                 priority: 0.90, changefreq: "monthly" },
+  { path: "/integrations/jira",        priority: 0.85, changefreq: "monthly" },
+  { path: "/integrations/azure-devops",priority: 0.85, changefreq: "monthly" },
 
   // ---- legal ----
   { path: "/privacy-policy",     priority: 0.40, changefreq: "yearly" },

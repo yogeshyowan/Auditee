@@ -46,6 +46,11 @@ import CancellationPolicy from "@/pages/CancellationPolicy";
 import ShippingPolicy from "@/pages/ShippingPolicy";
 import Accessibility from "@/pages/Accessibility";
 import Community from "@/pages/Community";
+import Aspice from "@/pages/Aspice";
+import Iec62304 from "@/pages/Iec62304";
+import FdaQmsr from "@/pages/FdaQmsr";
+import IntegrationJira from "@/pages/IntegrationJira";
+import IntegrationAzureDevOps from "@/pages/IntegrationAzureDevOps";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -387,6 +392,21 @@ function Router() {
       <Route path="/a11y" component={Accessibility} />
       <Route path="/community" component={Community} />
       <Route path="/slack" component={Community} />
+      <Route path="/aspice" component={Aspice} />
+      <Route path="/aspice-4-0" component={Aspice} />
+      <Route path="/aspice-compliance" component={Aspice} />
+      <Route path="/automotive-spice" component={Aspice} />
+      <Route path="/iec-62304" component={Iec62304} />
+      <Route path="/iec62304" component={Iec62304} />
+      <Route path="/iec-62304-compliance" component={Iec62304} />
+      <Route path="/fda-qmsr" component={FdaQmsr} />
+      <Route path="/qmsr" component={FdaQmsr} />
+      <Route path="/21-cfr-820" component={FdaQmsr} />
+      <Route path="/integrations/jira" component={IntegrationJira} />
+      <Route path="/jira-integration" component={IntegrationJira} />
+      <Route path="/integrations/azure-devops" component={IntegrationAzureDevOps} />
+      <Route path="/integrations/ado" component={IntegrationAzureDevOps} />
+      <Route path="/azure-devops-integration" component={IntegrationAzureDevOps} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
