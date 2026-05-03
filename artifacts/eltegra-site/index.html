@@ -44,6 +44,42 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="format-detection" content="telephone=no" />
 
+    <!-- GEO meta tags (W3C / dublincore.org geo extensions). Bing,
+         Yandex, Baidu and several local-pack rankers still read these
+         even though Google has moved to LocalBusiness JSON-LD. They
+         carry near-zero cost and unlock the "near me" / map-pack
+         carousels in Bing and Yandex maps. Coordinates and region
+         match the LocalBusiness JSON-LD below. -->
+    <meta name="geo.region" content="IN-TN" />
+    <meta name="geo.placename" content="Chennai, Tamil Nadu, India" />
+    <meta name="geo.position" content="13.0345;80.1188" />
+    <meta name="ICBM" content="13.0345, 80.1188" />
+
+    <!-- Legacy crawl directives. Yandex still honors revisit-after;
+         Bing and DuckDuckGo respect rating + distribution. Cheap to
+         include and explicitly checked by some SEO audit tools. -->
+    <meta name="rating" content="general" />
+    <meta name="distribution" content="global" />
+    <meta name="revisit-after" content="3 days" />
+    <meta name="audience" content="Engineering, QA, Compliance and Audit teams" />
+    <meta name="copyright" content="© 2025–2026 Qwikstuffs Pvt. Ltd. (Auditee). All rights reserved." />
+
+    <!-- Dublin Core metadata (RFC 5013). Used by academic / institutional
+         search engines (Google Scholar fallback, BASE, CORE, OpenAIRE)
+         and by some enterprise crawlers (Sitecore, Coveo) for facets. -->
+    <meta name="DC.title" content="Auditee — AI Platform for Requirements, Compliance & Audit Automation" />
+    <meta name="DC.creator" content="Auditee (Qwikstuffs Pvt. Ltd.)" />
+    <meta name="DC.subject" content="AI-native PDLC, requirements management, ASPICE, ISO 26262, IEC 62304, SOC 2, HIPAA, FDA QMSR, audit automation, compliance automation" />
+    <meta name="DC.description" content="The AI-native enterprise platform for the Product Development Lifecycle. Unifies requirements, code, audits and compliance into a living knowledge graph." />
+    <meta name="DC.publisher" content="Qwikstuffs Pvt. Ltd." />
+    <meta name="DC.type" content="InteractiveResource" />
+    <meta name="DC.format" content="text/html" />
+    <meta name="DC.identifier" content="https://auditee.site/" />
+    <meta name="DC.language" content="en" />
+    <meta name="DC.coverage" content="IN, AE, SA, GB, DE, FR, ES, IE, NL, US, CA, AU, SG, JP" />
+    <meta name="DC.rights" content="© 2025–2026 Qwikstuffs Pvt. Ltd. — https://auditee.site/terms-of-service" />
+    <link rel="schema.DC" href="http://purl.org/dc/elements/1.1/" />
+
     <!-- Robots: index marketing, but app routes are blocked via robots.txt + per-page noindex -->
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
