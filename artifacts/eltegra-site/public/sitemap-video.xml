@@ -1,30 +1,405 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+          xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+    <url>
+      <loc>https://auditee.site/auditee-tutorial</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Auditee — AI-native PDLC Platform Tutorial</video:title>
+        <video:description>Walkthrough of Auditee: how the AI-native platform unifies requirements management, source code, compliance audits and CAPA workflows into a single living knowledge graph. Covers ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, HIPAA and FDA QMSR.</video:description>
+        <video:content_loc>https://auditee.site/auditee-tutorial</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial</video:player_loc>
+        <video:duration>270</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>requirements management</video:tag>
+        <video:tag>compliance automation</video:tag>
+        <video:tag>ASPICE</video:tag>
+        <video:tag>ISO 26262</video:tag>
+        <video:tag>IEC 62304</video:tag>
+        <video:tag>SOC 2</video:tag>
+        <video:tag>HIPAA</video:tag>
+        <video:tag>FDA QMSR</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+    <url>
+      <loc>https://auditee.site/demo-videos/dashboard</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Dashboard overview — Helios — Patient Onboarding | Auditee Tutorial</video:title>
+        <video:description>Workspace health, project rollups and the daily summary email — narrated on the live Helios demo.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/dashboard</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=dashboard&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>dashboard</video:tag>
+      <video:tag>workspace overview</video:tag>
+      <video:tag>Helios</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
   <url>
-    <loc>https://auditee.site/auditee-tutorial</loc>
-    <video:video>
-      <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
-      <video:title>Auditee — AI-native PDLC Platform Tutorial</video:title>
-      <video:description>Walkthrough of Auditee: how the AI-native platform unifies requirements management, source code, compliance audits and CAPA workflows into a single living knowledge graph. Covers ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, HIPAA and FDA QMSR.</video:description>
-      <video:content_loc>https://auditee.site/auditee-tutorial</video:content_loc>
-      <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial</video:player_loc>
-      <video:duration>270</video:duration>
-      <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
-      <video:family_friendly>yes</video:family_friendly>
-      <video:requires_subscription>no</video:requires_subscription>
-      <video:live>no</video:live>
-      <video:uploader info="https://auditee.site/">Auditee</video:uploader>
-      <video:platform relationship="allow">web mobile tv</video:platform>
-      <video:tag>requirements management</video:tag>
-      <video:tag>compliance automation</video:tag>
-      <video:tag>ASPICE</video:tag>
+      <loc>https://auditee.site/demo-videos/sources</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Project Sources — Orion — Cardiac Monitor Firmware | Auditee Tutorial</video:title>
+        <video:description>Wire GitHub, Jira, IBM DOORS and 12 clinical PDFs into the Orion firmware project — 184 reqs ingested.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/sources</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=sources&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>300</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>data sources</video:tag>
+      <video:tag>GitHub</video:tag>
+      <video:tag>Jira</video:tag>
+      <video:tag>IBM DOORS</video:tag>
+      <video:tag>Orion</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/interview</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Smart Interview — Aesop — Clinical Trial eCRF | Auditee Tutorial</video:title>
+        <video:description>Live AI interview with the Aesop PM, classified to ICH-GCP E6(R3) and 21 CFR Part 11.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/interview</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=interview&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>360</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>AI interview</video:tag>
+      <video:tag>ICH-GCP</video:tag>
+      <video:tag>21 CFR Part 11</video:tag>
+      <video:tag>Aesop</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/requirements</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>AI Requirements — Apollo — EV Battery Management System | Auditee Tutorial</video:title>
+        <video:description>Generate 192 Apollo BMS reqs, tagged to ISO 26262, ISO 21434, UN R155 and IEC 61508.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/requirements</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=requirements&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>300</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>requirements</video:tag>
       <video:tag>ISO 26262</video:tag>
-      <video:tag>IEC 62304</video:tag>
-      <video:tag>SOC 2</video:tag>
+      <video:tag>ISO 21434</video:tag>
+      <video:tag>Apollo</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/gaps</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Gap Detection — Ares — ADAS Vision Stack | Auditee Tutorial</video:title>
+        <video:description>Scan Ares vision code against ISO 26262 + SOTIF — every gap auto-converts to a CAPA.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/gaps</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=gaps&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>gap detection</video:tag>
+      <video:tag>ISO 26262</video:tag>
+      <video:tag>SOTIF</video:tag>
+      <video:tag>Ares</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/traceability</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Traceability Graph — Titan — Industrial PLC Control System | Auditee Tutorial</video:title>
+        <video:description>Walk the IEC 61508 SIL-3 trace chain on Titan PLC, requirement to test to evidence.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/traceability</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=traceability&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>300</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>traceability</video:tag>
+      <video:tag>IEC 61508</video:tag>
+      <video:tag>SIL-3</video:tag>
+      <video:tag>Titan</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/compliance</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Compliance — Nexus — Hospital EHR Modernisation | Auditee Tutorial</video:title>
+        <video:description>HIPAA, HITRUST, ISO 27001, SOC 2 and FHIR R4 — live coverage on Nexus, audit-ready.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/compliance</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=compliance&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>360</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>compliance</video:tag>
       <video:tag>HIPAA</video:tag>
-      <video:tag>FDA QMSR</video:tag>
-      <video:category>Software</video:category>
-    </video:video>
-  </url>
-</urlset>
+      <video:tag>HITRUST</video:tag>
+      <video:tag>SOC 2</video:tag>
+      <video:tag>Nexus</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/capa</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>CAPA Actions — Vega — Claims Intelligence | Auditee Tutorial</video:title>
+        <video:description>Field complaint to root cause to verified closure on the Vega claims model.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/capa</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=capa&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>CAPA</video:tag>
+      <video:tag>root cause</video:tag>
+      <video:tag>Vega</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/defects</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Defects — Sterling — Core Banking Platform | Auditee Tutorial</video:title>
+        <video:description>Sterling defects pulled from Jira / Bugzilla / ServiceNow, auto-linked to req and test.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/defects</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=defects&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>defects</video:tag>
+      <video:tag>Sterling</video:tag>
+      <video:tag>Jira</video:tag>
+      <video:tag>ServiceNow</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/tests</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Test Cases — Bastion — Cloud Security Posture | Auditee Tutorial</video:title>
+        <video:description>AI-generated tests for every CIS / SOC 2 / ISO 27001 Bastion control. Push to TestRail in one click.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/tests</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=tests&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>300</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>test cases</video:tag>
+      <video:tag>CIS</video:tag>
+      <video:tag>SOC 2</video:tag>
+      <video:tag>TestRail</video:tag>
+      <video:tag>Bastion</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/reports</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>AI Reports &amp; Documents — Atlas — Trade Settlement Engine | Auditee Tutorial</video:title>
+        <video:description>Generate Atlas&apos; 247-page SEC audit packet in 4 minutes — every claim sourced from live evidence.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/reports</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=reports&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>300</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>reports</video:tag>
+      <video:tag>SEC</video:tag>
+      <video:tag>audit packet</video:tag>
+      <video:tag>Atlas</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/workflows</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Workflows — Aegis — Identity &amp; Access Platform | Auditee Tutorial</video:title>
+        <video:description>Automate the Aegis SOC 2 release gate — nothing ships until every check passes.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/workflows</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=workflows&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>workflows</video:tag>
+      <video:tag>release gate</video:tag>
+      <video:tag>SOC 2</video:tag>
+      <video:tag>Aegis</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/analytics</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Analytics — Cipher — API Gateway &amp; Zero Trust | Auditee Tutorial</video:title>
+        <video:description>Live KPI tiles and 7-week trend charts for Cipher — export the board pack as PDF.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/analytics</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=analytics&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>analytics</video:tag>
+      <video:tag>KPI</video:tag>
+      <video:tag>board pack</video:tag>
+      <video:tag>Cipher</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/recurring-audits</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Recurring Audits — Nova — Crypto Exchange Compliance | Auditee Tutorial</video:title>
+        <video:description>Daily VASP checks, weekly travel-rule reviews, monthly SOC 2 on the Nova demo project.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/recurring-audits</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=recurring-audits&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>recurring audits</video:tag>
+      <video:tag>VASP</video:tag>
+      <video:tag>travel rule</video:tag>
+      <video:tag>Nova</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/legacy</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Legacy Modernisation — Mercury — COBOL Core Banking Modernisation | Auditee Tutorial</video:title>
+        <video:description>1.2 million lines of COBOL, JCL, CICS and DB2 — extracted into 184 modern requirements with a risk-scored dependency heatmap.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/legacy</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=legacy&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>300</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>legacy modernisation</video:tag>
+      <video:tag>COBOL</video:tag>
+      <video:tag>Mercury</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/pdlc</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>PDLC Pipeline — Phoenix — Surgical Robotics Platform | Auditee Tutorial</video:title>
+        <video:description>Phoenix v2.4 walked through the 6-stage product lifecycle — Ideation to Governance — every IEC 62304 + FDA QSR gate signed and audit-trailed.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/pdlc</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=pdlc&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>300</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>PDLC</video:tag>
+      <video:tag>IEC 62304</video:tag>
+      <video:tag>FDA QSR</video:tag>
+      <video:tag>Phoenix</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  <url>
+      <loc>https://auditee.site/demo-videos/ask</loc>
+      <video:video>
+        <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+        <video:title>Ask Auditee — Sirius — 5G Core Network | Auditee Tutorial</video:title>
+        <video:description>Conversational AI grounded in the live project graph — every answer cited to real requirements, code, tests and CAPAs. Zero hallucinations.</video:description>
+        <video:content_loc>https://auditee.site/demo-videos/ask</video:content_loc>
+        <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial/?module=ask&amp;embed=1&amp;autoplay=1</video:player_loc>
+        <video:duration>240</video:duration>
+        <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+        <video:family_friendly>yes</video:family_friendly>
+        <video:requires_subscription>no</video:requires_subscription>
+        <video:live>no</video:live>
+        <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+        <video:platform relationship="allow">web mobile tv</video:platform>
+        <video:tag>Ask Auditee</video:tag>
+      <video:tag>RAG</video:tag>
+      <video:tag>5G</video:tag>
+      <video:tag>Sirius</video:tag>
+        <video:category>Software</video:category>
+      </video:video>
+    </url>
+  </urlset>
+  
