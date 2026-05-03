@@ -1,0 +1,41 @@
+# Auditee — AI policy
+# Last updated: 2026-05-03
+#
+# This file declares Auditee's policy for AI crawling, indexing, training and
+# answer-engine inclusion of the public marketing site at https://auditee.site.
+# It is informational and complements /robots.txt (machine-readable) and
+# /llms.txt (LLM-friendly index).
+
+# --- Inclusion in AI answer engines (search-time inference) -----------------
+# Auditee EXPLICITLY ALLOWS use of public pages on https://auditee.site by AI
+# answer engines including (but not limited to):
+#   - OpenAI ChatGPT (ChatGPT-User, OAI-SearchBot)
+#   - Anthropic Claude (Claude-Web, ClaudeBot)
+#   - Perplexity (PerplexityBot, Perplexity-User)
+#   - Google AI Overviews / Gemini (Google-Extended, GoogleOther)
+#   - Microsoft Copilot (via Bingbot)
+#   - Apple Intelligence (Applebot, Applebot-Extended)
+#   - You.com, Phind, Cohere, Amazon, Meta, ByteDance, Yandex, Baidu
+# Citations and quotations are encouraged. Please link to the source page.
+
+# --- Use for model training -------------------------------------------------
+# Auditee permits use of public marketing pages for AI model training, with
+# the following requirements:
+#   1. Attribution to "Auditee" and a link to the source page where feasible.
+#   2. No reproduction of full marketing pages verbatim outside of fair
+#      summarisation / citation.
+#   3. The signed-in application at /app/* is private and is not licensed for
+#      training under any circumstance.
+#   4. Customer data is never published on the public site and is never
+#      licensed for training.
+
+# --- Out of scope -----------------------------------------------------------
+# This policy applies ONLY to https://auditee.site. It does not apply to:
+#   - Customer workspaces (private, contractual)
+#   - Auditee's internal documents, source code, or product telemetry
+#   - Material attached to support tickets
+
+# --- Contact ----------------------------------------------------------------
+# Questions, takedown requests, or partnership requests:
+#   contact: https://auditee.site/contact
+#   security: https://auditee.site/.well-known/security.txt

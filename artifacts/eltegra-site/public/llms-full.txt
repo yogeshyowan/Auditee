@@ -1,0 +1,130 @@
+# Auditee — Full Content (llms-full.txt)
+# Site: https://auditee.site
+# Last generated: 2026-05-03
+# Convention: https://llmstxt.org
+#
+# This file consolidates the long-form public content of Auditee for
+# convenient ingestion by AI answer engines. The signed-in product at /app/*
+# is private and is NOT included.
+
+# Blog (11 posts)
+
+## The Enterprise PDLC Audit Checklist: How to Run Requirements, Code & Compliance Audits with Auditee
+URL: https://auditee.site/blog/enterprise-pdlc-audit-checklist
+Date: 2026-04-30
+Author: Auditee Research
+Tags: Audit, Compliance, Checklist, PDLC
+Reading time: 9 min
+
+Most teams audit one slice — code, or specs, or controls. The strongest engineering organizations audit the whole Product Development Lifecycle continuously. Here's the working checklist we use with enterprise customers, plus a step-by-step setup in Auditee.
+
+---
+
+## Why Spreadsheets Still Beat Requirements Management Tools (and How AI Finally Fixes It)
+URL: https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools
+Date: 2026-04-22
+Author: Auditee Research
+Tags: Requirements Management, AI, DOORS, Jama, Tooling
+Reading time: 11 min
+
+Forty years after IBM Rational shipped DOORS, the modal requirements tool in industry is still… a spreadsheet. That isn't a tooling failure — it's a UX, speed and lock-in failure. AI changes the equation.
+
+---
+
+## AI Requirements Management: A Buyer's Guide for 2026
+URL: https://auditee.site/blog/ai-requirements-management-buyers-guide-2026
+Date: 2026-04-22 (updated 2026-04-28)
+Author: Auditee Research
+Tags: Requirements Management, AI, , 
+Reading time: 11 min
+
+Legacy RM tools were built for a world where humans authored every requirement. AI-native RM platforms turn requirements into a living, traceable, compliance-aware graph. Here's how to evaluate them in 2026.
+
+---
+
+## Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture
+URL: https://auditee.site/blog/legacy-cobol-modernization-with-ai
+Date: 2026-04-15
+Author: Auditee Research
+Tags: Legacy Modernization, AI, COBOL, Architecture
+Reading time: 13 min
+
+Most legacy modernization programs fail because they start by asking 'how do we rewrite this?'. The right question is 'what does this actually do?' — and AI is the first technology that can answer it at scale.
+
+---
+
+## IEC 62304: Medical Device Software Lifecycle Guide (2026)
+URL: https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide
+Date: 2026-04-15
+Author: Auditee Research
+Tags: IEC 62304, Medical Devices, Compliance, Standards
+Reading time: 13 min
+
+IEC 62304 governs every line of software inside a medical device. Here's what the standard actually demands — by class, by phase, by deliverable — and how AI-native platforms close the gap fast.
+
+---
+
+## SOC 2 vs ISO 27001: Which Compliance Framework Should You Choose?
+URL: https://auditee.site/blog/soc-2-vs-iso-27001-which-framework-should-you-choose
+Date: 2026-04-08
+Author: Auditee Research
+Tags: SOC 2, ISO 27001, Compliance, Security
+Reading time: 9 min
+
+SOC 2 and ISO 27001 are the two most-asked-for compliance attestations on enterprise procurement checklists. Both are achievable; many companies need both. Here's how to choose — and how to do them efficiently.
+
+---
+
+## Generating Requirements from Legacy Code: A Modernization Playbook
+URL: https://auditee.site/blog/generating-requirements-from-legacy-code
+Date: 2026-04-01
+Author: Auditee Research
+Tags: Legacy Modernization, Requirements, AI, COBOL
+Reading time: 10 min
+
+Most enterprise legacy systems have lost their authors and their docs. AI can read the code and produce a structured, standards-aware requirements baseline — the prerequisite for any modernization program.
+
+---
+
+## 15 AI Prompts Senior BAs Actually Use for Requirements Gathering
+URL: https://auditee.site/blog/15-ai-prompts-for-requirements-gathering
+Date: 2026-04-01
+Author: Auditee Research
+Tags: Business Analysis, AI Prompts, BRD, Requirements
+Reading time: 8 min
+
+Skip the LinkedIn-influencer prompt lists. These are 15 prompts Senior BAs are actually pasting into ChatGPT, Claude and (better) into structured tools every day, with the failure modes and the fixes.
+
+---
+
+## Top 10 IBM DOORS Alternatives in 2026 (and How to Migrate)
+URL: https://auditee.site/blog/top-10-ibm-doors-alternatives-2026
+Date: 2026-03-25
+Author: Auditee Research
+Tags: IBM DOORS, Requirements Management, Migration, Comparison
+Reading time: 12 min
+
+IBM Rational DOORS Classic is approaching its second decade past end-of-major-development. If you're looking to migrate, here's a clear-eyed comparison of the ten most credible alternatives.
+
+---
+
+## Poor Software Requirements Cost the Industry Billions — Here's the Math
+URL: https://auditee.site/blog/poor-software-requirements-cost-billions
+Date: 2026-03-25
+Author: Auditee Research
+Tags: Requirements, ROI, Research, Software Engineering
+Reading time: 10 min
+
+Industry research from IBM, Standish, IEEE and Gartner has converged on the same answer for 25 years: requirements defects are the single most expensive class of bug. Here's the math, with sources.
+
+---
+
+## HIPAA Software Compliance: The 2026 Requirements Checklist
+URL: https://auditee.site/blog/hipaa-software-compliance-requirements-checklist
+Date: 2026-03-18
+Author: Auditee Research
+Tags: HIPAA, Healthcare, Compliance, Checklist
+Reading time: 10 min
+
+HIPAA isn't a checkbox — it's a continuous program. Here's the working checklist we use with healthcare-software customers, broken into Administrative, Physical, and Technical Safeguards, plus 2025 NPRM updates.
+

@@ -39,7 +39,20 @@
 
     <link rel="canonical" href="https://auditee.site/" />
     <link rel="alternate" hreflang="en" href="https://auditee.site/" />
+    <link rel="alternate" hreflang="en-IN" href="https://auditee.site/" />
+    <link rel="alternate" hreflang="en-GB" href="https://auditee.site/" />
+    <link rel="alternate" hreflang="en-US" href="https://auditee.site/" />
+    <link rel="alternate" hreflang="en-AU" href="https://auditee.site/" />
+    <link rel="alternate" hreflang="en-CA" href="https://auditee.site/" />
     <link rel="alternate" hreflang="x-default" href="https://auditee.site/" />
+
+    <!-- LLM / AI discovery -->
+    <link rel="alternate" type="text/plain; charset=utf-8" title="LLM index (llms.txt)" href="/llms.txt" />
+    <link rel="alternate" type="text/plain; charset=utf-8" title="LLM full content" href="/llms-full.txt" />
+    <!-- Blog feed -->
+    <link rel="alternate" type="application/rss+xml" title="Auditee Blog" href="/rss.xml" />
+    <!-- Sitemap -->
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
 
     <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -122,11 +135,61 @@
       {
         "@context": "https://schema.org",
         "@type": "Organization",
+        "@id": "https://auditee.site/#organization",
         "name": "Auditee",
+        "alternateName": ["Auditee AI", "Auditee PDLC"],
         "url": "https://auditee.site/",
-        "logo": "https://auditee.site/favicon.svg",
-        "description": "Auditee builds the AI-native enterprise platform for the Product Development Lifecycle (PDLC).",
-        "sameAs": []
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://auditee.site/logo.svg",
+          "width": 512,
+          "height": 512
+        },
+        "image": "https://auditee.site/opengraph.jpg",
+        "description": "Auditee builds the AI-native enterprise platform for the Product Development Lifecycle (PDLC). It unifies requirements, code, audits and compliance into a living knowledge graph and automates ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, HIPAA and FDA QMSR audits.",
+        "foundingDate": "2025",
+        "areaServed": ["IN", "AE", "SA", "GB", "DE", "FR", "ES", "IE", "NL", "US", "CA", "AU", "SG", "JP"],
+        "knowsAbout": [
+          "Requirements management",
+          "Application Lifecycle Management",
+          "ASPICE",
+          "ISO 26262",
+          "IEC 62304",
+          "CMMI",
+          "SOC 2",
+          "HIPAA",
+          "FDA QMSR",
+          "Audit automation",
+          "Compliance automation",
+          "AI agents for engineering"
+        ],
+        "contactPoint": [
+          {
+            "@type": "ContactPoint",
+            "contactType": "sales",
+            "areaServed": "Worldwide",
+            "availableLanguage": ["English"],
+            "url": "https://auditee.site/contact?topic=sales"
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "areaServed": "Worldwide",
+            "availableLanguage": ["English"],
+            "url": "https://auditee.site/contact?topic=support"
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "technical support",
+            "areaServed": "Worldwide",
+            "availableLanguage": ["English"],
+            "url": "https://auditee.site/status"
+          }
+        ],
+        "sameAs": [
+          "https://github.com/auditee",
+          "https://www.linkedin.com/company/auditee"
+        ]
       }
     </script>
 
@@ -135,9 +198,37 @@
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": "https://auditee.site/#website",
         "name": "Auditee",
+        "alternateName": "Auditee AI",
         "url": "https://auditee.site/",
-        "inLanguage": "en"
+        "inLanguage": "en",
+        "publisher": { "@id": "https://auditee.site/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://auditee.site/blog?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
+    <!-- Structured data: speakable summary (helps voice / AI answer engines) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "url": "https://auditee.site/",
+        "name": "Auditee — AI Platform for Requirements, Compliance & Audit Automation",
+        "description": "Auditee is the AI-native platform for the Product Development Lifecycle (PDLC). It unifies requirements, code, audits and compliance into a living knowledge graph.",
+        "isPartOf": { "@id": "https://auditee.site/#website" },
+        "primaryImageOfPage": "https://auditee.site/opengraph.jpg",
+        "speakable": {
+          "@type": "SpeakableSpecification",
+          "cssSelector": ["h1", "h2", "[data-speakable]"]
+        }
       }
     </script>
   </head>

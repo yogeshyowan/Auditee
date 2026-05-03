@@ -1,40 +1,154 @@
 # Auditee — robots.txt
-# Marketing site is fully indexable. The signed-in app at /app/* is private and
-# should never be indexed (no useful content for search and risks leaking
+# The marketing site is fully indexable. The signed-in app at /app/* is private
+# and must never be indexed (no useful content for search and risks leaking
 # project names in URLs).
+#
+# We *welcome* AI crawlers — appearing in AI answers (ChatGPT, Perplexity,
+# Google AI Overviews, Claude, Gemini, You.com, Phind, etc.) is part of how
+# people discover Auditee. See /llms.txt and /llms-full.txt for an
+# LLM-friendly index of this site.
 
 User-agent: *
 Allow: /
 Disallow: /app
 Disallow: /app/
 
-# Common crawler-specific rules — keep behavior identical, but explicit so
-# Googlebot/Bingbot don't fall back to a more permissive default.
+# --- Search engine crawlers -------------------------------------------------
 User-agent: Googlebot
 Allow: /
 Disallow: /app
 Disallow: /app/
+
+User-agent: Googlebot-Image
+Allow: /
 
 User-agent: Bingbot
 Allow: /
 Disallow: /app
 Disallow: /app/
 
-# Block known LLM training scrapers from the marketing site by default.
-# (We're happy to be cited; we'd rather not be wholesale-trained on.)
-User-agent: GPTBot
-Disallow: /
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /app
+Disallow: /app/
 
-User-agent: anthropic-ai
-Disallow: /
+User-agent: Applebot
+Allow: /
+Disallow: /app
+Disallow: /app/
 
-User-agent: ClaudeBot
-Disallow: /
+User-agent: YandexBot
+Allow: /
+Disallow: /app
+Disallow: /app/
 
-User-agent: CCBot
-Disallow: /
+User-agent: Baiduspider
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+# --- AI / LLM crawlers (indexing for answer engines) ------------------------
+# Crawlers used to *answer* user questions in real time. Allow these.
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /app
+Disallow: /app/
 
 User-agent: Google-Extended
-Disallow: /
+Allow: /
+Disallow: /app
+Disallow: /app/
 
+User-agent: GoogleOther
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Amazonbot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Bytespider
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: YouBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: PhindBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Diffbot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: FirecrawlAgent
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+User-agent: CCBot
+Allow: /
+Disallow: /app
+Disallow: /app/
+
+# --- Canonical references ---------------------------------------------------
 Sitemap: https://auditee.site/sitemap.xml
+Host: https://auditee.site

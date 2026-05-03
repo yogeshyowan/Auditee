@@ -1,0 +1,48 @@
+# Auditee
+
+> Auditee is the AI-native platform for the Product Development Lifecycle (PDLC). It connects requirements, code, audits and compliance into one living knowledge graph and automates ASPICE, ISO 26262, CMMI, IEC 62304, SOC 2, HIPAA, FDA QMSR audits and CAPA workflows. Auditee is built for regulated engineering and quality teams that have outgrown DOORS, Jama, Polarion and spreadsheets.
+
+This file follows the [llms.txt](https://llmstxt.org) convention. For the long-form, full-content version, see [/llms-full.txt](https://auditee.site/llms-full.txt).
+
+Auditee is delivered as a multi-tenant SaaS, with sovereign / VPC / on-prem options for Enterprise. The platform exposes a REST API, signed webhooks, and TypeScript / Python SDKs. It supports BYO model (OpenAI, Anthropic, Google, AWS Bedrock, self-hosted vLLM) and BYO vector store (managed pgvector, Pinecone, Weaviate, Qdrant, OpenSearch).
+
+## Core platform
+- [Features](https://auditee.site/features): Complete platform feature set across requirements, audits, compliance, traceability, AI authoring and integrations.
+- [Pricing](https://auditee.site/pricing): Free, Standard (₹1,999/mo), Professional (₹7,999/mo), Enterprise (custom). Annual plans available.
+- [ROI Calculator](https://auditee.site/roi-calculator): Quantify the cost of audit chaos in your org.
+- [Security](https://auditee.site/security): Encryption, SSO/SAML, audit logs, SOC 2 / ISO 27001 / GDPR posture.
+- [Trust Center](https://auditee.site/trust): Sub-processors, certifications, DPA, responsible disclosure.
+- [Status](https://auditee.site/status): Live platform status across India (Mumbai), EU (Dublin) and US (N. Virginia).
+- [Changelog](https://auditee.site/changelog): Monthly release notes.
+
+## Developers
+- [Developers](https://auditee.site/developers): REST API, webhooks, SDKs, model routing, vector stores.
+- [Integrations](https://auditee.site/integrations): 40+ connectors — DOORS, Jama, Polarion, Jira, GitHub, GitLab, Confluence, Okta, Azure AD, OpenAI, Snowflake, ServiceNow, Slack, Teams.
+
+## Use cases & solutions
+- [Use Cases](https://auditee.site/use-cases): 12 concrete use cases — BRD drafting, audit autopilot, gap detection, test generation, RM-tool replacement, RFP response, agent grounding.
+- [Case Studies](https://auditee.site/case-studies): How healthcare, fintech, automotive and telecom teams use Auditee.
+- [Whitepapers](https://auditee.site/whitepapers): Buyer's guides, standards deep-dives, architecture briefs.
+- [Demo Videos](https://auditee.site/demo-videos): Short product demos.
+
+## Comparisons
+- [Auditee vs IBM DOORS](https://auditee.site/compare/doors): Modern AI-native alternative to legacy DOORS.
+- [Auditee vs Jama Connect](https://auditee.site/compare/jama): Faster, cheaper, AI-native alternative to Jama.
+- [Auditee vs Polarion](https://auditee.site/compare/polarion): Cloud-native alternative to Polarion ALM.
+
+## Resources
+- [Blog](https://auditee.site/blog): Practitioner research on AI-native PDLC.
+- [Glossary](https://auditee.site/glossary): 45+ definitions — BRD, ASIL, IEC 62304, SOUP, ReqIF.
+- [FAQs](https://auditee.site/faqs): Platform, AI, integrations, compliance, security and pricing.
+- [Partners](https://auditee.site/partners): Implementation, GRC, technology, channel and sovereignty tracks.
+
+## Company
+- [About](https://auditee.site/about): The team and the thesis behind Auditee.
+- [Contact](https://auditee.site/contact): Sales, support, partnerships, press.
+- [Privacy](https://auditee.site/privacy): Privacy policy.
+- [Terms](https://auditee.site/terms): Terms of service.
+
+## Crawler & AI policy
+- AI / answer-engine crawlers (OAI-SearchBot, ChatGPT-User, PerplexityBot, Google-Extended, ClaudeBot, GPTBot, Applebot-Extended, etc.) are explicitly **allowed** to crawl all marketing pages.
+- The signed-in app at `/app/*` is disallowed for all crawlers.
+- See [/robots.txt](https://auditee.site/robots.txt) for the full machine-readable policy and [/ai.txt](https://auditee.site/ai.txt) for the AI training / inference policy.

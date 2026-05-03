@@ -1,0 +1,16 @@
+/* TEAM */
+  Auditee — AI-native PDLC platform
+  Site: https://auditee.site
+  Contact: https://auditee.site/contact
+  Location: India · EU · US (multi-region)
+
+/* THANKS */
+  Our customers, design partners and the open-source community.
+
+/* SITE */
+  Last update: 2026-05-03
+  Standards: HTML5, ES2023, JSON-LD (schema.org), OpenAPI 3.1, llms.txt
+  Components: React 18, Vite, Tailwind CSS, shadcn/ui, Wouter, TanStack Query
+  Backend: Node.js 20, Express, Drizzle ORM, PostgreSQL (pgvector)
+  AI: OpenAI, Anthropic, Google Gemini, AWS Bedrock, vLLM (BYO)
+  Hosting: Multi-region (ap-south-1, eu-west-1, us-east-1)

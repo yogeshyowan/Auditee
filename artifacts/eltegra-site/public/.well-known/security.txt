@@ -1,0 +1,9 @@
+# Auditee — security.txt (RFC 9116)
+Contact: https://auditee.site/contact
+Contact: mailto:security@auditee.site
+Expires: 2027-05-03T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://auditee.site/.well-known/security.txt
+Policy: https://auditee.site/trust
+Acknowledgments: https://auditee.site/trust
+Hiring: https://auditee.site/contact?topic=careers
