@@ -229,47 +229,44 @@ export default function AdminLeadsPage() {
     });
   }, [query.data, search, from, to]);
 
-  function downloadCsv() {
-    const headers = [
-      "capturedAt",
-      "source",
-      "name",
-      "email",
-      "clerkUserId",
-      "workspaceName",
-      "plan",
-      "planActivatedAt",
-      "planExpiresAt",
-      "workspaceCreatedAt",
-      "syncedAt",
-      "forwardError",
-    ];
-    const rows = filtered.map((r) =>
-      [
-        r.createdAt,
-        r.source,
-        r.name,
-        r.email,
-        r.clerkUserId ?? "",
-        r.workspaceName ?? "",
-        r.plan ?? "",
-        r.planActivatedAt ?? "",
-        r.planExpiresAt ?? "",
-        r.workspaceCreatedAt ?? "",
-        r.forwardedToFormAt ?? "",
-        r.forwardError ?? "",
-      ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(","),
-    );
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `captured-leads-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const [isDownloading, setIsDownloading] = useState(false);
+  async function downloadCsv() {
+    // Hit the server-side streaming endpoint instead of building the CSV in
+    // the browser so the export contains every captured lead, not just the
+    // rows currently loaded into the table (or matching the active filters).
+    setIsDownloading(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`${apiBase}/leads/captures/all.csv`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        let msg = `Request failed (${res.status})`;
+        try {
+          const body = (await res.json()) as { error?: string };
+          if (body?.error) msg = body.error;
+        } catch {
+          /* non-JSON error body — keep generic message */
+        }
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `captured-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({
+        title: "Export failed",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   const unforwardedCount = useMemo(
@@ -326,10 +323,11 @@ export default function AdminLeadsPage() {
           <Button
             variant="outline"
             onClick={downloadCsv}
-            disabled={filtered.length === 0}
+            disabled={isDownloading}
             data-testid="button-export-csv"
           >
-            <Download className="h-4 w-4 mr-2" /> Export CSV
+            <Download className="h-4 w-4 mr-2" />
+            {isDownloading ? "Exporting…" : "Export CSV"}
           </Button>
           <Button
             onClick={() => resyncMutation.mutate()}

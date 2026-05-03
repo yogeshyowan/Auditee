@@ -248,6 +248,89 @@ router.get(
   },
 );
 
+// Admin: stream the full lead set as text/csv so an admin (or `curl`) can
+// download every row regardless of how many there are. Mirrors the auth on
+// /leads/captures/all. Columns intentionally match the original client-side
+// export: capturedAt, source, name, email, clerkUserId, syncedAt,
+// forwardError. Workspace enrichment is omitted here because the task asks
+// the export to be trustworthy at any scale, and the joins on the JSON
+// endpoint are O(rows) — keeping this lean lets it stream straight from a
+// single SELECT.
+router.get(
+  "/leads/captures/all.csv",
+  requireAuth,
+  requireWorkspace,
+  async (req, res) => {
+    const ctx = (req as Request & { ws_ctx: WorkspaceCtx }).ws_ctx;
+    if (!isLeadAdmin(ctx)) {
+      res
+        .status(403)
+        .json({ error: "Workspace owner + internal admin access required." });
+      return;
+    }
+
+    const headers = [
+      "capturedAt",
+      "source",
+      "name",
+      "email",
+      "clerkUserId",
+      "syncedAt",
+      "forwardError",
+    ];
+
+    const escape = (v: unknown): string => {
+      const s = v == null ? "" : String(v);
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+
+    const filename = `captured-leads-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`,
+    );
+    res.setHeader("Cache-Control", "no-store");
+
+    res.write(headers.join(",") + "\n");
+
+    // Stream rows in chunks so we never buffer the entire table in memory if
+    // it grows to thousands of leads.
+    const CHUNK = 1000;
+    let offset = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const rows = await db
+        .select()
+        .from(leadCapturesTable)
+        .orderBy(desc(leadCapturesTable.createdAt))
+        .limit(CHUNK)
+        .offset(offset);
+      if (rows.length === 0) break;
+      for (const r of rows) {
+        const line = [
+          r.createdAt.toISOString(),
+          r.source,
+          r.name,
+          r.email,
+          r.clerkUserId ?? "",
+          r.forwardedToFormAt ? r.forwardedToFormAt.toISOString() : "",
+          r.forwardError ?? "",
+        ]
+          .map(escape)
+          .join(",");
+        res.write(line + "\n");
+      }
+      if (rows.length < CHUNK) break;
+      offset += rows.length;
+    }
+    res.end();
+  },
+);
+
 // Admin: re-runs the Google Sheet sync for every row that was never
 // successfully forwarded. Useful when the sheet was misconfigured during
 // the initial captures and we want to backfill without losing any rows.
