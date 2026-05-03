@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Compliance — live coverage scores against every framework you need." },
-  { startMs: 5000,  endMs: 12000, text: "Pick your standards: ISO 26262, IEC 62304, HIPAA, SOC 2, ISO 27001, EU AI Act, and more." },
-  { startMs: 12000, endMs: 18000, text: "Coverage scores update automatically as your project evolves." },
-  { startMs: 18000, endMs: 23000, text: "Walk any finding straight into a CAPA with full evidence chain." },
+  { startMs: 0,     endMs: 5000,  text: "Step six. SmartInhaler hits five frameworks — see live coverage scores." },
+  { startMs: 5000,  endMs: 12000, text: "IEC 62304 Class B — 89%. ISO 14971 risk file — 94%. FDA QMSR — 76%. GDPR — 92%. DPDP — 88%." },
+  { startMs: 12000, endMs: 18000, text: "Scores update automatically as Ananya merges firmware changes — no manual recompute." },
+  { startMs: 18000, endMs: 23000, text: "Walk any finding straight into a CAPA. Continuous compliance, baked in." },
 ];
 
 const frameworks = [

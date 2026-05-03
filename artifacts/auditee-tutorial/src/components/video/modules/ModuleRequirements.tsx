@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Requirements — your single source of truth for every specification." },
-  { startMs: 5000,  endMs: 12000, text: "Every requirement auto-tagged to the standards it satisfies — ISO 26262, IEC 62304, HIPAA, and more." },
-  { startMs: 12000, endMs: 18000, text: "Edit, baseline, version, and export to your RM tool in one click." },
-  { startMs: 18000, endMs: 23000, text: "Fully traceable from requirement to code to test to audit." },
+  { startMs: 0,     endMs: 5000,  text: "Step three. SmartInhaler requirements auto-generated — dosing, BLE pairing, OTA firmware updates." },
+  { startMs: 5000,  endMs: 12000, text: "Each requirement auto-tagged: IEC 62304, ISO 14971, FDA QMSR, GDPR, DPDP — five standards, one click." },
+  { startMs: 12000, endMs: 18000, text: "Edit, baseline, version, and export to DOORS or ReqIF for Acme Health's regulatory team." },
+  { startMs: 18000, endMs: 23000, text: "247 requirements tracked. Fully traceable from spec to code to test." },
 ];
 
 const reqs = [

@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Test Cases — AI-generated verification plans aligned to your standards." },
-  { startMs: 5000,  endMs: 12000, text: "For every requirement, Auditee generates the test cases required by ISO 26262, IEC 62304, or any other active framework." },
-  { startMs: 12000, endMs: 18000, text: "Export directly to TestRail, Xray, qTest, or Azure Test Plans in one click." },
-  { startMs: 18000, endMs: 23000, text: "From specification to verified test coverage — automatically." },
+  { startMs: 0,     endMs: 5000,  text: "Step nine. Auditee generates SmartInhaler test cases for every requirement." },
+  { startMs: 5000,  endMs: 12000, text: "1,247 test cases — IEC 62304 unit coverage 92%, integration 78%, system 84%. Marcus signs off in TestRail." },
+  { startMs: 12000, endMs: 18000, text: "Push directly to TestRail, Xray, qTest, or Azure Test Plans — one click, mapped to your reqs." },
+  { startMs: 18000, endMs: 23000, text: "From spec to verified coverage. SmartInhaler's verification plan is ready." },
 ];
 
 const tests = [

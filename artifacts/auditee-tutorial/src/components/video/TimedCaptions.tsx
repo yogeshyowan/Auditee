@@ -11,27 +11,39 @@ const HIGHLIGHTS: Record<string, string> = {
   'PCI':          '#fb923c',
   'DSS':          '#fb923c',
   'CAPA':         '#34d399',
-  'UPI':          '#facc15',
-  'BRS':          '#38bdf8',
-  'PRD':          '#38bdf8',
-  'FRD':          '#38bdf8',
-  '50%':          '#f87171',
+  'SmartInhaler': '#38bdf8',
   'Acme':         '#c084fc',
-  'Bank':         '#c084fc',
+  'Health':       '#c084fc',
+  'Priya':        '#facc15',
+  'Marcus':       '#facc15',
+  'Ananya':       '#facc15',
+  'Connect':      '#38bdf8',
+  '247':          '#38bdf8',
+  '18':           '#fb923c',
+  '87%':          '#34d399',
+  '92%':          '#34d399',
+  '94%':          '#34d399',
+  'verified':     '#34d399',
   'compliant':    '#34d399',
-  'Continuously': '#34d399',
   'traceable':    '#38bdf8',
-  'Audit-ready.': '#34d399',
   'IBM':          '#38bdf8',
   'DOORS':        '#38bdf8',
   'GitHub':       '#a78bfa',
+  'Jira':         '#38bdf8',
   'ISO':          '#fb923c',
+  '14971':        '#fb923c',
   '26262':        '#fb923c',
   'IEC':          '#fb923c',
   '62304':        '#fb923c',
   'HIPAA':        '#fb923c',
-  'SOC':          '#fb923c',
-  'Jira':         '#38bdf8',
+  'GDPR':         '#fb923c',
+  'FDA':          '#fb923c',
+  'QMSR':         '#fb923c',
+  'DPDP':         '#fb923c',
+  '510(k)':       '#facc15',
+  'BLE':          '#38bdf8',
+  'OTA':          '#38bdf8',
+  'DHF':          '#facc15',
   'TestRail':     '#34d399',
 };
 
@@ -99,48 +111,107 @@ function TypewriterCue({ cue }: { cue: TimedCue }) {
   );
 }
 
-/** Speak a cue via Web Speech API. Cancels any in-progress utterance first. */
-function useVoiceNarration(cues: TimedCue[], activeIdx: number, muted: boolean) {
-  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+/**
+ * Real HD voice via the api-server `/api/tutorial/tts` route (OpenAI tts-1-hd, voice=nova).
+ * Pre-fetches every cue's audio on mount in parallel and caches blob URLs.
+ * Falls back to browser SpeechSynthesis if the network call fails.
+ */
+function useHdVoiceNarration(cues: TimedCue[], activeIdx: number, muted: boolean, hasInteracted: boolean) {
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
+  const cacheRef = useRef<Map<number, string>>(new Map());
+  const inflightRef = useRef<Map<number, Promise<string | null>>>(new Map());
+  const [, force] = useState(0);
 
+  // Lazily create the <audio> element once
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    const loadVoices = () => { voicesRef.current = window.speechSynthesis.getVoices(); };
-    loadVoices();
-    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+    if (typeof window === 'undefined') return;
+    const el = new Audio();
+    el.preload = 'auto';
+    el.volume = 1.0;
+    audioElRef.current = el;
+    return () => {
+      try { el.pause(); el.src = ''; } catch {/* */}
+      audioElRef.current = null;
+      cacheRef.current.forEach(url => URL.revokeObjectURL(url));
+      cacheRef.current.clear();
+    };
   }, []);
 
+  const fetchCue = useCallback(async (idx: number): Promise<string | null> => {
+    if (cacheRef.current.has(idx)) return cacheRef.current.get(idx)!;
+    if (inflightRef.current.has(idx)) return inflightRef.current.get(idx)!;
+    const cue = cues[idx];
+    if (!cue) return null;
+
+    const p = (async () => {
+      try {
+        const res = await fetch('/api/tutorial/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cue.text, voice: 'nova', speed: 1.07 }),
+        });
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        cacheRef.current.set(idx, url);
+        force(n => n + 1);
+        return url;
+      } catch {
+        return null;
+      } finally {
+        inflightRef.current.delete(idx);
+      }
+    })();
+    inflightRef.current.set(idx, p);
+    return p;
+  }, [cues]);
+
+  // Pre-fetch all cues once we know we'll be playing them
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    if (muted || activeIdx < 0) return;
-    const cue = cues[activeIdx];
-    if (!cue) return;
+    if (!hasInteracted) return;
+    cues.forEach((_, i) => { fetchCue(i); });
+  }, [cues, fetchCue, hasInteracted]);
 
-    const utterance = new SpeechSynthesisUtterance(cue.text);
-    utterance.rate = 0.88;
-    utterance.pitch = 1.02;
-    utterance.volume = 0.92;
+  // Play active cue
+  useEffect(() => {
+    const el = audioElRef.current;
+    if (!el) return;
+    try { el.pause(); } catch {/* */}
+    if (muted || activeIdx < 0 || !hasInteracted) return;
 
-    const voices = voicesRef.current.length
-      ? voicesRef.current
-      : window.speechSynthesis.getVoices();
+    let cancelled = false;
+    (async () => {
+      const url = await fetchCue(activeIdx);
+      if (cancelled) return;
+      if (!url) {
+        // Network/API failed — fall back to browser TTS so user still gets *something*
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          const cue = cues[activeIdx];
+          if (cue) {
+            const utt = new SpeechSynthesisUtterance(cue.text);
+            utt.rate = 1.05;
+            utt.pitch = 1.05;
+            utt.volume = 1.0;
+            window.speechSynthesis.speak(utt);
+          }
+        }
+        return;
+      }
+      el.src = url;
+      el.currentTime = 0;
+      el.volume = 1.0;
+      el.play().catch(() => {/* gesture not granted yet */});
+    })();
 
-    const preferred =
-      voices.find(v => v.name === 'Google US English') ??
-      voices.find(v => v.name === 'Samantha') ??
-      voices.find(v => v.name === 'Karen') ??
-      voices.find(v => v.name === 'Daniel') ??
-      voices.find(v => v.name.startsWith('Microsoft') && v.lang.startsWith('en')) ??
-      voices.find(v => v.lang.startsWith('en-') && !v.localService) ??
-      voices.find(v => v.lang.startsWith('en-'));
-
-    if (preferred) utterance.voice = preferred;
-
-    window.speechSynthesis.speak(utterance);
-    return () => { window.speechSynthesis.cancel(); };
-  }, [activeIdx, muted, cues]);
+    return () => {
+      cancelled = true;
+      try { el.pause(); } catch {/* */}
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [activeIdx, muted, hasInteracted, cues, fetchCue]);
 }
 
 export function TimedCaptions({ cues, totalMs }: { cues: TimedCue[], totalMs: number }) {
@@ -151,7 +222,7 @@ export function TimedCaptions({ cues, totalMs }: { cues: TimedCue[], totalMs: nu
   const startRef = useRef(Date.now());
   const [hasInteracted, setHasInteracted] = useState(false);
 
-  useVoiceNarration(cues, hasInteracted ? activeIdx : -1, muted);
+  useHdVoiceNarration(cues, activeIdx, muted, hasInteracted);
 
   useEffect(() => { startRef.current = Date.now(); }, []);
 
@@ -186,8 +257,7 @@ export function TimedCaptions({ cues, totalMs }: { cues: TimedCue[], totalMs: nu
   const toggleMute = useCallback(() => {
     setMuted(m => {
       const next = !m;
-      try { localStorage.setItem('tutorial_voice_muted', next ? '1' : '0'); } catch {}
-      if (next) window.speechSynthesis?.cancel();
+      try { localStorage.setItem('tutorial_voice_muted', next ? '1' : '0'); } catch {/* */}
       return next;
     });
   }, []);
@@ -198,7 +268,6 @@ export function TimedCaptions({ cues, totalMs }: { cues: TimedCue[], totalMs: nu
     <>
       <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
 
-      {/* Mute / unmute button — top-right corner */}
       <button
         onClick={toggleMute}
         aria-label={muted ? 'Unmute voice narration' : 'Mute voice narration'}
@@ -219,7 +288,6 @@ export function TimedCaptions({ cues, totalMs }: { cues: TimedCue[], totalMs: nu
         </span>
       </button>
 
-      {/* Caption box — bottom center */}
       <div className="absolute inset-x-0 bottom-[5vh] flex justify-center pointer-events-none z-20 px-6">
         <AnimatePresence mode="wait">
           {cue && (

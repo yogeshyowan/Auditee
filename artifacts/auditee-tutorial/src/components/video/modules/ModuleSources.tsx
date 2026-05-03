@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 6000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 22000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Project Sources — connect your existing tools to Auditee." },
-  { startMs: 5000,  endMs: 11000, text: "Sync from IBM DOORS, GitHub, Jira, or upload documents directly." },
-  { startMs: 11000, endMs: 17000, text: "Auditee automatically ingests and structures your legacy data." },
-  { startMs: 17000, endMs: 22000, text: "All your sources unified in a single knowledge graph." },
+  { startMs: 0,     endMs: 5000,  text: "Step one. Acme Health is shipping SmartInhaler Connect — let's wire up their tools." },
+  { startMs: 5000,  endMs: 11000, text: "Pull from GitHub firmware, Jira, IBM DOORS legacy specs, and twelve clinical evaluation PDFs." },
+  { startMs: 11000, endMs: 17000, text: "Auditee parses everything in seconds — reqs, code, standards — into one graph." },
+  { startMs: 17000, endMs: 22000, text: "Six sources connected. 247 requirements. Ready for Step two." },
 ];
 
 const connectors = [

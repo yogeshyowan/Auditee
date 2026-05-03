@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Dashboard — your project health, at a glance." },
-  { startMs: 5000,  endMs: 12000, text: "Framework coverage rings, CAPA aging, open gaps, and recent activity — one screen." },
-  { startMs: 12000, endMs: 18000, text: "The daily summary email tells you what changed overnight — no login required." },
-  { startMs: 18000, endMs: 23000, text: "Audit-ready. Always." },
+  { startMs: 0,     endMs: 5000,  text: "Step fourteen. The exec view for SmartInhaler Connect — at a glance." },
+  { startMs: 5000,  endMs: 12000, text: "Five framework rings, CAPA aging, open gaps, recent activity — Priya sees everything in one screen." },
+  { startMs: 12000, endMs: 18000, text: "Daily summary email tells the team what changed overnight — no login required." },
+  { startMs: 18000, endMs: 23000, text: "SmartInhaler Connect — green light to ship. Audit-ready. Always." },
 ];
 
 const rings = [

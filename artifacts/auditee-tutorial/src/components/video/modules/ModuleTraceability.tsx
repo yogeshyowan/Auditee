@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Traceability Graph — every requirement linked to its implementation and tests." },
-  { startMs: 5000,  endMs: 12000, text: "Click any node to walk the full chain: requirement → file → test → defect → finding." },
-  { startMs: 12000, endMs: 18000, text: "Instantly see what's covered, what's broken, and what's missing." },
-  { startMs: 18000, endMs: 23000, text: "One graph. Complete coverage visibility." },
+  { startMs: 0,     endMs: 5000,  text: "Step five. Walk the SmartInhaler trace graph — one requirement, end to end." },
+  { startMs: 5000,  endMs: 12000, text: "PRD-014, real-time dose count: links to fw_dose.c, three unit tests, two integration tests, zero open defects." },
+  { startMs: 12000, endMs: 18000, text: "Click any node — see what's covered, what's broken, what's missing. Instantly." },
+  { startMs: 18000, endMs: 23000, text: "247 requirements, full chain visibility. Acme's auditors will love this." },
 ];
 
 const nodes = [

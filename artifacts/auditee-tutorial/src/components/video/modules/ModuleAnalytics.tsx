@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Analytics — live health scores across every audit dimension." },
-  { startMs: 5000,  endMs: 12000, text: "Audit-readiness, test coverage, CAPA closure rate, and traceability — all in one dashboard." },
-  { startMs: 12000, endMs: 18000, text: "Trend sparklines show how your scores move over time — catch regressions before review." },
-  { startMs: 18000, endMs: 23000, text: "Export any view as a PDF health report for stakeholders." },
+  { startMs: 0,     endMs: 5000,  text: "Step twelve. SmartInhaler programme dashboard — every metric, live." },
+  { startMs: 5000,  endMs: 12000, text: "247 reqs tracked. 18 gaps closed. 87% audit-readiness. Trend sparklines show weekly progress." },
+  { startMs: 12000, endMs: 18000, text: "Catch regressions before review — if coverage drops, Auditee pings Priya within minutes." },
+  { startMs: 18000, endMs: 23000, text: "Export the whole view as a PDF for the Acme Health board meeting." },
 ];
 
 const kpis = [

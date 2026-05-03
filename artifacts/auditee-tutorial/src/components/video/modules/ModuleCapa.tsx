@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "CAPA Actions — turn every finding into a tracked corrective action." },
-  { startMs: 5000,  endMs: 12000, text: "Every gap, audit finding, or compliance failure auto-drafts a CAPA with owner and due date." },
-  { startMs: 12000, endMs: 18000, text: "Track from Open through In Progress, In Review, all the way to Verified Closed." },
-  { startMs: 18000, endMs: 23000, text: "Full evidence chain — nothing falls through the cracks." },
+  { startMs: 0,     endMs: 5000,  text: "Step seven. A field complaint comes in — SmartInhaler isn't pairing on iOS 17." },
+  { startMs: 5000,  endMs: 12000, text: "CAPA-007 auto-opens. Owner: Marcus. Due in fourteen days. Root cause: BLE timeout in firmware v2.3." },
+  { startMs: 12000, endMs: 18000, text: "Track Open, In Progress, In Review, Verified Closed — every step audit-grade." },
+  { startMs: 18000, endMs: 23000, text: "Field issue, to fix, to verified closure. Nothing slips through the cracks." },
 ];
 
 const capas = [

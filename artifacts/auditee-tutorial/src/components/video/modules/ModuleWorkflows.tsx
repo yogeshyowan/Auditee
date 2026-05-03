@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Workflows — automate your review, safety analysis, and sign-off gates." },
-  { startMs: 5000,  endMs: 12000, text: "Define stage gates with automated checks and manual approvals — no code required." },
-  { startMs: 12000, endMs: 18000, text: "Nothing moves to the next stage until all gates pass — automatically enforced." },
-  { startMs: 18000, endMs: 23000, text: "Full audit trail: who approved what, and when." },
+  { startMs: 0,     endMs: 5000,  text: "Step eleven. Automate Acme's PR-to-release gating — no more manual sign-offs." },
+  { startMs: 5000,  endMs: 12000, text: "PR merged to main? Auto-link the requirement, assign Marcus as reviewer, block until tests pass." },
+  { startMs: 12000, endMs: 18000, text: "Stage gates: design freeze, V and V complete, regulatory review — no code required to configure." },
+  { startMs: 18000, endMs: 23000, text: "Nothing ships until every gate passes. Full audit trail of who approved what." },
 ];
 
 const stages = [

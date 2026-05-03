@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "AI Reports — audit-ready documents generated from your live project graph." },
-  { startMs: 5000,  endMs: 12000, text: "One click generates Safety Plans, HARA, TARA, Cybersecurity Plans, and full audit packets." },
-  { startMs: 12000, endMs: 18000, text: "Every section populated from your actual requirements, tests, and compliance data." },
-  { startMs: 18000, endMs: 23000, text: "Hours of manual writing — done in seconds." },
+  { startMs: 0,     endMs: 5000,  text: "Step ten. Acme needs a Design History File for the FDA 510(k) submission." },
+  { startMs: 5000,  endMs: 12000, text: "One click. 247-page DHF generated in four minutes — every section pulled from live reqs, tests, and risk file." },
+  { startMs: 12000, endMs: 18000, text: "Safety Plan, HARA, post-market surveillance, audit packet — pick any, generate, sign." },
+  { startMs: 18000, endMs: 23000, text: "Weeks of manual writing — done. Ready for the FDA reviewer." },
 ];
 
 const reportTypes = [

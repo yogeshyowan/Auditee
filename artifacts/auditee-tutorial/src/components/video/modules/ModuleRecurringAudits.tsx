@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Recurring Audits — schedule and automate your compliance reviews." },
-  { startMs: 5000,  endMs: 12000, text: "Set a cadence — weekly, monthly, or quarterly — and Auditee runs the audit automatically." },
-  { startMs: 12000, endMs: 18000, text: "Every finding auto-generates a CAPA with owner and due date — no manual triage." },
-  { startMs: 18000, endMs: 23000, text: "Continuously compliant, with zero manual scheduling overhead." },
+  { startMs: 0,     endMs: 5000,  text: "Step thirteen. SmartInhaler's monthly internal audit runs automatically." },
+  { startMs: 5000,  endMs: 12000, text: "Last month's finding: missing risk eval for BLE jamming — auto-CAPA opened, assigned, closed in eleven days." },
+  { startMs: 12000, endMs: 18000, text: "Set the cadence — weekly, monthly, quarterly. Auditee handles the rest." },
+  { startMs: 18000, endMs: 23000, text: "Continuously compliant between formal audits. Zero scheduling overhead." },
 ];
 
 const audits = [

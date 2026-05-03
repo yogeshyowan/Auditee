@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Gap Detection — find what your code is missing before auditors do." },
-  { startMs: 5000,  endMs: 12000, text: "Auditee scans your codebase against every requirement and surfaces uncovered behaviours." },
-  { startMs: 12000, endMs: 18000, text: "Untraced files, missing tests, and specification gaps — surfaced in real time." },
-  { startMs: 18000, endMs: 23000, text: "Fix gaps before release, not after an audit finding." },
+  { startMs: 0,     endMs: 5000,  text: "Step four. Auditee scans SmartInhaler's spec and firmware code side by side." },
+  { startMs: 5000,  endMs: 12000, text: "Eighteen gaps surfaced — no low-battery alarm requirement, no fallback for BLE failure mid-dose." },
+  { startMs: 12000, endMs: 18000, text: "Untraced firmware files, missing tests, ISO 14971 hazards without mitigations — all flagged." },
+  { startMs: 18000, endMs: 23000, text: "All eighteen gaps closed before the FDA pre-submission meeting. Crisis averted." },
 ];
 
 const gaps = [

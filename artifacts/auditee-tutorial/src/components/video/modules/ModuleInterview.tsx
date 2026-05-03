@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Smart Interview — AI-powered requirements elicitation." },
-  { startMs: 5000,  endMs: 12000, text: "Auditee conducts targeted, standards-aware interviews with your stakeholders." },
-  { startMs: 12000, endMs: 18000, text: "Every answer is converted into structured BRS, PRD, and FRD requirements." },
-  { startMs: 18000, endMs: 23000, text: "Full provenance: every requirement traces back to its conversation source." },
+  { startMs: 0,     endMs: 5000,  text: "Step two. Priya is the PM on SmartInhaler Connect — Auditee interviews her live." },
+  { startMs: 5000,  endMs: 12000, text: "Twelve targeted questions: patient population, dose modes, BLE pairing, market — EU plus US plus India." },
+  { startMs: 12000, endMs: 18000, text: "Every answer becomes a structured BRS, PRD, or FRD requirement, with full conversation provenance." },
+  { startMs: 18000, endMs: 23000, text: "Auditee classifies the device — IEC 62304 Class B. Ready for the full requirement set." },
 ];
 
 const questions = [

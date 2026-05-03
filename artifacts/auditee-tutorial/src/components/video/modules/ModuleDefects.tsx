@@ -8,10 +8,10 @@ const SCENE_DURATIONS = { scene1: 5000, scene2: 7000, scene3: 6000, scene4: 5000
 const TOTAL_MS = 23000;
 
 const CUES: TimedCue[] = [
-  { startMs: 0,     endMs: 5000,  text: "Defects — Jira, Bugzilla, and ServiceNow synced and linked to requirements." },
-  { startMs: 5000,  endMs: 12000, text: "Defects are automatically linked to the requirements they violate and the tests that should have caught them." },
-  { startMs: 12000, endMs: 18000, text: "See defect trends over time — churn, age, and CAPA linkage in one view." },
-  { startMs: 18000, endMs: 23000, text: "Close the loop from defect to root cause to corrective action." },
+  { startMs: 0,     endMs: 5000,  text: "Step eight. Defects flow in from Acme Health's Jira automatically." },
+  { startMs: 5000,  endMs: 12000, text: "DEF-219, app crashes when reopened during dose count — auto-linked to PRD-014 and the test that missed it." },
+  { startMs: 12000, endMs: 18000, text: "Trends, churn, age, CAPA linkage — see the full health picture, not just open ticket counts." },
+  { startMs: 18000, endMs: 23000, text: "DEF-219 fixed in commit a3f7b2. Closed loop. Zero audit risk." },
 ];
 
 const defects = [
