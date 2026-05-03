@@ -18,6 +18,39 @@
       <image:loc>https://auditee.site/favicon.svg</image:loc>
       <image:title>Auditee favicon</image:title>
     </image:image>
+    <image:image>
+      <image:loc>https://auditee.site/hero-network.png</image:loc>
+      <image:title>Auditee living knowledge graph — hero illustration</image:title>
+      <image:caption>Living knowledge graph connecting requirements, code, audits, defects, CAPAs and evidence into a single navigable network.</image:caption>
+      <image:license>https://auditee.site/terms-of-service</image:license>
+    </image:image>
+    <image:image>
+      <image:loc>https://auditee.site/roi-bg.png</image:loc>
+      <image:title>Auditee ROI — measurable enterprise outcomes</image:title>
+      <image:caption>Quantified ROI from AI-native PDLC automation: reduced audit prep, faster CAPA closure, higher requirement quality.</image:caption>
+      <image:license>https://auditee.site/terms-of-service</image:license>
+    </image:image>
+    <image:image>
+      <image:loc>https://auditee.site/office-bg.png</image:loc>
+      <image:title>Auditee — built for enterprise quality and compliance teams</image:title>
+      <image:caption>Designed for in-house QA, compliance and engineering teams running ASPICE, ISO 26262, IEC 62304, SOC 2, HIPAA and FDA QSR programmes.</image:caption>
+      <image:license>https://auditee.site/terms-of-service</image:license>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://auditee.site/brand-kit</loc>
+    <image:image>
+      <image:loc>https://auditee.site/logo.svg</image:loc>
+      <image:title>Auditee brand mark — downloadable</image:title>
+      <image:caption>Auditee primary logo, gradient mark and favicon — available from the brand kit.</image:caption>
+      <image:license>https://auditee.site/terms-of-service</image:license>
+    </image:image>
+    <image:image>
+      <image:loc>https://auditee.site/hero-network.png</image:loc>
+      <image:title>Hero network illustration — downloadable PNG</image:title>
+      <image:caption>Living knowledge graph hero illustration available for press and partner use.</image:caption>
+      <image:license>https://auditee.site/terms-of-service</image:license>
+    </image:image>
   </url>
   <url>
     <loc>https://auditee.site/pricing</loc>
