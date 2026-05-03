@@ -80,6 +80,23 @@
     <meta name="twitter:image" content="https://auditee.site/opengraph.jpg" />
     <meta name="twitter:image:alt" content="Auditee — AI-native enterprise PDLC platform" />
 
+    <!-- Schema.org microdata (legacy crawlers / Pinterest / fallback for clients
+         that don't parse JSON-LD). Mirrors the WebSite JSON-LD block below. -->
+    <meta itemprop="name" content="Auditee" />
+    <meta itemprop="url" content="https://auditee.site/" />
+    <meta itemprop="description" content="The AI-native PDLC platform. Unify requirements, code, audits and compliance into a single living knowledge graph. Automate ASPICE, ISO 26262, CMMI, SOC 2, HIPAA, FDA QMSR." />
+    <meta itemprop="image" content="https://auditee.site/opengraph.jpg" />
+    <meta itemprop="thumbnailUrl" content="https://auditee.site/opengraph.jpg" />
+    <link rel="image_src" href="https://auditee.site/opengraph.jpg" />
+
+    <!-- Privacy / referrer policy: tighter than the browser default; honored as
+         a meta tag (per spec) and required for clean analytics attribution. -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Opt in to UA Client Hints so Google / Bing / answer engines can serve
+         the right asset variant without parsing the legacy User-Agent string. -->
+    <meta http-equiv="Accept-CH" content="Sec-CH-UA-Platform-Version, Sec-CH-UA-Model, Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Full-Version-List" />
+
     <!-- Performance hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
