@@ -86,7 +86,7 @@ export default function VideoTemplate({
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[var(--color-bg-dark)] font-display text-white">
       <audio ref={audioRef} src={NARRATION_SRC} autoPlay preload="auto" />
-      <BackgroundMusic />
+      <BackgroundMusic audioRef={audioRef} />
 
       {/* Persistent Background */}
       <div className="absolute inset-0 pointer-events-none">
