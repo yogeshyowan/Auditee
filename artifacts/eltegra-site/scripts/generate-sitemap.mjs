@@ -178,6 +178,62 @@ ${entries.join("\n")}
   console.log(
     `[sitemap] wrote ${entries.length} URLs (${STATIC_ROUTES.length} static + ${posts.length} posts) to ${path.relative(root, out)}`,
   );
+
+  // ---------- Google News sitemap ----------
+  // Google News only accepts articles published in the last 48 hours. We
+  // still emit the file (with the most recent posts even if older) so the
+  // index reference is always valid; Google will simply ignore older
+  // entries. Submitting this in Google Publisher Center makes the blog
+  // eligible for the News carousel and Top Stories.
+  const NEWS_WINDOW_DAYS = 2;
+  const cutoff = new Date(Date.now() - NEWS_WINDOW_DAYS * 86400_000);
+  const newsPosts = posts.filter((p) => new Date(p.date) >= cutoff);
+  // Always include at least the most recent post so the file isn't empty
+  // (an empty <urlset> trips Google Search Console's validator).
+  const newsForXml = newsPosts.length > 0 ? newsPosts : posts.slice(0, 1);
+  const newsXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+${newsForXml
+  .map(
+    (p) => `  <url>
+    <loc>${xmlEscape(`${SITE}/blog/${p.slug}`)}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Auditee Blog</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${p.date}</news:publication_date>
+      <news:title>${xmlEscape(p.title ?? p.slug)}</news:title>
+    </news:news>
+  </url>`,
+  )
+  .join("\n")}
+</urlset>
+`;
+  const newsOut = path.join(root, "public/sitemap-news.xml");
+  await fs.writeFile(newsOut, newsXml, "utf8");
+  console.log(`[sitemap] wrote news sitemap with ${newsForXml.length} entries`);
+
+  // ---------- Sitemap index ----------
+  // Wraps the main and news sitemaps. Google Search Console + Bing
+  // Webmaster Tools accept a single sitemap-index URL and discover
+  // child sitemaps from it.
+  const indexXml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${SITE}/sitemap.xml</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${SITE}/sitemap-news.xml</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
+</sitemapindex>
+`;
+  const indexOut = path.join(root, "public/sitemap-index.xml");
+  await fs.writeFile(indexOut, indexXml, "utf8");
+  console.log(`[sitemap] wrote sitemap index`);
 }
 
 main().catch((err) => {

@@ -4,8 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- Theme color split per color-scheme: dark slate when the OS is in
+         dark mode, lighter on light mode. Safari + Chrome paint the URL
+         bar / address bar with this; mismatched values flag in Lighthouse. -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="color-scheme" content="light dark" />
+    <!-- iOS PWA chrome — black-translucent gives a true edge-to-edge UI
+         when launched from the Home Screen. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/favicon.svg" />
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-30SKV3CBSX"></script>
