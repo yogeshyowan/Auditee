@@ -229,6 +229,10 @@ ${newsForXml
     <loc>${SITE}/sitemap-news.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${SITE}/sitemap-video.xml</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
 </sitemapindex>
 `;
   const indexOut = path.join(root, "public/sitemap-index.xml");

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+  <url>
+    <loc>https://auditee.site/auditee-tutorial</loc>
+    <video:video>
+      <video:thumbnail_loc>https://auditee.site/opengraph.jpg</video:thumbnail_loc>
+      <video:title>Auditee — AI-native PDLC Platform Tutorial</video:title>
+      <video:description>Walkthrough of Auditee: how the AI-native platform unifies requirements management, source code, compliance audits and CAPA workflows into a single living knowledge graph. Covers ASPICE, ISO 26262, IEC 62304, CMMI, SOC 2, HIPAA and FDA QMSR.</video:description>
+      <video:content_loc>https://auditee.site/auditee-tutorial</video:content_loc>
+      <video:player_loc allow_embed="yes" autoplay="autoplay=1">https://auditee.site/auditee-tutorial</video:player_loc>
+      <video:duration>270</video:duration>
+      <video:publication_date>2026-01-15T09:00:00+05:30</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:requires_subscription>no</video:requires_subscription>
+      <video:live>no</video:live>
+      <video:uploader info="https://auditee.site/">Auditee</video:uploader>
+      <video:platform relationship="allow">web mobile tv</video:platform>
+      <video:tag>requirements management</video:tag>
+      <video:tag>compliance automation</video:tag>
+      <video:tag>ASPICE</video:tag>
+      <video:tag>ISO 26262</video:tag>
+      <video:tag>IEC 62304</video:tag>
+      <video:tag>SOC 2</video:tag>
+      <video:tag>HIPAA</video:tag>
+      <video:tag>FDA QMSR</video:tag>
+      <video:category>Software</video:category>
+    </video:video>
+  </url>
+</urlset>
