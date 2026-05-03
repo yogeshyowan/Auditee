@@ -878,6 +878,391 @@ const WORKFLOW_STEP_RUNS = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Per-module data for the remaining 8 projects (aesop, nexus, sterling, nova,
+// titan, apollo, aegis, cipher) — keyed by framework appropriate to each.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MORE_PROJECT_SOURCES = [
+  // Aesop — Clinical Trial eCRF
+  { id: "src-aesop-github",   projectId: "proj-demo-aesop",   kind: "github",  label: "acme-clin/aesop-ecrf",            status: "ready", fileCount: 2840, byteCount: 17_200_000,  lastSyncAt: daysAgo(1) },
+  { id: "src-aesop-jira",     projectId: "proj-demo-aesop",   kind: "jira",    label: "Jira — AES board",                status: "ready", fileCount: 412,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-aesop-gdrive",   projectId: "proj-demo-aesop",   kind: "gdrive",  label: "Google Drive — Trial Protocols",  status: "ready", fileCount: 156,  byteCount: 220_000_000, lastSyncAt: daysAgo(3) },
+  // Nexus — EHR Modernisation
+  { id: "src-nexus-github",   projectId: "proj-demo-nexus",   kind: "github",  label: "acme-health/nexus-fhir",          status: "ready", fileCount: 5210, byteCount: 32_400_000,  lastSyncAt: daysAgo(0) },
+  { id: "src-nexus-jira",     projectId: "proj-demo-nexus",   kind: "jira",    label: "Jira — NEX board",                status: "ready", fileCount: 884,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-nexus-folder",   projectId: "proj-demo-nexus",   kind: "folder",  label: "Migration Runbooks (NFS)",        status: "ready", fileCount: 96,   byteCount: 41_200_000,  lastSyncAt: daysAgo(2) },
+  // Sterling — Core Banking
+  { id: "src-sterling-github",projectId: "proj-demo-sterling",kind: "github",  label: "acme-bank/sterling-ledger",       status: "ready", fileCount: 4421, byteCount: 28_900_000,  lastSyncAt: daysAgo(0) },
+  { id: "src-sterling-jira",  projectId: "proj-demo-sterling",kind: "jira",    label: "Jira — STR board",                status: "ready", fileCount: 712,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-sterling-zip",   projectId: "proj-demo-sterling",kind: "zip",     label: "COBOL-LegacyDump-2025Q4.zip",     status: "ready", fileCount: 3892, byteCount: 612_000_000, lastSyncAt: daysAgo(14) },
+  // Nova — Crypto Exchange
+  { id: "src-nova-github",    projectId: "proj-demo-nova",    kind: "github",  label: "acme-crypto/nova-compliance",     status: "ready", fileCount: 1980, byteCount: 11_400_000,  lastSyncAt: daysAgo(1) },
+  { id: "src-nova-jira",      projectId: "proj-demo-nova",    kind: "jira",    label: "Jira — NOV board",                status: "ready", fileCount: 296,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  // Titan — Industrial PLC
+  { id: "src-titan-github",   projectId: "proj-demo-titan",   kind: "github",  label: "acme-ind/titan-sis",              status: "ready", fileCount: 1240, byteCount: 8_900_000,   lastSyncAt: daysAgo(2) },
+  { id: "src-titan-ado",      projectId: "proj-demo-titan",   kind: "alm",     label: "Azure DevOps — Titan SIS Items",  status: "ready", fileCount: 410,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-titan-folder",   projectId: "proj-demo-titan",   kind: "folder",  label: "HAZOP & SIL Verification Files",  status: "ready", fileCount: 218,  byteCount: 95_400_000,  lastSyncAt: daysAgo(5) },
+  // Apollo — EV BMS
+  { id: "src-apollo-github",  projectId: "proj-demo-apollo",  kind: "github",  label: "acme-auto/apollo-bms",            status: "ready", fileCount: 3120, byteCount: 19_700_000,  lastSyncAt: daysAgo(1) },
+  { id: "src-apollo-ado",     projectId: "proj-demo-apollo",  kind: "alm",     label: "Azure DevOps — Apollo Bugs",      status: "ready", fileCount: 524,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  // Aegis — IAM
+  { id: "src-aegis-github",   projectId: "proj-demo-aegis",   kind: "github",  label: "acme-sec/aegis-iam",              status: "ready", fileCount: 4180, byteCount: 24_300_000,  lastSyncAt: daysAgo(0) },
+  { id: "src-aegis-jira",     projectId: "proj-demo-aegis",   kind: "jira",    label: "Jira — AEG board",                status: "ready", fileCount: 612,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+  { id: "src-aegis-aws",      projectId: "proj-demo-aegis",   kind: "aws_s3",  label: "S3 — aegis-audit-archive",        status: "ready", fileCount: 2940, byteCount: 318_000_000, lastSyncAt: daysAgo(1) },
+  // Cipher — API Gateway
+  { id: "src-cipher-github",  projectId: "proj-demo-cipher",  kind: "github",  label: "acme-sec/cipher-gateway",         status: "ready", fileCount: 2210, byteCount: 14_800_000,  lastSyncAt: daysAgo(0) },
+  { id: "src-cipher-jira",    projectId: "proj-demo-cipher",  kind: "jira",    label: "Jira — CPH board",                status: "ready", fileCount: 384,  byteCount: 0,           lastSyncAt: daysAgo(0) },
+];
+
+const MORE_DEFECTS: DefectSpec[] = [
+  // Aesop
+  { id: "def-aesop-001", projectId: "proj-demo-aesop", sourceId: "src-aesop-jira", externalSystem: "jira", externalId: "AES-204", key: "AES-204", title: "eSignature 2FA fallback to SMS in degraded mode",        description: "When TOTP service is unreachable, eCRF allows SMS fallback — fails 21 CFR Part 11.200 strong-auth requirement.",                          status: "open",        severity: "critical", priority: "p1", component: "Auth",          raisedAt: daysAgo(2) },
+  { id: "def-aesop-002", projectId: "proj-demo-aesop", sourceId: "src-aesop-jira", externalSystem: "jira", externalId: "AES-211", key: "AES-211", title: "Audit trail truncates reason code over 200 chars",      description: "Field-edit reason code is truncated at 200 chars — inspectors flagged this as incomplete attribution.",                                  status: "in_progress", severity: "major",    priority: "p2", component: "AuditTrail",    raisedAt: daysAgo(6) },
+  { id: "def-aesop-003", projectId: "proj-demo-aesop", sourceId: "src-aesop-jira", externalSystem: "jira", externalId: "AES-198", key: "AES-198", title: "GDPR subject export missing visit-level signatures",   description: "Subject data export bundle does not include visit-level investigator e-signatures.",                                                     status: "open",        severity: "major",    priority: "p2", component: "Privacy",       raisedAt: daysAgo(1) },
+  { id: "def-aesop-004", projectId: "proj-demo-aesop", sourceId: "src-aesop-jira", externalSystem: "jira", externalId: "AES-189", key: "AES-189", title: "Emergency unblinding logged without IP address",        description: "Blind-break log captures user and timestamp but not source IP — auditor remediation requested.",                                          status: "resolved",    severity: "minor",    priority: "p3", component: "Randomisation", raisedAt: daysAgo(28), resolvedAt: daysAgo(10) },
+  // Nexus
+  { id: "def-nexus-001", projectId: "proj-demo-nexus", sourceId: "src-nexus-jira", externalSystem: "jira", externalId: "NEX-301", key: "NEX-301", title: "FHIR Patient resource leaks SSN in extension",        description: "Patient resource extension `us-ssn` returned to non-elevated SMART scopes — HIPAA minimum-necessary breach.",                            status: "open",        severity: "critical", priority: "p1", component: "FHIR API",      raisedAt: daysAgo(3) },
+  { id: "def-nexus-002", projectId: "proj-demo-nexus", sourceId: "src-nexus-jira", externalSystem: "jira", externalId: "NEX-308", key: "NEX-308", title: "Migration reconciliation off by 412 records",          description: "Day-12 reconciliation shows 412-record gap between legacy EHR and FHIR store — investigating ETL idempotency.",                          status: "in_progress", severity: "critical", priority: "p1", component: "Migration",     raisedAt: daysAgo(5) },
+  { id: "def-nexus-003", projectId: "proj-demo-nexus", sourceId: "src-nexus-jira", externalSystem: "jira", externalId: "NEX-315", key: "NEX-315", title: "EU patient data replicated to US-East",               description: "5,124 EU patient records mistakenly replicated to US-East S3 backup — GDPR data-residency breach.",                                       status: "in_progress", severity: "critical", priority: "p1", component: "Storage",       raisedAt: daysAgo(2) },
+  { id: "def-nexus-004", projectId: "proj-demo-nexus", sourceId: "src-nexus-jira", externalSystem: "jira", externalId: "NEX-280", key: "NEX-280", title: "OAuth SMART scope `patient/*.read` over-broad",      description: "Default SMART scope grants read on all resource types; scoping per-resource needed for least-privilege.",                                 status: "open",        severity: "major",    priority: "p2", component: "Auth",          raisedAt: daysAgo(0) },
+  // Sterling
+  { id: "def-sterling-001", projectId: "proj-demo-sterling", sourceId: "src-sterling-jira", externalSystem: "jira", externalId: "STR-401", key: "STR-401", title: "Day-7 ledger discrepancy of ₹4,217.32",       description: "Parallel-run ledger reconciliation shows ₹4,217.32 cumulative drift between cloud and COBOL — exceeds zero-tolerance.",                  status: "in_progress", severity: "critical", priority: "p1", component: "Ledger",        raisedAt: daysAgo(7) },
+  { id: "def-sterling-002", projectId: "proj-demo-sterling", sourceId: "src-sterling-jira", externalSystem: "jira", externalId: "STR-415", key: "STR-415", title: "PCI segmentation: shared SSO with HR domain",  description: "Cardholder data environment shares SSO realm with HR — PCI DSS 4.0 Req 1 segmentation breach.",                                          status: "open",        severity: "critical", priority: "p1", component: "NetworkSeg",    raisedAt: daysAgo(3) },
+  { id: "def-sterling-003", projectId: "proj-demo-sterling", sourceId: "src-sterling-jira", externalSystem: "jira", externalId: "STR-422", key: "STR-422", title: "DORA incident report submitted at 4h12m",      description: "Last ICT incident classification report submitted to competent authority at 4h12m — exceeds DORA Art. 19 4-hour SLA.",                  status: "in_progress", severity: "major",    priority: "p2", component: "IncidentMgmt",  raisedAt: daysAgo(9) },
+  { id: "def-sterling-004", projectId: "proj-demo-sterling", sourceId: "src-sterling-jira", externalSystem: "jira", externalId: "STR-389", key: "STR-389", title: "GDPR SCC missing for new analytics processor", description: "Onboarded analytics processor without signed Standard Contractual Clauses — privacy team flagged.",                                       status: "resolved",    severity: "major",    priority: "p2", component: "VendorMgmt",    raisedAt: daysAgo(35), resolvedAt: daysAgo(14) },
+  // Nova
+  { id: "def-nova-001", projectId: "proj-demo-nova", sourceId: "src-nova-jira", externalSystem: "jira", externalId: "NOV-101", key: "NOV-101", title: "AML rule misses sanctioned BTC address pattern",      description: "Real-time AML did not flag a transaction to a known OFAC-sanctioned BTC cluster — false negative under pattern v3.",                       status: "open",        severity: "critical", priority: "p1", component: "AML",           raisedAt: daysAgo(2) },
+  { id: "def-nova-002", projectId: "proj-demo-nova", sourceId: "src-nova-jira", externalSystem: "jira", externalId: "NOV-106", key: "NOV-106", title: "KYC liveness check passes for spoofed video",         description: "Liveness check accepted a high-resolution recorded video — vendor model needs upgrade to v4.",                                              status: "in_progress", severity: "critical", priority: "p1", component: "KYC",           raisedAt: daysAgo(5) },
+  { id: "def-nova-003", projectId: "proj-demo-nova", sourceId: "src-nova-jira", externalSystem: "jira", externalId: "NOV-112", key: "NOV-112", title: "Cold wallet ceremony video has audio gap",            description: "Q1 cold wallet key ceremony recording has a 22-second audio dropout — chain-of-custody at risk.",                                          status: "open",        severity: "major",    priority: "p2", component: "Custody",       raisedAt: daysAgo(0) },
+  { id: "def-nova-004", projectId: "proj-demo-nova", sourceId: "src-nova-jira", externalSystem: "jira", externalId: "NOV-094", key: "NOV-094", title: "MiCA capital adequacy report rounding error",        description: "Capital adequacy quarterly report rounded down €15k of own funds — figure restated, no breach but disclosure required.",                  status: "resolved",    severity: "minor",    priority: "p3", component: "Reporting",     raisedAt: daysAgo(40), resolvedAt: daysAgo(18) },
+  // Titan
+  { id: "def-titan-001", projectId: "proj-demo-titan", sourceId: "src-titan-ado", externalSystem: "azure_devops", externalId: "33041", key: "TTN-33041", title: "ESD function PFD measured 1.4×10⁻⁴ at site B", description: "Site-B proof test for emergency shutdown function measured PFD 1.4×10⁻⁴ — exceeds SIL 3 budget of 1×10⁻⁴.",                              status: "open",        severity: "critical", priority: "p1", component: "ESD",           raisedAt: daysAgo(4) },
+  { id: "def-titan-002", projectId: "proj-demo-titan", sourceId: "src-titan-ado", externalSystem: "azure_devops", externalId: "33055", key: "TTN-33055", title: "PLC firmware OTA over un-encrypted channel",      description: "Vendor OTA update tool falls back to plain TCP if TLS handshake fails — IEC 62443 SL2 breach.",                                            status: "in_progress", severity: "critical", priority: "p1", component: "OT Security",   raisedAt: daysAgo(2) },
+  { id: "def-titan-003", projectId: "proj-demo-titan", sourceId: "src-titan-ado", externalSystem: "azure_devops", externalId: "33060", key: "TTN-33060", title: "Proof-test log gap for valve V-104",            description: "Proof-test record for valve V-104 missing for 13-month interval — exceeds 12-month max per IEC 61511.",                                  status: "open",        severity: "major",    priority: "p2", component: "Maintenance",   raisedAt: daysAgo(1) },
+  { id: "def-titan-004", projectId: "proj-demo-titan", sourceId: "src-titan-ado", externalSystem: "azure_devops", externalId: "32995", key: "TTN-32995", title: "Air-gap breach: temporary jumper installed",    description: "Site engineer installed temp jumper between safety and IT networks for 3 hours — HAZOP justification missing.",                          status: "resolved",    severity: "critical", priority: "p1", component: "Network",       raisedAt: daysAgo(45), resolvedAt: daysAgo(20) },
+  // Apollo
+  { id: "def-apollo-001", projectId: "proj-demo-apollo", sourceId: "src-apollo-ado", externalSystem: "azure_devops", externalId: "44102", key: "APL-44102", title: "Thermal runaway detection latency 2.4ms at -25°C", description: "Detection latency at -25°C measured 2.4ms — exceeds 2ms ASIL-C requirement APL-0001.",                                                    status: "in_progress", severity: "critical", priority: "p1", component: "ThermalMgmt",   raisedAt: daysAgo(3) },
+  { id: "def-apollo-002", projectId: "proj-demo-apollo", sourceId: "src-apollo-ado", externalSystem: "azure_devops", externalId: "44110", key: "APL-44110", title: "SoC drift +3.1% after 800 cycles",                description: "State-of-charge estimation drifts to +3.1% by cycle 800 — exceeds ±2% requirement APL-0003.",                                              status: "open",        severity: "major",    priority: "p2", component: "Algorithm",     raisedAt: daysAgo(6) },
+  { id: "def-apollo-003", projectId: "proj-demo-apollo", sourceId: "src-apollo-ado", externalSystem: "azure_devops", externalId: "44120", key: "APL-44120", title: "Cell abuse test trace missing for variant V3",   description: "IEC 62133-2 abuse test results not linked to variant V3 design record — design-history audit finding.",                                  status: "open",        severity: "major",    priority: "p2", component: "DesignRecord",  raisedAt: daysAgo(1) },
+  { id: "def-apollo-004", projectId: "proj-demo-apollo", sourceId: "src-apollo-ado", externalSystem: "azure_devops", externalId: "44085", key: "APL-44085", title: "Isolation resistance check skipped on 4 units",   description: "Production line skipped isolation-resistance test for 4 BMS units — recall scope under analysis.",                                          status: "in_progress", severity: "critical", priority: "p1", component: "Production",    raisedAt: daysAgo(0) },
+  // Aegis
+  { id: "def-aegis-001", projectId: "proj-demo-aegis", sourceId: "src-aegis-jira", externalSystem: "jira", externalId: "AEG-501", key: "AEG-501", title: "AAL2 bypass via password-reset flow",                description: "Password-reset flow allows session establishment without TOTP step — fails NIST 800-63-3 AAL2.",                                          status: "open",        severity: "critical", priority: "p1", component: "Auth",          raisedAt: daysAgo(2) },
+  { id: "def-aegis-002", projectId: "proj-demo-aegis", sourceId: "src-aegis-jira", externalSystem: "jira", externalId: "AEG-509", key: "AEG-509", title: "GDPR consent withdrawal not propagated to ad-tech",  description: "Withdrawal of marketing consent not forwarded to downstream ad-tech processors within 24h SLA.",                                          status: "in_progress", severity: "critical", priority: "p1", component: "Privacy",       raisedAt: daysAgo(5) },
+  { id: "def-aegis-003", projectId: "proj-demo-aegis", sourceId: "src-aegis-jira", externalSystem: "jira", externalId: "AEG-512", key: "AEG-512", title: "ZTNA policy engine open-fails on cache miss",        description: "Under cache miss, policy engine falls back to allow — should fail closed per zero-trust principle.",                                       status: "open",        severity: "critical", priority: "p1", component: "ZTNA",          raisedAt: daysAgo(1) },
+  { id: "def-aegis-004", projectId: "proj-demo-aegis", sourceId: "src-aegis-jira", externalSystem: "jira", externalId: "AEG-490", key: "AEG-490", title: "PAW posture check accepts stale EDR heartbeat",      description: "PAW device posture allows up to 7-day stale EDR heartbeat — should be ≤24h.",                                                              status: "resolved",    severity: "major",    priority: "p2", component: "PAW",           raisedAt: daysAgo(30), resolvedAt: daysAgo(12) },
+  // Cipher
+  { id: "def-cipher-001", projectId: "proj-demo-cipher", sourceId: "src-cipher-jira", externalSystem: "jira", externalId: "CPH-201", key: "CPH-201", title: "BOLA vulnerability in /orders/{id} endpoint",         description: "Object-level authorisation missing on /orders/{id}: any authenticated user can read other tenants' orders.",                              status: "open",        severity: "critical", priority: "p1", component: "Gateway",       raisedAt: daysAgo(2) },
+  { id: "def-cipher-002", projectId: "proj-demo-cipher", sourceId: "src-cipher-jira", externalSystem: "jira", externalId: "CPH-208", key: "CPH-208", title: "mTLS certificate TTL extended to 7 days",            description: "Internal CA mistakenly issued a 7-day TTL cert — exceeds 24h policy CPH-0002.",                                                            status: "in_progress", severity: "major",    priority: "p2", component: "PKI",           raisedAt: daysAgo(4) },
+  { id: "def-cipher-003", projectId: "proj-demo-cipher", sourceId: "src-cipher-jira", externalSystem: "jira", externalId: "CPH-215", key: "CPH-215", title: "Rate-limit bypass via case-sensitive header",         description: "Rate-limit middleware case-sensitive on header name — clients can bypass with `x-api-key` vs `X-Api-Key`.",                                status: "open",        severity: "major",    priority: "p2", component: "RateLimit",     raisedAt: daysAgo(0) },
+  { id: "def-cipher-004", projectId: "proj-demo-cipher", sourceId: "src-cipher-jira", externalSystem: "jira", externalId: "CPH-178", key: "CPH-178", title: "WAF allowlist included internal egress IP",          description: "WAF egress allowlist mistakenly included a public NAT IP — fixed; rotated all egress endpoints.",                                          status: "resolved",    severity: "critical", priority: "p1", component: "WAF",           raisedAt: daysAgo(50), resolvedAt: daysAgo(22) },
+];
+
+const MORE_CAPA_ACTIONS = [
+  // Aesop
+  { id: "capa-aesop-001", projectId: "proj-demo-aesop", code: "CAPA-AES-001", title: "Remove SMS fallback for eCRF eSignatures",            description: "Disable SMS-OTP fallback; require TOTP/FIDO2 for all eSignature events per 21 CFR Part 11.200.",        severity: "critical", status: "in_progress", owner: "Auth Team",       source: "ai_audit",   evidenceCount: 2, tags: ["21cfr11","auth"], dueAt: daysAhead(14), frameworkId: "fw-21-cfr-11", controlCode: "11.200(a)" },
+  { id: "capa-aesop-002", projectId: "proj-demo-aesop", code: "CAPA-AES-002", title: "Increase audit-trail reason-code field to 1000 chars", description: "Migrate column type and update UI; backfill recent truncations from change-data-capture log.",            severity: "high",     status: "open",        owner: "Platform",        source: "inspection", evidenceCount: 0, tags: ["audit"],          dueAt: daysAhead(21), frameworkId: "fw-21-cfr-11", controlCode: "11.10(e)" },
+  { id: "capa-aesop-003", projectId: "proj-demo-aesop", code: "CAPA-AES-003", title: "Include investigator e-signatures in GDPR export",     description: "Update subject-export bundle to embed visit-level e-signatures with verification chain.",                 severity: "high",     status: "open",        owner: "Privacy",         source: "ai_audit",   evidenceCount: 1, tags: ["gdpr","export"], dueAt: daysAhead(30), frameworkId: "fw-gdpr",      controlCode: "Art.20" },
+  // Nexus
+  { id: "capa-nexus-001", projectId: "proj-demo-nexus", code: "CAPA-NEX-001", title: "Strip US-SSN extension from non-elevated FHIR scopes", description: "Patch FHIR API to redact `us-ssn` extension unless caller holds elevated `patient/Patient.read.ssn` scope.", severity: "critical", status: "in_progress", owner: "FHIR API",        source: "ai_audit",   evidenceCount: 2, tags: ["hipaa","fhir"],   dueAt: daysAhead(7),  frameworkId: "fw-hipaa",     controlCode: "164.502(b)" },
+  { id: "capa-nexus-002", projectId: "proj-demo-nexus", code: "CAPA-NEX-002", title: "Remediate 412-record migration gap",                   description: "Identify dropped records; replay ETL with idempotency keys; add reconciliation alert at >0 delta.",       severity: "critical", status: "in_progress", owner: "Migration Team",  source: "manual",     evidenceCount: 1, tags: ["migration"],      dueAt: daysAhead(14), frameworkId: "fw-hipaa",     controlCode: "164.312(c)(1)" },
+  { id: "capa-nexus-003", projectId: "proj-demo-nexus", code: "CAPA-NEX-003", title: "Purge US-East copy of EU patient records",             description: "Forensically delete the 5,124 mis-replicated EU records from US-East S3; notify DPA per GDPR Art. 33.",  severity: "critical", status: "open",        owner: "Privacy",         source: "ai_audit",   evidenceCount: 0, tags: ["gdpr","residency"],dueAt: daysAhead(7),  frameworkId: "fw-gdpr",     controlCode: "Art.44" },
+  // Sterling
+  { id: "capa-sterling-001", projectId: "proj-demo-sterling", code: "CAPA-STR-001", title: "Resolve ₹4,217.32 ledger drift in parallel run", description: "Trace each posting through ETL; reconcile posting-time skew between cloud ledger and COBOL host.",        severity: "critical", status: "in_progress", owner: "James O'Brien",   source: "manual",     evidenceCount: 3, tags: ["ledger","migration"], dueAt: daysAhead(14), frameworkId: null,            controlCode: null },
+  { id: "capa-sterling-002", projectId: "proj-demo-sterling", code: "CAPA-STR-002", title: "Decouple HR SSO realm from CDE",                  description: "Provision dedicated identity provider for cardholder-data zone; remove cross-realm trust from HR.",       severity: "critical", status: "open",        owner: "Security Eng",    source: "ai_audit",   evidenceCount: 1, tags: ["pci","segmentation"],dueAt: daysAhead(21), frameworkId: "fw-pci-dss-4", controlCode: "1.3.1" },
+  { id: "capa-sterling-003", projectId: "proj-demo-sterling", code: "CAPA-STR-003", title: "Automate DORA 4-hour incident reporting",         description: "Wire incident-classification engine to authority webhook; alert when projected SLA risk exceeds 80%.",   severity: "high",     status: "in_progress", owner: "CISO",            source: "inspection", evidenceCount: 2, tags: ["dora","incident"], dueAt: daysAhead(30), frameworkId: "fw-dora",      controlCode: "Art.19" },
+  // Nova
+  { id: "capa-nova-001", projectId: "proj-demo-nova", code: "CAPA-NOV-001", title: "Update AML pattern to v4 — sanctioned BTC clusters",     description: "Roll out pattern-engine v4 covering chain-of-custody scoring; backfill last 30d for retro flags.",        severity: "critical", status: "in_progress", owner: "Compliance",      source: "ai_audit",   evidenceCount: 1, tags: ["aml","sanctions"], dueAt: daysAhead(14), frameworkId: null,            controlCode: null },
+  { id: "capa-nova-002", projectId: "proj-demo-nova", code: "CAPA-NOV-002", title: "Upgrade KYC liveness vendor model to v4",                description: "Replace v3 liveness with v4 (passive + active anti-spoofing); re-test against captured spoof corpus.",   severity: "critical", status: "open",        owner: "Compliance",      source: "manual",     evidenceCount: 0, tags: ["kyc"],            dueAt: daysAhead(21), frameworkId: null,            controlCode: null },
+  { id: "capa-nova-003", projectId: "proj-demo-nova", code: "CAPA-NOV-003", title: "Add audio-redundancy to cold wallet ceremony recording", description: "Capture two independent audio streams; alert on dropout >2s; notarise both streams.",                    severity: "high",     status: "open",        owner: "Custody Eng",     source: "ai_audit",   evidenceCount: 0, tags: ["custody"],        dueAt: daysAhead(30), frameworkId: "fw-iso-27001", controlCode: "A.8.13" },
+  // Titan
+  { id: "capa-titan-001", projectId: "proj-demo-titan", code: "CAPA-TTN-001", title: "Restore ESD PFD ≤ 1×10⁻⁴ at site B",                  description: "Replace logic solver at site B with new revision; re-run proof test and update SIL verification report.", severity: "critical", status: "in_progress", owner: "Kenji Watanabe",  source: "manual",     evidenceCount: 2, tags: ["sil3","esd"],     dueAt: daysAhead(30), frameworkId: "fw-iec-61508", controlCode: "Part 1 §7.4" },
+  { id: "capa-titan-002", projectId: "proj-demo-titan", code: "CAPA-TTN-002", title: "Disable plain-TCP fallback in PLC OTA tool",            description: "Configure vendor OTA tool to require TLS 1.2+; quarantine endpoints that cannot negotiate.",              severity: "critical", status: "open",        owner: "OT Security",     source: "ai_audit",   evidenceCount: 1, tags: ["ics","sl2"],      dueAt: daysAhead(14), frameworkId: "fw-iec-62443", controlCode: "SR 3.1" },
+  { id: "capa-titan-003", projectId: "proj-demo-titan", code: "CAPA-TTN-003", title: "Backfill V-104 proof-test record",                      description: "Schedule emergency proof test for V-104 within 14 days; reset 12-month interval cycle.",                  severity: "high",     status: "in_progress", owner: "Maintenance",     source: "inspection", evidenceCount: 1, tags: ["proof-test"],     dueAt: daysAhead(14), frameworkId: "fw-iec-61511", controlCode: "Part 1 §16" },
+  // Apollo
+  { id: "capa-apollo-001", projectId: "proj-demo-apollo", code: "CAPA-APL-001", title: "Optimise thermal-runaway path for -25°C corner",      description: "Move detection ISR to higher-priority core; add cold-temp lookup table; re-run V&V at all corners.",     severity: "critical", status: "in_progress", owner: "Algorithm Team",  source: "manual",     evidenceCount: 2, tags: ["asil-c","thermal"], dueAt: daysAhead(30), frameworkId: "fw-iso-26262", controlCode: "Part 6 §7" },
+  { id: "capa-apollo-002", projectId: "proj-demo-apollo", code: "CAPA-APL-002", title: "Re-tune SoC estimator for high cycle counts",         description: "Add capacity-fade compensation; validate ±2% at 1500 cycles across temperature corners.",                 severity: "high",     status: "open",        owner: "Algorithm Team",  source: "ai_audit",   evidenceCount: 0, tags: ["soc","accuracy"],  dueAt: daysAhead(45), frameworkId: null,            controlCode: null },
+  { id: "capa-apollo-003", projectId: "proj-demo-apollo", code: "CAPA-APL-003", title: "Recall-scope assessment for skipped isolation tests", description: "Identify all units affected; coordinate field-recall plan; notify homologation authority.",              severity: "critical", status: "open",        owner: "Regulatory Affairs",source: "manual",   evidenceCount: 0, tags: ["recall","r100"],   dueAt: daysAhead(7),  frameworkId: null,            controlCode: null },
+  // Aegis
+  { id: "capa-aegis-001", projectId: "proj-demo-aegis", code: "CAPA-AEG-001", title: "Enforce TOTP step in password-reset flow",              description: "Require AAL2 second factor before session is established post-password-reset.",                          severity: "critical", status: "in_progress", owner: "Auth Team",       source: "ai_audit",   evidenceCount: 1, tags: ["aal2","auth"],     dueAt: daysAhead(14), frameworkId: "fw-soc2",      controlCode: "CC6.1" },
+  { id: "capa-aegis-002", projectId: "proj-demo-aegis", code: "CAPA-AEG-002", title: "GDPR consent withdrawal — propagation SLA",            description: "Build async fanout with 24h hard SLA; alert on lag >1h; retry exhaust → human escalation.",              severity: "critical", status: "in_progress", owner: "Privacy",         source: "ai_audit",   evidenceCount: 2, tags: ["gdpr","consent"], dueAt: daysAhead(21), frameworkId: "fw-gdpr",      controlCode: "Art.7(3)" },
+  { id: "capa-aegis-003", projectId: "proj-demo-aegis", code: "CAPA-AEG-003", title: "ZTNA policy engine — fail closed on cache miss",       description: "Change cache-miss behaviour to deny by default; add load-test for cold-start scenario.",                 severity: "critical", status: "open",        owner: "Network Sec",     source: "manual",     evidenceCount: 0, tags: ["ztna"],           dueAt: daysAhead(10), frameworkId: "fw-nist-csf",  controlCode: "PR.AC-04" },
+  // Cipher
+  { id: "capa-cipher-001", projectId: "proj-demo-cipher", code: "CAPA-CPH-001", title: "Add tenant-scoped object-level auth for /orders/{id}", description: "Wrap /orders/{id} handler with tenant-claim check; add unit + integration tests for cross-tenant.",       severity: "critical", status: "in_progress", owner: "Gateway Team",    source: "ai_audit",   evidenceCount: 2, tags: ["owasp","bola"],   dueAt: daysAhead(7),  frameworkId: "fw-pci-dss-4", controlCode: "6.2.4" },
+  { id: "capa-cipher-002", projectId: "proj-demo-cipher", code: "CAPA-CPH-002", title: "Cap mTLS cert TTL at 24h in internal CA",              description: "Add max-TTL policy to CA issuance pipeline; reject CSRs >24h with audit log.",                            severity: "high",     status: "open",        owner: "PKI",             source: "inspection", evidenceCount: 0, tags: ["mtls","pki"],     dueAt: daysAhead(14), frameworkId: "fw-iso-27001", controlCode: "A.8.24" },
+  { id: "capa-cipher-003", projectId: "proj-demo-cipher", code: "CAPA-CPH-003", title: "Normalise header names in rate-limit middleware",     description: "Lower-case all header names before matching; add regression tests for case variants.",                    severity: "high",     status: "in_progress", owner: "Gateway Team",    source: "ai_audit",   evidenceCount: 1, tags: ["rate-limit"],     dueAt: daysAhead(14), frameworkId: "fw-pci-dss-4", controlCode: "6.4.1" },
+];
+
+const MORE_TEST_CASES = [
+  // Aesop
+  { id: "tc-aesop-001", projectId: "proj-demo-aesop", requirementId: "req-aesop-001", title: "eSignature requires TOTP — no SMS fallback",      type: "functional", level: "system",      discipline: "security",   paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Disable TOTP service", "Attempt eSignature"], expected: "eSignature blocked; fallback to SMS not offered.", lastRunAt: daysAgo(2), lastRunNote: "FAIL — SMS fallback present (AES-204)." },
+  { id: "tc-aesop-002", projectId: "proj-demo-aesop", requirementId: "req-aesop-002", title: "Audit trail captures full reason code 1000 chars", type: "functional", level: "system",      discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Edit field with 800-char reason", "Read audit row"], expected: "Reason stored without truncation.", lastRunAt: daysAgo(6), lastRunNote: "FAIL — truncated at 200." },
+  { id: "tc-aesop-003", projectId: "proj-demo-aesop", requirementId: "req-aesop-003", title: "Subject GDPR export contains investigator signatures", type: "functional", level: "integration", discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Trigger subject export", "Inspect bundle"], expected: "Bundle includes per-visit investigator signatures.", lastRunAt: daysAgo(1), lastRunNote: "FAIL — signatures missing." },
+  // Nexus
+  { id: "tc-nexus-001", projectId: "proj-demo-nexus", requirementId: "req-nexus-001", title: "FHIR /Patient — non-elevated scope hides SSN",     type: "functional", level: "system",      discipline: "security",   paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Call /Patient with patient/*.read", "Inspect extensions"], expected: "us-ssn extension absent unless elevated scope.", lastRunAt: daysAgo(3), lastRunNote: "FAIL — SSN exposed (NEX-301)." },
+  { id: "tc-nexus-002", projectId: "proj-demo-nexus", requirementId: "req-nexus-002", title: "EU patient record never replicated outside EU",     type: "functional", level: "system",      discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Create EU patient", "Enumerate replica locations"], expected: "Only EU-West replicas observed.", lastRunAt: daysAgo(2), lastRunNote: "FAIL — US-East copy detected (NEX-315)." },
+  { id: "tc-nexus-003", projectId: "proj-demo-nexus", requirementId: "req-nexus-003", title: "Migration reconciliation — zero gap",               type: "functional", level: "system",      discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Run end-of-day reconciliation job"], expected: "Delta = 0 records.", lastRunAt: daysAgo(5), lastRunNote: "FAIL — 412 records missing." },
+  // Sterling
+  { id: "tc-sterling-001", projectId: "proj-demo-sterling", requirementId: "req-sterling-001", title: "Parallel-run ledger reconciles to the cent", type: "functional", level: "system", discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Run COBOL EOD", "Run cloud EOD", "Diff balances"], expected: "Diff = ₹0.00", lastRunAt: daysAgo(7), lastRunNote: "FAIL — ₹4,217.32 (STR-401)." },
+  { id: "tc-sterling-002", projectId: "proj-demo-sterling", requirementId: "req-sterling-002", title: "CDE has no shared SSO with HR",              type: "functional", level: "system", discipline: "security",   paradigm: "procedural", mode: "static",  sourceKind: "code",        priority: "critical", status: "failing",  steps: ["Audit IdP federation map"], expected: "No realm shared between CDE and HR.", lastRunAt: daysAgo(3), lastRunNote: "FAIL — STR-415." },
+  { id: "tc-sterling-003", projectId: "proj-demo-sterling", requirementId: "req-sterling-003", title: "ICT incident report dispatched within 4h",   type: "non_functional", level: "operational", discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing",  steps: ["Inject simulated ICT incident", "Measure dispatch time"], expected: "Submitted ≤ 4h.", lastRunAt: daysAgo(9), lastRunNote: "FAIL — 4h12m." },
+  // Nova
+  { id: "tc-nova-001", projectId: "proj-demo-nova", requirementId: "req-nova-002", title: "AML flags transaction to OFAC-sanctioned BTC cluster", type: "functional", level: "system", discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Submit BTC transfer to known sanctioned address", "Check AML decision"], expected: "Flagged + blocked.", lastRunAt: daysAgo(2), lastRunNote: "FAIL — pattern v3 missed (NOV-101)." },
+  { id: "tc-nova-002", projectId: "proj-demo-nova", requirementId: "req-nova-003", title: "KYC liveness rejects recorded video spoof",             type: "functional", level: "system", discipline: "security",   paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Replay HD recorded video to liveness step"], expected: "Liveness rejected.", lastRunAt: daysAgo(5), lastRunNote: "FAIL — vendor v3 accepted." },
+  { id: "tc-nova-003", projectId: "proj-demo-nova", requirementId: "req-nova-004", title: "Cold wallet ceremony video has continuous audio",       type: "functional", level: "operational", discipline: "regulatory", paradigm: "procedural", mode: "static",  sourceKind: "report",      priority: "high",     status: "failing",  steps: ["Inspect Q1 ceremony recording"], expected: "Audio without dropout > 1s.", lastRunAt: daysAgo(0), lastRunNote: "FAIL — 22s gap (NOV-112)." },
+  // Titan
+  { id: "tc-titan-001", projectId: "proj-demo-titan", requirementId: "req-titan-001", title: "ESD function PFD ≤ 1×10⁻⁴ across all sites",      type: "non_functional", level: "system", discipline: "safety", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Run proof test at each site"], expected: "PFD ≤ 1×10⁻⁴.", lastRunAt: daysAgo(4), lastRunNote: "FAIL — site B 1.4×10⁻⁴ (TTN-33041)." },
+  { id: "tc-titan-002", projectId: "proj-demo-titan", requirementId: "req-titan-002", title: "PLC OTA refuses plain-TCP fallback",                type: "functional", level: "system", discipline: "security", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing",  steps: ["Block TLS port", "Run vendor OTA tool"], expected: "OTA aborted, no fallback.", lastRunAt: daysAgo(2), lastRunNote: "FAIL — fell back to plain TCP." },
+  { id: "tc-titan-003", projectId: "proj-demo-titan", requirementId: "req-titan-003", title: "Every safety valve has proof-test ≤ 12 months",     type: "functional", level: "operational", discipline: "regulatory", paradigm: "exploratory", mode: "static",  sourceKind: "report", priority: "high", status: "failing", steps: ["Audit proof-test register"], expected: "All intervals ≤ 12 months.", lastRunAt: daysAgo(1), lastRunNote: "FAIL — V-104 at 13 months." },
+  // Apollo
+  { id: "tc-apollo-001", projectId: "proj-demo-apollo", requirementId: "req-apollo-001", title: "Thermal-runaway detection ≤ 2 ms across temp range", type: "non_functional", level: "system", discipline: "safety", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing", steps: ["Inject thermal anomaly at -30°C..+60°C"], expected: "Detection latency ≤ 2 ms at all corners.", lastRunAt: daysAgo(3), lastRunNote: "FAIL — 2.4ms at -25°C (APL-44102)." },
+  { id: "tc-apollo-002", projectId: "proj-demo-apollo", requirementId: "req-apollo-003", title: "SoC estimation accuracy ± 2% to 1500 cycles",       type: "non_functional", level: "system", discipline: "performance", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "high", status: "failing", steps: ["Run SoC estimator over 1500-cycle aged cells"], expected: "Error ≤ ±2%.", lastRunAt: daysAgo(6), lastRunNote: "FAIL — +3.1% drift at 800 cycles." },
+  { id: "tc-apollo-003", projectId: "proj-demo-apollo", requirementId: "req-apollo-002", title: "Variant V3 has IEC 62133-2 abuse test trace",      type: "functional", level: "operational", discipline: "regulatory", paradigm: "exploratory", mode: "static",  sourceKind: "report", priority: "high", status: "failing", steps: ["Inspect design record for V3"], expected: "Abuse test results linked.", lastRunAt: daysAgo(1), lastRunNote: "FAIL — link missing (APL-44120)." },
+  // Aegis
+  { id: "tc-aegis-001", projectId: "proj-demo-aegis", requirementId: "req-aegis-001", title: "AAL2 enforced in password-reset flow",               type: "functional", level: "system", discipline: "security", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing", steps: ["Reset password, observe whether TOTP is required"], expected: "TOTP step required.", lastRunAt: daysAgo(2), lastRunNote: "FAIL — AAL1 only (AEG-501)." },
+  { id: "tc-aegis-002", projectId: "proj-demo-aegis", requirementId: "req-aegis-002", title: "Consent withdrawal propagates within 24h",           type: "non_functional", level: "operational", discipline: "regulatory", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing", steps: ["Withdraw marketing consent", "Inspect downstream processors after 24h"], expected: "All processors marked withdrawn.", lastRunAt: daysAgo(5), lastRunNote: "FAIL — ad-tech still receiving." },
+  { id: "tc-aegis-003", projectId: "proj-demo-aegis", requirementId: "req-aegis-003", title: "ZTNA policy fails closed on cache miss",             type: "functional", level: "system", discipline: "security", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing", steps: ["Flush policy cache", "Issue request"], expected: "Request denied until policy refreshes.", lastRunAt: daysAgo(1), lastRunNote: "FAIL — open-fail observed." },
+  // Cipher
+  { id: "tc-cipher-001", projectId: "proj-demo-cipher", requirementId: "req-cipher-001", title: "BOLA — cross-tenant access on /orders/{id}",      type: "functional", level: "system", discipline: "security", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "critical", status: "failing", steps: ["Request /orders/{otherTenantId} as tenant A"], expected: "403 Forbidden.", lastRunAt: daysAgo(2), lastRunNote: "FAIL — 200 OK (CPH-201)." },
+  { id: "tc-cipher-002", projectId: "proj-demo-cipher", requirementId: "req-cipher-002", title: "Internal CA rejects cert request TTL > 24h",      type: "functional", level: "system", discipline: "security", paradigm: "procedural", mode: "dynamic", sourceKind: "requirement", priority: "high",     status: "failing", steps: ["Submit CSR with 7d TTL"], expected: "CA rejects with policy violation.", lastRunAt: daysAgo(4), lastRunNote: "FAIL — 7d cert issued." },
+  { id: "tc-cipher-003", projectId: "proj-demo-cipher", requirementId: null,            title: "Rate-limit invariant under header-case variants",  type: "functional", level: "system", discipline: "security", paradigm: "procedural", mode: "dynamic", sourceKind: "code",        priority: "high",     status: "failing", steps: ["Send burst with mixed header casing"], expected: "Same bucket counted regardless of case.", lastRunAt: daysAgo(0), lastRunNote: "FAIL — bypass observed." },
+];
+
+const MORE_CODE_ARTIFACTS = [
+  { id: "ca-aesop-1",   projectId: "proj-demo-aesop",   filePath: "src/auth/esign.ts",                   language: "typescript", symbol: "verifyEsignature",     kind: "function", repoUrl: "https://github.com/acme-clin/aesop-ecrf/blob/main/src/auth/esign.ts" },
+  { id: "ca-aesop-2",   projectId: "proj-demo-aesop",   filePath: "src/audit/trail.ts",                  language: "typescript", symbol: "AuditTrail",           kind: "class",    repoUrl: "https://github.com/acme-clin/aesop-ecrf/blob/main/src/audit/trail.ts" },
+  { id: "ca-aesop-3",   projectId: "proj-demo-aesop",   filePath: "src/privacy/subjectExport.ts",        language: "typescript", symbol: "buildSubjectBundle",   kind: "function", repoUrl: "https://github.com/acme-clin/aesop-ecrf/blob/main/src/privacy/subjectExport.ts" },
+  { id: "ca-nexus-1",   projectId: "proj-demo-nexus",   filePath: "src/fhir/patient.ts",                 language: "typescript", symbol: "PatientResource",      kind: "class",    repoUrl: "https://github.com/acme-health/nexus-fhir/blob/main/src/fhir/patient.ts" },
+  { id: "ca-nexus-2",   projectId: "proj-demo-nexus",   filePath: "src/storage/euResidency.ts",          language: "typescript", symbol: "EuResidencyGuard",     kind: "class",    repoUrl: "https://github.com/acme-health/nexus-fhir/blob/main/src/storage/euResidency.ts" },
+  { id: "ca-nexus-3",   projectId: "proj-demo-nexus",   filePath: "migration/reconcile.py",              language: "python",     symbol: "reconcile_records",    kind: "function", repoUrl: "https://github.com/acme-health/nexus-fhir/blob/main/migration/reconcile.py" },
+  { id: "ca-sterling-1",projectId: "proj-demo-sterling",filePath: "ledger/src/Reconciler.java",          language: "java",       symbol: "ParallelRunReconciler",kind: "class",    repoUrl: "https://github.com/acme-bank/sterling-ledger/blob/main/ledger/src/Reconciler.java" },
+  { id: "ca-sterling-2",projectId: "proj-demo-sterling",filePath: "security/src/CdeSegmentation.java",   language: "java",       symbol: "CdeIsolationPolicy",   kind: "class",    repoUrl: "https://github.com/acme-bank/sterling-ledger/blob/main/security/src/CdeSegmentation.java" },
+  { id: "ca-sterling-3",projectId: "proj-demo-sterling",filePath: "incident/src/DoraReporter.java",      language: "java",       symbol: "DoraReporter",         kind: "class",    repoUrl: "https://github.com/acme-bank/sterling-ledger/blob/main/incident/src/DoraReporter.java" },
+  { id: "ca-nova-1",    projectId: "proj-demo-nova",    filePath: "src/aml/sanctionsScreen.go",          language: "go",         symbol: "SanctionsScreener",    kind: "class",    repoUrl: "https://github.com/acme-crypto/nova-compliance/blob/main/src/aml/sanctionsScreen.go" },
+  { id: "ca-nova-2",    projectId: "proj-demo-nova",    filePath: "src/kyc/liveness.go",                 language: "go",         symbol: "LivenessClient",       kind: "class",    repoUrl: "https://github.com/acme-crypto/nova-compliance/blob/main/src/kyc/liveness.go" },
+  { id: "ca-nova-3",    projectId: "proj-demo-nova",    filePath: "src/custody/coldCeremony.go",         language: "go",         symbol: "ColdCeremonyRecorder", kind: "class",    repoUrl: "https://github.com/acme-crypto/nova-compliance/blob/main/src/custody/coldCeremony.go" },
+  { id: "ca-titan-1",   projectId: "proj-demo-titan",   filePath: "sis/src/esd.c",                       language: "c",          symbol: "esd_proof_test",       kind: "function", repoUrl: "https://github.com/acme-ind/titan-sis/blob/main/sis/src/esd.c" },
+  { id: "ca-titan-2",   projectId: "proj-demo-titan",   filePath: "ot/src/ota_tls.c",                    language: "c",          symbol: "ota_tls_session",      kind: "function", repoUrl: "https://github.com/acme-ind/titan-sis/blob/main/ot/src/ota_tls.c" },
+  { id: "ca-titan-3",   projectId: "proj-demo-titan",   filePath: "maint/src/proof_register.c",          language: "c",          symbol: "proof_register",       kind: "function", repoUrl: "https://github.com/acme-ind/titan-sis/blob/main/maint/src/proof_register.c" },
+  { id: "ca-apollo-1",  projectId: "proj-demo-apollo",  filePath: "bms/src/thermal_runaway.c",           language: "c",          symbol: "tr_detect_isr",        kind: "function", repoUrl: "https://github.com/acme-auto/apollo-bms/blob/main/bms/src/thermal_runaway.c" },
+  { id: "ca-apollo-2",  projectId: "proj-demo-apollo",  filePath: "bms/src/soc_estimator.c",             language: "c",          symbol: "soc_estimate",         kind: "function", repoUrl: "https://github.com/acme-auto/apollo-bms/blob/main/bms/src/soc_estimator.c" },
+  { id: "ca-apollo-3",  projectId: "proj-demo-apollo",  filePath: "design/abuse_test_links.yml",         language: "yaml",       symbol: "abuse_test_links",     kind: "config",   repoUrl: "https://github.com/acme-auto/apollo-bms/blob/main/design/abuse_test_links.yml" },
+  { id: "ca-aegis-1",   projectId: "proj-demo-aegis",   filePath: "src/auth/passwordReset.ts",           language: "typescript", symbol: "passwordResetFlow",    kind: "function", repoUrl: "https://github.com/acme-sec/aegis-iam/blob/main/src/auth/passwordReset.ts" },
+  { id: "ca-aegis-2",   projectId: "proj-demo-aegis",   filePath: "src/privacy/consentFanout.ts",        language: "typescript", symbol: "ConsentFanout",        kind: "class",    repoUrl: "https://github.com/acme-sec/aegis-iam/blob/main/src/privacy/consentFanout.ts" },
+  { id: "ca-aegis-3",   projectId: "proj-demo-aegis",   filePath: "src/ztna/policyEngine.ts",            language: "typescript", symbol: "PolicyEngine",         kind: "class",    repoUrl: "https://github.com/acme-sec/aegis-iam/blob/main/src/ztna/policyEngine.ts" },
+  { id: "ca-cipher-1",  projectId: "proj-demo-cipher",  filePath: "gateway/src/orders.go",               language: "go",         symbol: "GetOrderHandler",      kind: "function", repoUrl: "https://github.com/acme-sec/cipher-gateway/blob/main/gateway/src/orders.go" },
+  { id: "ca-cipher-2",  projectId: "proj-demo-cipher",  filePath: "pki/src/issuer.go",                   language: "go",         symbol: "InternalIssuer",       kind: "class",    repoUrl: "https://github.com/acme-sec/cipher-gateway/blob/main/pki/src/issuer.go" },
+  { id: "ca-cipher-3",  projectId: "proj-demo-cipher",  filePath: "gateway/src/rateLimit.go",            language: "go",         symbol: "RateLimiter",          kind: "class",    repoUrl: "https://github.com/acme-sec/cipher-gateway/blob/main/gateway/src/rateLimit.go" },
+];
+
+const MORE_TRACE_LINKS = [
+  { id: "tl-aesop-1",   requirementId: "req-aesop-001", codeArtifactId: "ca-aesop-1",   kind: "implements" },
+  { id: "tl-aesop-2",   requirementId: "req-aesop-002", codeArtifactId: "ca-aesop-2",   kind: "implements" },
+  { id: "tl-aesop-3",   requirementId: "req-aesop-003", codeArtifactId: "ca-aesop-3",   kind: "implements" },
+  { id: "tl-nexus-1",   requirementId: "req-nexus-001", codeArtifactId: "ca-nexus-1",   kind: "implements" },
+  { id: "tl-nexus-2",   requirementId: "req-nexus-002", codeArtifactId: "ca-nexus-2",   kind: "implements" },
+  { id: "tl-nexus-3",   requirementId: "req-nexus-003", codeArtifactId: "ca-nexus-3",   kind: "implements" },
+  { id: "tl-sterling-1",requirementId: "req-sterling-001", codeArtifactId: "ca-sterling-1", kind: "implements" },
+  { id: "tl-sterling-2",requirementId: "req-sterling-002", codeArtifactId: "ca-sterling-2", kind: "implements" },
+  { id: "tl-sterling-3",requirementId: "req-sterling-003", codeArtifactId: "ca-sterling-3", kind: "implements" },
+  { id: "tl-nova-1",    requirementId: "req-nova-002",  codeArtifactId: "ca-nova-1",    kind: "implements" },
+  { id: "tl-nova-2",    requirementId: "req-nova-003",  codeArtifactId: "ca-nova-2",    kind: "implements" },
+  { id: "tl-nova-3",    requirementId: "req-nova-004",  codeArtifactId: "ca-nova-3",    kind: "implements" },
+  { id: "tl-titan-1",   requirementId: "req-titan-001", codeArtifactId: "ca-titan-1",   kind: "implements" },
+  { id: "tl-titan-2",   requirementId: "req-titan-002", codeArtifactId: "ca-titan-2",   kind: "implements" },
+  { id: "tl-titan-3",   requirementId: "req-titan-003", codeArtifactId: "ca-titan-3",   kind: "implements" },
+  { id: "tl-apollo-1",  requirementId: "req-apollo-001",codeArtifactId: "ca-apollo-1",  kind: "implements" },
+  { id: "tl-apollo-2",  requirementId: "req-apollo-003",codeArtifactId: "ca-apollo-2",  kind: "implements" },
+  { id: "tl-apollo-3",  requirementId: "req-apollo-002",codeArtifactId: "ca-apollo-3",  kind: "implements" },
+  { id: "tl-aegis-1",   requirementId: "req-aegis-001", codeArtifactId: "ca-aegis-1",   kind: "implements" },
+  { id: "tl-aegis-2",   requirementId: "req-aegis-002", codeArtifactId: "ca-aegis-2",   kind: "implements" },
+  { id: "tl-aegis-3",   requirementId: "req-aegis-003", codeArtifactId: "ca-aegis-3",   kind: "implements" },
+  { id: "tl-cipher-1",  requirementId: "req-cipher-001",codeArtifactId: "ca-cipher-1",  kind: "implements" },
+  { id: "tl-cipher-2",  requirementId: "req-cipher-002",codeArtifactId: "ca-cipher-2",  kind: "implements" },
+];
+
+const MORE_AI_REPORTS = [
+  { id: "rep-aesop-1", projectId: "proj-demo-aesop", frameworkId: "fw-21-cfr-11", kind: "compliance_audit", tone: "regulator", title: "21 CFR Part 11 — eCRF Audit",                       status: "finalised",
+    content: reportContent("21 CFR Part 11 — eCRF Audit",
+      "Aesop eCRF largely compliant with Part 11 §11.10, §11.30, §11.50. One critical finding on §11.200 strong-auth (SMS fallback).",
+      [
+        { id: "s1", heading: "Closed-System Controls (§11.10)",   body: "Audit trail, validation and access controls in place; reason-code truncation under remediation (CAPA-AES-002)." },
+        { id: "s2", heading: "Electronic Signatures (§11.200)",   body: "TOTP-based eSig functioning in normal mode; SMS fallback breaches strong-auth requirement (CAPA-AES-001)." },
+      ],
+      [{ id: "e1", label: "AES-0001 — eSignature 2FA", source: "requirement" }, { id: "e2", label: "esign.ts", source: "code" }]),
+  },
+  { id: "rep-aesop-2", projectId: "proj-demo-aesop", frameworkId: "fw-gdpr",      kind: "exec_brief",      tone: "executive", title: "GDPR Subject Rights — Executive Brief",            status: "draft",
+    content: reportContent("GDPR Subject Rights — Executive Brief",
+      "Subject access export functional; investigator e-signatures missing from bundle (CAPA-AES-003).",
+      [{ id: "s1", heading: "Open Items", body: "Add visit-level e-signatures to subject export." }],
+      [{ id: "e1", label: "AES-0003 — GDPR export", source: "requirement" }]),
+  },
+  { id: "rep-nexus-1", projectId: "proj-demo-nexus", frameworkId: "fw-hipaa",     kind: "compliance_audit", tone: "regulator", title: "HIPAA Security Rule — Cloud EHR Migration",         status: "finalised",
+    content: reportContent("HIPAA Security Rule — Cloud EHR Migration",
+      "Two material findings: SSN exposure on FHIR Patient resource (CAPA-NEX-001) and EU residency breach (CAPA-NEX-003).",
+      [
+        { id: "s1", heading: "Minimum Necessary (§164.502)", body: "FHIR Patient extension exposes SSN to broad scopes — remediation in progress." },
+        { id: "s2", heading: "Migration Integrity",          body: "412-record reconciliation gap under root-cause investigation (CAPA-NEX-002)." },
+      ],
+      [{ id: "e1", label: "NEX-0001 — FHIR API", source: "requirement" }, { id: "e2", label: "PatientResource.ts", source: "code" }]),
+  },
+  { id: "rep-nexus-2", projectId: "proj-demo-nexus", frameworkId: "fw-gdpr",      kind: "exec_brief",      tone: "executive", title: "GDPR Data Residency Incident Brief",                status: "draft",
+    content: reportContent("GDPR Data Residency Incident Brief",
+      "5,124 EU patient records mistakenly replicated to US-East S3 backup. DPA notification under Art. 33 prepared.",
+      [{ id: "s1", heading: "Containment", body: "Forensic deletion plan under CAPA-NEX-003." }],
+      [{ id: "e1", label: "NEX-0002 — EU residency", source: "requirement" }]),
+  },
+  { id: "rep-sterling-1", projectId: "proj-demo-sterling", frameworkId: "fw-pci-dss-4", kind: "compliance_audit", tone: "regulator", title: "PCI DSS 4.0 — Banking Platform Audit",     status: "finalised",
+    content: reportContent("PCI DSS 4.0 — Banking Platform Audit",
+      "Cardholder Data Environment isolation broken by shared HR SSO realm (CAPA-STR-002). Tokenisation otherwise effective.",
+      [{ id: "s1", heading: "Network Segmentation (Req 1)", body: "Cross-realm trust to HR violates segmentation principle." }],
+      [{ id: "e1", label: "STR-0002 — PCI segmentation", source: "requirement" }]),
+  },
+  { id: "rep-sterling-2", projectId: "proj-demo-sterling", frameworkId: "fw-dora",      kind: "exec_brief",        tone: "executive", title: "DORA Operational Resilience Brief",     status: "draft",
+    content: reportContent("DORA Operational Resilience Brief",
+      "ICT incident reporting one breach (4h12m vs 4h SLA). Automation work in progress under CAPA-STR-003.",
+      [{ id: "s1", heading: "Incident SLA", body: "Tooling gap closing in next sprint." }],
+      [{ id: "e1", label: "STR-0003 — DORA reporting", source: "requirement" }]),
+  },
+  { id: "rep-nova-1", projectId: "proj-demo-nova", frameworkId: "fw-pci-dss-4",   kind: "compliance_audit", tone: "regulator", title: "AML/KYC Effectiveness Review",                    status: "finalised",
+    content: reportContent("AML/KYC Effectiveness Review",
+      "Two critical control failures: AML pattern v3 missed sanctioned BTC cluster; KYC liveness vendor v3 accepted spoofed video.",
+      [
+        { id: "s1", heading: "AML",  body: "Pattern v4 rollout under CAPA-NOV-001." },
+        { id: "s2", heading: "KYC",  body: "Vendor model upgrade under CAPA-NOV-002." },
+      ],
+      [{ id: "e1", label: "NOV-0002 — AML monitoring", source: "requirement" }, { id: "e2", label: "NOV-0003 — KYC", source: "requirement" }]),
+  },
+  { id: "rep-nova-2", projectId: "proj-demo-nova", frameworkId: "fw-iso-27001",   kind: "exec_brief",      tone: "executive", title: "Cold-Custody Key Ceremony — Quarterly Brief",      status: "draft",
+    content: reportContent("Cold-Custody Key Ceremony — Quarterly Brief",
+      "Q1 ceremony recording has 22-second audio gap. CAPA-NOV-003 in flight to add audio redundancy.",
+      [{ id: "s1", heading: "Findings", body: "Single audio stream is a single-point-of-failure for chain-of-custody evidence." }],
+      [{ id: "e1", label: "Q1 ceremony video", source: "report" }]),
+  },
+  { id: "rep-titan-1", projectId: "proj-demo-titan", frameworkId: "fw-iec-61508", kind: "compliance_audit", tone: "regulator", title: "IEC 61508 SIL 3 — Verification Audit",            status: "finalised",
+    content: reportContent("IEC 61508 SIL 3 — Verification Audit",
+      "Open SIL 3 finding at site B: ESD function PFD measured 1.4×10⁻⁴ vs 1×10⁻⁴ budget (CAPA-TTN-001).",
+      [
+        { id: "s1", heading: "PFD by Site",  body: "Site A: 0.7×10⁻⁴ (OK) · Site B: 1.4×10⁻⁴ (FAIL) · Site C: 0.9×10⁻⁴ (OK)." },
+        { id: "s2", heading: "Proof Tests",  body: "Valve V-104 missed 12-month interval (CAPA-TTN-003)." },
+      ],
+      [{ id: "e1", label: "TTN-0001 — SIL 3 ESD", source: "requirement" }, { id: "e2", label: "esd.c", source: "code" }]),
+  },
+  { id: "rep-titan-2", projectId: "proj-demo-titan", frameworkId: "fw-iec-62443", kind: "exec_brief",      tone: "executive", title: "IEC 62443 SL 2 — Cyber Hardening Brief",          status: "draft",
+    content: reportContent("IEC 62443 SL 2 — Cyber Hardening Brief",
+      "Vendor OTA tool falls back to plain-TCP if TLS handshake fails. CAPA-TTN-002 will harden config.",
+      [{ id: "s1", heading: "Risks", body: "Remote attacker on OT network could push malicious firmware." }],
+      [{ id: "e1", label: "TTN-0002 — IEC 62443 SL2", source: "requirement" }]),
+  },
+  { id: "rep-apollo-1", projectId: "proj-demo-apollo", frameworkId: "fw-iso-26262", kind: "compliance_audit", tone: "regulator", title: "ISO 26262 ASIL-C — BMS Safety Case",            status: "finalised",
+    content: reportContent("ISO 26262 ASIL-C — BMS Safety Case",
+      "Open ASIL-C finding on thermal-runaway detection latency at -25°C corner (CAPA-APL-001).",
+      [
+        { id: "s1", heading: "Safety Goal SG-BMS-01", body: "Detect thermal runaway ≤ 2 ms across all temperature corners." },
+        { id: "s2", heading: "Variant Linkage",         body: "Variant V3 missing IEC 62133-2 abuse test trace (CAPA — open)." },
+      ],
+      [{ id: "e1", label: "APL-0001 — Thermal runaway", source: "requirement" }, { id: "e2", label: "thermal_runaway.c", source: "code" }]),
+  },
+  { id: "rep-apollo-2", projectId: "proj-demo-apollo", frameworkId: "fw-aspice-4", kind: "exec_brief",       tone: "executive", title: "Apollo BMS — ASPICE Process Brief",              status: "draft",
+    content: reportContent("Apollo BMS — ASPICE Process Brief",
+      "Process maturity at L2 across SWE.1–SWE.6. SoC estimator V&V coverage gap noted (CAPA-APL-002).",
+      [{ id: "s1", heading: "Status", body: "L2 stable; targeting L3 by next assessment." }],
+      [{ id: "e1", label: "APL-0003 — SoC accuracy", source: "requirement" }]),
+  },
+  { id: "rep-aegis-1", projectId: "proj-demo-aegis", frameworkId: "fw-soc2",      kind: "compliance_audit", tone: "regulator", title: "SOC 2 Security TSC — IAM Audit",                  status: "finalised",
+    content: reportContent("SOC 2 Security TSC — IAM Audit",
+      "Two critical findings: AAL2 bypass in password-reset (CAPA-AEG-001); ZTNA open-fail on cache miss (CAPA-AEG-003).",
+      [{ id: "s1", heading: "Common Criteria", body: "CC6.1 Logical access — failing." }],
+      [{ id: "e1", label: "AEG-0001 — AAL2 auth", source: "requirement" }, { id: "e2", label: "passwordReset.ts", source: "code" }]),
+  },
+  { id: "rep-aegis-2", projectId: "proj-demo-aegis", frameworkId: "fw-gdpr",      kind: "exec_brief",      tone: "executive", title: "GDPR Consent Lifecycle Brief",                     status: "draft",
+    content: reportContent("GDPR Consent Lifecycle Brief",
+      "Consent withdrawal not propagating to ad-tech processors within SLA. CAPA-AEG-002 in flight.",
+      [{ id: "s1", heading: "Findings", body: "Async fanout missing back-pressure handling." }],
+      [{ id: "e1", label: "AEG-0002 — GDPR consent", source: "requirement" }]),
+  },
+  { id: "rep-cipher-1", projectId: "proj-demo-cipher", frameworkId: "fw-pci-dss-4", kind: "compliance_audit", tone: "regulator", title: "OWASP API Top 10 — Gateway Audit",              status: "finalised",
+    content: reportContent("OWASP API Top 10 — Gateway Audit",
+      "Critical BOLA finding on /orders/{id} (CAPA-CPH-001). mTLS TTL policy violation (CAPA-CPH-002) also open.",
+      [
+        { id: "s1", heading: "API1:2023 BOLA",                     body: "Object-level authorisation missing on tenant-scoped resources." },
+        { id: "s2", heading: "API4:2023 Resource Consumption",    body: "Header-case rate-limit bypass (CAPA-CPH-003)." },
+      ],
+      [{ id: "e1", label: "CPH-0001 — OWASP coverage", source: "requirement" }, { id: "e2", label: "orders.go", source: "code" }]),
+  },
+  { id: "rep-cipher-2", projectId: "proj-demo-cipher", frameworkId: "fw-iso-27001", kind: "exec_brief",      tone: "executive", title: "Zero-Trust Maturity Brief",                       status: "draft",
+    content: reportContent("Zero-Trust Maturity Brief",
+      "mTLS enforcement live across east-west; PKI policy gap on certificate TTL.",
+      [{ id: "s1", heading: "Status", body: "All east-west links use mTLS; max-TTL enforcement pending." }],
+      [{ id: "e1", label: "CPH-0002 — mTLS east-west", source: "requirement" }]),
+  },
+];
+
+const MORE_RECURRING_AUDITS = [
+  { id: "ra-aesop-21cfr11",  projectId: "proj-demo-aesop",   frameworkId: "fw-21-cfr-11", cadence: "weekly",  hourUtc: 9,  notifyTo: "qa@acme-clin.example",       active: true,  nextRunAt: daysAhead(3),  lastRunAt: daysAgo(4),  lastRunStatus: "warning" },
+  { id: "ra-nexus-hipaa",    projectId: "proj-demo-nexus",   frameworkId: "fw-hipaa",     cadence: "weekly",  hourUtc: 13, notifyTo: "compliance@acme-health.example",active: true, nextRunAt: daysAhead(2),  lastRunAt: daysAgo(5),  lastRunStatus: "warning" },
+  { id: "ra-sterling-pci",   projectId: "proj-demo-sterling",frameworkId: "fw-pci-dss-4", cadence: "daily",   hourUtc: 6,  notifyTo: "secops@acme-bank.example",   active: true,  nextRunAt: daysAhead(1),  lastRunAt: daysAgo(0),  lastRunStatus: "warning" },
+  { id: "ra-nova-iso27001",  projectId: "proj-demo-nova",    frameworkId: "fw-iso-27001", cadence: "monthly", hourUtc: 9,  notifyTo: "ciso@acme-crypto.example",   active: true,  nextRunAt: daysAhead(20), lastRunAt: daysAgo(10), lastRunStatus: "success" },
+  { id: "ra-titan-61508",    projectId: "proj-demo-titan",   frameworkId: "fw-iec-61508", cadence: "monthly", hourUtc: 4,  notifyTo: "safety@acme-ind.example",    active: true,  nextRunAt: daysAhead(15), lastRunAt: daysAgo(15), lastRunStatus: "warning" },
+  { id: "ra-apollo-26262",   projectId: "proj-demo-apollo",  frameworkId: "fw-iso-26262", cadence: "weekly",  hourUtc: 13, notifyTo: "safety@acme-auto.example",   active: true,  nextRunAt: daysAhead(4),  lastRunAt: daysAgo(3),  lastRunStatus: "warning" },
+  { id: "ra-aegis-soc2",     projectId: "proj-demo-aegis",   frameworkId: "fw-soc2",      cadence: "daily",   hourUtc: 4,  notifyTo: "ciso@acme-sec.example",      active: true,  nextRunAt: daysAhead(1),  lastRunAt: daysAgo(0),  lastRunStatus: "warning" },
+  { id: "ra-cipher-pci",     projectId: "proj-demo-cipher",  frameworkId: "fw-pci-dss-4", cadence: "weekly",  hourUtc: 4,  notifyTo: "secops@acme-sec.example",    active: true,  nextRunAt: daysAhead(5),  lastRunAt: daysAgo(2),  lastRunStatus: "warning" },
+];
+
+const MORE_AI_CONVERSATIONS = [
+  { id: "conv-aesop-1",   projectId: "proj-demo-aesop",   question: "Are we Part 11 ready for the FDA inspection?",                        answer: "Mostly. The big open item is CAPA-AES-001: SMS fallback on eSignatures breaches §11.200 strong-auth. Audit-trail truncation (CAPA-AES-002) is also tracked but lower priority. Recommend closing CAPA-AES-001 before scheduling the inspection.",                  confidence: "high",   citations: ["rep-aesop-1", "capa-aesop-001"], createdAt: daysAgo(2) },
+  { id: "conv-aesop-2",   projectId: "proj-demo-aesop",   question: "Generate a GDPR subject export checklist.",                           answer: "Checklist: (1) Demographics export (live); (2) eCRF page snapshots (live); (3) Audit trail entries (live); (4) Investigator e-signatures per visit (MISSING — CAPA-AES-003); (5) Reason codes for edits (live, but 200-char truncation — CAPA-AES-002).",                       confidence: "high",   citations: [],                                createdAt: daysAgo(4) },
+  { id: "conv-nexus-1",   projectId: "proj-demo-nexus",   question: "What's the worst open finding on the migration?",                     answer: "The 5,124 EU patient records replicated to US-East (CAPA-NEX-003). It's a GDPR Art. 44 cross-border breach — DPA notification under Art. 33 is being prepared. Forensic deletion is being scheduled within 7 days.",                                                        confidence: "high",   citations: ["capa-nexus-003"],                createdAt: daysAgo(1) },
+  { id: "conv-nexus-2",   projectId: "proj-demo-nexus",   question: "Which FHIR endpoints are HIPAA-risky?",                                answer: "/Patient is the highest risk — exposes us-ssn extension to broad SMART scopes (CAPA-NEX-001). /Observation and /Encounter are scoped properly. /AuditEvent is read-only and well-controlled.",                                                                                  confidence: "high",   citations: ["rep-nexus-1"],                   createdAt: daysAgo(3) },
+  { id: "conv-sterling-1",projectId: "proj-demo-sterling",question: "How are we tracking against the cutover go-live date?",               answer: "Two critical blockers: ledger drift (₹4,217.32 — CAPA-STR-001) and PCI segmentation breach via shared HR SSO (CAPA-STR-002). Both are tracked critical with target close inside the next 21 days. DORA reporting automation (CAPA-STR-003) is medium-priority and won't block cutover.", confidence: "medium", citations: ["capa-sterling-001"],              createdAt: daysAgo(2) },
+  { id: "conv-sterling-2",projectId: "proj-demo-sterling",question: "Has any DORA incident exceeded the 4-hour reporting SLA?",            answer: "Yes — last quarter one ICT incident was reported at 4h12m (STR-422). Root cause: manual classification step. CAPA-STR-003 will automate the classify→submit flow with an 80%-of-SLA early warning.",                                                                          confidence: "high",   citations: [],                                createdAt: daysAgo(8) },
+  { id: "conv-nova-1",    projectId: "proj-demo-nova",    question: "What's our MiCA application status?",                                  answer: "Most organisational and capital-adequacy controls evidenced (NOV-0001). Two AML/KYC effectiveness gaps are open (CAPA-NOV-001, CAPA-NOV-002) — these will be flagged by the regulator unless closed before submission. Cold-custody ceremony evidence has a minor gap (CAPA-NOV-003).", confidence: "medium", citations: ["rep-nova-1"],                    createdAt: daysAgo(2) },
+  { id: "conv-nova-2",    projectId: "proj-demo-nova",    question: "Show all open critical AML/KYC issues.",                                answer: "Two open critical: NOV-101 (AML missed sanctioned BTC cluster) and NOV-106 (KYC liveness accepted spoof video). Both have CAPAs in flight (CAPA-NOV-001, CAPA-NOV-002) targeting closure within 21 days.",                                                                       confidence: "high",   citations: [],                                createdAt: daysAgo(4) },
+  { id: "conv-titan-1",   projectId: "proj-demo-titan",   question: "Is site B's ESD function still SIL 3?",                                 answer: "Currently failing. Last proof test measured PFD 1.4×10⁻⁴ vs the 1×10⁻⁴ SIL 3 budget. CAPA-TTN-001 is replacing the logic solver and re-running the proof test within 30 days. Operationally, the plant is on compensating controls (manual interlocks).",                            confidence: "high",   citations: ["rep-titan-1"],                   createdAt: daysAgo(1) },
+  { id: "conv-titan-2",   projectId: "proj-demo-titan",   question: "What's blocking IEC 62443 SL 2 sign-off?",                              answer: "Two items: (1) PLC OTA plain-TCP fallback (CAPA-TTN-002) — fix in next firmware release; (2) Air-gap breach incident (TTN-32995, resolved 20 days ago) needs lessons-learnt documented and a HAZOP exemption process proposed.",                                                  confidence: "medium", citations: ["rep-titan-2"],                   createdAt: daysAgo(3) },
+  { id: "conv-apollo-1",  projectId: "proj-demo-apollo",  question: "Walk me through the ASIL-C decomposition for the BMS controller.",      answer: "BMS is decomposed under ISO 26262-9: thermal-runaway detection sits at ASIL-C; SoC estimation at ASIL-B(C). HW PMHF and SPFM clear ASIL-C. SW partitioning isolates the detection ISR on a high-priority core with freedom-from-interference proven by memory protection.",            confidence: "high",   citations: ["rep-apollo-1"],                  createdAt: daysAgo(2) },
+  { id: "conv-apollo-2",  projectId: "proj-demo-apollo",  question: "Open safety items for V3 variant?",                                     answer: "Three: (1) Thermal runaway latency 2.4ms at -25°C (APL-44102 / CAPA-APL-001); (2) IEC 62133-2 abuse-test trace missing for V3 (APL-44120); (3) Production line skipped isolation-resistance test on 4 units (APL-44085 — recall scope under analysis).",                          confidence: "high",   citations: [],                                createdAt: daysAgo(5) },
+  { id: "conv-aegis-1",   projectId: "proj-demo-aegis",   question: "What auth weaknesses are we shipping right now?",                       answer: "Critical: (1) Password-reset bypass of TOTP (CAPA-AEG-001) — fails NIST 800-63-3 AAL2; (2) ZTNA policy engine fails OPEN on cache miss (CAPA-AEG-003) — should fail closed. Both are tagged critical with 10–14 day target closure.",                                                confidence: "high",   citations: ["rep-aegis-1"],                   createdAt: daysAgo(1) },
+  { id: "conv-aegis-2",   projectId: "proj-demo-aegis",   question: "GDPR consent lifecycle — where are we losing time?",                    answer: "The async fanout to downstream processors lacks back-pressure handling. Ad-tech processors lag the 24-hour SLA when broker queues spike. CAPA-AEG-002 introduces SLO alerting and human escalation on retry exhaust.",                                                            confidence: "high",   citations: [],                                createdAt: daysAgo(6) },
+  { id: "conv-cipher-1",  projectId: "proj-demo-cipher",  question: "How are we against the OWASP API Top 10?",                              answer: "9 of 10 covered cleanly. The outlier is API1:2023 BOLA — /orders/{id} doesn't enforce tenant scope (CPH-201 / CAPA-CPH-001). API4:2023 (resource consumption) has a header-case rate-limit bypass (CAPA-CPH-003). Both have fixes in flight inside 14 days.",                       confidence: "high",   citations: ["rep-cipher-1"],                  createdAt: daysAgo(2) },
+  { id: "conv-cipher-2",  projectId: "proj-demo-cipher",  question: "Is mTLS effectively enforced east-west?",                               answer: "Yes — every east-west call runs TLS 1.3 with mutual auth. The open issue is policy: the internal CA issued one cert with a 7-day TTL, exceeding the 24-hour policy (CPH-208 / CAPA-CPH-002). The TTL ceiling will be enforced in the issuance pipeline.",                          confidence: "high",   citations: [],                                createdAt: daysAgo(4) },
+];
+
+const MORE_COMPLIANCE_EVIDENCE = [
+  // Aesop
+  { id: "ev-aesop-1", projectId: "proj-demo-aesop",  controlId: "11.200(a)",   frameworkId: "fw-21-cfr-11", kind: "requirement", refId: "req-aesop-001", refLabel: "AES-0001 — eSignature 2FA",            source: "trace", status: "verified",     note: "Linked via tl-aesop-1" },
+  { id: "ev-aesop-2", projectId: "proj-demo-aesop",  controlId: "11.10(e)",    frameworkId: "fw-21-cfr-11", kind: "requirement", refId: "req-aesop-002", refLabel: "AES-0002 — Audit trail",                source: "trace", status: "verified",     note: "" },
+  { id: "ev-aesop-3", projectId: "proj-demo-aesop",  controlId: "Art.20",      frameworkId: "fw-gdpr",      kind: "note",        refId: null,            refLabel: "Investigator e-signatures missing in subject export", source: "ai", status: "ai_asserted", note: "Open finding" },
+  // Nexus
+  { id: "ev-nexus-1", projectId: "proj-demo-nexus",  controlId: "164.502(b)",  frameworkId: "fw-hipaa",     kind: "requirement", refId: "req-nexus-001", refLabel: "NEX-0001 — FHIR Patient API",          source: "trace", status: "verified",     note: "" },
+  { id: "ev-nexus-2", projectId: "proj-demo-nexus",  controlId: "Art.44",      frameworkId: "fw-gdpr",      kind: "report",      refId: "rep-nexus-2",   refLabel: "GDPR data residency incident brief",   source: "ai",    status: "ai_asserted",  note: "Cross-border breach disclosure" },
+  { id: "ev-nexus-3", projectId: "proj-demo-nexus",  controlId: "164.312(c)(1)", frameworkId: "fw-hipaa",   kind: "note",        refId: null,            refLabel: "412-record migration gap under reconciliation", source: "ai", status: "ai_asserted", note: "Open" },
+  // Sterling
+  { id: "ev-sterling-1", projectId: "proj-demo-sterling", controlId: "1.3.1",  frameworkId: "fw-pci-dss-4", kind: "note",        refId: null,            refLabel: "CDE shares SSO realm with HR domain",  source: "ai",    status: "ai_asserted",  note: "Critical" },
+  { id: "ev-sterling-2", projectId: "proj-demo-sterling", controlId: "Art.19", frameworkId: "fw-dora",      kind: "report",      refId: "rep-sterling-2",refLabel: "DORA brief",                            source: "ai",    status: "ai_asserted",  note: "" },
+  { id: "ev-sterling-3", projectId: "proj-demo-sterling", controlId: "A.5.32", frameworkId: "fw-iso-27001", kind: "requirement", refId: "req-sterling-005", refLabel: "STR-0005 — ISMS scope declaration",  source: "trace", status: "ai_asserted",  note: "Draft only" },
+  // Nova
+  { id: "ev-nova-1", projectId: "proj-demo-nova",    controlId: "A.8.13",      frameworkId: "fw-iso-27001", kind: "requirement", refId: "req-nova-004",  refLabel: "NOV-0004 — Cold wallet HSM ceremony",  source: "trace", status: "verified",     note: "" },
+  { id: "ev-nova-2", projectId: "proj-demo-nova",    controlId: "3.4",         frameworkId: "fw-pci-dss-4", kind: "test_result", refId: "tc-nova-001",   refLabel: "AML sanction screen test",              source: "trace", status: "ai_asserted",  note: "Currently failing" },
+  { id: "ev-nova-3", projectId: "proj-demo-nova",    controlId: "Art.32",      frameworkId: "fw-gdpr",      kind: "requirement", refId: "req-nova-003",  refLabel: "NOV-0003 — KYC FATF VASP",              source: "trace", status: "ai_asserted",  note: "Liveness gap" },
+  // Titan
+  { id: "ev-titan-1", projectId: "proj-demo-titan",  controlId: "Part 1 §7.4", frameworkId: "fw-iec-61508", kind: "test_result", refId: "tc-titan-001",  refLabel: "ESD proof test (site B FAIL)",         source: "trace", status: "ai_asserted",  note: "Open finding" },
+  { id: "ev-titan-2", projectId: "proj-demo-titan",  controlId: "SR 3.1",      frameworkId: "fw-iec-62443", kind: "requirement", refId: "req-titan-002", refLabel: "TTN-0002 — IEC 62443 SL 2",            source: "trace", status: "verified",     note: "" },
+  { id: "ev-titan-3", projectId: "proj-demo-titan",  controlId: "Part 1 §16",  frameworkId: "fw-iec-61511", kind: "note",        refId: null,            refLabel: "V-104 proof-test gap (13 months)",     source: "ai",    status: "ai_asserted",  note: "Open" },
+  // Apollo
+  { id: "ev-apollo-1", projectId: "proj-demo-apollo",controlId: "Part 6 §7",   frameworkId: "fw-iso-26262", kind: "requirement", refId: "req-apollo-001",refLabel: "APL-0001 — Thermal runaway detection", source: "trace", status: "verified",     note: "" },
+  { id: "ev-apollo-2", projectId: "proj-demo-apollo",controlId: "Part 6 §9",   frameworkId: "fw-iso-26262", kind: "test_result", refId: "tc-apollo-002", refLabel: "SoC accuracy test (failing)",          source: "trace", status: "ai_asserted",  note: "Open" },
+  { id: "ev-apollo-3", projectId: "proj-demo-apollo",controlId: "SUP.10",      frameworkId: "fw-aspice-4",  kind: "report",      refId: "rep-apollo-2",  refLabel: "ASPICE Process Brief",                  source: "ai",    status: "ai_asserted",  note: "" },
+  // Aegis
+  { id: "ev-aegis-1", projectId: "proj-demo-aegis",  controlId: "CC6.1",       frameworkId: "fw-soc2",      kind: "requirement", refId: "req-aegis-001", refLabel: "AEG-0001 — AAL2 auth",                 source: "trace", status: "ai_asserted",  note: "Failing in password-reset flow" },
+  { id: "ev-aegis-2", projectId: "proj-demo-aegis",  controlId: "Art.7(3)",    frameworkId: "fw-gdpr",      kind: "requirement", refId: "req-aegis-002", refLabel: "AEG-0002 — Consent withdrawal",        source: "trace", status: "ai_asserted",  note: "Propagation lag" },
+  { id: "ev-aegis-3", projectId: "proj-demo-aegis",  controlId: "PR.AC-04",    frameworkId: "fw-nist-csf",  kind: "requirement", refId: "req-aegis-003", refLabel: "AEG-0003 — ZTNA policy",               source: "trace", status: "ai_asserted",  note: "Open-fail bug" },
+  // Cipher
+  { id: "ev-cipher-1", projectId: "proj-demo-cipher",controlId: "6.2.4",       frameworkId: "fw-pci-dss-4", kind: "requirement", refId: "req-cipher-001",refLabel: "CPH-0001 — OWASP coverage",            source: "trace", status: "ai_asserted",  note: "BOLA outstanding" },
+  { id: "ev-cipher-2", projectId: "proj-demo-cipher",controlId: "A.8.24",      frameworkId: "fw-iso-27001", kind: "requirement", refId: "req-cipher-002",refLabel: "CPH-0002 — mTLS east-west",            source: "trace", status: "verified",     note: "" },
+  { id: "ev-cipher-3", projectId: "proj-demo-cipher",controlId: "6.4.1",       frameworkId: "fw-pci-dss-4", kind: "report",      refId: "rep-cipher-1",  refLabel: "OWASP API Top 10 audit",               source: "ai",    status: "ai_asserted",  note: "" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -906,39 +1291,50 @@ export async function seedDemoProjects() {
     await db.insert(pdlcStagesTable).values(allPdlc).onConflictDoNothing();
   }
 
-  // Per-module data for the six anchor projects.
-  if (PROJECT_SOURCES.length > 0) {
-    await db.insert(projectSourcesTable).values(PROJECT_SOURCES).onConflictDoNothing();
+  // Per-module data for all 14 demo projects.
+  const allSources           = [...PROJECT_SOURCES,   ...MORE_PROJECT_SOURCES];
+  const allDefects           = [...DEFECTS,           ...MORE_DEFECTS];
+  const allCapas             = [...CAPA_ACTIONS,      ...MORE_CAPA_ACTIONS];
+  const allTestCases         = [...TEST_CASES,        ...MORE_TEST_CASES];
+  const allCodeArtifacts     = [...CODE_ARTIFACTS,    ...MORE_CODE_ARTIFACTS];
+  const allTraceLinks        = [...TRACE_LINKS,       ...MORE_TRACE_LINKS];
+  const allAiReports         = [...AI_REPORTS,        ...MORE_AI_REPORTS];
+  const allRecurringAudits   = [...RECURRING_AUDITS,  ...MORE_RECURRING_AUDITS];
+
+  if (allSources.length > 0) {
+    await db.insert(projectSourcesTable).values(allSources).onConflictDoNothing();
   }
-  if (DEFECTS.length > 0) {
-    await db.insert(defectsTable).values(DEFECTS).onConflictDoNothing();
+  if (allDefects.length > 0) {
+    await db.insert(defectsTable).values(allDefects).onConflictDoNothing();
   }
-  if (CAPA_ACTIONS.length > 0) {
-    await db.insert(capaActionsTable).values(CAPA_ACTIONS).onConflictDoNothing();
+  if (allCapas.length > 0) {
+    await db.insert(capaActionsTable).values(allCapas).onConflictDoNothing();
   }
-  if (TEST_CASES.length > 0) {
-    await db.insert(testCasesTable).values(TEST_CASES).onConflictDoNothing();
+  if (allTestCases.length > 0) {
+    await db.insert(testCasesTable).values(allTestCases).onConflictDoNothing();
   }
-  if (CODE_ARTIFACTS.length > 0) {
-    await db.insert(codeArtifactsTable).values(CODE_ARTIFACTS).onConflictDoNothing();
+  if (allCodeArtifacts.length > 0) {
+    await db.insert(codeArtifactsTable).values(allCodeArtifacts).onConflictDoNothing();
   }
-  if (TRACE_LINKS.length > 0) {
-    await db.insert(traceabilityLinksTable).values(TRACE_LINKS).onConflictDoNothing();
+  if (allTraceLinks.length > 0) {
+    await db.insert(traceabilityLinksTable).values(allTraceLinks).onConflictDoNothing();
   }
-  if (AI_REPORTS.length > 0) {
-    await db.insert(aiReportsTable).values(AI_REPORTS).onConflictDoNothing();
+  if (allAiReports.length > 0) {
+    await db.insert(aiReportsTable).values(allAiReports).onConflictDoNothing();
   }
-  if (RECURRING_AUDITS.length > 0) {
-    await db.insert(recurringAuditsTable).values(RECURRING_AUDITS).onConflictDoNothing();
+  if (allRecurringAudits.length > 0) {
+    await db.insert(recurringAuditsTable).values(allRecurringAudits).onConflictDoNothing();
   }
   if (LEGACY_SYSTEMS.length > 0) {
     await db.insert(legacySystemsTable).values(LEGACY_SYSTEMS).onConflictDoNothing();
   }
-  if (AI_CONVERSATIONS.length > 0) {
-    await db.insert(aiConversationsTable).values(AI_CONVERSATIONS).onConflictDoNothing();
+  const allConversations = [...AI_CONVERSATIONS, ...MORE_AI_CONVERSATIONS];
+  const allEvidence      = [...COMPLIANCE_EVIDENCE, ...MORE_COMPLIANCE_EVIDENCE];
+  if (allConversations.length > 0) {
+    await db.insert(aiConversationsTable).values(allConversations).onConflictDoNothing();
   }
-  if (COMPLIANCE_EVIDENCE.length > 0) {
-    await db.insert(complianceEvidenceTable).values(COMPLIANCE_EVIDENCE).onConflictDoNothing();
+  if (allEvidence.length > 0) {
+    await db.insert(complianceEvidenceTable).values(allEvidence).onConflictDoNothing();
   }
   if (WORKFLOWS.length > 0) {
     await db.insert(workflowsTable).values(WORKFLOWS).onConflictDoNothing();
@@ -952,10 +1348,10 @@ export async function seedDemoProjects() {
 
   console.log(
     `Demo seed complete: ${PROJECTS.length} projects, ${REQUIREMENTS.length} requirements, ${allPdlc.length} PDLC stages, ` +
-    `${PROJECT_SOURCES.length} sources, ${DEFECTS.length} defects, ${CAPA_ACTIONS.length} CAPAs, ${TEST_CASES.length} test cases, ` +
-    `${CODE_ARTIFACTS.length} code artifacts, ${TRACE_LINKS.length} trace links, ${AI_REPORTS.length} AI reports, ${RECURRING_AUDITS.length} recurring audits, ` +
-    `${LEGACY_SYSTEMS.length} legacy systems, ${AI_CONVERSATIONS.length} AI conversations, ${COMPLIANCE_EVIDENCE.length} evidence rows, ` +
+    `${allSources.length} sources, ${allDefects.length} defects, ${allCapas.length} CAPAs, ${allTestCases.length} test cases, ` +
+    `${allCodeArtifacts.length} code artifacts, ${allTraceLinks.length} trace links, ${allAiReports.length} AI reports, ${allRecurringAudits.length} recurring audits, ` +
+    `${LEGACY_SYSTEMS.length} legacy systems, ${allConversations.length} AI conversations, ${allEvidence.length} evidence rows, ` +
     `${WORKFLOWS.length} workflows, ${WORKFLOW_RUNS.length} runs, ${WORKFLOW_STEP_RUNS.length} step runs. ` +
-    `Anchors: ${ANCHORS.join(", ")}.`,
+    `All 14 demo projects covered.`,
   );
 }
