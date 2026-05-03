@@ -291,6 +291,30 @@ export default function DemoVideoDetail() {
   const path = `/demo-videos/${module.slug}`;
   const seoTitle = `${module.title} — ${module.project} demo | Auditee`;
   const description = `${module.desc} Step-by-step ${module.minutes}-minute video tutorial using the ${module.project} demo project.`;
+  const SITE = "https://auditee.site";
+  const isoDuration = `PT${module.minutes}M`;
+  const videoObjectLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name: `${module.title} — ${module.project} | Auditee Tutorial`,
+    description,
+    thumbnailUrl: [`${SITE}/opengraph.jpg`],
+    uploadDate: "2026-01-15T09:00:00+05:30",
+    duration: isoDuration,
+    contentUrl: `${SITE}${path}`,
+    embedUrl: `${SITE}/auditee-tutorial/?module=${module.slug}&embed=1&autoplay=1`,
+    publisher: {
+      "@type": "Organization",
+      name: "Auditee",
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE}/logo.svg`,
+      },
+    },
+    isFamilyFriendly: true,
+    inLanguage: "en",
+    keywords: [module.title, module.project, `${module.domain} compliance`, "Auditee tutorial"].join(", "),
+  };
 
   return (
     <div className="theme-landing min-h-screen bg-white font-sans text-slate-900">
@@ -299,11 +323,14 @@ export default function DemoVideoDetail() {
         description={description}
         path={path}
         keywords={[module.title, module.project, "Auditee tutorial", `${module.domain} compliance`]}
-        jsonLd={breadcrumbsLd([
-          { name: "Home", path: "/" },
-          { name: "Demo Videos", path: "/demo-videos" },
-          { name: module.title, path },
-        ])}
+        jsonLd={[
+          breadcrumbsLd([
+            { name: "Home", path: "/" },
+            { name: "Demo Videos", path: "/demo-videos" },
+            { name: module.title, path },
+          ]),
+          videoObjectLd,
+        ]}
       />
       <Navigation />
       <main className="pt-24 pb-20">
