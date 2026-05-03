@@ -224,8 +224,9 @@ export function DemoDialog({ children }: { children: React.ReactNode }) {
 
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-1.5 z-50 relative font-display font-bold text-2xl tracking-tight text-slate-950">
-      <span className="text-primary">Auditee</span>
+    <Link href="/" className="flex items-center gap-2 z-50 relative font-display font-bold text-2xl tracking-tight text-slate-950" aria-label="Auditee — home">
+      <img src="/favicon.svg" alt="Auditee" width={36} height={36} className="h-9 w-9 rounded-lg shadow-sm" />
+      <span className="sr-only">Auditee</span>
     </Link>
   );
 }
@@ -424,7 +425,8 @@ export function SiteFooter() {
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-16">
           <div className="col-span-2 md:col-span-2">
-            <Link href="/" className="inline-flex items-center gap-1.5 font-display font-bold text-2xl tracking-tight text-white mb-6">
+            <Link href="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl tracking-tight text-white mb-6" aria-label="Auditee — home">
+              <img src="/favicon.svg" alt="" width={32} height={32} className="h-8 w-8 rounded-lg shadow-sm" />
               <span className="text-primary">Auditee</span>
             </Link>
             <p className="text-slate-400 max-w-sm mb-6">

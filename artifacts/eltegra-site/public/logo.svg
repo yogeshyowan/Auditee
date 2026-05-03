@@ -1,5 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" fill="none">
-  <rect x="2" y="6" width="28" height="28" rx="8" fill="#6366f1"/>
-  <path d="M9 26L15 12L21 26M11.5 21.5H18.5" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="40" y="27" font-family="Inter Tight, system-ui, sans-serif" font-weight="700" font-size="22" fill="#0f172a">Auditee</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none" role="img" aria-label="Auditee">
+  <defs>
+    <linearGradient id="aud-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="55%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+    <linearGradient id="aud-shine" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Mark -->
+  <rect x="4" y="4" width="40" height="40" rx="11" fill="url(#aud-grad)"/>
+  <rect x="4" y="4" width="40" height="40" rx="11" fill="url(#aud-shine)"/>
+  <!-- Stylized A with integrated audit check -->
+  <path d="M14 33 L23 14 L32 33" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M17.5 27 L28.5 27" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <!-- Knowledge-graph node -->
+  <circle cx="23" cy="13.5" r="2" fill="#FDE68A"/>
+  <!-- Check tick coming out of the A's base -->
+  <path d="M30 35.5 L33.5 39 L40 31.5" stroke="#34D399" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Wordmark -->
+  <text x="55" y="32" font-family="'Inter Tight', Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="24" fill="#0F172A" letter-spacing="-0.5">Auditee</text>
 </svg>
