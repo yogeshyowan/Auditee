@@ -9,6 +9,16 @@ import { post as spreadsheetsBeatRm } from "./why-spreadsheets-still-beat-rm-too
 import { post as legacyCobol } from "./legacy-cobol-modernization-with-ai";
 import { post as fifteenPrompts } from "./15-ai-prompts-for-requirements-gathering";
 import { post as poorReqsCostBillions } from "./poor-software-requirements-cost-billions";
+import { post as iso26262Asil } from "./iso-26262-asil-classification-practical-guide";
+import { post as do178cPrimer } from "./do-178c-software-certification-2026-primer";
+import { post as traceabilityMatrix } from "./bidirectional-traceability-matrix-complete-guide";
+import { post as capaLifecycle } from "./capa-lifecycle-from-finding-to-closure";
+import { post as continuousCompliance } from "./continuous-compliance-vs-quarterly-audits";
+import { post as pdlcVsSdlc } from "./pdlc-vs-sdlc-for-regulated-teams";
+import { post as aiHallucinations } from "./ai-hallucinations-in-regulated-software-playbook";
+import { post as fiveGCompliance } from "./5g-network-compliance-3gpp-etsi-mapping";
+import { post as euAiAct } from "./eu-ai-act-2026-software-team-checklist";
+import { post as jiraToReqs } from "./from-jira-tickets-to-compliant-requirements";
 
 export interface BlogPost {
   slug: string;
@@ -36,6 +46,16 @@ export const POSTS: BlogPost[] = [
   legacyCobol,
   fifteenPrompts,
   poorReqsCostBillions,
+  iso26262Asil,
+  do178cPrimer,
+  traceabilityMatrix,
+  capaLifecycle,
+  continuousCompliance,
+  pdlcVsSdlc,
+  aiHallucinations,
+  fiveGCompliance,
+  euAiAct,
+  jiraToReqs,
 ].sort((a, b) => (a.date < b.date ? 1 : -1));
 
 export function getPost(slug: string): BlogPost | undefined {
