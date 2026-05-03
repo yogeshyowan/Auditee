@@ -13,6 +13,9 @@ import { ModuleWorkflows } from './modules/ModuleWorkflows';
 import { ModuleAnalytics } from './modules/ModuleAnalytics';
 import { ModuleRecurringAudits } from './modules/ModuleRecurringAudits';
 import { ModuleDashboard } from './modules/ModuleDashboard';
+import { ModuleLegacy } from './modules/ModuleLegacy';
+import { ModulePdlc } from './modules/ModulePdlc';
+import { ModuleAsk } from './modules/ModuleAsk';
 
 const MODULES: Record<string, React.ComponentType> = {
   sources: ModuleSources,
@@ -29,6 +32,9 @@ const MODULES: Record<string, React.ComponentType> = {
   analytics: ModuleAnalytics,
   'recurring-audits': ModuleRecurringAudits,
   dashboard: ModuleDashboard,
+  legacy: ModuleLegacy,
+  pdlc: ModulePdlc,
+  ask: ModuleAsk,
 };
 
 export function ModuleTutorial() {

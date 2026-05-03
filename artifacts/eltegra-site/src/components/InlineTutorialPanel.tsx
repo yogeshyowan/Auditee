@@ -16,6 +16,9 @@ const MODULE_LABELS: Record<string, string> = {
   analytics: "Analytics",
   "recurring-audits": "Recurring Audits",
   dashboard: "Dashboard",
+  legacy: "Legacy Modernisation",
+  pdlc: "PDLC Pipeline",
+  ask: "Ask Auditee",
 };
 
 const MODULE_SUBTITLES: Record<string, string> = {
@@ -33,6 +36,9 @@ const MODULE_SUBTITLES: Record<string, string> = {
   analytics: "Readiness scores, coverage trends",
   "recurring-audits": "Continuous compliance scanning",
   dashboard: "At-a-glance project health",
+  legacy: "Decode COBOL/JCL/CICS into modern reqs",
+  pdlc: "Six gated lifecycle stages, signed end-to-end",
+  ask: "Conversational AI grounded in your project graph",
 };
 
 interface InlineTutorialPanelProps {

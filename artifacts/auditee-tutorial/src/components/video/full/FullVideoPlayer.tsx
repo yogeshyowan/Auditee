@@ -18,6 +18,9 @@ import { ModuleWorkflows } from '../modules/ModuleWorkflows';
 import { ModuleAnalytics } from '../modules/ModuleAnalytics';
 import { ModuleRecurringAudits } from '../modules/ModuleRecurringAudits';
 import { ModuleDashboard } from '../modules/ModuleDashboard';
+import { ModuleLegacy } from '../modules/ModuleLegacy';
+import { ModulePdlc } from '../modules/ModulePdlc';
+import { ModuleAsk } from '../modules/ModuleAsk';
 
 const MODULES: Record<ModuleKey, React.ComponentType> = {
   dashboard: ModuleDashboard,
@@ -34,6 +37,9 @@ const MODULES: Record<ModuleKey, React.ComponentType> = {
   workflows: ModuleWorkflows,
   analytics: ModuleAnalytics,
   'recurring-audits': ModuleRecurringAudits,
+  legacy: ModuleLegacy,
+  pdlc: ModulePdlc,
+  ask: ModuleAsk,
 };
 
 const HOOK_MS = 8000;

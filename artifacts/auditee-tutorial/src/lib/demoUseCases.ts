@@ -9,7 +9,8 @@
 export type ModuleKey =
   | 'dashboard' | 'sources' | 'interview' | 'requirements' | 'gaps'
   | 'traceability' | 'compliance' | 'capa' | 'defects' | 'tests'
-  | 'reports' | 'workflows' | 'analytics' | 'recurring-audits';
+  | 'reports' | 'workflows' | 'analytics' | 'recurring-audits'
+  | 'legacy' | 'pdlc' | 'ask';
 
 export type DemoStoryline = {
   project: string;
@@ -490,6 +491,92 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
     coverage: {
       standards: ['FATF VASP', 'Travel Rule', 'SOC 2 Type II', 'PCI DSS v4.0', 'DORA', 'MiCA', 'ISO/IEC 27001:2022'],
       tools: ['Chainalysis', 'Elliptic', 'Jira', 'PagerDuty', 'Snowflake'],
+    },
+  },
+  legacy: {
+    project: 'Mercury — COBOL Core Banking Modernisation',
+    domain: 'Legacy Modernization',
+    idPrefix: 'MER',
+    hero: {
+      kicker: 'Step 15 · Legacy Modernisation',
+      lineA: 'Reverse-engineer Mercury,',
+      lineB: 'thirty years of COBOL.',
+      subtitle: '1.2 million lines of CICS, COBOL, JCL and DB2 — extracted into modern requirements with risk-scored dependency graph.',
+    },
+    cues: [
+      { startMs: 0,     endMs: 5500,  text: "Mercury is the bank's 30-year COBOL trading system — point Auditee at the repo." },
+      { startMs: 5500,  endMs: 12000, text: "1.2 million lines, 4,200 COBOL programs, 380 JCL jobs, 612 CICS transactions — scanned in minutes." },
+      { startMs: 12000, endMs: 18000, text: "184 modern requirements extracted, each linked to the original COBOL paragraphs and risk-scored." },
+      { startMs: 18000, endMs: 23000, text: "Mercury is now ready for the cloud rewrite — every behaviour documented, every risk surfaced." },
+    ],
+    steps: [
+      { title: 'Open Legacy on Mercury', body: 'Inside Mercury — COBOL Core Banking, click Legacy Systems.' },
+      { title: 'Connect the source', body: 'Point Auditee at the COBOL/JCL repo — CICS transactions and DB2 schemas auto-detected.' },
+      { title: 'Read the heatmap', body: 'Risk-scored modules surface in red — payment posting, FX margin, end-of-day batch.' },
+      { title: 'Extract the requirements', body: '184 modern BRS/PRD/FRD requirements generated with provenance back to every COBOL paragraph.' },
+    ],
+    finale: { stat: '1.2M', label: 'Mercury LOC Decoded', sub: '184 reqs · 38 high-risk modules · zero rewrite mystery' },
+    coverage: {
+      standards: ['ISO/IEC 25010', 'IEEE 14764', 'BCBS 239', 'PCI DSS v4.0', 'SOX', 'FFIEC', 'ISO/IEC 27001:2022'],
+      tools: ['IBM Z OS', 'CA Endevor', 'GitHub Enterprise', 'IBM Wazi', 'Snowflake'],
+    },
+  },
+
+  pdlc: {
+    project: 'Phoenix — Surgical Robotics Platform',
+    domain: 'Medical Robotics',
+    idPrefix: 'PHX',
+    hero: {
+      kicker: 'Step 16 · PDLC Pipeline',
+      lineA: 'Walk Phoenix through six',
+      lineB: 'gated lifecycle stages.',
+      subtitle: 'Ideation → Design → Development → Testing → Launch → Governance — every gate enforces IEC 62304 + FDA QSR evidence.',
+    },
+    cues: [
+      { startMs: 0,     endMs: 5500,  text: "Phoenix is the surgical robotics platform — open the PDLC view to see the whole release flow." },
+      { startMs: 5500,  endMs: 12000, text: "Six stages, six gates — Ideation through Governance, each owned, each audited, each one with required evidence." },
+      { startMs: 12000, endMs: 18000, text: "Phoenix v2.4 is in Testing — IEC 62304 verification 92% complete, two CAPAs blocking the Launch gate." },
+      { startMs: 18000, endMs: 23000, text: "Close the CAPAs and Phoenix moves to Launch — every stage transition signed, timestamped and FDA-ready." },
+    ],
+    steps: [
+      { title: 'Open the Phoenix PDLC pipeline', body: 'Inside Phoenix — Surgical Robotics, click PDLC to see the 6-stage Kanban.' },
+      { title: 'Inspect each gate', body: 'Ideation, Design, Development, Testing, Launch, Governance — each shows required evidence and reviewer.' },
+      { title: 'Drill into Testing', body: 'IEC 62304 verification 92% — two CAPAs (display latency, force-feedback drift) blocking Launch.' },
+      { title: 'Promote to Launch', body: 'Reviewer signs the gate, evidence locked, audit trail timestamped — Phoenix moves to Launch.' },
+    ],
+    finale: { stat: '6', label: 'Phoenix Lifecycle Stages', sub: 'Every gate signed · every transition audit-trailed' },
+    coverage: {
+      standards: ['IEC 62304', 'ISO 13485', 'FDA 21 CFR 820', 'ISO 14971', 'MDR 2017/745', 'ISO/IEC/IEEE 42010', 'IEC 62366'],
+      tools: ['Jira', 'Polarion', 'Confluence', 'GitHub', 'TestRail'],
+    },
+  },
+
+  ask: {
+    project: 'Sirius — 5G Core Network',
+    domain: 'Telecom',
+    idPrefix: 'SIR',
+    hero: {
+      kicker: 'Step 17 · Ask Auditee',
+      lineA: 'Ask anything about Sirius —',
+      lineB: 'cited from the live graph.',
+      subtitle: 'Conversational AI that answers from your real requirements, code, tests and CAPAs — every claim sourced, never hallucinated.',
+    },
+    cues: [
+      { startMs: 0,     endMs: 5500,  text: "Sirius is the 5G core network — Aman, the telecom architect, opens Ask Auditee to investigate a SLA breach." },
+      { startMs: 5500,  endMs: 12000, text: "Which Sirius requirements affect handover latency? — Auditee returns 14 reqs with 3GPP TS 23.501 citations." },
+      { startMs: 12000, endMs: 18000, text: "What CAPAs are blocking the 5G launch? — three open CAPAs, owners, due dates, linked evidence — all sourced." },
+      { startMs: 18000, endMs: 23000, text: "Sirius decisions, traceable. Aman shares the conversation with the 5G launch board — every answer auditable." },
+    ],
+    steps: [
+      { title: 'Open Ask Auditee on Sirius', body: 'Inside Sirius — 5G Core Network, click Ask to start a grounded conversation.' },
+      { title: 'Ask a real question', body: '"Which Sirius reqs affect handover latency?" — Auditee searches reqs, code, tests, CAPAs.' },
+      { title: 'Read the cited answer', body: 'Each claim links to the source — PRD-031, 3GPP TS 23.501 §5.3, CAPA-014, never hallucinated.' },
+      { title: 'Share with the board', body: 'Pin the conversation to the Sirius launch board — every answer reproducible and audit-ready.' },
+    ],
+    finale: { stat: '0', label: 'Sirius Hallucinations', sub: 'Every answer cited to live req / code / test / CAPA' },
+    coverage: {
+      standards: ['3GPP TS 23.501', '3GPP TS 33.501', 'ETSI EN 303 645', 'NIST CSF 2.0', 'ISO/IEC 27001:2022', 'IEC 62443'],
+      tools: ['GitLab', 'Jira', 'Confluence', 'Splunk', 'Snowflake'],
     },
   },
 };

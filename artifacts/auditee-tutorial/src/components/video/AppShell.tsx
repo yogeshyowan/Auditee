@@ -16,6 +16,9 @@ const NAV: { slug: ModuleKey; label: string; icon: string }[] = [
   { slug: 'workflows', label: 'Workflows', icon: '↻' },
   { slug: 'analytics', label: 'Analytics', icon: '∿' },
   { slug: 'recurring-audits', label: 'Recurring Audits', icon: '◐' },
+  { slug: 'legacy', label: 'Legacy Systems', icon: '▣' },
+  { slug: 'pdlc', label: 'PDLC Pipeline', icon: '⇨' },
+  { slug: 'ask', label: 'Ask Auditee', icon: '✺' },
 ];
 
 const SCENE_TO_INDEX: Record<string, number> = {

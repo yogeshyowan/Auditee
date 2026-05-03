@@ -4,6 +4,7 @@ export const MODULE_ORDER: ModuleKey[] = [
   'dashboard', 'sources', 'interview', 'requirements', 'gaps',
   'traceability', 'compliance', 'capa', 'defects', 'tests',
   'reports', 'workflows', 'analytics', 'recurring-audits',
+  'legacy', 'pdlc', 'ask',
 ];
 
 export type ShortHook = {
@@ -98,6 +99,24 @@ export const SHORT_HOOKS: Record<ModuleKey, ShortHook> = {
     setup: "Nova crypto exchange — daily VASP, monthly SOC 2, auto-CAPA on findings.",
     payoff: "9 audits in a row. Zero overdue.",
     emoji: "🔁", accent: "#22d3ee",
+  },
+  legacy: {
+    punch: "1.2 million lines of COBOL. No documentation.",
+    setup: "Mercury bank — Auditee decodes 30 years of mainframe into modern reqs.",
+    payoff: "Cloud rewrite, with every risk on the table.",
+    emoji: "🗄️", accent: "#f59e0b",
+  },
+  pdlc: {
+    punch: "Six stages. Six signed gates. Zero spreadsheets.",
+    setup: "Phoenix surgical robot — Ideation to Launch under IEC 62304 + FDA QSR.",
+    payoff: "FDA-ready release, every transition timestamped.",
+    emoji: "🚦", accent: "#14b8a6",
+  },
+  ask: {
+    punch: "ChatGPT lies. Auditee cites.",
+    setup: "Ask Sirius 5G core anything — every answer sourced from live evidence.",
+    payoff: "Zero hallucinations. Audit-ready Q&A.",
+    emoji: "💡", accent: "#8b5cf6",
   },
 };
 

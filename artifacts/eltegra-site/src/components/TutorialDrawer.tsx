@@ -17,6 +17,9 @@ const MODULE_LABELS: Record<string, string> = {
   analytics: "Analytics",
   "recurring-audits": "Recurring Audits",
   dashboard: "Dashboard",
+  legacy: "Legacy Modernisation",
+  pdlc: "PDLC Pipeline",
+  ask: "Ask Auditee",
 };
 
 interface TutorialDrawerProps {

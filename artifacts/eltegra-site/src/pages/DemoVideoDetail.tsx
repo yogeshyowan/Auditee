@@ -228,6 +228,48 @@ const MODULES: ModuleEntry[] = [
       { title: "Track the streak", body: "Nova has run 9 consecutive monthly audits with zero overdue CAPAs." },
     ],
   },
+  {
+    slug: "legacy", title: "Legacy Modernisation",
+    project: "Mercury — COBOL Core Banking Modernisation", domain: "Banking",
+    desc: "Point Auditee at a 30-year-old COBOL/JCL/CICS/DB2 trading system — 1.2 million lines decoded into 184 risk-scored modern requirements.",
+    minutes: 5,
+    standards: ["ISO/IEC 25010", "IEEE 14764", "BCBS 239", "PCI DSS v4.0", "SOX", "FFIEC", "ISO/IEC 27001:2022"],
+    tools: ["IBM Z OS", "CA Endevor", "GitHub Enterprise", "IBM Wazi", "Snowflake"],
+    steps: [
+      { title: "Open Legacy on Mercury", body: "Inside Mercury — COBOL Core Banking, click Legacy Systems." },
+      { title: "Connect the source", body: "Point Auditee at the COBOL/JCL repo — CICS transactions and DB2 schemas auto-detected." },
+      { title: "Read the heatmap", body: "Risk-scored modules surface in red — payment posting, FX margin, end-of-day batch." },
+      { title: "Extract the requirements", body: "184 modern BRS/PRD/FRD requirements generated with provenance back to every COBOL paragraph." },
+    ],
+  },
+  {
+    slug: "pdlc", title: "PDLC Pipeline",
+    project: "Phoenix — Surgical Robotics Platform", domain: "Medical Robotics",
+    desc: "Walk Phoenix v2.4 through six gated lifecycle stages — Ideation → Design → Development → Testing → Launch → Governance — every IEC 62304 + FDA QSR transition signed and audit-trailed.",
+    minutes: 5,
+    standards: ["IEC 62304", "ISO 13485", "FDA 21 CFR 820", "ISO 14971", "MDR 2017/745", "ISO/IEC/IEEE 42010", "IEC 62366"],
+    tools: ["Jira", "Polarion", "Confluence", "GitHub", "TestRail"],
+    steps: [
+      { title: "Open the Phoenix PDLC pipeline", body: "Inside Phoenix — Surgical Robotics, click PDLC to see the 6-stage Kanban." },
+      { title: "Inspect each gate", body: "Ideation, Design, Development, Testing, Launch, Governance — each shows required evidence and reviewer." },
+      { title: "Drill into Testing", body: "IEC 62304 verification 92% — two CAPAs (display latency, force-feedback drift) blocking Launch." },
+      { title: "Promote to Launch", body: "Reviewer signs the gate, evidence locked, audit trail timestamped — Phoenix moves to Launch." },
+    ],
+  },
+  {
+    slug: "ask", title: "Ask Auditee",
+    project: "Sirius — 5G Core Network", domain: "Telecom",
+    desc: "Conversational AI grounded in the Sirius project graph — every answer cited to live requirements, code, tests and CAPAs. Zero hallucinations.",
+    minutes: 4,
+    standards: ["3GPP TS 23.501", "3GPP TS 33.501", "ETSI EN 303 645", "NIST CSF 2.0", "ISO/IEC 27001:2022", "IEC 62443"],
+    tools: ["GitLab", "Jira", "Confluence", "Splunk", "Snowflake"],
+    steps: [
+      { title: "Open Ask Auditee on Sirius", body: "Inside Sirius — 5G Core Network, click Ask to start a grounded conversation." },
+      { title: "Ask a real question", body: "\"Which Sirius reqs affect handover latency?\" — Auditee searches reqs, code, tests, CAPAs." },
+      { title: "Read the cited answer", body: "Each claim links to its source — PRD-031, 3GPP TS 23.501 §5.3, CAPA-014 — never hallucinated." },
+      { title: "Share with the board", body: "Pin the conversation to the Sirius launch board — every answer reproducible and audit-ready." },
+    ],
+  },
 ];
 
 const TUTORIAL_BASE = "/auditee-tutorial/";

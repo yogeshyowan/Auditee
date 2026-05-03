@@ -10,7 +10,8 @@ import { useId } from "react";
 type Slug =
   | 'dashboard' | 'sources' | 'interview' | 'requirements' | 'gaps'
   | 'traceability' | 'compliance' | 'capa' | 'defects' | 'tests'
-  | 'reports' | 'workflows' | 'analytics' | 'recurring-audits';
+  | 'reports' | 'workflows' | 'analytics' | 'recurring-audits'
+  | 'legacy' | 'pdlc' | 'ask';
 
 type Props = {
   slug: Slug;
@@ -34,6 +35,9 @@ const PALETTES: Record<Slug, { bg: string; bg2: string; accent: string; ink: str
   workflows:        { bg: '#0c1620', bg2: '#152537', accent: '#06b6d4', ink: '#cffafe', tag: 'Workflows' },
   analytics:        { bg: '#1a0f24', bg2: '#2c1a3d', accent: '#a855f7', ink: '#f3e8ff', tag: 'Analytics' },
   'recurring-audits': { bg: '#0a1f24', bg2: '#0f343a', accent: '#22d3ee', ink: '#cffafe', tag: 'Recurring Audits' },
+  legacy:           { bg: '#241608', bg2: '#3a2410', accent: '#f59e0b', ink: '#fef3c7', tag: 'Legacy Modernisation' },
+  pdlc:             { bg: '#0a1f1c', bg2: '#0f3330', accent: '#14b8a6', ink: '#ccfbf1', tag: 'PDLC Pipeline' },
+  ask:              { bg: '#1a0e2e', bg2: '#2a1748', accent: '#8b5cf6', ink: '#ede9fe', tag: 'Ask Auditee' },
 };
 
 function Frame({
@@ -437,6 +441,89 @@ export function ModuleThumbnail({ slug, project, className = '', testId }: Props
             </g>
           ))}
           <text x="40" y="320" fontSize="10" fill={p.ink} opacity="0.7">9 consecutive monthly audits · 0 overdue CAPAs</text>
+        </>
+      );
+      break;
+
+    case 'legacy':
+      body = (
+        <>
+          {/* Risk heatmap grid — 8 COBOL modules */}
+          {[
+            { n: 'PAY-POST.cbl', r: 92 }, { n: 'FX-MARGIN.cbl', r: 88 },
+            { n: 'EOD-BATCH.jcl', r: 84 }, { n: 'KYC-LOOKUP.cbl', r: 71 },
+            { n: 'NACHA-OUT.cbl', r: 64 }, { n: 'SETTLE.cbl', r: 58 },
+            { n: 'POSTING.cbl', r: 41 }, { n: 'STATEMENT.cbl', r: 22 },
+          ].map((m, i) => {
+            const col = m.r >= 80 ? '#f87171' : m.r >= 60 ? '#fb923c' : m.r >= 40 ? '#fbbf24' : '#34d399';
+            const x = 40 + (i % 4) * 145;
+            const y = 130 + Math.floor(i / 4) * 95;
+            return (
+              <g key={m.n}>
+                <rect x={x} y={y} width="135" height="80" rx="8" fill="white" fillOpacity="0.05" stroke={col} strokeOpacity="0.45" />
+                <rect x={x} y={y} width="3" height="80" fill={col} />
+                <text x={x + 12} y={y + 22} fontSize="10" fontWeight="700" fill={p.ink}>{m.n}</text>
+                <text x={x + 12} y={y + 38} fontSize="9" fill={p.ink} opacity="0.55">CICS · risk</text>
+                <text x={x + 12} y={y + 68} fontSize="22" fontWeight="700" fill={col}>{m.r}</text>
+              </g>
+            );
+          })}
+          <text x="40" y="340" fontSize="10" fill={p.ink} opacity="0.7">1.2M LOC · 4,200 programs · 184 reqs extracted</text>
+        </>
+      );
+      break;
+
+    case 'pdlc':
+      body = (
+        <>
+          {/* 6-stage pipeline */}
+          {[
+            { n: 'Ideation', s: 'done', c: '#34d399' },
+            { n: 'Design', s: 'done', c: '#34d399' },
+            { n: 'Development', s: 'done', c: '#34d399' },
+            { n: 'Testing', s: 'active', c: '#38bdf8' },
+            { n: 'Launch', s: 'blocked', c: '#f87171' },
+            { n: 'Governance', s: 'pending', c: '#94a3b8' },
+          ].map((s, i) => {
+            const x = 40 + i * 95;
+            return (
+              <g key={s.n}>
+                <rect x={x} y="150" width="85" height="100" rx="8" fill="white" fillOpacity="0.05" stroke={s.c} strokeOpacity="0.5" />
+                <text x={x + 42} y="175" fontSize="11" fontWeight="700" fill={p.ink} textAnchor="middle">{s.n}</text>
+                <text x={x + 42} y="192" fontSize="8" fontWeight="700" fill={s.c} textAnchor="middle">{s.s.toUpperCase()}</text>
+                <circle cx={x + 42} cy="225" r="14" fill={s.c} fillOpacity="0.18" stroke={s.c} strokeOpacity="0.5" />
+                {i < 5 && <line x1={x + 85} y1="200" x2={x + 95} y2="200" stroke={p.ink} strokeOpacity="0.3" strokeWidth="1.5" />}
+              </g>
+            );
+          })}
+          <text x="40" y="290" fontSize="11" fontWeight="700" fill={p.ink}>Phoenix v2.4 — IEC 62304 + FDA QSR</text>
+          <text x="40" y="310" fontSize="10" fill={p.ink} opacity="0.7">Testing 92% · 2 CAPAs blocking Launch</text>
+        </>
+      );
+      break;
+
+    case 'ask':
+      body = (
+        <>
+          {/* User query bubble */}
+          <rect x="200" y="125" width="400" height="46" rx="14" fill={p.accent} fillOpacity="0.15" stroke={p.accent} strokeOpacity="0.45" />
+          <text x="216" y="146" fontSize="9" fontWeight="700" fill={p.accent}>AMAN · ARCHITECT</text>
+          <text x="216" y="162" fontSize="11" fill={p.ink}>Which Sirius reqs affect handover latency?</text>
+          {/* Auditee answer bubble */}
+          <rect x="40" y="185" width="500" height="115" rx="14" fill="white" fillOpacity="0.05" stroke={p.ink} strokeOpacity="0.2" />
+          <text x="56" y="206" fontSize="9" fontWeight="700" fill={p.ink} opacity="0.55">AUDITEE · GROUNDED ANSWER</text>
+          {[
+            { l: 'PRD-031 — N2/Xn signalling ≤ 50 ms', c: '#38bdf8' },
+            { l: 'PRD-044 — gNB→AMF release ≤ 80 ms', c: '#38bdf8' },
+            { l: '3GPP TS 23.501 §5.3', c: '#a78bfa' },
+            { l: 'CAPA-014 (open)', c: '#fb923c' },
+          ].map((row, i) => (
+            <g key={row.l}>
+              <circle cx="60" cy={228 + i * 18} r="3" fill={row.c} />
+              <text x="72" y={232 + i * 18} fontSize="10" fill={p.ink}>{row.l}</text>
+            </g>
+          ))}
+          <text x="40" y="335" fontSize="10" fill={p.ink} opacity="0.7">Zero hallucinations · every answer cited</text>
         </>
       );
       break;

@@ -98,6 +98,12 @@ const MODULES: { slug: string; title: string; project: string; desc: string; min
     desc: "Live KPI tiles and 7-week trend charts for Cipher — export the board pack as PDF.", minutes: 4 },
   { slug: "recurring-audits", title: "Recurring Audits", project: "Nova — Crypto Exchange Compliance",
     desc: "Daily VASP checks, weekly travel-rule reviews, monthly SOC 2 on the Nova demo project.", minutes: 4 },
+  { slug: "legacy", title: "Legacy Modernisation", project: "Mercury — COBOL Core Banking Modernisation",
+    desc: "1.2 million lines of COBOL, JCL, CICS and DB2 — extracted into 184 modern requirements with a risk-scored dependency heatmap.", minutes: 5 },
+  { slug: "pdlc", title: "PDLC Pipeline", project: "Phoenix — Surgical Robotics Platform",
+    desc: "Phoenix v2.4 walked through the 6-stage product lifecycle — Ideation → Governance — every IEC 62304 + FDA QSR gate signed and audit-trailed.", minutes: 5 },
+  { slug: "ask", title: "Ask Auditee", project: "Sirius — 5G Core Network",
+    desc: "Conversational AI grounded in the live project graph — every answer cited to real requirements, code, tests and CAPAs. Zero hallucinations.", minutes: 4 },
 ];
 
 const TUTORIAL_BASE = "/auditee-tutorial/";
