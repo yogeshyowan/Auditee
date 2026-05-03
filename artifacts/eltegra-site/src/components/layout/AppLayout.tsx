@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@clerk/react";
+import { useAuth, useUser, UserButton } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
@@ -120,6 +120,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const tutorialModule = getModuleForRoute(location);
   const { getToken, isLoaded: isAuthLoaded } = useAuth();
+  const { user } = useUser();
+
+  // Real signed-in user identity for the sidebar footer. Falls back gracefully
+  // while Clerk is still hydrating so we never flash a hard-coded placeholder.
+  const userDisplayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    user?.username ||
+    user?.primaryEmailAddress?.emailAddress ||
+    "Signed in";
+  const userSubtitle =
+    user?.primaryEmailAddress?.emailAddress &&
+    userDisplayName !== user.primaryEmailAddress.emailAddress
+      ? user.primaryEmailAddress.emailAddress
+      : "Manage account";
+  const notificationRecipient =
+    user?.id || user?.primaryEmailAddress?.emailAddress || "anonymous";
 
   const adminCheck = useQuery<{ isAdmin: boolean }>({
     queryKey: ["leads", "admin-check"],
@@ -262,10 +278,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenuContent>
           </DropdownMenu>
           {effectiveRole && (
-            <div className="mt-1.5 flex items-center gap-1.5">
+            <Link
+              href="/app/members"
+              className="mt-1.5 flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+              title="Manage project members and roles"
+              data-testid="link-manage-role"
+            >
               <Badge
                 className={
-                  "text-[10px] uppercase tracking-wide " +
+                  "text-[10px] uppercase tracking-wide cursor-pointer " +
                   (effectiveRole === "manager"
                     ? "bg-violet-100 text-violet-800"
                     : effectiveRole === "developer"
@@ -278,8 +299,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               >
                 {effectiveRole}
               </Badge>
-              <span className="text-[10px] text-slate-500">your role</span>
-            </div>
+              <span className="text-[10px] text-slate-500 underline-offset-2 hover:underline">
+                change role
+              </span>
+            </Link>
           )}
           <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
         </div>
@@ -307,13 +330,35 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t border-slate-200">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 border border-slate-200">
-              <User className="h-4 w-4" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-slate-900">Avery Kim</span>
-              <span className="text-xs text-slate-500">Platform Lead</span>
+          <div className="flex items-center gap-3 px-3 py-2" data-testid="sidebar-user-card">
+            {/* Clerk's UserButton opens the full account-management modal so the
+                signed-in user can edit their name, avatar, email, password,
+                connected accounts, and sign out. We deliberately replaced the
+                old hard-coded "Avery Kim / Platform Lead" placeholder so the
+                sidebar reflects the actual signed-in identity and gives the
+                user one obvious place to change it. */}
+            {user ? (
+              <UserButton />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 border border-slate-200">
+                <User className="h-4 w-4" />
+              </div>
+            )}
+            <div className="flex flex-col min-w-0">
+              <span
+                className="text-sm font-semibold text-slate-900 truncate"
+                data-testid="sidebar-user-name"
+                title={userDisplayName}
+              >
+                {userDisplayName}
+              </span>
+              <span
+                className="text-xs text-slate-500 truncate"
+                data-testid="sidebar-user-subtitle"
+                title={userSubtitle}
+              >
+                {userSubtitle}
+              </span>
             </div>
           </div>
         </div>
@@ -330,7 +375,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Compass className="h-3.5 w-3.5" />
             Take a tour
           </button>
-          <NotificationBell recipient="avery.kim" />
+          <NotificationBell recipient={notificationRecipient} />
         </div>
 
         {/* Inline tutorial panel — visible on every module page, collapsed by default */}
