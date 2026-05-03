@@ -12,6 +12,8 @@ type ShareButtonsProps = {
   description?: string;
   imageUrl?: string;
   className?: string;
+  /** Compact mode: smaller icon-only buttons, no label, no copy-link button. */
+  compact?: boolean;
 };
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -64,7 +66,7 @@ const NETWORKS: { key: Network; label: string; bg: string; hover: string; Icon: 
   },
 ];
 
-export function ShareButtons({ url, title, description = "", className = "" }: ShareButtonsProps) {
+export function ShareButtons({ url, title, description = "", className = "", compact = false }: ShareButtonsProps) {
   const [copiedNet, setCopiedNet] = useState<Network | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -99,9 +101,18 @@ export function ShareButtons({ url, title, description = "", className = "" }: S
     } catch {/* ignore */}
   };
 
+  const sizeCls = compact ? "h-7 w-7" : "h-9 w-9";
+  const iconCls = compact ? "h-3 w-3" : "h-4 w-4";
+
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${className}`} data-testid="share-buttons">
-      <span className="text-xs font-medium uppercase tracking-wider text-slate-500 mr-1">Share</span>
+    <div
+      className={`flex flex-wrap items-center ${compact ? "gap-1" : "gap-2"} ${className}`}
+      data-testid="share-buttons"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {!compact && (
+        <span className="text-xs font-medium uppercase tracking-wider text-slate-500 mr-1">Share</span>
+      )}
       {NETWORKS.map(({ key, label, bg, hover, Icon }) => {
         const href = networkUrl(key, fullUrl, title, description) ?? "#";
         return (
@@ -114,9 +125,9 @@ export function ShareButtons({ url, title, description = "", className = "" }: S
             aria-label={`Share on ${label}`}
             title={key === "instagram" ? "Copy link & open Instagram" : `Share on ${label}`}
             data-testid={`share-${key}`}
-            className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full text-white shadow-sm transition-all ${bg} ${hover} hover:-translate-y-0.5`}
+            className={`relative inline-flex ${sizeCls} items-center justify-center rounded-full text-white shadow-sm transition-all ${bg} ${hover} hover:-translate-y-0.5`}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className={iconCls} />
             {copiedNet === key && (
               <span className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-0.5 text-[10px] text-white">
                 Link copied
@@ -125,17 +136,19 @@ export function ShareButtons({ url, title, description = "", className = "" }: S
           </a>
         );
       })}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={copyLink}
-        data-testid="share-copy-link"
-        className="ml-1 h-9 gap-1.5 text-xs"
-      >
-        {linkCopied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <LinkIcon className="h-3.5 w-3.5" />}
-        {linkCopied ? "Copied!" : "Copy link"}
-      </Button>
+      {!compact && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={copyLink}
+          data-testid="share-copy-link"
+          className="ml-1 h-9 gap-1.5 text-xs"
+        >
+          {linkCopied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <LinkIcon className="h-3.5 w-3.5" />}
+          {linkCopied ? "Copied!" : "Copy link"}
+        </Button>
+      )}
     </div>
   );
 }

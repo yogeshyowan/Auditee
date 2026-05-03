@@ -5,6 +5,12 @@ import { Navigation, SiteFooter } from "@/components/site/Chrome";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShareButtons } from "@/components/ShareButtons";
+import { ModuleThumbnail } from "@/components/ModuleThumbnail";
+
+type ModuleSlug =
+  | "dashboard" | "sources" | "interview" | "requirements" | "gaps"
+  | "traceability" | "compliance" | "capa" | "defects" | "tests"
+  | "reports" | "workflows" | "analytics" | "recurring-audits";
 
 type ExtendedDemo = {
   slug: string;
@@ -135,26 +141,60 @@ export default function DemoVideos() {
         </header>
 
         <div className="max-w-6xl mx-auto px-6 mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {MODULES.map((m) => (
-            <Card key={m.slug} className="p-6 group hover:shadow-md transition-shadow flex flex-col">
-              <div className="aspect-video bg-gradient-to-br from-primary/10 to-emerald-500/10 rounded-lg mb-4 flex items-center justify-center">
-                <Play className="w-10 h-10 text-primary opacity-70 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-1">{m.project}</div>
-              <h3 className="font-display text-lg font-bold text-slate-950">{m.title}</h3>
-              <p className="mt-2 text-sm text-slate-600 flex-1">{m.desc}</p>
-              <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                <span>{m.minutes} min</span>
+          {MODULES.map((m) => {
+            const cardUrl = `/demo-videos/${m.slug}`;
+            const cardTitle = `${m.title} — ${m.project} | Auditee tutorial`;
+            return (
+              <Card
+                key={m.slug}
+                className="p-0 group hover:shadow-lg transition-shadow flex flex-col overflow-hidden"
+                data-testid={`demo-card-${m.slug}`}
+              >
                 <Link
-                  href={`/demo-videos/${m.slug}`}
-                  className="inline-flex items-center gap-1 text-primary font-medium hover:gap-2 transition-all"
-                  data-testid={`demo-link-${m.slug}`}
+                  href={cardUrl}
+                  className="block relative"
+                  data-testid={`demo-thumb-${m.slug}`}
+                  aria-label={`Watch ${m.title}`}
                 >
-                  Watch <ArrowRight className="h-3 w-3" />
+                  <ModuleThumbnail
+                    slug={m.slug as ModuleSlug}
+                    project={m.project}
+                    className="w-full aspect-video block"
+                    testId={`thumb-svg-${m.slug}`}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                    <div className="w-14 h-14 rounded-full bg-white/90 group-hover:bg-white shadow-lg flex items-center justify-center transition-transform group-hover:scale-110">
+                      <Play className="w-6 h-6 text-primary translate-x-0.5" fill="currentColor" />
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-white">
+                    {m.minutes} min
+                  </div>
                 </Link>
-              </div>
-            </Card>
-          ))}
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="text-[10px] uppercase tracking-widest text-primary font-semibold mb-1">{m.project}</div>
+                  <h3 className="font-display text-lg font-bold text-slate-950">{m.title}</h3>
+                  <p className="mt-2 text-sm text-slate-600 flex-1">{m.desc}</p>
+                  <div className="mt-4 flex items-center justify-between gap-2">
+                    <Link
+                      href={cardUrl}
+                      className="inline-flex items-center gap-1 text-sm text-primary font-semibold hover:gap-2 transition-all"
+                      data-testid={`demo-link-${m.slug}`}
+                    >
+                      Watch <ArrowRight className="h-3 w-3" />
+                    </Link>
+                    <ShareButtons
+                      url={cardUrl}
+                      title={cardTitle}
+                      description={m.desc}
+                      compact
+                      data-testid={`card-share-${m.slug}`}
+                    />
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
         <section className="max-w-6xl mx-auto px-6 mt-24" data-testid="extended-demos">

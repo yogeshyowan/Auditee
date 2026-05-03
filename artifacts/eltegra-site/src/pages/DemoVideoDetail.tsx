@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { ArrowLeft, ArrowRight, Play, CheckCircle2 } from "lucide-react";
 import { SEO, breadcrumbsLd } from "@/components/SEO";
@@ -5,7 +6,13 @@ import { Navigation, SiteFooter } from "@/components/site/Chrome";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShareButtons } from "@/components/ShareButtons";
+import { ModuleThumbnail } from "@/components/ModuleThumbnail";
 import NotFound from "@/pages/not-found";
+
+type ModuleSlug =
+  | "dashboard" | "sources" | "interview" | "requirements" | "gaps"
+  | "traceability" | "compliance" | "capa" | "defects" | "tests"
+  | "reports" | "workflows" | "analytics" | "recurring-audits";
 
 type ModuleEntry = {
   slug: string;
@@ -229,6 +236,7 @@ export default function DemoVideoDetail() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug ?? "";
   const idx = MODULES.findIndex((m) => m.slug === slug);
+  const [iframeStarted, setIframeStarted] = useState(false);
   if (idx === -1) return <NotFound />;
 
   const module = MODULES[idx];
@@ -281,14 +289,41 @@ export default function DemoVideoDetail() {
           </div>
 
           <Card className="mt-6 overflow-hidden border-slate-200">
-            <div className="aspect-video w-full bg-slate-950">
-              <iframe
-                src={`${TUTORIAL_BASE}?module=${module.slug}&embed=1`}
-                title={`${module.title} tutorial`}
-                className="w-full h-full"
-                allow="autoplay; fullscreen"
-                data-testid="tutorial-iframe"
-              />
+            <div className="aspect-video w-full bg-slate-950 relative">
+              {!iframeStarted && (
+                <button
+                  type="button"
+                  onClick={() => setIframeStarted(true)}
+                  className="absolute inset-0 group block w-full h-full"
+                  data-testid="tutorial-poster"
+                  aria-label={`Play ${module.title} tutorial`}
+                >
+                  <ModuleThumbnail
+                    slug={module.slug as ModuleSlug}
+                    project={module.project}
+                    className="w-full h-full block"
+                    testId="poster-svg"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors">
+                    <div className="w-20 h-20 rounded-full bg-white/95 group-hover:bg-white shadow-2xl flex items-center justify-center transition-transform group-hover:scale-110">
+                      <Play className="w-9 h-9 text-primary translate-x-1" fill="currentColor" />
+                    </div>
+                  </div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <div className="text-[10px] uppercase tracking-widest opacity-80 font-semibold">Now playing soon</div>
+                    <div className="text-base font-semibold">{module.title}</div>
+                  </div>
+                </button>
+              )}
+              {iframeStarted && (
+                <iframe
+                  src={`${TUTORIAL_BASE}?module=${module.slug}&embed=1&autoplay=1`}
+                  title={`${module.title} tutorial`}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen"
+                  data-testid="tutorial-iframe"
+                />
+              )}
             </div>
           </Card>
 
