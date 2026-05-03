@@ -5,6 +5,7 @@
  * Each thumbnail mocks the signature UI of its module so the viewer
  * recognises the tool before pressing play. 16:9 viewBox (640×360).
  */
+import { useId } from "react";
 
 type Slug =
   | 'dashboard' | 'sources' | 'interview' | 'requirements' | 'gaps'
@@ -36,26 +37,29 @@ const PALETTES: Record<Slug, { bg: string; bg2: string; accent: string; ink: str
 };
 
 function Frame({
-  p, children, project,
+  p, children, project, uid,
 }: {
   p: typeof PALETTES[Slug];
   children: React.ReactNode;
   project: string;
+  uid: string;
 }) {
+  const bgId = `bggrad-${uid}`;
+  const glowId = `glow-${uid}`;
   return (
     <>
       <defs>
-        <linearGradient id="bggrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={bgId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor={p.bg} />
           <stop offset="100%" stopColor={p.bg2} />
         </linearGradient>
-        <radialGradient id="glow" cx="80%" cy="20%" r="60%">
+        <radialGradient id={glowId} cx="80%" cy="20%" r="60%">
           <stop offset="0%" stopColor={p.accent} stopOpacity="0.25" />
           <stop offset="100%" stopColor={p.accent} stopOpacity="0" />
         </radialGradient>
       </defs>
-      <rect width="640" height="360" fill="url(#bggrad)" />
-      <rect width="640" height="360" fill="url(#glow)" />
+      <rect width="640" height="360" fill={`url(#${bgId})`} />
+      <rect width="640" height="360" fill={`url(#${glowId})`} />
 
       {/* Browser chrome */}
       <rect x="20" y="20" width="600" height="320" rx="14" fill={p.bg} fillOpacity="0.6" stroke={p.accent} strokeOpacity="0.18" />
@@ -112,6 +116,7 @@ function ListRow({ y, w, label, value, p }: { y: number; w: number; label: strin
 
 export function ModuleThumbnail({ slug, project, className = '', testId }: Props) {
   const p = PALETTES[slug];
+  const uid = useId().replace(/:/g, '');
 
   let body: React.ReactNode = null;
 
@@ -446,7 +451,7 @@ export function ModuleThumbnail({ slug, project, className = '', testId }: Props
       aria-label={`${p.tag} preview for ${project}`}
       data-testid={testId}
     >
-      <Frame p={p} project={project}>{body}</Frame>
+      <Frame p={p} project={project} uid={uid}>{body}</Frame>
     </svg>
   );
 }

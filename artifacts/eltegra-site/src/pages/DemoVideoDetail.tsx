@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 import { ArrowLeft, ArrowRight, Play, CheckCircle2 } from "lucide-react";
 import { SEO, breadcrumbsLd } from "@/components/SEO";
@@ -237,6 +237,9 @@ export default function DemoVideoDetail() {
   const slug = params?.slug ?? "";
   const idx = MODULES.findIndex((m) => m.slug === slug);
   const [iframeStarted, setIframeStarted] = useState(false);
+  useEffect(() => {
+    setIframeStarted(false);
+  }, [slug]);
   if (idx === -1) return <NotFound />;
 
   const module = MODULES[idx];
