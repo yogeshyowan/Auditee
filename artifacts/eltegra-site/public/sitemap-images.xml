@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://auditee.site/</loc>
+    <image:image>
+      <image:loc>https://auditee.site/opengraph.jpg</image:loc>
+      <image:title>Auditee — AI-native PDLC Platform</image:title>
+      <image:caption>The AI-native enterprise platform for the Product Development Lifecycle: requirements, code, audits and compliance unified into a living knowledge graph.</image:caption>
+      <image:license>https://auditee.site/terms-of-service</image:license>
+    </image:image>
+    <image:image>
+      <image:loc>https://auditee.site/logo.svg</image:loc>
+      <image:title>Auditee logo</image:title>
+      <image:caption>Auditee brand mark</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://auditee.site/favicon.svg</image:loc>
+      <image:title>Auditee favicon</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://auditee.site/pricing</loc>
+    <image:image>
+      <image:loc>https://auditee.site/opengraph.jpg</image:loc>
+      <image:title>Auditee pricing — Free, Standard, Professional, Enterprise</image:title>
+      <image:caption>INR-priced monthly subscriptions and annual one-time plans for AI-native compliance and PDLC automation.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://auditee.site/features</loc>
+    <image:image>
+      <image:loc>https://auditee.site/opengraph.jpg</image:loc>
+      <image:title>Auditee features — requirements, audits, CAPA, traceability</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://auditee.site/blog</loc>
+    <image:image>
+      <image:loc>https://auditee.site/opengraph.jpg</image:loc>
+      <image:title>Auditee blog — practitioner research on AI-native compliance</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://auditee.site/auditee-tutorial</loc>
+    <image:image>
+      <image:loc>https://auditee.site/opengraph.jpg</image:loc>
+      <image:title>Auditee tutorial — product walkthrough</image:title>
+      <image:caption>Animated walkthrough of Auditee's AI-native PDLC, requirements management, and compliance automation.</image:caption>
+    </image:image>
+  </url>
+</urlset>

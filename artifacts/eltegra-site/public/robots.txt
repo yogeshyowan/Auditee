@@ -209,6 +209,7 @@ Disallow: /*&ref=
 Sitemap: https://auditee.site/sitemap.xml
 Sitemap: https://auditee.site/sitemap-news.xml
 Sitemap: https://auditee.site/sitemap-video.xml
+Sitemap: https://auditee.site/sitemap-images.xml
 Sitemap: https://auditee.site/sitemap-index.xml
 Host: https://auditee.site
 

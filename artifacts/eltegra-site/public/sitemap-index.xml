@@ -12,4 +12,8 @@
     <loc>https://auditee.site/sitemap-video.xml</loc>
     <lastmod>2026-05-03</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>https://auditee.site/sitemap-images.xml</loc>
+    <lastmod>2026-05-03</lastmod>
+  </sitemap>
 </sitemapindex>

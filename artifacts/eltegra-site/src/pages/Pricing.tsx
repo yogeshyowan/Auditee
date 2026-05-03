@@ -255,6 +255,16 @@ export default function Pricing() {
           faqLd(
             FAQS.slice(0, 5).map((f) => ({ q: f.q, a: f.a })),
           ),
+          // BreadcrumbList — Google surfaces a breadcrumb trail in the
+          // SERP snippet instead of the raw URL when this is present.
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://auditee.site/" },
+              { "@type": "ListItem", position: 2, name: "Pricing", item: "https://auditee.site/pricing" },
+            ],
+          },
           // Product + Offer schema per tier. Google surfaces these in
           // pricing-comparison rich results and AI answer engines (Perplexity,
           // ChatGPT) cite them when answering "how much does Auditee cost".
