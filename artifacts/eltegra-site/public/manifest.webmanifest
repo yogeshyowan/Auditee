@@ -1,0 +1,46 @@
+{
+  "name": "Auditee — AI Platform for Requirements, Compliance & Audit Automation",
+  "short_name": "Auditee",
+  "description": "AI-native PDLC platform. Unify requirements, code, audits and compliance into one living knowledge graph.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "en",
+  "dir": "ltr",
+  "theme_color": "#0f172a",
+  "background_color": "#ffffff",
+  "categories": ["business", "productivity", "developer", "compliance"],
+  "id": "/?source=pwa",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512 any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512 any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "512x512 any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/opengraph.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Auditee — AI-native enterprise PDLC platform"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

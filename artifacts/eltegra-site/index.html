@@ -38,12 +38,9 @@
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
 
     <link rel="canonical" href="https://auditee.site/" />
+    <!-- Single-language site: only self `en` and `x-default`. SEO.tsx replaces
+         these per route on client-side navigation. -->
     <link rel="alternate" hreflang="en" href="https://auditee.site/" />
-    <link rel="alternate" hreflang="en-IN" href="https://auditee.site/" />
-    <link rel="alternate" hreflang="en-GB" href="https://auditee.site/" />
-    <link rel="alternate" hreflang="en-US" href="https://auditee.site/" />
-    <link rel="alternate" hreflang="en-AU" href="https://auditee.site/" />
-    <link rel="alternate" hreflang="en-CA" href="https://auditee.site/" />
     <link rel="alternate" hreflang="x-default" href="https://auditee.site/" />
 
     <!-- LLM / AI discovery -->
@@ -58,6 +55,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <link rel="mask-icon" href="/favicon.svg" color="#0f172a" />
+
+    <!-- PWA / installability (Lighthouse + Semrush "Web app manifest"). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -75,6 +75,10 @@
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@auditee_ai" />
+    <meta name="twitter:creator" content="@auditee_ai" />
+    <meta name="twitter:domain" content="auditee.site" />
+    <meta name="twitter:url" content="https://auditee.site/" />
     <meta name="twitter:title" content="Auditee — AI Platform for Requirements, Compliance & Audit Automation" />
     <meta name="twitter:description" content="The AI-native PDLC platform. Unify requirements, code, audits and compliance into a single living knowledge graph." />
     <meta name="twitter:image" content="https://auditee.site/opengraph.jpg" />
@@ -103,6 +107,13 @@
     <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
     <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
     <link rel="preload" as="image" href="/hero-network.png" fetchpriority="high" />
+    <!-- Preload the Google Fonts stylesheet so first-paint text isn't blocked
+         by the synchronous CSS request (Semrush "Render-blocking resources"). -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"

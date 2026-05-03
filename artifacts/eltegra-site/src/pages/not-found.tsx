@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Home as HomeIcon } from "lucide-react";
@@ -5,6 +6,29 @@ import { Button } from "@/components/ui/button";
 import { SEO } from "@/components/SEO";
 
 export default function NotFound() {
+  // Static SPA hosting always returns HTTP 200 for unknown paths because
+  // the rewrite serves index.html. The Prerender.io / Rendertron convention
+  // (also honored by some Semrush-style crawlers) is a meta tag that lets
+  // the rendering layer override the upstream status. Pair it with a
+  // `prerender-status-code` and a `noindex` directive so search engines
+  // never index the soft-404 even on the first crawl.
+  useEffect(() => {
+    const tags: HTMLMetaElement[] = [];
+    const make = (attr: "name" | "http-equiv", key: string, content: string) => {
+      const el = document.createElement("meta");
+      el.setAttribute(attr, key);
+      el.setAttribute("content", content);
+      el.setAttribute("data-not-found", "true");
+      document.head.appendChild(el);
+      tags.push(el);
+    };
+    make("name", "prerender-status-code", "404");
+    make("http-equiv", "Status", "404 Not Found");
+    return () => {
+      tags.forEach((t) => t.remove());
+    };
+  }, []);
+
   return (
     <>
       <SEO

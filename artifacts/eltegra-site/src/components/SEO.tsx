@@ -21,25 +21,34 @@ export interface SEOProps {
 
 const MANAGED_ATTR = "data-seo-managed";
 
-function setMeta(selector: string, attrName: "name" | "property", key: string, content: string) {
-  let el = document.head.querySelector<HTMLMetaElement>(selector);
+// Claim ANY existing tag matching the key (managed or static from index.html)
+// so we don't end up with duplicate description / canonical / og:url / hreflang
+// blocks at runtime. Semrush flags duplicate canonical and hreflang tags as
+// High-severity issues. If no existing tag is found, create + mark managed.
+function setMeta(_selector: string, attrName: "name" | "property", key: string, content: string) {
+  const liveSelector = `meta[${attrName}="${key}"]`;
+  let el = document.head.querySelector<HTMLMetaElement>(liveSelector);
   if (!el) {
     el = document.createElement("meta");
     el.setAttribute(attrName, key);
-    el.setAttribute(MANAGED_ATTR, "true");
     document.head.appendChild(el);
   }
+  el.setAttribute(MANAGED_ATTR, "true");
   el.setAttribute("content", content);
 }
 
-function setLink(rel: string, href: string) {
-  let el = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"][${MANAGED_ATTR}]`);
+function setLink(rel: string, href: string, extraAttr?: { name: string; value: string }) {
+  const liveSelector = extraAttr
+    ? `link[rel="${rel}"][${extraAttr.name}="${extraAttr.value}"]`
+    : `link[rel="${rel}"]`;
+  let el = document.head.querySelector<HTMLLinkElement>(liveSelector);
   if (!el) {
     el = document.createElement("link");
     el.setAttribute("rel", rel);
-    el.setAttribute(MANAGED_ATTR, "true");
+    if (extraAttr) el.setAttribute(extraAttr.name, extraAttr.value);
     document.head.appendChild(el);
   }
+  el.setAttribute(MANAGED_ATTR, "true");
   el.setAttribute("href", href);
 }
 
@@ -142,9 +151,34 @@ export function SEO(props: SEOProps) {
       description,
     );
     setMeta(`meta[name="twitter:image"][${MANAGED_ATTR}]`, "name", "twitter:image", ogImage);
+    setMeta(
+      `meta[name="twitter:image:alt"][${MANAGED_ATTR}]`,
+      "name",
+      "twitter:image:alt",
+      title,
+    );
+    setMeta(`meta[name="twitter:site"][${MANAGED_ATTR}]`, "name", "twitter:site", "@auditee_ai");
+    setMeta(
+      `meta[name="twitter:creator"][${MANAGED_ATTR}]`,
+      "name",
+      "twitter:creator",
+      "@auditee_ai",
+    );
+    setMeta(`meta[name="twitter:url"][${MANAGED_ATTR}]`, "name", "twitter:url", fullUrl);
+    setMeta(
+      `meta[property="og:image:alt"][${MANAGED_ATTR}]`,
+      "property",
+      "og:image:alt",
+      title,
+    );
 
-    // Canonical + hreflang
+    // Canonical + per-page hreflang. The site is single-language English so we
+    // only emit a self-referencing `en` and `x-default` (per Google guidance —
+    // declaring en-US/en-GB/en-IN/en-AU/en-CA all pointing at the same URL is
+    // low-signal and Semrush/Ahrefs flag it as redundant).
     setLink("canonical", fullUrl);
+    setLink("alternate", fullUrl, { name: "hreflang", value: "en" });
+    setLink("alternate", fullUrl, { name: "hreflang", value: "x-default" });
 
     // JSON-LD
     const lds = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
