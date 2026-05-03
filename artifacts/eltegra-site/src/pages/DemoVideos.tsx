@@ -1,10 +1,67 @@
 import { Link } from "wouter";
-import { Play, ArrowRight, Video } from "lucide-react";
+import { Play, ArrowRight, Video, Shield } from "lucide-react";
 import { SEO, breadcrumbsLd } from "@/components/SEO";
 import { Navigation, SiteFooter } from "@/components/site/Chrome";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShareButtons } from "@/components/ShareButtons";
+
+type ExtendedDemo = {
+  slug: string;
+  project: string;
+  domain: string;
+  blurb: string;
+  standards: string[];
+  tools: string[];
+};
+
+const EXTENDED_DEMOS: ExtendedDemo[] = [
+  {
+    slug: "hermes",
+    project: "Hermes — Aircraft Flight Management System",
+    domain: "Avionics",
+    blurb:
+      "Airborne software with DAL-A traceability — every requirement linked through low-level reqs to source code, with full ARP4754A allocation.",
+    standards: ["DO-178C DAL-A", "DO-254", "ARP4754A", "IEEE 1012", "IEEE 828"],
+    tools: ["IBM DOORS Next", "Polarion", "GitLab", "LDRA", "VectorCAST"],
+  },
+  {
+    slug: "pioneer",
+    project: "Pioneer — High-Speed Rail Signalling",
+    domain: "Rail",
+    blurb:
+      "On-board signalling SIL-4 lifecycle — RAMS, software, signalling electronics and rolling-stock software in a single trace graph.",
+    standards: ["EN 50128 SIL-4", "EN 50126 RAMS", "EN 50129", "EN 50657", "IEC 61508"],
+    tools: ["IBM DOORS", "Jama", "GitHub Enterprise", "Polyspace", "Reactis"],
+  },
+  {
+    slug: "vulcan",
+    project: "Vulcan — Robotic Welding Cell",
+    domain: "Industrial Robotics",
+    blurb:
+      "Collaborative robotic cell — machine safety, robot safety, electrical equipment and PLC code unified under one CAPA workflow.",
+    standards: ["ISO 10218-1", "ISO 13849-1 PLd", "IEC 60204-1", "IEC 61131-3", "IEC 62443"],
+    tools: ["Codesys", "GitHub", "Jira", "TestRail", "ServiceNow"],
+  },
+  {
+    slug: "ironclad",
+    project: "Ironclad — Power Grid SCADA",
+    domain: "Critical Infrastructure",
+    blurb:
+      "Bulk-electric SCADA & pipeline control — NERC CIP audit packets, ISA-95 zone & conduit model, and IEC 61511 SIS lifecycle in one place.",
+    standards: ["NERC CIP", "IEC 62443", "IEC 61511", "API 1164", "ISA-95 / IEC 62264"],
+    tools: ["OSIsoft PI", "Splunk", "Azure DevOps", "ServiceNow", "Tenable OT"],
+  },
+  {
+    slug: "lyra",
+    project: "Lyra — Generative AI Underwriting",
+    domain: "Responsible AI",
+    blurb:
+      "High-risk AI system under the EU AI Act — model cards, risk register, bias evaluation and post-market monitoring evidence.",
+    standards: ["EU AI Act (high-risk)", "ISO/IEC 42001", "NIST AI RMF", "ISO 31000", "GDPR"],
+    tools: ["MLflow", "Weights & Biases", "Hugging Face", "GitHub", "Snowflake"],
+  },
+];
 
 const MODULES: { slug: string; title: string; project: string; desc: string; minutes: number }[] = [
   { slug: "dashboard", title: "Dashboard overview", project: "Helios — Patient Onboarding",
@@ -99,6 +156,71 @@ export default function DemoVideos() {
             </Card>
           ))}
         </div>
+
+        <section className="max-w-6xl mx-auto px-6 mt-24" data-testid="extended-demos">
+          <header className="text-center max-w-3xl mx-auto">
+            <Shield className="w-8 h-8 mx-auto text-emerald-600 mb-3" />
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-slate-950 tracking-tight">
+              Other compliance plays Auditee covers
+            </h2>
+            <p className="mt-3 text-base text-slate-600">
+              Beyond the 14 anchor demos, Auditee ships seeded vignette projects across avionics, rail,
+              industrial robotics, critical infrastructure and high-risk AI — every framework in our
+              control library is exercised end-to-end.
+            </p>
+          </header>
+
+          <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {EXTENDED_DEMOS.map((d) => (
+              <Card
+                key={d.slug}
+                className="p-6 flex flex-col border-slate-200"
+                data-testid={`extended-demo-${d.slug}`}
+              >
+                <div className="text-xs uppercase tracking-widest text-emerald-600 font-semibold mb-1">
+                  {d.domain}
+                </div>
+                <h3 className="font-display text-lg font-bold text-slate-950">{d.project}</h3>
+                <p className="mt-2 text-sm text-slate-600 flex-1">{d.blurb}</p>
+                <div className="mt-4">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1.5">
+                    Standards
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {d.standards.map((s) => (
+                      <span
+                        key={s}
+                        className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[11px] font-medium px-2.5 py-0.5"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1.5">
+                    Tools
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {d.tools.map((t) => (
+                      <span
+                        key={t}
+                        className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-medium px-2.5 py-0.5"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <p className="mt-10 text-center text-sm text-slate-500 max-w-2xl mx-auto">
+            Want a walkthrough on one of these? <Link href="/contact" className="text-primary font-medium hover:underline">Book a live session</Link>{" "}
+            and we'll demo on the project closest to your industry.
+          </p>
+        </section>
       </main>
       <SiteFooter />
     </div>

@@ -15,6 +15,8 @@ type ModuleEntry = {
   desc: string;
   steps: { title: string; body: string }[];
   minutes: number;
+  standards: string[];
+  tools: string[];
 };
 
 /**
@@ -28,6 +30,8 @@ const MODULES: ModuleEntry[] = [
     project: "Helios — Patient Onboarding", domain: "Healthcare",
     desc: "Workspace health, project rollups, and the Auditee operating model — walked through on the live Helios demo project.",
     minutes: 4,
+    standards: ["HIPAA", "DPDP", "SOC 2 Type II", "ISO 27001", "GDPR", "NIST CSF 2.0"],
+    tools: ["Email digest", "Slack", "Jira", "Snowflake", "Looker"],
     steps: [
       { title: "Open the Helios project", body: "Pick Helios — Patient Onboarding from the project switcher." },
       { title: "Read the rings", body: "HIPAA, DPDP and SOC 2 are recomputed on every change — green means evidence is fresh." },
@@ -40,6 +44,8 @@ const MODULES: ModuleEntry[] = [
     project: "Orion — Cardiac Monitor Firmware", domain: "Medical Devices",
     desc: "Connect GitHub, Jira, IBM DOORS and 12 clinical PDFs to the Orion firmware project — 184 requirements ingested in seconds.",
     minutes: 5,
+    standards: ["IEC 62304", "ISO 14971", "ISO 13485", "IEC 60601", "IEC 62366", "FDA 21 CFR 820", "MDR 2017/745", "ISO/IEC/IEEE 42010"],
+    tools: ["IBM DOORS", "GitHub", "Jira", "Azure DevOps", "ReqIF", "PDF bulk upload"],
     steps: [
       { title: "Open Project Sources for Orion", body: "In the Orion — Cardiac Monitor Firmware project, go to Project Sources." },
       { title: "Connect each tool", body: "Add IBM DOORS, GitHub, Jira, Azure DevOps, ReqIF and bulk-upload the 12 clinical PDFs." },
@@ -52,6 +58,8 @@ const MODULES: ModuleEntry[] = [
     project: "Aesop — Clinical Trial eCRF", domain: "Clinical Trials",
     desc: "Auditee interviews the Aesop clinical PM live, classifying each answer to ICH-GCP E6(R3) and 21 CFR Part 11.",
     minutes: 6,
+    standards: ["ICH-GCP E6(R3)", "FDA 21 CFR Part 11", "ISO 14155", "GDPR", "HIPAA", "IEEE 1063"],
+    tools: ["Conversational AI", "Microsoft Word", "Google Docs", "Confluence", "Smart Sheet"],
     steps: [
       { title: "Open Smart Interview on Aesop", body: "Inside Aesop — Clinical Trial eCRF, click Smart Interview." },
       { title: "Answer the AI", body: "Auditee asks 12 standards-aware questions about subject enrolment, e-signatures and audit trails." },
@@ -64,6 +72,8 @@ const MODULES: ModuleEntry[] = [
     project: "Apollo — EV Battery Management System", domain: "Automotive",
     desc: "Generate 192 Apollo requirements with ISO 26262, ISO 21434, UN R155 and IEC 61508 mapping in one click.",
     minutes: 5,
+    standards: ["ISO 26262 ASIL-C", "ISO/SAE 21434", "UN R155", "IEC 61508", "Automotive SPICE 4.0", "ASPICE Cyber 2.0", "CMMI v3.0"],
+    tools: ["IBM DOORS Next", "Polarion", "ReqIF", "Jama", "Azure DevOps"],
     steps: [
       { title: "Generate from sources", body: "In Apollo, click Generate — AI drafts BRS / PRD / FRD from connected sources." },
       { title: "Tag the standards", body: "Auditee maps each to ISO 26262 ASIL-C, ISO 21434 TARA, UN R155 and IEC 61508." },
@@ -76,6 +86,8 @@ const MODULES: ModuleEntry[] = [
     project: "Ares — ADAS Vision Stack", domain: "Automotive Safety",
     desc: "AI scans Ares vision code against ISO 26262 + ISO 21448 SOTIF — surfaces missing tests, untraced files and unmitigated hazards.",
     minutes: 4,
+    standards: ["ISO 26262 ASIL-D", "ISO 21448 SOTIF", "ISO/SAE 21434", "UN R157", "ASPICE Cyber 2.0", "ISO/IEC/IEEE 29119", "IEEE 1012 V&V"],
+    tools: ["GitHub", "Vector CANoe", "TestRail", "Polyspace", "Coverity"],
     steps: [
       { title: "Run gap scan on Ares", body: "Open Gap Detection inside Ares — ADAS Vision Stack and click Scan." },
       { title: "Review findings", body: "AI lists missing tests, untraced files, unmitigated hazards — sorted critical first." },
@@ -88,6 +100,8 @@ const MODULES: ModuleEntry[] = [
     project: "Titan — Industrial PLC Control System", domain: "Industrial Safety",
     desc: "Walk the IEC 61508 SIL-3 chain on Titan PLC — PRD-014 → ladder logic → 3 unit tests → 2 integration tests → zero open defects.",
     minutes: 5,
+    standards: ["IEC 61508 SIL-3", "IEC 61511", "IEC 61131-3", "IEC 60204-1", "ISO 13849-1", "IEC 62443", "ISA-95 / IEC 62264"],
+    tools: ["Codesys", "TIA Portal", "Git", "Jira", "Azure Test Plans"],
     steps: [
       { title: "Open the Titan trace graph", body: "Inside Titan, open Traceability. The graph renders the live req-code-test-CAPA web." },
       { title: "Click PRD-014", body: "Selecting the emergency-stop requirement highlights every linked node end-to-end." },
@@ -100,6 +114,8 @@ const MODULES: ModuleEntry[] = [
     project: "Nexus — Hospital EHR Modernisation", domain: "Healthcare IT",
     desc: "Live framework rings on Nexus — HIPAA, HITRUST, ISO 27001, SOC 2 and FHIR R4 with click-through evidence.",
     minutes: 6,
+    standards: ["HIPAA", "HITRUST CSF", "ISO/IEC 27001:2022", "ISO/IEC 27002:2022", "SOC 2 Type II", "FHIR R4", "GDPR", "NIST CSF 2.0"],
+    tools: ["GitHub", "AWS Config", "Datadog", "Snowflake", "Okta"],
     steps: [
       { title: "Open Compliance for Nexus", body: "In Nexus — Hospital EHR Modernisation, open the Compliance page." },
       { title: "Read the framework rings", body: "Each ring is a live coverage score — green is evidence-ready, amber means gaps remain." },
@@ -112,6 +128,8 @@ const MODULES: ModuleEntry[] = [
     project: "Vega — Claims Intelligence", domain: "Insurance",
     desc: "Field complaint → root cause → owner → due date → verified closure on the Vega claims model.",
     minutes: 4,
+    standards: ["IRDAI", "NAIC Model 668", "EU AI Act (limited risk)", "ISO 31000", "ISO 9001", "ISO/IEC 42001"],
+    tools: ["Jira", "ServiceNow", "Salesforce", "MLflow", "Email triage"],
     steps: [
       { title: "Open CAPA on Vega", body: "Inside Vega — Claims Intelligence, click the CAPA page." },
       { title: "Triage the auto-opened CAPA", body: "CAPA-007 was created from a field complaint — owner, root cause and due date pre-filled." },
@@ -124,6 +142,8 @@ const MODULES: ModuleEntry[] = [
     project: "Sterling — Core Banking Platform", domain: "Banking",
     desc: "Sterling defects pulled from Jira, Bugzilla and ServiceNow — auto-linked to requirement, test and CAPA.",
     minutes: 4,
+    standards: ["PCI DSS v4.0", "DORA", "NIS2", "RBI IT Framework", "ISO/IEC 27001:2022", "SOC 2 Type II", "NIST CSF 2.0"],
+    tools: ["Jira", "Bugzilla", "ServiceNow", "GitHub", "Splunk"],
     steps: [
       { title: "Open Defects on Sterling", body: "Inside Sterling — Core Banking Platform, open the Defects board." },
       { title: "Connect Jira / Bugzilla / ServiceNow", body: "Auditee pulls every defect, syncing every 5 minutes — no manual import." },
@@ -136,6 +156,8 @@ const MODULES: ModuleEntry[] = [
     project: "Bastion — Cloud Security Posture", domain: "Cloud Security",
     desc: "AI-generated tests for every CIS / SOC 2 / ISO 27001 control on Bastion — exportable to TestRail, Xray, qTest.",
     minutes: 5,
+    standards: ["CIS Benchmarks", "SOC 2 Type II", "ISO/IEC 27001:2022", "ISO/IEC 27002:2022", "NIST CSF 2.0", "NIS2", "ISO/IEC/IEEE 29119", "IEEE 730"],
+    tools: ["TestRail", "Xray", "qTest", "Azure Test Plans", "GitHub Actions"],
     steps: [
       { title: "Open Tests for Bastion", body: "Inside Bastion — Cloud Security Posture, click Test Cases." },
       { title: "Generate from requirements", body: "AI drafts a structured test for every requirement, tagged to CIS / SOC 2 / ISO 27001." },
@@ -148,6 +170,8 @@ const MODULES: ModuleEntry[] = [
     project: "Atlas — Trade Settlement Engine", domain: "Capital Markets",
     desc: "Generate the Atlas SEC audit packet — 247 pages in 4 minutes, every claim sourced from live evidence.",
     minutes: 5,
+    standards: ["CFTC Reg AT", "MiFID II RTS 6", "SOC 2 Type II", "DORA", "ISO 31000", "IEEE 1016 SDD", "IEEE 828 CM"],
+    tools: ["Microsoft Word", "Adobe Sign", "DocuSign", "SharePoint", "Confluence"],
     steps: [
       { title: "Open Reports for Atlas", body: "Inside Atlas — Trade Settlement Engine, click Reports." },
       { title: "Pick the document", body: "Choose CFTC Reg AT, MiFID II RTS 6 or SOC 2 audit packet from the library." },
@@ -160,6 +184,8 @@ const MODULES: ModuleEntry[] = [
     project: "Aegis — Identity & Access Platform", domain: "Identity Security",
     desc: "Automate the Aegis SOC 2 release gate — PR merged → reqs linked → tests must pass → security signs → release.",
     minutes: 4,
+    standards: ["SOC 2 Type II", "ISO/IEC 27001:2022", "NIST CSF 2.0", "IEC 62443", "CMMI v3.0", "IEEE 730 SQA"],
+    tools: ["GitHub Actions", "GitLab CI", "Jenkins", "Argo CD", "Slack"],
     steps: [
       { title: "Open Workflows on Aegis", body: "In Aegis — Identity & Access Platform, open the Workflows page." },
       { title: "Pick a template", body: "Use the SOC 2 release-gate template or build your own pipeline visually." },
@@ -172,6 +198,8 @@ const MODULES: ModuleEntry[] = [
     project: "Cipher — API Gateway & Zero Trust", domain: "Network Security",
     desc: "Live KPI tiles, sparkline trends and sprint-over-sprint deltas for Cipher — exportable to PDF for the next board review.",
     minutes: 4,
+    standards: ["NIST CSF 2.0", "ISO/IEC 27001:2022", "IEC 62443", "SOC 2 Type II", "ISO 31000", "PCI DSS v4.0"],
+    tools: ["Datadog", "Grafana", "PagerDuty", "Snowflake", "PDF export"],
     steps: [
       { title: "Open Analytics for Cipher", body: "Inside Cipher — API Gateway & Zero Trust, click Analytics." },
       { title: "Read the KPI tiles", body: "Audit Readiness, Test Coverage, CAPA Closure, Traceability — each with sparkline trend." },
@@ -184,6 +212,8 @@ const MODULES: ModuleEntry[] = [
     project: "Nova — Crypto Exchange Compliance", domain: "FinTech",
     desc: "Daily VASP checks, weekly travel-rule reviews, monthly SOC 2 — Nova findings become CAPAs the moment they appear.",
     minutes: 4,
+    standards: ["FATF VASP", "Travel Rule", "SOC 2 Type II", "PCI DSS v4.0", "DORA", "MiCA", "ISO/IEC 27001:2022"],
+    tools: ["Chainalysis", "Elliptic", "Jira", "PagerDuty", "Snowflake"],
     steps: [
       { title: "Open Recurring Audits on Nova", body: "Inside Nova — Crypto Exchange Compliance, click Recurring Audits." },
       { title: "Schedule the cadence", body: "Daily VASP screening, weekly travel-rule review, monthly SOC 2 — pick the rhythm." },
@@ -284,6 +314,44 @@ export default function DemoVideoDetail() {
                 </li>
               ))}
             </ol>
+          </section>
+
+          <section className="mt-10" data-testid="coverage-section">
+            <h2 className="font-display text-2xl font-bold text-slate-950 mb-4">
+              Standards & tools covered in this walkthrough
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+                <div className="text-xs uppercase tracking-widest text-primary font-semibold mb-3">
+                  Standards & frameworks
+                </div>
+                <div className="flex flex-wrap gap-2" data-testid="standards-chips">
+                  {module.standards.map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex items-center rounded-full bg-primary/10 text-primary text-xs font-medium px-3 py-1"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+                <div className="text-xs uppercase tracking-widest text-emerald-600 font-semibold mb-3">
+                  Tools & integrations
+                </div>
+                <div className="flex flex-wrap gap-2" data-testid="tools-chips">
+                  {module.tools.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium px-3 py-1"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </section>
 
           <section className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-6">

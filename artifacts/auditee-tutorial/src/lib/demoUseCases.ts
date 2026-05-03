@@ -19,7 +19,70 @@ export type DemoStoryline = {
   cues: { startMs: number; endMs: number; text: string }[];
   steps: { title: string; body: string }[];
   finale: { stat: string; label: string; sub: string };
+  coverage: { standards: string[]; tools: string[] };
 };
+
+export type ExtendedDemo = {
+  slug: string;
+  project: string;
+  domain: string;
+  blurb: string;
+  standards: string[];
+  tools: string[];
+};
+
+/**
+ * Vignette demo projects used to surface platform breadth across standards
+ * not anchored by the 14 main module storylines (avionics, railway, robotics,
+ * power grid, AI Act). Surfaced on the eltegra-site Demo Videos index.
+ */
+export const EXTENDED_DEMOS: ExtendedDemo[] = [
+  {
+    slug: 'hermes',
+    project: 'Hermes — Aircraft Flight Management System',
+    domain: 'Avionics',
+    blurb:
+      "Airborne software with DAL-A traceability — every requirement linked through low-level reqs to source code, with full ARP4754A allocation.",
+    standards: ['DO-178C DAL-A', 'DO-254', 'ARP4754A', 'IEEE 1012', 'IEEE 828'],
+    tools: ['IBM DOORS Next', 'Polarion', 'GitLab', 'LDRA', 'VectorCAST'],
+  },
+  {
+    slug: 'pioneer',
+    project: 'Pioneer — High-Speed Rail Signalling',
+    domain: 'Rail',
+    blurb:
+      "On-board signalling SIL-4 lifecycle — RAMS, software, signalling electronics and rolling-stock software in a single trace graph.",
+    standards: ['EN 50128 SIL-4', 'EN 50126 RAMS', 'EN 50129', 'EN 50657', 'IEC 61508'],
+    tools: ['IBM DOORS', 'Jama', 'GitHub Enterprise', 'Polyspace', 'Reactis'],
+  },
+  {
+    slug: 'vulcan',
+    project: 'Vulcan — Robotic Welding Cell',
+    domain: 'Industrial Robotics',
+    blurb:
+      "Collaborative robotic cell — machine safety, robot safety, electrical equipment and PLC code unified under one CAPA workflow.",
+    standards: ['ISO 10218-1', 'ISO 13849-1 PLd', 'IEC 60204-1', 'IEC 61131-3', 'IEC 62443'],
+    tools: ['Codesys', 'GitHub', 'Jira', 'TestRail', 'ServiceNow'],
+  },
+  {
+    slug: 'ironclad',
+    project: 'Ironclad — Power Grid SCADA',
+    domain: 'Critical Infrastructure',
+    blurb:
+      "Bulk-electric SCADA & pipeline control — NERC CIP audit packets, ISA-95 zone & conduit model, and IEC 61511 SIS lifecycle in one place.",
+    standards: ['NERC CIP', 'IEC 62443', 'IEC 61511', 'API 1164', 'ISA-95 / IEC 62264'],
+    tools: ['OSIsoft PI', 'Splunk', 'Azure DevOps', 'ServiceNow', 'Tenable OT'],
+  },
+  {
+    slug: 'lyra',
+    project: 'Lyra — Generative AI Underwriting',
+    domain: 'Responsible AI',
+    blurb:
+      "High-risk AI system under the EU AI Act — model cards, risk register, bias evaluation and post-market monitoring evidence.",
+    standards: ['EU AI Act (high-risk)', 'ISO/IEC 42001', 'NIST AI RMF', 'ISO 31000', 'GDPR'],
+    tools: ['MLflow', 'Weights & Biases', 'Hugging Face', 'GitHub', 'Snowflake'],
+  },
+];
 
 export const TUTORIAL_TOTAL_MS = 23000;
 
@@ -47,6 +110,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Subscribe to the daily summary', body: 'Toggle the summary email so the team learns what changed overnight without logging in.' },
     ],
     finale: { stat: '92%', label: 'HIPAA Coverage', sub: 'Helios · 3 frameworks · 14 days to audit' },
+    coverage: {
+      standards: ['HIPAA', 'DPDP', 'SOC 2 Type II', 'ISO 27001', 'GDPR', 'NIST CSF 2.0'],
+      tools: ['Email digest', 'Slack', 'Jira', 'Snowflake', 'Looker'],
+    },
   },
 
   sources: {
@@ -72,6 +139,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Confirm the graph', body: '6 sources, 184 requirements, 1,840 firmware files — ready for AI requirements generation.' },
     ],
     finale: { stat: '6', label: 'Sources Connected', sub: 'Orion · 184 reqs · 1,840 files · 12 standards' },
+    coverage: {
+      standards: ['IEC 62304', 'ISO 14971', 'ISO 13485', 'IEC 60601', 'IEC 62366', 'FDA 21 CFR 820', 'MDR 2017/745', 'ISO/IEC/IEEE 42010'],
+      tools: ['IBM DOORS', 'GitHub', 'Jira', 'Azure DevOps', 'ReqIF', 'PDF bulk upload'],
+    },
   },
 
   interview: {
@@ -97,6 +168,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Promote to baseline', body: 'Approve the 18 generated requirements — Aesop is auto-classified to ICH-GCP and 21 CFR Part 11.' },
     ],
     finale: { stat: '18', label: 'Requirements Elicited', sub: 'Aesop · BRS · PRD · FRD · full provenance chain' },
+    coverage: {
+      standards: ['ICH-GCP E6(R3)', 'FDA 21 CFR Part 11', 'ISO 14155', 'GDPR', 'HIPAA', 'IEEE 1063'],
+      tools: ['Conversational AI', 'Microsoft Word', 'Google Docs', 'Confluence', 'Smart Sheet'],
+    },
   },
 
   requirements: {
@@ -122,6 +197,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Export', body: 'Push to IBM DOORS Next or download a clean ReqIF for the OEM regulatory team.' },
     ],
     finale: { stat: '192', label: 'Requirements Tracked', sub: 'Apollo · baselined · versioned · export-ready' },
+    coverage: {
+      standards: ['ISO 26262 ASIL-C', 'ISO/SAE 21434', 'UN R155', 'IEC 61508', 'Automotive SPICE 4.0', 'ASPICE Cyber 2.0', 'CMMI v3.0'],
+      tools: ['IBM DOORS Next', 'Polarion', 'ReqIF', 'Jama', 'Azure DevOps'],
+    },
   },
 
   gaps: {
@@ -147,6 +226,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Verify clean run', body: 'Re-scan after fixes — gap count drops to zero, ready for homologation review.' },
     ],
     finale: { stat: '18', label: 'Ares Gaps Closed', sub: 'ISO 26262 + SOTIF · all auto-linked to CAPA' },
+    coverage: {
+      standards: ['ISO 26262 ASIL-D', 'ISO 21448 SOTIF', 'ISO/SAE 21434', 'UN R157', 'ASPICE Cyber 2.0', 'ISO/IEC/IEEE 29119', 'IEEE 1012 V&V'],
+      tools: ['GitHub', 'Vector CANoe', 'TestRail', 'Polyspace', 'Coverity'],
+    },
   },
 
   traceability: {
@@ -172,6 +255,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Export for the auditor', body: 'Download the trace matrix as XLSX or PDF for the IEC 61508 SIL-3 dossier.' },
     ],
     finale: { stat: '91%', label: 'Titan Trace Coverage', sub: 'Req → code → test → audit · fully linked' },
+    coverage: {
+      standards: ['IEC 61508 SIL-3', 'IEC 61511', 'IEC 61131-3', 'IEC 60204-1', 'ISO 13849-1', 'IEC 62443', 'ISA-95 / IEC 62264'],
+      tools: ['Codesys', 'TIA Portal', 'Git', 'Jira', 'Azure Test Plans'],
+    },
   },
 
   compliance: {
@@ -197,6 +284,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Open a CAPA', body: 'One click converts the finding into CAPA-022, owner Ananya, due in 14 days, fully linked.' },
     ],
     finale: { stat: '5', label: 'Frameworks Active on Nexus', sub: 'Continuously monitored · audit-ready export' },
+    coverage: {
+      standards: ['HIPAA', 'HITRUST CSF', 'ISO/IEC 27001:2022', 'ISO/IEC 27002:2022', 'SOC 2 Type II', 'FHIR R4', 'GDPR', 'NIST CSF 2.0'],
+      tools: ['GitHub', 'AWS Config', 'Datadog', 'Snowflake', 'Okta'],
+    },
   },
 
   capa: {
@@ -222,6 +313,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Close with proof', body: 'Attach the retrained model card and the regression test run. Vega CAPA is audit-clean.' },
     ],
     finale: { stat: '100%', label: 'Vega CAPA Closure', sub: 'Full evidence chain · audit-ready' },
+    coverage: {
+      standards: ['IRDAI', 'NAIC Model 668', 'EU AI Act (limited risk)', 'ISO 31000', 'ISO 9001', 'ISO/IEC 42001'],
+      tools: ['Jira', 'ServiceNow', 'Salesforce', 'MLflow', 'Email triage'],
+    },
   },
 
   defects: {
@@ -247,6 +342,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Watch the trend', body: 'Defect-leakage chart shows monthly churn — Sterling drops from 18 to 7 in two sprints.' },
     ],
     finale: { stat: '87', label: 'Sterling Defects Tracked', sub: 'Jira · Bugzilla · ServiceNow · linked to reqs' },
+    coverage: {
+      standards: ['PCI DSS v4.0', 'DORA', 'NIS2', 'RBI IT Framework', 'ISO/IEC 27001:2022', 'SOC 2 Type II', 'NIST CSF 2.0'],
+      tools: ['Jira', 'Bugzilla', 'ServiceNow', 'GitHub', 'Splunk'],
+    },
   },
 
   tests: {
@@ -272,6 +371,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Push to TestRail', body: 'One click syncs the suite to TestRail with full requirement traceability.' },
     ],
     finale: { stat: '312', label: 'Bastion Tests Generated', sub: 'Standards-aligned · export-ready' },
+    coverage: {
+      standards: ['CIS Benchmarks', 'SOC 2 Type II', 'ISO/IEC 27001:2022', 'ISO/IEC 27002:2022', 'NIST CSF 2.0', 'NIS2', 'ISO/IEC/IEEE 29119', 'IEEE 730'],
+      tools: ['TestRail', 'Xray', 'qTest', 'Azure Test Plans', 'GitHub Actions'],
+    },
   },
 
   reports: {
@@ -297,6 +400,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Sign & ship', body: 'Export DOCX + PDF, route through e-signature, hand to the SEC reviewer with confidence.' },
     ],
     finale: { stat: '247', label: 'Atlas Pages Generated', sub: 'Audit packet · 100% from live project data' },
+    coverage: {
+      standards: ['CFTC Reg AT', 'MiFID II RTS 6', 'SOC 2 Type II', 'DORA', 'ISO 31000', 'IEEE 1016 SDD', 'IEEE 828 CM'],
+      tools: ['Microsoft Word', 'Adobe Sign', 'DocuSign', 'SharePoint', 'Confluence'],
+    },
   },
 
   workflows: {
@@ -322,6 +429,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Watch a release', body: 'PR-481 advances through 4 stages — Auditee blocks at the failed gate until coverage hits 85%.' },
     ],
     finale: { stat: '4', label: 'Aegis Pipeline Stages', sub: 'Every gate logged · full audit trail' },
+    coverage: {
+      standards: ['SOC 2 Type II', 'ISO/IEC 27001:2022', 'NIST CSF 2.0', 'IEC 62443', 'CMMI v3.0', 'IEEE 730 SQA'],
+      tools: ['GitHub Actions', 'GitLab CI', 'Jenkins', 'Argo CD', 'Slack'],
+    },
   },
 
   analytics: {
@@ -347,6 +458,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Export the board pack', body: 'One click renders a PDF with every KPI tile, ready for the Cipher exec review.' },
     ],
     finale: { stat: '84%', label: 'Cipher Audit Readiness', sub: '+6% this sprint · export PDF health report' },
+    coverage: {
+      standards: ['NIST CSF 2.0', 'ISO/IEC 27001:2022', 'IEC 62443', 'SOC 2 Type II', 'ISO 31000', 'PCI DSS v4.0'],
+      tools: ['Datadog', 'Grafana', 'PagerDuty', 'Snowflake', 'PDF export'],
+    },
   },
 
   'recurring-audits': {
@@ -372,6 +487,10 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { title: 'Track the streak', body: 'Nova has run 9 consecutive monthly audits with zero overdue CAPAs.' },
     ],
     finale: { stat: '3', label: 'Nova Audits Scheduled', sub: 'Zero manual effort · findings → CAPA automatically' },
+    coverage: {
+      standards: ['FATF VASP', 'Travel Rule', 'SOC 2 Type II', 'PCI DSS v4.0', 'DORA', 'MiCA', 'ISO/IEC 27001:2022'],
+      tools: ['Chainalysis', 'Elliptic', 'Jira', 'PagerDuty', 'Snowflake'],
+    },
   },
 };
 
