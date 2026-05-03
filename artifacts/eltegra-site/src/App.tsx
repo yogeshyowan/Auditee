@@ -45,6 +45,10 @@ import ComparePolarion from "@/pages/ComparePolarion";
 import Integrations from "@/pages/Integrations";
 import Glossary from "@/pages/Glossary";
 import CaseStudies from "@/pages/CaseStudies";
+import TrustCenter from "@/pages/TrustCenter";
+import Changelog from "@/pages/Changelog";
+import UseCases from "@/pages/UseCases";
+import Whitepapers from "@/pages/Whitepapers";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 import SignInPage from "@/pages/SignIn";
@@ -269,6 +273,14 @@ function Router() {
       <Route path="/glossary" component={Glossary} />
       <Route path="/case-studies" component={CaseStudies} />
       <Route path="/customers" component={CaseStudies} />
+      <Route path="/trust" component={TrustCenter} />
+      <Route path="/trust-center" component={TrustCenter} />
+      <Route path="/changelog" component={Changelog} />
+      <Route path="/whats-new" component={Changelog} />
+      <Route path="/use-cases" component={UseCases} />
+      <Route path="/solutions" component={UseCases} />
+      <Route path="/whitepapers" component={Whitepapers} />
+      <Route path="/resources" component={Whitepapers} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />

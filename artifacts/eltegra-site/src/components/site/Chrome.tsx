@@ -81,11 +81,15 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "resources",
     items: [
       { title: "Blog", desc: "Buyer's guides, standards walkthroughs and field notes.", href: "/blog" },
+      { title: "Whitepapers", desc: "Long-form work on standards, architecture and industry briefs.", href: "/whitepapers" },
+      { title: "Use Cases", desc: "12 concrete jobs Auditee does — from BRD drafting to RM-tool replacement.", href: "/use-cases" },
       { title: "Demo Videos", desc: "14 narrated module tutorials — under 5 minutes each.", href: "/demo-videos" },
       { title: "FAQs", desc: "Platform, AI, integrations, compliance, security and pricing.", href: "/faqs" },
       { title: "Glossary", desc: "45+ definitions — BRD, ASIL, IEC 62304, SOUP, ReqIF and more.", href: "/glossary" },
       { title: "Case Studies", desc: "How healthcare, fintech, automotive and telecom teams use Auditee.", href: "/case-studies" },
       { title: "Integrations", desc: "40+ connectors — DOORS, Jama, Jira, GitHub, Okta, OpenAI, Snowflake.", href: "/integrations" },
+      { title: "Changelog", desc: "Monthly release notes — what shipped and what improved.", href: "/changelog" },
+      { title: "Trust Center", desc: "Sub-processors, certifications, DPA and responsible disclosure.", href: "/trust" },
       { title: "Features", desc: "The complete platform feature set, end-to-end.", href: "/features" },
       { title: "ROI Calculator", desc: "Quantify the cost of audit chaos in your org.", href: "/roi-calculator" },
       { title: "Pricing", desc: "Plans for teams, scale-ups and enterprises.", href: "/pricing" },
@@ -464,9 +468,13 @@ export function SiteFooter() {
             <h4 className="text-white font-semibold mb-6">Resources</h4>
             <ul className="space-y-4">
               <li><Link href="/blog" className="hover:text-primary transition-colors" data-testid="link-footer-blog">Blog</Link></li>
+              <li><Link href="/whitepapers" className="hover:text-primary transition-colors" data-testid="link-footer-whitepapers">Whitepapers</Link></li>
+              <li><Link href="/use-cases" className="hover:text-primary transition-colors" data-testid="link-footer-usecases">Use Cases</Link></li>
               <li><Link href="/case-studies" className="hover:text-primary transition-colors" data-testid="link-footer-cases">Case Studies</Link></li>
               <li><Link href="/integrations" className="hover:text-primary transition-colors" data-testid="link-footer-integrations">Integrations</Link></li>
               <li><Link href="/glossary" className="hover:text-primary transition-colors" data-testid="link-footer-glossary">Glossary</Link></li>
+              <li><Link href="/changelog" className="hover:text-primary transition-colors" data-testid="link-footer-changelog">Changelog</Link></li>
+              <li><Link href="/trust" className="hover:text-primary transition-colors" data-testid="link-footer-trust">Trust Center</Link></li>
               <li><Link href="/demo-videos" className="hover:text-primary transition-colors" data-testid="link-footer-demos">Demo Videos</Link></li>
               <li><Link href="/faqs" className="hover:text-primary transition-colors" data-testid="link-footer-faqs">FAQs</Link></li>
               <li><Link href="/features" className="hover:text-primary transition-colors" data-testid="link-footer-features">Features</Link></li>
