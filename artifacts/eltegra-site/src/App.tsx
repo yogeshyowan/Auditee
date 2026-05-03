@@ -41,6 +41,11 @@ import StandardsHub from "@/pages/StandardsHub";
 import Teams from "@/pages/Teams";
 import VulnerabilityDisclosure from "@/pages/VulnerabilityDisclosure";
 import HtmlSitemap from "@/pages/HtmlSitemap";
+import RefundPolicy from "@/pages/RefundPolicy";
+import CancellationPolicy from "@/pages/CancellationPolicy";
+import ShippingPolicy from "@/pages/ShippingPolicy";
+import Accessibility from "@/pages/Accessibility";
+import Community from "@/pages/Community";
 import Features from "@/pages/Features";
 import AiProductDevelopment from "@/pages/AiProductDevelopment";
 import AutomatedCompliance from "@/pages/AutomatedCompliance";
@@ -371,6 +376,17 @@ function Router() {
       <Route path="/security/disclosure" component={VulnerabilityDisclosure} />
       <Route path="/sitemap" component={HtmlSitemap} />
       <Route path="/site-map" component={HtmlSitemap} />
+      <Route path="/refund-policy" component={RefundPolicy} />
+      <Route path="/refunds" component={RefundPolicy} />
+      <Route path="/cancellation-policy" component={CancellationPolicy} />
+      <Route path="/cancellation" component={CancellationPolicy} />
+      <Route path="/shipping-policy" component={ShippingPolicy} />
+      <Route path="/shipping" component={ShippingPolicy} />
+      <Route path="/delivery-policy" component={ShippingPolicy} />
+      <Route path="/accessibility" component={Accessibility} />
+      <Route path="/a11y" component={Accessibility} />
+      <Route path="/community" component={Community} />
+      <Route path="/slack" component={Community} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
