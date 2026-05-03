@@ -95,7 +95,7 @@ export default function SecurityPage() {
               <Link href="/contact">
                 <Button data-testid="button-request-soc2">Request SOC 2 / ISO docs</Button>
               </Link>
-              <a href="mailto:security@auditee.com">
+              <a href="mailto:security@auditee.site">
                 <Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10">
                   Report a vulnerability
                 </Button>
@@ -131,7 +131,7 @@ export default function SecurityPage() {
             <p className="mt-6 text-xs text-slate-400">
               Status reflects current state as of {new Date().toLocaleDateString(undefined, { month: "long", year: "numeric" })}.
               Customers under NDA may request the latest evidence package via{" "}
-              <a href="mailto:trust@auditee.com" className="underline">trust@auditee.com</a>.
+              <a href="mailto:trust@auditee.site" className="underline">trust@auditee.site</a>.
             </p>
           </div>
         </section>
@@ -241,8 +241,8 @@ export default function SecurityPage() {
               <CardContent className="space-y-3 text-sm text-slate-600">
                 <p>
                   Found a security issue? Please email{" "}
-                  <a href="mailto:security@auditee.com" className="font-semibold text-primary">
-                    security@auditee.com
+                  <a href="mailto:security@auditee.site" className="font-semibold text-primary">
+                    security@auditee.site
                   </a>{" "}
                   with reproduction steps. We acknowledge within 24 hours and triage within 3 business days.
                 </p>
@@ -267,8 +267,8 @@ export default function SecurityPage() {
                 <p>
                   For SOC 2 reports, ISO statements, DPAs, BAAs, security questionnaires, or sub-processor
                   notifications, reach out to{" "}
-                  <a href="mailto:trust@auditee.com" className="font-semibold text-primary">
-                    trust@auditee.com
+                  <a href="mailto:trust@auditee.site" className="font-semibold text-primary">
+                    trust@auditee.site
                   </a>
                   .
                 </p>
