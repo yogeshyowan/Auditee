@@ -39,7 +39,7 @@ export function AppShell({
   return (
     <div className="absolute inset-0 pointer-events-none z-40 font-display text-white">
       {/* Top bar — auditee.site logo + project switcher */}
-      <div className="absolute top-0 left-0 right-0 h-[5vh] bg-black/55 backdrop-blur-md border-b border-white/10 flex items-center px-[1.5vw] gap-[1.5vw]">
+      <div data-appshell-topbar className="absolute top-0 left-0 right-0 h-[5vh] bg-black/55 backdrop-blur-md border-b border-white/10 flex items-center px-[1.5vw] gap-[1.5vw]">
         <div className="flex items-center gap-[0.5vw]">
           <div className="w-[1.6vw] h-[1.6vw] rounded-md bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-[0.9vw] font-black">A</div>
           <span className="font-black text-[1.1vw] tracking-tight">auditee<span className="text-violet-400">.site</span></span>
@@ -57,8 +57,8 @@ export function AppShell({
         </div>
       </div>
 
-      {/* Left sidebar — all 14 pages, current highlighted */}
-      <div className="absolute top-[5vh] left-0 bottom-[8vh] w-[13vw] bg-black/55 backdrop-blur-md border-r border-white/10 py-[1vh] overflow-hidden">
+      {/* Left sidebar — all 17 pages, current highlighted */}
+      <div data-appshell-sidebar className="absolute top-[5vh] left-0 bottom-[8vh] w-[13vw] bg-black/55 backdrop-blur-md border-r border-white/10 py-[1vh] overflow-hidden">
         <div className="text-[0.65vw] text-white/35 uppercase tracking-[0.25em] px-[1vw] mb-[0.6vh]">Workspace</div>
         <div className="flex flex-col gap-[0.15vh] px-[0.5vw]">
           {NAV.map((n) => {
@@ -78,7 +78,7 @@ export function AppShell({
       </div>
 
       {/* Bottom show-and-tell strip — current step caption */}
-      <div className="absolute bottom-0 left-0 right-0 h-[8vh] bg-gradient-to-t from-black/90 via-black/75 to-black/0 backdrop-blur-sm flex items-center px-[2vw] gap-[1.5vw] border-t border-white/8">
+      <div data-appshell-bottom className="absolute bottom-0 left-0 right-0 h-[8vh] bg-gradient-to-t from-black/90 via-black/75 to-black/0 backdrop-blur-sm flex items-center px-[2vw] gap-[1.5vw] border-t border-white/8">
         <div className="flex items-center gap-[0.5vw] shrink-0">
           <div className="w-[2.4vw] h-[2.4vw] rounded-lg bg-violet-500/20 border border-violet-400/40 flex items-center justify-center text-[1.1vw] font-black text-violet-300">{stepIdx + 1}</div>
           <div className="text-[0.7vw] uppercase tracking-[0.25em] text-white/40">Step {stepIdx + 1}/4</div>
@@ -103,7 +103,7 @@ export function AppShell({
       </div>
 
       {/* Subtle "live" badge top-right corner of content */}
-      <div className="absolute top-[6vh] right-[1vw] flex items-center gap-[0.4vw] px-[0.6vw] py-[0.3vh] rounded-full bg-emerald-500/15 border border-emerald-400/30 text-[0.7vw] text-emerald-300 font-semibold">
+      <div data-appshell-live-badge className="absolute top-[6vh] right-[1vw] flex items-center gap-[0.4vw] px-[0.6vw] py-[0.3vh] rounded-full bg-emerald-500/15 border border-emerald-400/30 text-[0.7vw] text-emerald-300 font-semibold">
         <span className="w-[0.4vw] h-[0.4vw] rounded-full bg-emerald-400 animate-pulse" />
         SHOWING · {current?.label.toUpperCase()}
       </div>

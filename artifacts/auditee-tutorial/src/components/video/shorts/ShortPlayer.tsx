@@ -133,7 +133,7 @@ export function ShortPlayer({ slug, autoLoop = true, onComplete }: {
  */
 export function ShortFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-black overflow-hidden">
+    <div className="w-screen h-screen flex items-center justify-center bg-black overflow-hidden short-mode">
       <div
         className="relative bg-slate-950"
         style={{

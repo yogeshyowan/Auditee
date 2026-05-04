@@ -19,7 +19,8 @@ export function Scene1() {
 
   return (
     <motion.div
-      className="absolute inset-0 flex items-center justify-center whiteboard-bg"
+      className="absolute inset-0 flex items-center justify-center"
+      style={{ background: 'radial-gradient(circle at 50% 50%, rgba(248,113,113,0.06) 0%, var(--color-bg-dark) 70%)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -38,7 +39,7 @@ export function Scene1() {
         >
           <img src={imgBA} className="w-64 h-64 object-contain sketch-border sketch-shadow p-2" alt="Stressed BA" />
           <motion.div
-            className="mt-4 text-3xl font-display text-red-500"
+            className="mt-4 text-3xl font-display text-red-400"
             initial={{ opacity: 0, scale: 0 }}
             animate={phase >= 1 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
             transition={{ type: 'spring', bounce: 0.5 }}
@@ -59,7 +60,7 @@ export function Scene1() {
         >
           <img src={imgCompliance} className="w-64 h-64 object-contain sketch-border sketch-shadow p-2" alt="Frantic Compliance" />
           <motion.div
-            className="mt-4 text-3xl font-display text-orange-500"
+            className="mt-4 text-3xl font-display text-orange-400"
             initial={{ opacity: 0, scale: 0 }}
             animate={phase >= 2 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
             transition={{ type: 'spring', bounce: 0.5, delay: 0.3 }}
@@ -80,7 +81,7 @@ export function Scene1() {
         >
           <img src={imgCTO} className="w-64 h-64 object-contain sketch-border sketch-shadow p-2" alt="Overwhelmed CTO" />
           <motion.div
-            className="mt-4 text-3xl font-display text-slate-500"
+            className="mt-4 text-3xl font-display text-white/50"
             initial={{ opacity: 0, scale: 0 }}
             animate={phase >= 3 ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
             transition={{ type: 'spring', bounce: 0.5, delay: 0.3 }}
@@ -90,7 +91,6 @@ export function Scene1() {
         </motion.div>
       </div>
       
-      {/* Hand-drawn scribbles */}
       <motion.svg className="absolute inset-0 pointer-events-none w-full h-full" viewBox="0 0 1920 1080">
         <motion.path
           d="M 100 100 C 300 50, 500 150, 800 100 C 1200 50, 1500 200, 1800 100"

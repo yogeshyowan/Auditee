@@ -2,22 +2,22 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #000000;
-  --color-secondary: #333333;
+  --color-primary: #e2e8f0;
+  --color-secondary: #cbd5e1;
   --color-accent: #a78bfa;
   --color-accent-alt: #38bdf8;
   --color-accent-orange: #fb923c;
   --color-accent-green: #34d399;
   --color-accent-yellow: #facc15;
 
-  --color-bg-light: #ffffff;
-  --color-bg-dark: #f8fafc;
-  --color-bg-muted: #f1f5f9;
+  --color-bg-light: #0f0a1a;
+  --color-bg-dark: #0b0f1a;
+  --color-bg-muted: #1a1630;
 
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #334155;
-  --color-text-muted: #64748b;
-  --color-text-inverse: #ffffff;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-text-inverse: #0f172a;
 
   --font-display: 'Caveat', cursive;
   --font-body: 'Kalam', cursive;
@@ -51,18 +51,34 @@ body {
   overflow: hidden;
 }
 
+.short-mode [data-appshell-sidebar] {
+  display: none !important;
+}
+
+.short-mode [data-appshell-topbar] {
+  left: 0 !important;
+}
+
+.short-mode [data-appshell-bottom] {
+  font-size: 2.8vw;
+}
+
+.short-mode [data-appshell-live-badge] {
+  display: none !important;
+}
+
 /* Whiteboard grid pattern */
 .whiteboard-bg {
-  background-color: #ffffff;
-  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-color: #1a1630;
+  background-image: radial-gradient(rgba(167,139,250,0.15) 1px, transparent 1px);
   background-size: 30px 30px;
 }
 
 /* Hand-drawn sketchy border */
 .sketch-border {
-  border: 3px solid #0f172a;
+  border: 3px solid rgba(167,139,250,0.4);
   border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
-  background: white;
+  background: rgba(26,22,48,0.9);
 }
 
 /* Playful drop shadow */

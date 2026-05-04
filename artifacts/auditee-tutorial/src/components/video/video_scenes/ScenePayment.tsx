@@ -17,7 +17,8 @@ export function ScenePayment() {
 
   return (
     <motion.div
-      className="absolute inset-0 flex flex-col items-center justify-center whiteboard-bg"
+      className="absolute inset-0 flex flex-col items-center justify-center"
+      style={{ background: 'radial-gradient(circle at 60% 50%, rgba(14,165,233,0.08) 0%, var(--color-bg-dark) 70%)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.05 }}
@@ -30,7 +31,7 @@ export function ScenePayment() {
         Subscription & Payment
       </motion.div>
       <motion.h2
-        className="text-[3.2vw] font-bold mb-10 text-center text-slate-800"
+        className="text-[3.2vw] font-bold mb-10 text-center text-white/90"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: phase >= 1 ? 1 : 0, y: phase >= 1 ? 0 : -10 }}
       >
@@ -38,25 +39,23 @@ export function ScenePayment() {
       </motion.h2>
 
       <div className="flex items-center justify-center gap-[6vw] relative w-full px-[10vw]">
-        {/* Left side: sketch */}
         <motion.div
           className="relative"
           initial={{ opacity: 0, x: -40, rotate: -5 }}
           animate={{ opacity: phase >= 1 ? 1 : 0, x: phase >= 1 ? 0 : -40, rotate: phase >= 1 ? -2 : -5 }}
           transition={{ type: 'spring', damping: 15, delay: 0.2 }}
         >
-          <img src={paymentImg} className="w-[30vw] object-contain sketch-border sketch-shadow p-3 bg-white" alt="Payment Sketch" />
+          <img src={paymentImg} className="w-[30vw] object-contain sketch-border sketch-shadow p-3" alt="Payment Sketch" />
         </motion.div>
 
-        {/* Right side: App UI mock for checkout */}
         <motion.div
-          className="w-[34vw] bg-white rounded-2xl shadow-2xl border border-slate-200 p-8 flex flex-col items-center relative overflow-hidden"
+          className="w-[34vw] bg-[var(--color-bg-muted)] rounded-2xl shadow-2xl border border-white/15 p-8 flex flex-col items-center relative overflow-hidden"
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: phase >= 2 ? 1 : 0, x: phase >= 2 ? 0 : 40 }}
           transition={{ type: 'spring', damping: 18 }}
         >
-          <div className="text-xl font-bold text-slate-900 mb-2">Professional Plan</div>
-          <div className="text-4xl font-black text-slate-900 mb-6">₹7,999<span className="text-lg text-slate-500 font-normal">/mo</span></div>
+          <div className="text-xl font-bold text-white/95 mb-2">Professional Plan</div>
+          <div className="text-4xl font-black text-white/95 mb-6">₹7,999<span className="text-lg text-white/50 font-normal">/mo</span></div>
 
           <motion.div
             className="w-full bg-[#0ea5e9] text-white py-3 rounded-lg font-bold text-center relative overflow-hidden shadow-lg"
@@ -75,14 +74,13 @@ export function ScenePayment() {
           </motion.div>
           
           <div className="mt-6 w-full space-y-3">
-             <div className="h-2 w-full bg-slate-100 rounded" />
-             <div className="h-2 w-5/6 bg-slate-100 rounded" />
-             <div className="h-2 w-4/6 bg-slate-100 rounded" />
+             <div className="h-2 w-full bg-white/10 rounded" />
+             <div className="h-2 w-5/6 bg-white/10 rounded" />
+             <div className="h-2 w-4/6 bg-white/10 rounded" />
           </div>
         </motion.div>
       </div>
       
-      {/* Floating success particles */}
       {phase >= 3 && (
         <motion.div
           className="absolute inset-0 pointer-events-none flex items-center justify-center"

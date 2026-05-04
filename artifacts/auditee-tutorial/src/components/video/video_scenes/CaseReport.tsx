@@ -118,7 +118,7 @@ export function CaseReport() {
           return (
             <motion.div
               key={i}
-              className="absolute inset-0 bg-gradient-to-br from-[#FAFAFA] to-[#E5E7EB] text-slate-800 rounded-xl p-[2.5vw] shadow-2xl border border-white/10"
+              className="absolute inset-0 bg-gradient-to-br from-[#1a1630] to-[#0f0a1a] text-white rounded-xl p-[2.5vw] shadow-2xl border border-white/15"
               animate={{
                 opacity: Math.abs(offset) > 1 ? 0 : (isActive ? 1 : 0.3),
                 x: offset * 30,
@@ -129,11 +129,11 @@ export function CaseReport() {
               }}
               transition={{ type: 'spring', damping: 20 }}
             >
-              <div className="text-[0.85vw] font-mono uppercase tracking-[0.3em] text-indigo-600 mb-2">{p.header}</div>
-              <div className="text-[2vw] font-bold text-slate-900 leading-tight">{p.title}</div>
-              <div className="text-[1vw] text-slate-500 mt-1">{p.sub}</div>
+              <div className="text-[0.85vw] font-mono uppercase tracking-[0.3em] text-indigo-400 mb-2">{p.header}</div>
+              <div className="text-[2vw] font-bold text-white/95 leading-tight">{p.title}</div>
+              <div className="text-[1vw] text-white/50 mt-1">{p.sub}</div>
               {p.body}
-              <div className="absolute bottom-3 right-4 text-[0.7vw] text-slate-400 font-mono">Auditee · {i + 1}/{pages.length}</div>
+              <div className="absolute bottom-3 right-4 text-[0.7vw] text-white/40 font-mono">Auditee · {i + 1}/{pages.length}</div>
             </motion.div>
           );
         })}
@@ -145,7 +145,7 @@ export function CaseReport() {
         animate={{ opacity: page >= 1 ? 1 : 0, scale: 1, y: 0 }}
         transition={{ type: 'spring', damping: 15 }}
       >
-        <img src={imgCompliance} className="w-48 h-48 object-contain sketch-border sketch-shadow p-2 bg-white/10 rounded-full backdrop-blur-md" alt="Compliance Relieved" />
+        <img src={imgCompliance} className="w-48 h-48 object-contain sketch-border sketch-shadow p-2 rounded-full backdrop-blur-md" alt="Compliance Relieved" />
         <motion.div
           className="absolute -top-4 -right-4 bg-emerald-500 text-white font-bold text-xl px-4 py-2 rounded-full shadow-lg"
           animate={{ scale: [1, 1.1, 1] }}
