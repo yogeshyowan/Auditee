@@ -73,10 +73,10 @@ router.post(
       return;
     }
 
-    if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+    if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY && !process.env.OPENAI_API_KEY) {
       res
         .status(503)
-        .json({ error: "TTS not configured (AI_INTEGRATIONS_OPENAI_API_KEY missing)" });
+        .json({ error: "TTS not configured (set OPENAI_API_KEY or AI_INTEGRATIONS_OPENAI_API_KEY)" });
       return;
     }
 
