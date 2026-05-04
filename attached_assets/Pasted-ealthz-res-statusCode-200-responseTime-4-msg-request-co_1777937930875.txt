@@ -1,0 +1,12 @@
+ealthz"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937850027,"pid":7,"hostname":"348291abbd04","req":{"id":102,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937852166,"pid":7,"hostname":"348291abbd04","req":{"id":103,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937860323,"pid":7,"hostname":"348291abbd04","req":{"id":104,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937870738,"pid":7,"hostname":"348291abbd04","req":{"id":105,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937881064,"pid":7,"hostname":"348291abbd04","req":{"id":106,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937891400,"pid":7,"hostname":"348291abbd04","req":{"id":107,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937901690,"pid":7,"hostname":"348291abbd04","req":{"id":108,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937911975,"pid":7,"hostname":"348291abbd04","req":{"id":109,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937912130,"pid":7,"hostname":"348291abbd04","req":{"id":110,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937922288,"pid":7,"hostname":"348291abbd04","req":{"id":111,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1777937932615,"pid":7,"hostname":"348291abbd04","req":{"id":112,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
