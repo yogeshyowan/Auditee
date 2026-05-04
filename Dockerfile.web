@@ -21,8 +21,16 @@ ENV VITE_CLERK_PROXY_URL=${VITE_CLERK_PROXY_URL}
 
 RUN pnpm --filter @workspace/eltegra-site run build
 
+ENV BASE_PATH=/auditee-tutorial/
+RUN pnpm --filter @workspace/auditee-tutorial run build
+
+ENV BASE_PATH=/auditee-deck/
+RUN pnpm --filter @workspace/auditee-deck run build
+
 
 FROM nginx:alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/artifacts/eltegra-site/dist/public /usr/share/nginx/html
+COPY --from=builder /app/artifacts/auditee-tutorial/dist/public /usr/share/nginx/html/auditee-tutorial
+COPY --from=builder /app/artifacts/auditee-deck/dist/public /usr/share/nginx/html/auditee-deck
 EXPOSE 80

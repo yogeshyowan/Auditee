@@ -105,8 +105,9 @@ docker compose up -d --build
 ```
 
 The first build takes 5–10 minutes (it installs all pnpm dependencies and
-bundles the API server with esbuild + Vite). Subsequent rebuilds are much
-faster thanks to layer caching.
+bundles the API server with esbuild, plus three Vite frontends: the marketing
+site, the tutorial videos, and the investor deck). Subsequent rebuilds are
+much faster thanks to layer caching.
 
 Check health:
 
@@ -126,7 +127,8 @@ You should see in the api log:
 ```
 
 Visit `http://<server-ip>` — you should see the marketing site. The dashboard
-is at `/app` after signing in.
+is at `/app` after signing in. Tutorial videos are at `/auditee-tutorial/`
+and the investor deck is at `/auditee-deck/`.
 
 ## 8. Add HTTPS (recommended)
 

@@ -21,18 +21,6 @@
       <category>PDLC</category>
     </item>
     <item>
-      <title>AI Requirements Management: A Buyer&apos;s Guide for 2026</title>
-      <link>https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</link>
-      <guid isPermaLink="true">https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</guid>
-      <pubDate>Wed, 22 Apr 2026 00:00:00 GMT</pubDate>
-      <description>What enterprise teams should look for in an AI-powered requirements management (RM) tool in 2026 — capabilities, integrations, compliance fit, total cost of ownership, and red flags.</description>
-      <author>noreply@auditee.site (Auditee Research)</author>
-      <category>Requirements Management</category>
-      <category>AI</category>
-      <category>Buyer&apos;s Guide</category>
-      <category>Enterprise</category>
-    </item>
-    <item>
       <title>Why Spreadsheets Still Beat Requirements Management Tools (and How AI Finally Fixes It)</title>
       <link>https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools</link>
       <guid isPermaLink="true">https://auditee.site/blog/why-spreadsheets-still-beat-rm-tools</guid>
@@ -59,16 +47,15 @@
       <category>Standards</category>
     </item>
     <item>
-      <title>IEC 62304: Medical Device Software Lifecycle Guide (2026)</title>
-      <link>https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide</link>
-      <guid isPermaLink="true">https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide</guid>
-      <pubDate>Wed, 15 Apr 2026 00:00:00 GMT</pubDate>
-      <description>A practical guide to IEC 62304 — software safety classification (Class A/B/C), required deliverables, traceability obligations, and how AI-native tools shorten compliance from months to weeks.</description>
+      <title>AI Requirements Management: A Buyer&apos;s Guide for 2026</title>
+      <link>https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</link>
+      <guid isPermaLink="true">https://auditee.site/blog/ai-requirements-management-buyers-guide-2026</guid>
+      <pubDate>Wed, 22 Apr 2026 00:00:00 GMT</pubDate>
+      <description>What enterprise teams should look for in an AI-powered requirements management (RM) tool in 2026 — capabilities, integrations, compliance fit, total cost of ownership, and red flags.</description>
       <author>noreply@auditee.site (Auditee Research)</author>
-      <category>IEC 62304</category>
-      <category>Medical Devices</category>
-      <category>Compliance</category>
-      <category>Standards</category>
+      <category>Requirements Management</category>
+      <category>AI</category>
+      <category>, </category>
     </item>
     <item>
       <title>Legacy Code Modernization: From COBOL Hell to AI-Ready Architecture</title>
@@ -81,6 +68,18 @@
       <category>AI</category>
       <category>COBOL</category>
       <category>Architecture</category>
+    </item>
+    <item>
+      <title>IEC 62304: Medical Device Software Lifecycle Guide (2026)</title>
+      <link>https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide</link>
+      <guid isPermaLink="true">https://auditee.site/blog/iec-62304-medical-device-software-lifecycle-guide</guid>
+      <pubDate>Wed, 15 Apr 2026 00:00:00 GMT</pubDate>
+      <description>A practical guide to IEC 62304 — software safety classification (Class A/B/C), required deliverables, traceability obligations, and how AI-native tools shorten compliance from months to weeks.</description>
+      <author>noreply@auditee.site (Auditee Research)</author>
+      <category>IEC 62304</category>
+      <category>Medical Devices</category>
+      <category>Compliance</category>
+      <category>Standards</category>
     </item>
     <item>
       <title>SOC 2 vs ISO 27001: Which Compliance Framework Should You Choose?</title>
