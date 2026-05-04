@@ -65,3 +65,9 @@ id = "yxFFbD2IO75YFzkQWNIhv"
 uri = "file://.local/outputs/Auditee---Investor-Sales-Deck.pdf"
 type = "pdf"
 title = "Auditee — Investor / Sales Deck"
+
+[[outputs]]
+id = "MUOM4YbeMgZhWGmtPcD--"
+uri = "file://artifacts/eltegra-site/public/logo.svg"
+type = "image"
+title = "Auditee Logo (SVG)"
