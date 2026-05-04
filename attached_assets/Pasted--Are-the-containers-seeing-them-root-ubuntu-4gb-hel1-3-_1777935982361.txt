@@ -1,0 +1,24 @@
+=== Are the containers seeing them? ===
+root@ubuntu-4gb-hel1-3:/opt/auditee# cd /opt/auditee && sed -i '/OPENROUTER_API_KEY:/a\      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:?RAZORPAY_KEY_ID is required}\n      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:?RAZORPAY_KEY_SECRET is required}\n      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:?RAZORPAY_WEBHOOK_SECRET is required}' docker-compose.yml
+root@ubuntu-4gb-hel1-3:/opt/auditee#
+root@ubuntu-4gb-hel1-3:/opt/auditee# grep -i razorpay docker-compose.yml
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:?RAZORPAY_KEY_ID is required}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:?RAZORPAY_KEY_SECRET is required}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:?RAZORPAY_WEBHOOK_SECRET is required}
+root@ubuntu-4gb-hel1-3:/opt/auditee# docker compose down
+docker compose up -d
+docker compose ps
+[+] down 4/4
+ ✔ Container auditee-web-1 Removed                                                                                  0.0s
+ ✔ Container auditee-api-1 Removed                                                                                  0.1s
+ ✔ Container auditee-db-1  Removed                                                                                  0.2s
+ ✔ Network auditee_auditee Removed                                                                                  0.1s
+[+] up 4/4
+ ✔ Network auditee_auditee Created                                                                                  0.1s
+ ✔ Container auditee-db-1  Healthy                                                                                  6.1s
+ ✘ Container auditee-api-1 Error dependency api failed to start                                                    23.9s
+ ✔ Container auditee-web-1 Created                                                                                  0.1s
+dependency failed to start: container auditee-api-1 is unhealthy
+NAME            IMAGE                COMMAND                  SERVICE   CREATED          STATUS                                  PORTS
+auditee-api-1   auditee-api          "/usr/bin/tini -- /e…"   api       24 seconds ago   Restarting (1) Less than a second ago
+auditee-db-1    postgres:16-alpine   "docker-entrypoint.s…"   db        24 seconds ago   Up 23 seconds (healthy) 
