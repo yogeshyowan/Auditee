@@ -1,0 +1,25 @@
+ => => exporting attestation manifest sha256:e1a38fcff853ad598c92be9da81e0ed6246a561c137a547635bd26685e460c60      0.0s
+ => => exporting manifest list sha256:821bb0a7a591eabb98af724b039ee7f122e5354bca63d9d8ad5151b6581c9d53             0.0s
+ => => naming to docker.io/library/auditee-api:latest                                                              0.0s
+ => => unpacking to docker.io/library/auditee-api:latest                                                          24.2s
+ => [api] resolving provenance for metadata file                                                                   0.0s
+[+] up 7/7
+ ✔ Image auditee-web       Built                                                                                  204.9s
+ ✔ Image auditee-api       Built                                                                                  204.9s
+ ✔ Network auditee_auditee Created                                                                                  0.1s
+ ✔ Volume auditee_pgdata   Created                                                                                  0.0s
+ ✔ Container auditee-db-1  Healthy                                                                                  6.4s
+ ✘ Container auditee-api-1 Error dependency api failed to start                                                    22.4s
+ ✔ Container auditee-web-1 Created                                                                                  0.1s
+dependency failed to start: container auditee-api-1 is unhealthy
+root@ubuntu-4gb-hel1-3:/opt/auditee#  => [api] resolving provenance for metadata file                                                                   0.0s
+[+] up 7/7
+ ✔ Image auditee-web       Built                                                                                  204.9s
+ ✔ Image auditee-api       Built                                                                                  204.9s
+ ✔ Network auditee_auditee Created                                                                                  0.1s
+ ✔ Volume auditee_pgdata   Created                                                                                  0.0s
+ ✔ Container auditee-db-1  Healthy                                                                                  6.4s
+ ✘ Container auditee-api-1 Error dependency api failed to start                                                    22.4s
+ ✔ Container auditee-web-1 Created                                                                                  0.1s
+dependency failed to start: container auditee-api-1 is unhealthy
+root@ubuntu-4gb-hel1-3:/opt/auditee#
