@@ -18,7 +18,7 @@ import { useEffect, useRef } from 'react';
 export function BackgroundMusic({
   active = true,
   audioRef,
-  gain = 0.16,
+  gain = 0.22,
 }: {
   active?: boolean;
   audioRef?: React.RefObject<HTMLAudioElement | null>;
