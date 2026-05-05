@@ -6,6 +6,7 @@ import { ClerkLoadGate } from "@/components/ClerkLoadGate";
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/toaster";
 import { UpsellDialog } from "@/components/UpsellDialog";
+import { ChatWidget } from "@/components/ChatWidget";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProjectProvider } from "@/lib/project-context";
 import { useLeadCapture } from "@/lib/leadCapture";
@@ -541,6 +542,7 @@ function ClerkProviderWithRoutes() {
           <Router />
           <Toaster />
           <UpsellDialog />
+          <ChatWidget />
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>

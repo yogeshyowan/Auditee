@@ -34,6 +34,7 @@ import oidcRouter from "./oidc";
 import scimRouter from "./scim";
 import enterpriseRouter from "./enterprise";
 import enterpriseExtraRouter from "./enterpriseExtra";
+import chatMessagesRouter from "./chatMessages";
 
 const router: IRouter = Router();
 
@@ -72,5 +73,6 @@ router.use(oidcRouter);
 router.use(scimRouter);
 router.use(enterpriseRouter);
 router.use(enterpriseExtraRouter);
+router.use(chatMessagesRouter);
 
 export default router;
