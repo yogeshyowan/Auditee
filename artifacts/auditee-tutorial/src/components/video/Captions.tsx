@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, RefObject } from 'react';
+import type { JSX } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Cue = { start: number; end: number; text: string };
