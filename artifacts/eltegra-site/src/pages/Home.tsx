@@ -146,7 +146,7 @@ function Hero() {
               Ship enterprise software with <span className="text-primary">total clarity</span> — from idea to audit.
             </motion.h1>
             <motion.p variants={fadeIn} className="text-lg md:text-xl text-slate-600 mb-8 leading-relaxed max-w-xl">
-              Auditee is the AI-native control plane for the Product Development Lifecycle. It turns scattered requirements, legacy code and last-minute audit scrambles into one living knowledge graph the whole org can trust.
+              Auditee is the AI-native control pane for the Product Development Lifecycle. It turns scattered requirements, legacy code and last-minute audit scrambles into one living knowledge graph the whole org can trust.
             </motion.p>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4">
               <DemoDialog>
