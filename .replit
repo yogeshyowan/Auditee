@@ -50,5 +50,5 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-VITE_CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsuYXVkaXRlZS5zaXRlJA"
+VITE_CLERK_PUBLISHABLE_KEY = "pk_test_Y2VydGFpbi1wYW5kYS01NS5jbGVyay5hY2NvdW50cy5kZXYk"
 GOOGLE_SHEET_ID = "1IV1O73AKZrWl4Io1qVAO5zBBQD5c7UXBPfE2XU92YgU"
