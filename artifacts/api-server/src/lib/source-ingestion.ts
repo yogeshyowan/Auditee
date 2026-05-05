@@ -3,6 +3,8 @@ import AdmZip from "adm-zip";
 import { db, sourceFilesTable, projectSourcesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { safeFetch } from "./safe-fetch.js";
+import { indexSourceForRAG } from "./rag.js";
+import { logger } from "./logger.js";
 
 function sanitizePath(p: string): string | null {
   if (!p) return null;
@@ -93,6 +95,23 @@ export async function persistFiles(sourceId: string, files: IngestedFile[]): Pro
       })
       .where(eq(projectSourcesTable.id, sourceId));
     return { count, bytes };
+  }).then(async (result) => {
+    // Best-effort RAG indexing in the background. Never block the user-facing
+    // ingest response on this — embedding can be slow and the AI routes have
+    // a graceful fallback when no chunks exist for a project.
+    void (async () => {
+      try {
+        const [src] = await db
+          .select({ projectId: projectSourcesTable.projectId })
+          .from(projectSourcesTable)
+          .where(eq(projectSourcesTable.id, sourceId));
+        if (!src) return;
+        await indexSourceForRAG(src.projectId, sourceId);
+      } catch (err) {
+        logger.warn({ err, sourceId }, "Background RAG indexing failed");
+      }
+    })();
+    return result;
   });
 }
 

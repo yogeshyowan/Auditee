@@ -34,6 +34,8 @@ import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
+import { retrieveChunks, formatChunksAsContext } from "../lib/rag.js";
+import { analyzeCode, formatAnalysisForPrompt } from "../lib/code-analyzer.js";
 import { rateAudit, getRatingScheme } from "../lib/framework-rating";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 import { consumeCredit } from "../middlewares/creditMiddleware";
@@ -1599,15 +1601,24 @@ router.post("/ai/legacy-extract", consumeCredit(), aiHandler(async (req, res) =>
     return;
   }
 
-  const sysPrompt = `You are Auditee's legacy modernization analyst. Read the legacy code and extract the implicit business and functional requirements it encodes. Identify hidden risks (compliance gaps, brittle patterns, hard-coded business rules).
+  // Static analysis pre-processor — extract structural skeleton (functions,
+  // classes, paragraphs, call graph, imports, complexity hints, candidate
+  // business rules) before sending anything to the LLM. Lets the model focus
+  // on the structured summary + selected high-complexity excerpts instead of
+  // re-deriving program structure from raw text on every call.
+  const analysis = analyzeCode(body.code, system.language);
+  const analysisBlock = formatAnalysisForPrompt(analysis);
+
+  const sysPrompt = `You are Auditee's legacy modernization analyst. You are given (1) a deterministic static-analysis summary of the legacy code and (2) the raw source. Use the static analysis as ground truth for structure and call-graph; use the raw code for behaviour. Extract the implicit business and functional requirements the code encodes, and surface hidden risks (compliance gaps, brittle patterns, hard-coded rules).
 Return strict JSON:
 {"summary":string,"requirements":[{"title":string,"description":string,"type":"BRD"|"PRD"|"FRD"|"NFR","priority":"low"|"medium"|"high"|"critical","tags":string[]}],"risks":[{"severity":"low"|"medium"|"high","title":string,"detail":string}],"modernizationNotes":string}
 Rules:
-- 3-8 requirements, each grounded in the actual code.
-- 1-5 risks, each clearly tied to something in the code.
+- 3-8 requirements, each grounded in a specific symbol, paragraph, call edge, or business-rule line from the static analysis.
+- 1-5 risks, each clearly tied to something in the code or static analysis.
+- Cite the relevant symbol/line in the requirement.description when possible (e.g. "L142 PERFORM CALC-INTEREST").
 - Output JSON only.`;
 
-  const userPrompt = `Legacy system: ${system.name} (${system.language})\nDescription: ${system.description ?? ""}\n\nCode:\n\`\`\`${system.language.toLowerCase()}\n${body.code}\n\`\`\``;
+  const userPrompt = `Legacy system: ${system.name} (${system.language})\nDescription: ${system.description ?? ""}\n\n${analysisBlock}\n\n## Raw source\n\`\`\`${system.language.toLowerCase()}\n${body.code}\n\`\`\``;
 
   type LegacyResult = {
     summary: string;
@@ -1762,14 +1773,34 @@ router.post("/ai/ask", consumeCredit(), aiHandler(async (req, res) => {
     })),
   };
 
-  const sysPrompt = `You are Auditee, an AI-native PDLC platform assistant. Answer questions using ONLY the structured project context provided. Cite specific requirement codes (e.g., HEL-0001), framework codes, or system names when relevant.
+  // RAG: pull the top-K most semantically relevant document chunks for the
+  // question from the project's source corpus (pgvector cosine similarity).
+  // Falls back to empty string if RAG is unavailable or the project has no
+  // indexed chunks yet — the structured context above is still passed.
+  let ragBlock = "";
+  if (body.projectId) {
+    try {
+      const chunks = await retrieveChunks(body.projectId, body.question, 8);
+      ragBlock = formatChunksAsContext(chunks, 10000);
+    } catch {
+      ragBlock = "";
+    }
+  }
+
+  const sysPrompt = `You are Auditee, an AI-native PDLC platform assistant. Answer questions using ONLY the structured project context AND the retrieved source excerpts provided. Cite specific requirement codes (e.g., HEL-0001), framework codes, system names, or source paths when relevant.
 Return strict JSON:
 {"answer":string,"citations":string[],"confidence":"low"|"medium"|"high"}
 - answer: clear, concise (<=200 words), markdown allowed.
-- citations: identifiers you referenced (codes/names).
-- If the context doesn't contain enough information, say so honestly with confidence "low".`;
+- citations: identifiers you referenced (codes/names/source paths).
+- If neither context nor source excerpts contain enough information, say so honestly with confidence "low".`;
 
-  const userPrompt = `Question: ${body.question}\n\nContext:\n${JSON.stringify(context).slice(0, 24000)}`;
+  const userPrompt = [
+    `Question: ${body.question}`,
+    ``,
+    `Structured context:`,
+    JSON.stringify(context).slice(0, 16000),
+    ragBlock ? `\nRetrieved source excerpts (top-K by semantic relevance):\n${ragBlock}` : "",
+  ].join("\n");
 
   type AskResult = { answer: string; citations: string[]; confidence: "low" | "medium" | "high" };
   const result = await jsonCompletion<AskResult>(sysPrompt, userPrompt);

@@ -4,6 +4,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db, projectSourcesTable, sourceFilesTable, activityEventsTable, requirementsTable, defectsTable } from "@workspace/db";
 import { ingestZipBuffer, ingestGithub, ingestRemoteSystem, persistFiles, type IngestedFile } from "../lib/source-ingestion.js";
+import { deleteSourceChunks } from "../lib/rag.js";
 import { ingestRequirementsTool, ingestReqifBuffer, isRmKind, RM_KINDS } from "../lib/rm-ingestion.js";
 import { ingestDefectsTool, isDefectKind, DEFECT_KINDS } from "../lib/defect-ingestion.js";
 import { requireProjectAccessInline } from "../lib/projectAccess";
@@ -91,6 +92,7 @@ router.delete("/sources/:id", async (req, res) => {
   // Defects, on the other hand, are deleted outright — they only have value
   // when paired with a live source connection (they re-import on next sync).
   await db.delete(sourceFilesTable).where(eq(sourceFilesTable.sourceId, req.params.id!));
+  await deleteSourceChunks([req.params.id!]);
   await db
     .update(requirementsTable)
     .set({ sourceId: null, externalSystem: null })

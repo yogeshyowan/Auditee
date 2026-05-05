@@ -18,7 +18,7 @@ import { useEffect, useRef } from 'react';
 export function BackgroundMusic({
   active = true,
   audioRef,
-  gain = 0.22,
+  gain = 0.28,
 }: {
   active?: boolean;
   audioRef?: React.RefObject<HTMLAudioElement | null>;
@@ -219,7 +219,7 @@ export function BackgroundMusic({
       if (!ctxRef.current || !masterRef.current) return;
       const m = masterRef.current;
       m.gain.cancelScheduledValues(ctxRef.current.currentTime);
-      m.gain.linearRampToValueAtTime(targetGainRef.current * 0.3, ctxRef.current.currentTime + 0.3);
+      m.gain.linearRampToValueAtTime(targetGainRef.current * 0.22, ctxRef.current.currentTime + 0.25);
     }
     function unduck() {
       if (!ctxRef.current || !masterRef.current) return;

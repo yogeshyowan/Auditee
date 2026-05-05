@@ -27,3 +27,4 @@ export * from "./testCases";
 export * from "./leadCaptures";
 export * from "./billing";
 export * from "./enterprise";
+export * from "./documentChunks";

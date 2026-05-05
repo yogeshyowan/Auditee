@@ -20,6 +20,13 @@ The marketing site is optimized for SEO, while the application (`/app/*`) is con
 
 The backend is an Express 5 API server. Data persistence is managed by PostgreSQL with Drizzle ORM, utilizing Zod for validation. API client code is generated from an OpenAPI specification. The frontend is built with React and Vite. All external HTTP requests are routed through `lib/safe-fetch.ts` for SSRF protection. Authentication and authorization are handled by Clerk, supporting a workspace-scoped, seat-based billing model.
 
+### AI Architecture (closes eltegra.ai parity gaps)
+
+-   **Per-project RAG (pgvector)**: `document_chunks` table stores 1536-dim embeddings (text-embedding-3-small) of every text source file, chunked ~1800 chars with 200-char overlap. `lib/rag.ts` exposes `indexSourceForRAG`, `retrieveChunks` (cosine via pgvector `<=>`), `formatChunksAsContext`. Source ingestion auto-indexes in the background; `sources` delete prunes chunks. `/api/ai/ask` augments structured context with top-8 retrieved chunks per question. Falls back gracefully when `OPENAI_API_KEY` is unset.
+-   **Multi-step extraction pipeline**: `lib/extraction-pipeline.ts` runs classify → extract entities (actors/features/constraints/risks/data) → synthesise standards-aware requirements as three focused LLM calls with intermediate structured JSON, replacing the single-prompt collapse for long documents.
+-   **Static code analyzer**: `lib/code-analyzer.ts` deterministically extracts symbols, imports, call-graph edges, cyclomatic-complexity estimates, and business-rule candidate lines for 13 languages (TS/JS/Python/Java/C#/Kotlin/Go/Rust/Ruby/PHP/SQL/COBOL/JCL) with no native deps. `/api/ai/legacy-extract` now feeds the analysis skeleton to the LLM alongside raw source.
+-   **Deterministic traceability scoring**: graph traversal of `traceability_links` × `code_artifacts` × `test_cases` in `routes/traceability.ts` (not LLM self-scoring).
+
 ### Enterprise Features
 
 -   **RBAC**: Four workspace roles (`owner`, `admin`, `editor`, `viewer`) and four project roles (`manager`, `developer`, `reviewer`, `auditor`) with detailed permission matrices and server-side checks.
