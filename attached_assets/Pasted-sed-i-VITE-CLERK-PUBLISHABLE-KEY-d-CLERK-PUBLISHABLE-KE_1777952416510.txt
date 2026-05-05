@@ -1,0 +1,113 @@
+sed -i '/^VITE_CLERK_PUBLISHABLE_KEY=/d;/^CLERK_PUBLISHABLE_KEY=/d;/^CLERK_SECRET_KEY=/d;/^VITE_CLERK_PROXY_URL=/d' .env
+
+# Append the new test keys (paste your sk_test_ value where indicated)
+cat >> .env <<'EOF'
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=PASTE_YOUR_sk_test_VALUE_HERE
+EOF
+sed: can't read .env: No such file or directory
+root@ubuntu-4gb-hel1-3:~# 1. Backup
+cp .env .env.bak.$(date +%s)
+
+# 2. Look at current Clerk lines (so we know what's there)
+grep -i clerk .env
+grep -E "VITE_CLERK|CLERK_SECRET|CLERK_PUBLISHABLE|args:|environment:" docker-compose.yml
+
+grep -i clerk .envle now has themst_VALUE_HEREc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JAGV2JA=/d;/^VITE_CLERK_PROXY_URL=/d' .env
+Command 'rep:' not found, did you mean:
+  command 'repo' from deb repo (2.36.1-1ubuntu0.1)
+  command 'rep' from deb rep (0.92.5-3.1)
+  command 'repc' from deb qtchooser (66-2build1)
+  command 'repl' from deb mailutils-mh (1:3.16-1build1)
+  command 'repl' from deb mmh (0.4-6)
+  command 'repl' from deb nmh (1.8-1)
+Try: apt install <deb name>
+root@ubuntu-4gb-hel1-3:~#: command not found
+nano.env:: command not found
+root@ubuntu-4gb-hel1-3:~#: command not found
+grep: docker-compose.yml: No such file or directory
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=PASTE_YOUR_sk_test_VALUE_HERE
+Command 'ls:' not found, did you mean:
+  command 'lsd' from snap lsd (0.16.0)
+  command 'lsc' from deb livescript (1.6.1+dfsg-3)
+  command 'lsw' from deb suckless-tools (47-1)
+  command 'lsd' from deb lsd (0.23.1-8)
+  command 'lsm' from deb lsm (1.0.4-2)
+  command 'lsh' from deb lsh-client (2.1-14)
+  command 'ls' from deb coreutils (9.4-3ubuntu6.2)
+See 'snap info <snapname>' for additional versions.
+Command 'ls:' not found, did you mean:
+  command 'lsd' from snap lsd (0.16.0)
+  command 'lsc' from deb livescript (1.6.1+dfsg-3)
+  command 'lsw' from deb suckless-tools (47-1)
+  command 'lsh' from deb lsh-client (2.1-14)
+  command 'lsm' from deb lsm (1.0.4-2)
+  command 'ls' from deb coreutils (9.4-3ubuntu6.2)
+  command 'lsd' from deb lsd (0.23.1-8)
+See 'snap info <snapname>' for additional versions.
+Command 'grep:' not found, did you mean:
+  command 'grep' from deb grep (3.11-3)
+Try: apt install <deb name>
+root@ubuntu-4gb-hel1-3:~#: command not found
+-bash: syntax error near unexpected token `)'
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=PASTE_YOUR_sk_test_VALUE_HERE
+grep: docker-compose.yml: No such file or directory
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=PASTE_YOUR_sk_test_VALUE_HERE
+root@ubuntu-4gb-hel1-3:~# cd /opt/auditee
+ls -la .env* docker-compose.yml
+grep -E "VITE_CLERK|CLERK_SECRET|CLERK_PUBLISHABLE|args:|environment:" docker-compose.yml
+grep -i clerk .env
+-rw-r--r-- 1 root root 2669 May  5 01:52 docker-compose.yml
+-rw-r--r-- 1 root root 3902 May  4 23:20 .env
+-rw-r--r-- 1 root root 2537 May  5 01:52 .env.example
+-rw-r--r-- 1 root root 2497 May  4 23:21 .env.save
+    environment:
+    environment:
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY is required}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:?CLERK_PUBLISHABLE_KEY is required}
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
+        VITE_CLERK_PROXY_URL: ""
+# --- Auth (Clerk) -------------------------------------------------------------
+# Get these from https://dashboard.clerk.com → your application → API keys.
+# Add SITE_URL to "Allowed origins" in the Clerk dashboard, otherwise sign-in
+CLERK_PUBLISHABLE_KEY=pk_live_Y2xlcmsuYXBwLmF1ZGl0ZWUuc2l0ZSQ
+CLERK_SECRET_KEY=sk_live_C6mFJeHWDYWL7M2Xk8LiMhovCfj6TcN5qP8arGPzAf
+root@ubuntu-4gb-hel1-3:/opt/auditee#  command 'lsw' from deb suckless-tools (47-1)
+  command 'lsh' from deb lsh-client (2.1-14)
+  command 'lsm' from deb lsm (1.0.4-2)
+  command 'ls' from deb coreutils (9.4-3ubuntu6.2)
+  command 'lsd' from deb lsd (0.23.1-8)
+See 'snap info <snapname>' for additional versions.
+Command 'grep:' not found, did you mean:
+  command 'grep' from deb grep (3.11-3)
+Try: apt install <deb name>
+root@ubuntu-4gb-hel1-3:~#: command not found
+-bash: syntax error near unexpected token `)'
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=PASTE_YOUR_sk_test_VALUE_HERE
+grep: docker-compose.yml: No such file or directory
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_PUBLISHABLE_KEY=pk_test_YWxpdmUtdG9ydG9pc2UtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=PASTE_YOUR_sk_test_VALUE_HERE
+root@ubuntu-4gb-hel1-3:~# cd /opt/auditee
+ls -la .env* docker-compose.yml
+grep -E "VITE_CLERK|CLERK_SECRET|CLERK_PUBLISHABLE|args:|environment:" docker-compose.yml
+grep -i clerk .env
+-rw-r--r-- 1 root root 2669 May  5 01:52 docker-compose.yml
+-rw-r--r-- 1 root root 3902 May  4 23:20 .env
+-rw-r--r-- 1 root root 2537 May  5 01:52 .env.example
+-rw-r--r-- 1 root root 2497 May  4 23:21 .env.save
+    environment:
+    environment:
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY is required}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:?CLERK_PUBLISHABLE_KEY is required}
+root@ubuntu-4gb-hel1-3:/opt/auditee#L7M2Xk8LiMhovCfj6TcN5qP8arGPzAfse sign-in---equired}l
