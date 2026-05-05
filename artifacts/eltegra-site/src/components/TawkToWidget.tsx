@@ -1,25 +1,18 @@
 import { useEffect } from "react";
 
-const TAWK_PROPERTY_ID = import.meta.env.VITE_TAWK_PROPERTY_ID as string | undefined;
-const TAWK_WIDGET_ID = (import.meta.env.VITE_TAWK_WIDGET_ID as string | undefined) ?? "default";
+const TAWK_SRC = "https://embed.tawk.to/69fa40f4aaf1051c36970ddc/1jnsorfi8";
 
 export function TawkToWidget() {
   useEffect(() => {
-    if (!TAWK_PROPERTY_ID) return;
     if (document.getElementById("tawk-script")) return;
-
+    const s0 = document.getElementsByTagName("script")[0];
     const s1 = document.createElement("script");
     s1.id = "tawk-script";
     s1.async = true;
-    s1.src = `https://embed.tawk.to/${TAWK_PROPERTY_ID}/${TAWK_WIDGET_ID}`;
+    s1.src = TAWK_SRC;
     s1.charset = "UTF-8";
     s1.setAttribute("crossorigin", "*");
-    document.head.appendChild(s1);
-
-    return () => {
-      const el = document.getElementById("tawk-script");
-      if (el) el.remove();
-    };
+    s0.parentNode!.insertBefore(s1, s0);
   }, []);
 
   return null;
