@@ -65,7 +65,7 @@ export function AskAuditeeFloater() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-30 group flex items-center gap-2 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all px-5 py-3 font-semibold text-sm"
+        className="fixed top-20 right-6 z-30 group flex items-center gap-2 bg-primary text-primary-foreground rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all px-5 py-3 font-semibold text-sm"
         data-testid="ask-auditee-fab"
         data-tour="ask-auditee"
         aria-label="Ask Auditee"
