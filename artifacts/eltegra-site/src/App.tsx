@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, Show, useClerk } from "@clerk/react";
+import { ClerkLoadGate } from "@/components/ClerkLoadGate";
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/toaster";
 import { UpsellDialog } from "@/components/UpsellDialog";
@@ -285,7 +286,7 @@ function IdleGuard() {
 
 function GatedAppRoutes() {
   return (
-    <>
+    <ClerkLoadGate>
       <Show when="signed-in">
         <IdleGuard />
         <AppRoutes />
@@ -293,7 +294,7 @@ function GatedAppRoutes() {
       <Show when="signed-out">
         <Redirect to="/sign-in" />
       </Show>
-    </>
+    </ClerkLoadGate>
   );
 }
 
