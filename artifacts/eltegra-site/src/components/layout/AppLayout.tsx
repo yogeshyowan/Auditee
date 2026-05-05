@@ -30,7 +30,19 @@ import {
   Compass,
   Mailbox,
   Building2,
+  LogOut,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useEffect, useState } from "react";
 import { TutorialDrawer } from "@/components/TutorialDrawer";
 import { InlineTutorialPanel } from "@/components/InlineTutorialPanel";
@@ -118,9 +130,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { projectId, setProjectId, connectedProjects, allProjects, effectiveRole } = useProjectContext();
   const [createOpen, setCreateOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const tutorialModule = getModuleForRoute(location);
-  const { getToken, isLoaded: isAuthLoaded } = useAuth();
+  const { getToken, signOut, isLoaded: isAuthLoaded } = useAuth();
   const { user } = useUser();
+
+  async function handleDeleteAccount() {
+    if (!user) return;
+    setDeletingAccount(true);
+    try {
+      await user.delete();
+      navigate("/");
+    } catch {
+      setDeletingAccount(false);
+      setDeleteAccountOpen(false);
+    }
+  }
 
   // Real signed-in user identity for the sidebar footer. Falls back gracefully
   // while Clerk is still hydrating so we never flash a hard-coded placeholder.
@@ -329,14 +355,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
+        <div className="p-4 border-t border-slate-200 space-y-1">
           <div className="flex items-center gap-3 px-3 py-2" data-testid="sidebar-user-card">
-            {/* Clerk's UserButton opens the full account-management modal so the
-                signed-in user can edit their name, avatar, email, password,
-                connected accounts, and sign out. We deliberately replaced the
-                old hard-coded "Avery Kim / Platform Lead" placeholder so the
-                sidebar reflects the actual signed-in identity and gives the
-                user one obvious place to change it. */}
             {user ? (
               <UserButton />
             ) : (
@@ -361,7 +381,47 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </span>
             </div>
           </div>
+
+          <button
+            onClick={() => signOut({ redirectUrl: "/" })}
+            data-testid="sidebar-sign-out"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <LogOut className="h-4 w-4 text-slate-400" />
+            Sign out
+          </button>
+
+          <button
+            onClick={() => setDeleteAccountOpen(true)}
+            data-testid="sidebar-delete-account"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete account
+          </button>
         </div>
+
+        <AlertDialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently deletes your Auditee account, all your projects, requirements, reports, and compliance data. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingAccount}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                data-testid="confirm-delete-account"
+              >
+                {deletingAccount ? "Deleting…" : "Yes, delete my account"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </aside>
 
       <main className="flex-1 ml-64 flex flex-col min-h-screen">
