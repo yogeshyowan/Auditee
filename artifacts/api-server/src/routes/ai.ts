@@ -35,6 +35,7 @@ import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 import { retrieveChunks, formatChunksAsContext } from "../lib/rag.js";
+import { extractRequirementsFromDocument } from "../lib/extraction-pipeline.js";
 import { analyzeCode, analyzeCodeBest, formatAnalysisForPrompt } from "../lib/code-analyzer.js";
 import { rateAudit, getRatingScheme } from "../lib/framework-rating";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
@@ -213,9 +214,53 @@ Rules:
     : baseSystem;
   const system = `${expandedCountSystem}${standardsAddendum}`;
 
+  // For long briefs (>4000 chars), run the multi-step extraction pipeline
+  // first: classify document → extract entities → produce a dense digest.
+  // The digest replaces the raw brief in the final synthesis prompt so the
+  // standards-aware generation gets a focused, structured input instead of a
+  // wall of text. Falls back to the raw brief on any pipeline error.
+  let pipelineDigest = "";
+  if (mode === "brief" && body.brief.length > 4000) {
+    try {
+      const fwCodeList = frameworks.map((f) => f.code);
+      const ext = await extractRequirementsFromDocument(body.brief, {
+        standards: fwCodeList,
+        targetCount: 0,
+      });
+      const sec = ext.classification.sections
+        .map((s, i) => `S${i + 1} ${s.title}: ${s.summary}`)
+        .join("\n");
+      const ent = [
+        ext.entities.actors.length
+          ? `Actors: ${ext.entities.actors.map((a) => `${a.name} (${a.role})`).join("; ")}`
+          : "",
+        ext.entities.features.length
+          ? `Features: ${ext.entities.features.map((f) => f.name).join("; ")}`
+          : "",
+        ext.entities.constraints.length
+          ? `Constraints: ${ext.entities.constraints.map((c) => `[${c.type}] ${c.statement}`).join("; ")}`
+          : "",
+        ext.entities.risks.length
+          ? `Risks: ${ext.entities.risks.map((r) => `[${r.severity}] ${r.statement}`).join("; ")}`
+          : "",
+        ext.entities.dataObjects.length
+          ? `Data objects: ${ext.entities.dataObjects.map((d) => d.name).join("; ")}`
+          : "",
+        ext.entities.externalSystems.length
+          ? `External systems: ${ext.entities.externalSystems.join("; ")}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      pipelineDigest = `Document type: ${ext.classification.documentType}\nDomain: ${ext.classification.domain}\n\nSections:\n${sec}\n\n${ent}`;
+    } catch (err) {
+      req.log.warn({ err }, "extraction pipeline failed; falling back to raw brief");
+    }
+  }
+
   const user = mode === "code"
     ? `Project: ${project.name}\nProject context: ${project.description ?? ""}\n\nSource code${body.language ? ` (${body.language})` : ""}:\n\`\`\`${body.language || ""}\n${body.code}\n\`\`\``
-    : `Project: ${project.name}\nProject context: ${project.description ?? ""}\n\nBrief:\n${body.brief}`;
+    : `Project: ${project.name}\nProject context: ${project.description ?? ""}\n\nBrief:\n${pipelineDigest || body.brief}`;
 
   type GenResult = {
     requirements: Array<{
