@@ -100,32 +100,23 @@ function getOpenAI(): OpenAI | null {
 }
 
 /**
- * Returns up to 14 OpenRouter clients, one per configured API key
- * (`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` … `OPENROUTER_API_KEY_14`).
+ * Returns up to 18 OpenRouter clients, one per configured API key
+ * (`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` … `OPENROUTER_API_KEY_18`).
  *
  * Each key has its own free-tier quota — when one is depleted (HTTP 402
  * "insufficient_credits" / 429 rate limit), the runChain fallback advances
  * to the next key automatically. Order is deterministic so usage is
- * predictable: the unsuffixed key is tried first, then _2 through _14.
+ * predictable: the unsuffixed key is tried first, then _2 through _18.
  */
 function getOpenRouterClients(): Array<{ label: string; client: OpenAI }> {
   if (cachedOpenRouterClients) return cachedOpenRouterClients;
-  const slots: Array<{ envKey: string; label: string }> = [
-    { envKey: "OPENROUTER_API_KEY", label: "openrouter:1" },
-    { envKey: "OPENROUTER_API_KEY_2", label: "openrouter:2" },
-    { envKey: "OPENROUTER_API_KEY_3", label: "openrouter:3" },
-    { envKey: "OPENROUTER_API_KEY_4", label: "openrouter:4" },
-    { envKey: "OPENROUTER_API_KEY_5", label: "openrouter:5" },
-    { envKey: "OPENROUTER_API_KEY_6", label: "openrouter:6" },
-    { envKey: "OPENROUTER_API_KEY_7", label: "openrouter:7" },
-    { envKey: "OPENROUTER_API_KEY_8", label: "openrouter:8" },
-    { envKey: "OPENROUTER_API_KEY_9", label: "openrouter:9" },
-    { envKey: "OPENROUTER_API_KEY_10", label: "openrouter:10" },
-    { envKey: "OPENROUTER_API_KEY_11", label: "openrouter:11" },
-    { envKey: "OPENROUTER_API_KEY_12", label: "openrouter:12" },
-    { envKey: "OPENROUTER_API_KEY_13", label: "openrouter:13" },
-    { envKey: "OPENROUTER_API_KEY_14", label: "openrouter:14" },
-  ];
+  const slots: Array<{ envKey: string; label: string }> = Array.from(
+    { length: 18 },
+    (_, i) => ({
+      envKey: i === 0 ? "OPENROUTER_API_KEY" : `OPENROUTER_API_KEY_${i + 1}`,
+      label: `openrouter:${i + 1}`,
+    }),
+  );
   cachedOpenRouterClients = slots
     .filter((s) => !!process.env[s.envKey])
     .map((s) => ({
