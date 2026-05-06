@@ -14,7 +14,7 @@ Auditee is an AI-native enterprise platform for managing the entire Product Deve
 `OPENAI_API_KEY`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `GITHUB_WEBHOOK_SECRET`, `SLACK_WEBHOOK_URL`, `TEAMS_WEBHOOK_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `GOOGLE_SHEET_ID`, `LEAD_ADMIN_EMAILS`
 
 **Optional AI fallback keys**:
-`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2`…`OPENROUTER_API_KEY_20`, `ANTHROPIC_API_KEY` — see Architecture decisions for rotation order.
+`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2`…`OPENROUTER_API_KEY_21`, `ANTHROPIC_API_KEY` — see Architecture decisions for rotation order.
 
 ## Stack
 
