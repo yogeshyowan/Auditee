@@ -290,6 +290,71 @@ export function useLatestAuditRun<T>(
   });
 }
 
+// =============================================================
+// Aggregated traceability completeness summary (from persisted
+// audit_runs across every source in the project — no AI credit).
+// =============================================================
+export type CompletenessCellStatus = "covered" | "partial" | "missing" | "unaudited";
+export type CompletenessSourceEvidence = {
+  sourceId: string;
+  sourceLabel: string;
+  status: "covered" | "partial" | "missing";
+  artifacts: string[];
+  note: string;
+};
+export type CompletenessRequirementRow = {
+  requirementId: string;
+  requirementCode: string;
+  requirementTitle: string;
+  type: string;
+  status: string;
+  priority: string;
+  stages: Record<
+    LifecycleStage,
+    { best: CompletenessCellStatus; perSource: CompletenessSourceEvidence[] }
+  >;
+  recommendations: Array<{ sourceLabel: string; text: string }>;
+  auditedBySources: number;
+};
+export type CompletenessSummary = {
+  project: { id: string; name: string; slug: string | null };
+  completenessPercentage: number;
+  stagePercentages: Record<LifecycleStage, number>;
+  stageBreakdown: Record<
+    LifecycleStage,
+    { score: number; missing: number; partial: number; covered: number; unaudited: number }
+  >;
+  weakestStage: LifecycleStage | null;
+  requirementsTotal: number;
+  requirementsAudited: number;
+  requirementsWithGaps: number;
+  requirementsFullyCovered: number;
+  sourcesUsed: Array<{
+    sourceId: string | null;
+    sourceLabel: string;
+    runAt: string;
+    overallVerdict: "strong" | "adequate" | "weak" | "failing" | null;
+    completenessPercentage: number | null;
+  }>;
+  requirements: CompletenessRequirementRow[];
+  hasAnyRun: boolean;
+};
+
+export function useCompletenessSummary(projectId: string | null | undefined) {
+  return useQuery<CompletenessSummary>({
+    queryKey: ["traceability-completeness-summary", projectId],
+    queryFn: async () => {
+      const r = await fetch(
+        `${apiBase}/ai/audit-runs/traceability-summary?projectId=${encodeURIComponent(projectId ?? "")}`,
+      );
+      if (!r.ok) throw new Error((await r.text()) || `Request failed (${r.status})`);
+      return r.json() as Promise<CompletenessSummary>;
+    },
+    enabled: !!projectId,
+    staleTime: 30_000,
+  });
+}
+
 export type LegacyExtractRequirement = {
   title: string;
   description: string;

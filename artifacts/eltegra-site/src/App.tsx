@@ -138,6 +138,7 @@ import RecurringAudits from "@/pages/app/RecurringAudits";
 import Sources from "@/pages/app/Sources";
 import Defects from "@/pages/app/Defects";
 import Gaps from "@/pages/app/Gaps";
+import Completeness from "@/pages/app/Completeness";
 import Interview from "@/pages/app/Interview";
 import Billing from "@/pages/app/Billing";
 import Templates from "@/pages/app/Templates";
@@ -262,6 +263,7 @@ function AppRoutes() {
           <Route path="/app/sources" component={Sources} />
           <Route path="/app/defects" component={Defects} />
           <Route path="/app/gaps" component={Gaps} />
+          <Route path="/app/completeness" component={Completeness} />
           <Route path="/app/interview" component={Interview} />
           <Route path="/app/billing" component={Billing} />
           <Route path="/app/templates" component={Templates} />

@@ -1985,6 +1985,246 @@ router.get("/ai/audit-runs/latest", aiHandler(async (req, res) => {
 }));
 
 // =============================================================
+// GET aggregated traceability completeness summary for a project.
+// Pivots the latest traceability audit_run per source into a
+// requirement × stage matrix, taking the BEST status per cell across
+// all sources (covered > partial > missing). Read-only, no AI credit.
+// =============================================================
+router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => {
+  const projectId = requireString(req.query?.projectId, "projectId", { min: 1 });
+  {
+    // Content read of project-scoped audit data — must require an
+    // authenticated, project-member caller (not the AI anonymous-trial path).
+    const access = await requireProjectAccessInline(req, res, projectId, "viewer");
+    if (access === false) return;
+  }
+
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const allReqs = await db
+    .select({
+      id: requirementsTable.id,
+      code: requirementsTable.code,
+      title: requirementsTable.title,
+      type: requirementsTable.type,
+      status: requirementsTable.status,
+      priority: requirementsTable.priority,
+    })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, projectId));
+
+  const allRuns = await db
+    .select()
+    .from(auditRunsTable)
+    .where(and(eq(auditRunsTable.projectId, projectId), eq(auditRunsTable.kind, "traceability")))
+    .orderBy(desc(auditRunsTable.createdAt));
+
+  // Latest run per source — first occurrence wins because we ordered DESC.
+  type RunRow = typeof auditRunsTable.$inferSelect;
+  const latestBySource = new Map<string, RunRow>();
+  for (const r of allRuns) {
+    const key = r.sourceId ?? "__no_source__";
+    if (!latestBySource.has(key)) latestBySource.set(key, r);
+  }
+  const runs = Array.from(latestBySource.values());
+
+  type StageKey = "architecture" | "design" | "implementation" | "testing" | "deployment";
+  const STAGE_KEYS: StageKey[] = ["architecture", "design", "implementation", "testing", "deployment"];
+  type CellStatus = "covered" | "partial" | "missing" | "unaudited";
+  const RANK: Record<CellStatus, number> = { covered: 3, partial: 2, missing: 1, unaudited: 0 };
+
+  type SourceCellEvidence = {
+    sourceId: string;
+    sourceLabel: string;
+    status: "covered" | "partial" | "missing";
+    artifacts: string[];
+    note: string;
+  };
+  type RequirementRow = {
+    requirementId: string;
+    requirementCode: string;
+    requirementTitle: string;
+    type: string;
+    status: string;
+    priority: string;
+    stages: Record<StageKey, { best: CellStatus; perSource: SourceCellEvidence[] }>;
+    recommendations: Array<{ sourceLabel: string; text: string }>;
+    auditedBySources: number;
+  };
+
+  // Track unique source IDs per requirement so a duplicate requirementCode
+  // entry inside one persisted run can't inflate the audited-source count.
+  const auditingSourcesByReq = new Map<string, Set<string>>();
+  const rows: Map<string, RequirementRow> = new Map();
+  for (const r of allReqs) {
+    rows.set(r.code, {
+      requirementId: r.id,
+      requirementCode: r.code,
+      requirementTitle: r.title,
+      type: r.type,
+      status: r.status,
+      priority: r.priority,
+      stages: {
+        architecture: { best: "unaudited", perSource: [] },
+        design: { best: "unaudited", perSource: [] },
+        implementation: { best: "unaudited", perSource: [] },
+        testing: { best: "unaudited", perSource: [] },
+        deployment: { best: "unaudited", perSource: [] },
+      },
+      recommendations: [],
+      auditedBySources: 0,
+    });
+  }
+
+  // Sources block (latest-per-source metadata)
+  const sourcesUsed = runs.map((r) => ({
+    sourceId: r.sourceId,
+    sourceLabel: r.sourceLabel ?? "(unknown source)",
+    runAt: r.createdAt.toISOString(),
+    overallVerdict:
+      (r.result as any)?.overallVerdict ?? null,
+    completenessPercentage:
+      typeof (r.result as any)?.completenessPercentage === "number"
+        ? (r.result as any).completenessPercentage
+        : null,
+  }));
+
+  for (const run of runs) {
+    const payload = run.result as any;
+    const sourceLabel = run.sourceLabel ?? "(unknown source)";
+    const sourceId = run.sourceId ?? "__no_source__";
+    const coverage: any[] = Array.isArray(payload?.requirementCoverage) ? payload.requirementCoverage : [];
+    for (const rc of coverage) {
+      const code = typeof rc?.requirementCode === "string" ? rc.requirementCode : null;
+      if (!code) continue;
+      const row = rows.get(code);
+      if (!row) continue; // requirement was deleted after the audit
+      let srcSet = auditingSourcesByReq.get(code);
+      if (!srcSet) {
+        srcSet = new Set<string>();
+        auditingSourcesByReq.set(code, srcSet);
+      }
+      srcSet.add(sourceId);
+      for (const stage of STAGE_KEYS) {
+        const stageVal = rc?.[stage];
+        const status: "covered" | "partial" | "missing" =
+          stageVal?.status === "covered" || stageVal?.status === "partial" || stageVal?.status === "missing"
+            ? stageVal.status
+            : "missing";
+        const artifacts = Array.isArray(stageVal?.artifacts)
+          ? stageVal.artifacts.filter((x: any) => typeof x === "string")
+          : [];
+        const note = typeof stageVal?.note === "string" ? stageVal.note : "";
+        row.stages[stage].perSource.push({ sourceId, sourceLabel, status, artifacts, note });
+        if (RANK[status] > RANK[row.stages[stage].best]) {
+          row.stages[stage].best = status;
+        }
+      }
+      if (typeof rc?.recommendation === "string" && rc.recommendation.trim()) {
+        row.recommendations.push({ sourceLabel, text: rc.recommendation });
+      }
+    }
+  }
+
+  // Compute KPIs based on the BEST cell per requirement-stage across sources.
+  function score(s: CellStatus): number {
+    if (s === "covered") return 1;
+    if (s === "partial") return 0.5;
+    return 0; // missing or unaudited
+  }
+  const stageTotals: Record<StageKey, { score: number; missing: number; partial: number; covered: number; unaudited: number }> = {
+    architecture: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    design: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    implementation: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    testing: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    deployment: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+  };
+  let perReqScoreSum = 0;
+  let requirementsWithGaps = 0;
+  let requirementsFullyCovered = 0;
+  const requirementRows = Array.from(rows.values());
+  // Backfill the deduplicated audited-source count.
+  for (const row of requirementRows) {
+    row.auditedBySources = auditingSourcesByReq.get(row.requirementCode)?.size ?? 0;
+  }
+  for (const row of requirementRows) {
+    let rowScore = 0;
+    let hasGap = false;
+    let allCovered = true;
+    for (const stage of STAGE_KEYS) {
+      const best = row.stages[stage].best;
+      stageTotals[stage][best as keyof typeof stageTotals[StageKey]]++;
+      stageTotals[stage].score += score(best);
+      rowScore += score(best);
+      if (best !== "covered") allCovered = false;
+      if (best === "missing" || best === "unaudited") hasGap = true;
+    }
+    perReqScoreSum += rowScore / STAGE_KEYS.length;
+    if (hasGap) requirementsWithGaps++;
+    if (allCovered) requirementsFullyCovered++;
+  }
+  const totalReqs = requirementRows.length;
+  const completenessPercentage = totalReqs > 0 ? Math.round((perReqScoreSum / totalReqs) * 100) : 0;
+  const stagePercentages: Record<StageKey, number> = {
+    architecture: totalReqs ? Math.round((stageTotals.architecture.score / totalReqs) * 100) : 0,
+    design: totalReqs ? Math.round((stageTotals.design.score / totalReqs) * 100) : 0,
+    implementation: totalReqs ? Math.round((stageTotals.implementation.score / totalReqs) * 100) : 0,
+    testing: totalReqs ? Math.round((stageTotals.testing.score / totalReqs) * 100) : 0,
+    deployment: totalReqs ? Math.round((stageTotals.deployment.score / totalReqs) * 100) : 0,
+  };
+
+  // Sort requirements: gaps first, then partials, then fully covered. Within
+  // each bucket, by code ASC for stable display.
+  function bucket(row: RequirementRow): number {
+    let hasMissing = false;
+    let hasPartialOrUnaudited = false;
+    let allCovered = true;
+    for (const s of STAGE_KEYS) {
+      const b = row.stages[s].best;
+      if (b !== "covered") allCovered = false;
+      if (b === "missing") hasMissing = true;
+      if (b === "partial" || b === "unaudited") hasPartialOrUnaudited = true;
+    }
+    if (allCovered) return 2;
+    if (hasMissing) return 0;
+    if (hasPartialOrUnaudited) return 1;
+    return 1;
+  }
+  requirementRows.sort((a, b) => {
+    const d = bucket(a) - bucket(b);
+    if (d !== 0) return d;
+    return a.requirementCode.localeCompare(b.requirementCode);
+  });
+
+  // Identify the weakest stage for the headline.
+  let weakestStage: StageKey | null = null;
+  for (const s of STAGE_KEYS) {
+    if (weakestStage === null || stagePercentages[s] < stagePercentages[weakestStage]) {
+      weakestStage = s;
+    }
+  }
+
+  res.json({
+    project: { id: project.id, name: project.name, slug: project.slug ?? null },
+    completenessPercentage,
+    stagePercentages,
+    stageBreakdown: stageTotals,
+    weakestStage,
+    requirementsTotal: totalReqs,
+    requirementsAudited: requirementRows.filter((r) => r.auditedBySources > 0).length,
+    requirementsWithGaps,
+    requirementsFullyCovered,
+    sourcesUsed,
+    requirements: requirementRows,
+    hasAnyRun: runs.length > 0,
+  });
+}));
+
+// =============================================================
 // AI: Legacy Code Extractor — pull implicit requirements
 // =============================================================
 router.post("/ai/legacy-extract", consumeCredit(), aiHandler(async (req, res) => {
