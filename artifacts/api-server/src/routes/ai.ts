@@ -1995,7 +1995,9 @@ router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => 
   {
     // Content read of project-scoped audit data — must require an
     // authenticated, project-member caller (not the AI anonymous-trial path).
-    const access = await requireProjectAccessInline(req, res, projectId, "viewer");
+    // Project roles are manager > developer > reviewer > auditor; "auditor"
+    // is the read-only floor (there is no "viewer" role).
+    const access = await requireProjectAccessInline(req, res, projectId, "auditor");
     if (access === false) return;
   }
 
