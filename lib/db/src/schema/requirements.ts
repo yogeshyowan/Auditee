@@ -32,6 +32,14 @@ export const requirementsTable = pgTable(
     provenanceUnique: uniqueIndex("requirements_provenance_unique")
       .on(t.projectId, t.sourceId, t.externalId)
       .where(sql`${t.sourceId} IS NOT NULL AND ${t.externalId} IS NOT NULL`),
+    // Hard guarantee that no two requirements in the same project share a
+    // human-facing code. The `insertRequirement` helper in the API server
+    // catches the resulting unique_violation (Postgres 23505) and retries
+    // with the next free number, so concurrent inserts never collide.
+    projectCodeUnique: uniqueIndex("requirements_project_code_unique").on(
+      t.projectId,
+      t.code,
+    ),
   }),
 );
 

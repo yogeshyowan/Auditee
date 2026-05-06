@@ -44,6 +44,7 @@ import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/stand
 import { consumeCredit } from "../middlewares/creditMiddleware";
 import { assertProjectAccessIfAuthed, requireProjectAccessInline } from "../lib/projectAccess";
 import { loadProjectDedupIndex, findDuplicate, indexNewRow } from "../lib/requirementDedup";
+import { insertRequirement } from "../lib/insertRequirement";
 
 const router: IRouter = Router();
 
@@ -95,23 +96,6 @@ async function logActivity(
   });
 }
 
-async function nextRequirementCode(projectId: string): Promise<string> {
-  const [project] = await db
-    .select({ slug: projectsTable.slug })
-    .from(projectsTable)
-    .where(eq(projectsTable.id, projectId));
-  if (!project) throw new Error("Project not found");
-  const prefix = project.slug.toUpperCase().slice(0, 4);
-  const existing = await db
-    .select({ code: requirementsTable.code })
-    .from(requirementsTable)
-    .where(eq(requirementsTable.projectId, projectId));
-  const max = existing.reduce((m, r) => {
-    const n = Number(r.code.split("-")[1] ?? "0");
-    return Number.isFinite(n) && n > m ? n : m;
-  }, 0);
-  return `${prefix}-${String(max + 1).padStart(4, "0")}`;
-}
 
 // =============================================================
 // AI: Generate Requirements from a brief
@@ -304,35 +288,28 @@ Rules:
       });
       continue;
     }
-    const code = await nextRequirementCode(body.projectId);
     const linkedFrameworks = (r.linkedFrameworkCodes ?? [])
       .map((c) => codeToId.get(c))
       .filter((x): x is string => Boolean(x));
-    const [row] = await db
-      .insert(requirementsTable)
-      .values({
-        id: randomUUID(),
-        projectId: body.projectId,
-        code,
-        title: r.title.slice(0, 200),
-        description: r.description,
-        type: r.type,
-        status: "draft",
-        priority: r.priority,
-        owner: "Auditee",
-        tags: r.tags ?? [],
-        linkedFrameworks,
-        externalSystem: "auditee_ai",
-        externalId: code,
-      })
-      .returning();
+    const row = await insertRequirement(body.projectId, (code) => ({
+      title: r.title.slice(0, 200),
+      description: r.description,
+      type: r.type,
+      status: "draft",
+      priority: r.priority,
+      owner: "Auditee",
+      tags: r.tags ?? [],
+      linkedFrameworks,
+      externalSystem: "auditee_ai",
+      externalId: code,
+    }));
     created.push(row);
     indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
     await logActivity(
       "requirement",
-      `${code} drafted by Auditee from ${mode}`,
+      `${row.code} drafted by Auditee from ${mode}`,
       "Auditee",
-      code,
+      row.code,
     );
   }
 
@@ -2333,23 +2310,16 @@ Rules:
           });
           continue;
         }
-        const code = await nextRequirementCode(body.projectId);
-        const [row] = await db
-          .insert(requirementsTable)
-          .values({
-            id: randomUUID(),
-            projectId: body.projectId,
-            code,
-            title: r.title.slice(0, 200),
-            description: r.description,
-            type: r.type,
-            status: "draft",
-            priority: r.priority,
-            owner: "Auditee (legacy)",
-            tags: [...(r.tags ?? []), "legacy", system.name],
-            linkedFrameworks: [],
-          })
-          .returning();
+        const row = await insertRequirement(body.projectId, () => ({
+          title: r.title.slice(0, 200),
+          description: r.description,
+          type: r.type,
+          status: "draft",
+          priority: r.priority,
+          owner: "Auditee (legacy)",
+          tags: [...(r.tags ?? []), "legacy", system.name],
+          linkedFrameworks: [],
+        }));
         createdRequirements.push(row);
         indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
       }
@@ -2738,7 +2708,6 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
     row = existing!;
     alreadyExisted = true;
   } else {
-    const code = await nextRequirementCode(projectId);
     // Allowlist category — only the categories the gap-analysis prompt is permitted
     // to emit can become a tag, so we never accept arbitrary user-controlled strings
     // into the tags column.
@@ -2756,25 +2725,18 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
     const tags = ["gap-analysis"];
     if (category && ALLOWED_GAP_CATEGORIES.has(category)) tags.push(category);
 
-    const [inserted] = await db
-      .insert(requirementsTable)
-      .values({
-        id: randomUUID(),
-        projectId,
-        code,
-        title,
-        description,
-        type: type as "BRD" | "PRD" | "FRD" | "NFR",
-        status: "draft",
-        priority: priority as "low" | "medium" | "high" | "critical",
-        owner: "Auditee",
-        tags,
-        linkedFrameworks: [],
-        externalSystem: "auditee_ai",
-        externalId: code,
-      })
-      .returning();
-    row = inserted!;
+    row = await insertRequirement(projectId, (code) => ({
+      title,
+      description,
+      type: type as "BRD" | "PRD" | "FRD" | "NFR",
+      status: "draft",
+      priority: priority as "low" | "medium" | "high" | "critical",
+      owner: "Auditee",
+      tags,
+      linkedFrameworks: [],
+      externalSystem: "auditee_ai",
+      externalId: code,
+    }));
   }
   const code = row.code;
 
@@ -3779,7 +3741,6 @@ ${qaJson}`;
       });
       continue;
     }
-    const code = await nextRequirementCode(projectId);
     const sourceQ = qa.find((q) => q.id === r.sourceQuestionId);
     const tags = Array.isArray(r.tags) ? r.tags.filter((t) => typeof t === "string").slice(0, 8) : [];
     if (sourceQ && !tags.some((t) => t.startsWith("interview:"))) {
@@ -3788,31 +3749,25 @@ ${qaJson}`;
     const linkedFrameworks = (r.linkedFrameworkCodes ?? [])
       .map((c) => codeToId.get(c))
       .filter((x): x is string => Boolean(x));
-    const [row] = await db
-      .insert(requirementsTable)
-      .values({
-        id: randomUUID(),
-        projectId,
-        code,
-        title: r.title.slice(0, 200),
-        description: r.description.slice(0, 4000),
-        type: r.type,
-        status: "draft",
-        priority: r.priority,
-        owner: "Auditee",
-        tags,
-        linkedFrameworks,
-        externalSystem: "auditee_smart_interview",
-        externalId: code,
-      })
-      .returning();
+    const row = await insertRequirement(projectId, (code) => ({
+      title: r.title.slice(0, 200),
+      description: r.description.slice(0, 4000),
+      type: r.type,
+      status: "draft",
+      priority: r.priority,
+      owner: "Auditee",
+      tags,
+      linkedFrameworks,
+      externalSystem: "auditee_smart_interview",
+      externalId: code,
+    }));
     created.push(row);
     indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
     await logActivity(
       "requirement",
-      `${code} drafted by Smart Interview from ${sourceQ ? `Q "${sourceQ.prompt.slice(0, 60)}"` : "interview"}`,
+      `${row.code} drafted by Smart Interview from ${sourceQ ? `Q "${sourceQ.prompt.slice(0, 60)}"` : "interview"}`,
       "Auditee",
-      code,
+      row.code,
     );
   }
 

@@ -9,6 +9,7 @@ import {
   activityEventsTable,
   projectsTable,
 } from "@workspace/db";
+import { insertRequirement } from "../lib/insertRequirement";
 import {
   ListRequirementsQueryParams,
   CreateRequirementBody,
@@ -22,14 +23,6 @@ import { auditLog } from "../lib/auditLog";
 import type { AuthedRequest } from "../lib/authContext";
 
 const router: IRouter = Router();
-
-async function projectPrefix(projectId: string): Promise<string> {
-  const [row] = await db
-    .select({ slug: projectsTable.slug })
-    .from(projectsTable)
-    .where(eq(projectsTable.id, projectId));
-  return (row?.slug ?? "REQ").toUpperCase().slice(0, 4);
-}
 
 async function withCounts(rows: typeof requirementsTable.$inferSelect[]) {
   if (rows.length === 0) return [];
@@ -124,32 +117,19 @@ router.post("/requirements", async (req, res) => {
   if (access === false) return;
 
   const ws = (req as AuthedRequest).ws_ctx!;
-  const id = randomUUID();
-  const prefix = await projectPrefix(body.projectId);
-  const [{ value: existingCount }] = await db
-    .select({ value: count() })
-    .from(requirementsTable)
-    .where(eq(requirementsTable.projectId, body.projectId));
-  const code = `${prefix}-${String(Number(existingCount) + 1).padStart(4, "0")}`;
   const now = new Date();
-  const [row] = await db
-    .insert(requirementsTable)
-    .values({
-      id,
-      projectId: body.projectId,
-      code,
-      title: body.title,
-      description: body.description ?? "",
-      type: body.type,
-      status: body.status ?? "draft",
-      priority: body.priority ?? "medium",
-      owner: body.owner ?? "Unassigned",
-      tags: body.tags ?? [],
-      linkedFrameworks: [],
-      createdAt: now,
-      updatedAt: now,
-    })
-    .returning();
+  const row = await insertRequirement(body.projectId, () => ({
+    title: body.title,
+    description: body.description ?? "",
+    type: body.type,
+    status: body.status ?? "draft",
+    priority: body.priority ?? "medium",
+    owner: body.owner ?? "Unassigned",
+    tags: body.tags ?? [],
+    linkedFrameworks: [],
+    createdAt: now,
+    updatedAt: now,
+  }));
 
   await Promise.all([
     db.insert(activityEventsTable).values({
