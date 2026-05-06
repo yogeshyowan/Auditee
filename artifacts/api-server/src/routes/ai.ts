@@ -2058,12 +2058,19 @@ router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => 
     auditedBySources: number;
   };
 
-  // Track unique source IDs per requirement so a duplicate requirementCode
-  // entry inside one persisted run can't inflate the audited-source count.
+  // Track unique source IDs per requirement (keyed by requirement ID, not
+  // code, because legacy bulk-import races could create multiple
+  // requirements that share the same code — we still want the matrix to
+  // show every requirement row independently).
   const auditingSourcesByReq = new Map<string, Set<string>>();
+  // Rows are keyed by requirement ID (always unique). A separate
+  // codeToReqIds index lets us broadcast a coverage entry to every
+  // requirement that shares the same code, so duplicate-code projects
+  // still render every requirement instead of collapsing to one row.
   const rows: Map<string, RequirementRow> = new Map();
+  const codeToReqIds: Map<string, string[]> = new Map();
   for (const r of allReqs) {
-    rows.set(r.code, {
+    rows.set(r.id, {
       requirementId: r.id,
       requirementCode: r.code,
       requirementTitle: r.title,
@@ -2080,6 +2087,9 @@ router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => 
       recommendations: [],
       auditedBySources: 0,
     });
+    const existing = codeToReqIds.get(r.code);
+    if (existing) existing.push(r.id);
+    else codeToReqIds.set(r.code, [r.id]);
   }
 
   // Sources block (latest-per-source metadata)
@@ -2103,15 +2113,12 @@ router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => 
     for (const rc of coverage) {
       const code = typeof rc?.requirementCode === "string" ? rc.requirementCode : null;
       if (!code) continue;
-      const row = rows.get(code);
-      if (!row) continue; // requirement was deleted after the audit
-      let srcSet = auditingSourcesByReq.get(code);
-      if (!srcSet) {
-        srcSet = new Set<string>();
-        auditingSourcesByReq.set(code, srcSet);
-      }
-      srcSet.add(sourceId);
-      for (const stage of STAGE_KEYS) {
+      const reqIds = codeToReqIds.get(code);
+      if (!reqIds || reqIds.length === 0) continue; // requirement was deleted after the audit
+      // Pre-compute the per-stage values once per coverage entry, then fan
+      // out to every requirement sharing this code (handles legacy
+      // duplicate-code projects without inflating credit cost).
+      const stageVals = STAGE_KEYS.map((stage) => {
         const stageVal = rc?.[stage];
         const status: "covered" | "partial" | "missing" =
           stageVal?.status === "covered" || stageVal?.status === "partial" || stageVal?.status === "missing"
@@ -2121,13 +2128,34 @@ router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => 
           ? stageVal.artifacts.filter((x: any) => typeof x === "string")
           : [];
         const note = typeof stageVal?.note === "string" ? stageVal.note : "";
-        row.stages[stage].perSource.push({ sourceId, sourceLabel, status, artifacts, note });
-        if (RANK[status] > RANK[row.stages[stage].best]) {
-          row.stages[stage].best = status;
+        return { stage, status, artifacts, note };
+      });
+      const recommendation =
+        typeof rc?.recommendation === "string" && rc.recommendation.trim() ? rc.recommendation : null;
+      for (const reqId of reqIds) {
+        const row = rows.get(reqId);
+        if (!row) continue;
+        let srcSet = auditingSourcesByReq.get(reqId);
+        if (!srcSet) {
+          srcSet = new Set<string>();
+          auditingSourcesByReq.set(reqId, srcSet);
         }
-      }
-      if (typeof rc?.recommendation === "string" && rc.recommendation.trim()) {
-        row.recommendations.push({ sourceLabel, text: rc.recommendation });
+        srcSet.add(sourceId);
+        for (const sv of stageVals) {
+          row.stages[sv.stage].perSource.push({
+            sourceId,
+            sourceLabel,
+            status: sv.status,
+            artifacts: sv.artifacts,
+            note: sv.note,
+          });
+          if (RANK[sv.status] > RANK[row.stages[sv.stage].best]) {
+            row.stages[sv.stage].best = sv.status;
+          }
+        }
+        if (recommendation) {
+          row.recommendations.push({ sourceLabel, text: recommendation });
+        }
       }
     }
   }
@@ -2151,7 +2179,7 @@ router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => 
   const requirementRows = Array.from(rows.values());
   // Backfill the deduplicated audited-source count.
   for (const row of requirementRows) {
-    row.auditedBySources = auditingSourcesByReq.get(row.requirementCode)?.size ?? 0;
+    row.auditedBySources = auditingSourcesByReq.get(row.requirementId)?.size ?? 0;
   }
   for (const row of requirementRows) {
     let rowScore = 0;
