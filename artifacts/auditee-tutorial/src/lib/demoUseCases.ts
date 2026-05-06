@@ -209,7 +209,7 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
     domain: 'Automotive Safety',
     idPrefix: 'ARE',
     hero: {
-      kicker: 'Step 04 · Gap Detection',
+      kicker: 'Step 04 · Requirements Gap Detection',
       lineA: 'Find Ares coverage gaps',
       lineB: 'before homologation.',
       subtitle: 'AI scans every Ares vision file against ISO 26262 + ISO 21448 SOTIF — surfaces missing tests, untraced code and unmitigated hazards.',
@@ -221,7 +221,7 @@ export const DEMO_USE_CASES: Record<ModuleKey, DemoStoryline> = {
       { startMs: 18000, endMs: 23000, text: "All eighteen gaps closed before the Ares pre-homologation review. Crisis averted." },
     ],
     steps: [
-      { title: 'Run gap scan on Ares', body: 'Open Gap Detection inside Ares — ADAS Vision Stack and click Scan.' },
+      { title: 'Run gap scan on Ares', body: 'Open Requirements Gap Detection inside Ares — ADAS Vision Stack and click Scan.' },
       { title: 'Review findings', body: 'AI lists missing tests, untraced files, unmitigated hazards — sorted critical first.' },
       { title: 'Convert to CAPA', body: 'One-click open a CAPA per gap with owner, due date and standard control linked.' },
       { title: 'Verify clean run', body: 'Re-scan after fixes — gap count drops to zero, ready for homologation review.' },

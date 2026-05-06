@@ -47,7 +47,7 @@ const FEATURES: Feature[] = [
   },
   {
     icon: AlertTriangle,
-    title: "Automated Gap Detection",
+    title: "Automated Requirements Gap Detection",
     blurb:
       "AI analyses your project against industry best practices and flags missing requirements before they hit production.",
     bullets: [

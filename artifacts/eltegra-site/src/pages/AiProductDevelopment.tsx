@@ -42,10 +42,10 @@ const STAGES = [
   {
     icon: AlertTriangle,
     stage: "Validate",
-    title: "Gap Detection",
+    title: "Requirements Gap Detection",
     desc: "AI scans your requirements against industry best practices and your selected compliance framework, flagging missing security, accessibility, observability and data-handling reqs before they become incidents.",
     href: "/app/gaps",
-    cta: "Run Gap Detection",
+    cta: "Run Requirements Gap Detection",
     badge: "AI",
   },
   {
@@ -272,7 +272,7 @@ export default function AiProductDevelopmentPage() {
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
                 <li className="flex gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> Stop hand-writing BRDs and FRDs</li>
                 <li className="flex gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> Ingest from any RM tool — DOORS, Jama, Jira</li>
-                <li className="flex gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> Validate completeness with one Gap Detection run</li>
+                <li className="flex gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /> Validate completeness with one Requirements Gap Detection run</li>
               </ul>
             </Card>
             <Card className="p-6 bg-white">

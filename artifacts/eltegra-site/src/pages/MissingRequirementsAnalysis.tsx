@@ -77,8 +77,8 @@ export default function MissingRequirementsAnalysisPage() {
   return (
     <div className="min-h-screen bg-white">
       <SEO
-        title="Missing Requirements Analysis — AI Gap Detection | Auditee"
-        description="Auditee's AI Gap Detection finds the requirements you forgot to write. Catches missing security, accessibility, performance, error-handling, and edge-case requirements before they become production defects or audit findings."
+        title="Missing Requirements Analysis — AI Requirements Gap Detection | Auditee"
+        description="Auditee's AI Requirements Gap Detection finds the requirements you forgot to write. Catches missing security, accessibility, performance, error-handling, and edge-case requirements before they become production defects or audit findings."
         path="/missing-requirements-analysis"
         keywords={["missing requirements", "requirements gap analysis", "AI gap detection", "requirements coverage", "audit findings prevention"]}
       />
@@ -106,14 +106,14 @@ export default function MissingRequirementsAnalysisPage() {
         </h1>
         <p className="mt-6 text-lg text-slate-600 max-w-3xl mx-auto">
           The bugs that hit production aren't the requirements you wrote — they're the ones
-          you didn't. Auditee's Gap Detection AI scans every requirement against industry
+          you didn't. Auditee's Requirements Gap Detection AI scans every requirement against industry
           best-practice taxonomies and flags what's missing, duplicated, conflicting, or
           weak — before it ships.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
           <Link href="/app/gaps">
             <Button size="lg" className="gap-2" data-testid="hero-cta-gaps">
-              Run Gap Detection <ArrowRight className="w-4 h-4" />
+              Run Requirements Gap Detection <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>
           <Link href="/contact">
@@ -224,7 +224,7 @@ export default function MissingRequirementsAnalysisPage() {
             Stop finding bugs in production
           </h2>
           <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
-            Bring us your spec set or Jira board — we'll run a Gap Detection scan in the
+            Bring us your spec set or Jira board — we'll run a Requirements Gap Detection scan in the
             demo and show you the missing reqs hiding in plain sight.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">

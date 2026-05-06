@@ -78,7 +78,7 @@ const MODULES: { slug: string; title: string; project: string; desc: string; min
     desc: "Live AI interview with the Aesop PM, classified to ICH-GCP E6(R3) and 21 CFR Part 11.", minutes: 6 },
   { slug: "requirements", title: "AI Requirements", project: "Apollo — EV Battery Management System",
     desc: "Generate 192 Apollo BMS reqs, tagged to ISO 26262, ISO 21434, UN R155 and IEC 61508.", minutes: 5 },
-  { slug: "gaps", title: "Gap Detection", project: "Ares — ADAS Vision Stack",
+  { slug: "gaps", title: "Requirements Gap Detection", project: "Ares — ADAS Vision Stack",
     desc: "Scan Ares vision code against ISO 26262 + SOTIF — every gap auto-converts to a CAPA.", minutes: 4 },
   { slug: "traceability", title: "Traceability Graph", project: "Titan — Industrial PLC Control System",
     desc: "Walk the IEC 61508 SIL-3 trace chain on Titan PLC, requirement to test to evidence.", minutes: 5 },

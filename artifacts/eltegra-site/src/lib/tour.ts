@@ -50,7 +50,7 @@ const STEPS: TourStep[] = [
     element: '[data-tour="nav-gaps"]',
     href: "/app/gaps",
     module: "gaps",
-    title: "Step 4 — Gap Detection",
+    title: "Step 4 — Requirements Gap Detection",
     description:
       "Auditee scans your code against the requirements set and surfaces uncovered behaviours, untraced files and missing tests — before an assessor finds them.<br><span style=\"color:#a78bfa;font-size:11px;\">▶ Expand the tutorial strip above to see a step-by-step walkthrough.</span>",
   },

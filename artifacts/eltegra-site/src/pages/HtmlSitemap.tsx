@@ -82,7 +82,7 @@ const SECTIONS: Array<{ heading: string; links: Array<{ href: string; label: str
       { href: "/demo-videos/sources", label: "Project Sources — Orion" },
       { href: "/demo-videos/interview", label: "Smart Interview — Aesop" },
       { href: "/demo-videos/requirements", label: "AI Requirements — Apollo" },
-      { href: "/demo-videos/gaps", label: "Gap Detection — Ares" },
+      { href: "/demo-videos/gaps", label: "Requirements Gap Detection — Ares" },
       { href: "/demo-videos/traceability", label: "Traceability — Titan" },
       { href: "/demo-videos/compliance", label: "Compliance — Nexus" },
       { href: "/demo-videos/capa", label: "CAPA — Vega" },

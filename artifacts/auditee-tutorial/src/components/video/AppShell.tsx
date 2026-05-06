@@ -6,7 +6,7 @@ const NAV: { slug: ModuleKey; label: string; icon: string }[] = [
   { slug: 'sources', label: 'Project Sources', icon: '⌥' },
   { slug: 'interview', label: 'Smart Interview', icon: '✦' },
   { slug: 'requirements', label: 'Requirements', icon: '☰' },
-  { slug: 'gaps', label: 'Gap Detection', icon: '◇' },
+  { slug: 'gaps', label: 'Requirements Gap Detection', icon: '◇' },
   { slug: 'traceability', label: 'Traceability', icon: '⇌' },
   { slug: 'compliance', label: 'Compliance', icon: '◈' },
   { slug: 'capa', label: 'CAPA', icon: '⚑' },

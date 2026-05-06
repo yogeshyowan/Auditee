@@ -89,14 +89,14 @@ const MODULES: ModuleEntry[] = [
     ],
   },
   {
-    slug: "gaps", title: "Gap Detection",
+    slug: "gaps", title: "Requirements Gap Detection",
     project: "Ares — ADAS Vision Stack", domain: "Automotive Safety",
     desc: "AI scans Ares vision code against ISO 26262 + ISO 21448 SOTIF — surfaces missing tests, untraced files and unmitigated hazards.",
     minutes: 4,
     standards: ["ISO 26262 ASIL-D", "ISO 21448 SOTIF", "ISO/SAE 21434", "UN R157", "ASPICE Cyber 2.0", "ISO/IEC/IEEE 29119", "IEEE 1012 V&V"],
     tools: ["GitHub", "Vector CANoe", "TestRail", "Polyspace", "Coverity"],
     steps: [
-      { title: "Run gap scan on Ares", body: "Open Gap Detection inside Ares — ADAS Vision Stack and click Scan." },
+      { title: "Run gap scan on Ares", body: "Open Requirements Gap Detection inside Ares — ADAS Vision Stack and click Scan." },
       { title: "Review findings", body: "AI lists missing tests, untraced files, unmitigated hazards — sorted critical first." },
       { title: "Convert to CAPA", body: "One-click open a CAPA per gap with owner, due date and standard control linked." },
       { title: "Verify clean run", body: "Re-scan after fixes — gap count drops to zero, ready for homologation review." },

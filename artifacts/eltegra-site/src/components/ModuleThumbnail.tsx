@@ -25,7 +25,7 @@ const PALETTES: Record<Slug, { bg: string; bg2: string; accent: string; ink: str
   sources:          { bg: '#0c1424', bg2: '#10243f', accent: '#38bdf8', ink: '#e2e8f0', tag: 'Sources' },
   interview:        { bg: '#1a1230', bg2: '#2d1b4e', accent: '#c084fc', ink: '#f1e9ff', tag: 'Smart Interview' },
   requirements:     { bg: '#0a1f2a', bg2: '#0f3340', accent: '#34d399', ink: '#e0fff5', tag: 'Requirements' },
-  gaps:             { bg: '#2a0f12', bg2: '#3f1a1f', accent: '#f87171', ink: '#fee2e2', tag: 'Gap Detection' },
+  gaps:             { bg: '#2a0f12', bg2: '#3f1a1f', accent: '#f87171', ink: '#fee2e2', tag: 'Requirements Gap Detection' },
   traceability:     { bg: '#0c1f1a', bg2: '#0f3a30', accent: '#10b981', ink: '#d1fae5', tag: 'Traceability' },
   compliance:       { bg: '#0e1a2e', bg2: '#172a4a', accent: '#60a5fa', ink: '#dbeafe', tag: 'Compliance' },
   capa:             { bg: '#2a1a08', bg2: '#3d2810', accent: '#fb923c', ink: '#ffedd5', tag: 'CAPA' },

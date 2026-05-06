@@ -53,7 +53,7 @@ const CAPABILITIES = [
     title: "Compliance gap detection",
     desc: "AI scans your requirements set against a chosen framework and flags every missing control, conflicting requirement, or weak coverage area.",
     href: "/app/gaps",
-    cta: "Run Gap Detection",
+    cta: "Run Requirements Gap Detection",
     badge: "AI",
   },
   {

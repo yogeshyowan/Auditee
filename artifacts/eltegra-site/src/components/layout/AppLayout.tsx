@@ -63,7 +63,7 @@ const NAV_ITEMS = [
   { href: "/app/sources", label: "Project Sources", icon: FolderInput },
   { href: "/app/interview", label: "Smart Interview", icon: MessagesSquare },
   { href: "/app/requirements", label: "Requirements", icon: ListChecks },
-  { href: "/app/gaps", label: "Gap Detection", icon: AlertTriangle },
+  { href: "/app/gaps", label: "Requirements Gap Detection", icon: AlertTriangle },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/app/standards", label: "Custom Standards", icon: FileBadge2 },
