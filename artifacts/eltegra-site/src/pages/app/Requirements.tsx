@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen, ChevronDown, FileType, FileCog, TestTube2, Clock, AlertCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGenerateRequirements, useFetchCodeUrl, useEstimateEffort, type EffortEstimateResult } from "@/lib/ai-api";
+import { useGenerateRequirements, useFetchCodeUrl, useEstimateEffort, useLatestEffortEstimate, type EffortEstimateResult } from "@/lib/ai-api";
 import { useGenerateTestCases, useTestCases } from "@/lib/test-cases-api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSources, useSourceFiles, useSourceFileContent, useGenerateReport } from "@/lib/wave1-api";
@@ -309,6 +309,17 @@ export default function RequirementsPage() {
   const estimateEffort = useEstimateEffort();
   const [estimateOpen, setEstimateOpen] = useState(false);
   const [estimateData, setEstimateData] = useState<EffortEstimateResult | null>(null);
+  const latestEstimateQ = useLatestEffortEstimate(projectId, estimateOpen);
+
+  // When the sheet opens (or the project changes while open), surface the
+  // last persisted run so the user doesn't lose work on refresh.
+  useEffect(() => {
+    if (!estimateOpen) return;
+    if (estimateEffort.isPending) return;
+    if (latestEstimateQ.data && !estimateData) {
+      setEstimateData(latestEstimateQ.data);
+    }
+  }, [estimateOpen, latestEstimateQ.data, estimateData, estimateEffort.isPending]);
 
   const handleEstimateEffort = () => {
     if (!projectId || estimateEffort.isPending) return;
@@ -326,13 +337,70 @@ export default function RequirementsPage() {
     estimateEffort.mutate(
       { projectId },
       {
-        onSuccess: (data) => setEstimateData(data),
+        onSuccess: (data) => {
+          setEstimateData(data);
+          queryClient.invalidateQueries({ queryKey: ["effort-estimate-latest", projectId] });
+        },
         onError: (err: Error) => {
           toast({ title: "Estimation failed", description: err.message, variant: "destructive" });
           setEstimateOpen(false);
         },
       },
     );
+  };
+
+  const handleOpenEstimateSheet = () => {
+    if (!projectId) return;
+    setEstimateOpen(true);
+  };
+
+  const downloadEstimate = (format: "csv" | "json") => {
+    if (!estimateData) return;
+    const projName = (estimateData.project?.name ?? "project").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    const stamp = new Date().toISOString().slice(0, 10);
+    let blob: Blob;
+    let filename: string;
+    if (format === "json") {
+      blob = new Blob([JSON.stringify(estimateData, null, 2)], { type: "application/json" });
+      filename = `effort-estimate-${projName}-${stamp}.json`;
+    } else {
+      const escape = (v: unknown) => {
+        const s = v === null || v === undefined ? "" : String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const titleByCode = new Map((allProjectReqs ?? []).map((r) => [r.code, r.title]));
+      const header = ["Requirement Code", "Title", "Complexity", "Hours", "Rationale", "Risks"];
+      const rows = estimateData.estimates.map((e) =>
+        [
+          e.requirementCode,
+          titleByCode.get(e.requirementCode) ?? "",
+          e.complexity,
+          e.hours,
+          e.rationale,
+          (e.risks ?? []).join(" | "),
+        ].map(escape).join(","),
+      );
+      const summary = [
+        "",
+        "Summary",
+        `Project,${escape(estimateData.project?.name ?? "")}`,
+        `Run at,${escape(estimateData.runAt)}`,
+        `Total hours,${Math.round(estimateData.totals.hours)}`,
+        `Weeks at 1 FTE,${estimateData.totals.weeksAtOneFte.toFixed(1)}`,
+        `Requirement count,${estimateData.requirementCount}`,
+      ].join("\n");
+      const csv = [header.join(","), ...rows].join("\n") + "\n" + summary + "\n";
+      blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      filename = `effort-estimate-${projName}-${stamp}.csv`;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   type DocKind = { kind: "brd" | "prd" | "frd" | "test_cases"; label: string; tone: "executive" | "technical"; instructions: string };
@@ -446,7 +514,7 @@ export default function RequirementsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-            onClick={handleEstimateEffort}
+            onClick={handleOpenEstimateSheet}
             variant="outline"
             className="gap-2"
             disabled={!projectId || estimateEffort.isPending}
@@ -477,13 +545,73 @@ export default function RequirementsPage() {
             </SheetDescription>
           </SheetHeader>
 
-          {estimateEffort.isPending || !estimateData ? (
+          {estimateEffort.isPending ? (
             <div className="py-16 flex flex-col items-center gap-3 text-slate-500">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm">Auditee is sizing each requirement…</p>
             </div>
+          ) : latestEstimateQ.isLoading && !estimateData ? (
+            <div className="py-16 flex flex-col items-center gap-3 text-slate-500">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm">Loading saved estimate…</p>
+            </div>
+          ) : !estimateData ? (
+            <div className="py-12 flex flex-col items-center gap-4 text-center">
+              <Clock className="h-10 w-10 text-slate-300" />
+              <div>
+                <p className="font-medium text-slate-900">No effort estimate yet</p>
+                <p className="text-sm text-slate-500 mt-1 max-w-sm">
+                  Run an estimation to size every requirement in this project. Results are saved automatically and you can re-run any time.
+                </p>
+              </div>
+              <Button
+                onClick={handleEstimateEffort}
+                className="gap-2"
+                disabled={!projectId}
+                data-testid="button-run-estimate-effort"
+              >
+                <Clock className="h-4 w-4" /> Run estimation
+              </Button>
+            </div>
           ) : (
             <div className="space-y-5 mt-6">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="text-xs text-slate-500" data-testid="estimate-run-at">
+                  Last run: {new Date(estimateData.runAt).toLocaleString()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => downloadEstimate("csv")}
+                    data-testid="button-download-estimate-csv"
+                    className="gap-1.5"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> CSV
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => downloadEstimate("json")}
+                    data-testid="button-download-estimate-json"
+                    className="gap-1.5"
+                  >
+                    <FileText className="h-3.5 w-3.5" /> JSON
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleEstimateEffort}
+                    disabled={estimateEffort.isPending}
+                    data-testid="button-rerun-estimate-effort"
+                    className="gap-1.5"
+                  >
+                    <Clock className="h-3.5 w-3.5" /> Re-run
+                  </Button>
+                </div>
+              </div>
               <div className="grid grid-cols-3 gap-3">
                 <Card className="p-4">
                   <div className="text-xs uppercase tracking-wide text-slate-500">Total hours</div>

@@ -414,6 +414,7 @@ export type EffortEstimate = {
   risks?: string[];
 };
 export type EffortEstimateResult = {
+  id?: string;
   project: { id: string; name: string };
   requirementCount: number;
   estimates: EffortEstimate[];
@@ -430,6 +431,22 @@ export function useEstimateEffort() {
   return useMutation({
     mutationFn: (body: { projectId: string }) =>
       aiFetch<EffortEstimateResult>("/ai/estimate-effort", body),
+  });
+}
+
+export function useLatestEffortEstimate(projectId: string | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ["effort-estimate-latest", projectId],
+    enabled: !!projectId && enabled,
+    retry: false,
+    queryFn: async (): Promise<EffortEstimateResult | null> => {
+      const r = await fetch(`/api/ai/estimate-effort/latest?projectId=${encodeURIComponent(projectId!)}`, {
+        credentials: "include",
+      });
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error(`Failed to load latest estimate (${r.status})`);
+      return (await r.json()) as EffortEstimateResult;
+    },
   });
 }
 

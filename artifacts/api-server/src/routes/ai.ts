@@ -29,6 +29,7 @@ import {
   defectsTable,
   testCasesTable,
   aiReportsTable,
+  effortEstimatesTable,
 } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
@@ -3549,6 +3550,27 @@ ${reqList}`;
 
   const result = await jsonCompletion<EffortResult>(system, user);
 
+  const estimates = Array.isArray(result.estimates) ? result.estimates : [];
+  const totals = result.totals ?? { hours: 0, weeksAtOneFte: 0, complexityBreakdown: {} };
+  const assumptions = Array.isArray(result.assumptions) ? result.assumptions : [];
+
+  // Persist so the user can re-open without re-running the LLM, and we
+  // keep history of every estimation pass.
+  const id = randomUUID();
+  const [persisted] = await db
+    .insert(effortEstimatesTable)
+    .values({
+      id,
+      projectId,
+      requirementCount: reqs.length,
+      totalHours: Number(totals.hours ?? 0),
+      weeksAtOneFte: Number(totals.weeksAtOneFte ?? 0),
+      complexityBreakdown: totals.complexityBreakdown ?? {},
+      estimates,
+      assumptions,
+    })
+    .returning();
+
   await logActivity(
     "effort_estimate",
     `Effort estimate run on ${project.name} (${reqs.length} reqs) — ${result.totals?.hours ?? 0} hours total`,
@@ -3556,12 +3578,60 @@ ${reqList}`;
   );
 
   res.json({
+    id: persisted?.id ?? id,
     project: { id: project.id, name: project.name },
     requirementCount: reqs.length,
-    estimates: Array.isArray(result.estimates) ? result.estimates : [],
-    totals: result.totals ?? { hours: 0, weeksAtOneFte: 0, complexityBreakdown: {} },
-    assumptions: Array.isArray(result.assumptions) ? result.assumptions : [],
-    runAt: new Date().toISOString(),
+    estimates,
+    totals,
+    assumptions,
+    runAt: (persisted?.createdAt ?? new Date()).toISOString(),
+  });
+}));
+
+// =============================================================
+// GET latest effort estimate for a project (so the sheet can re-open
+// the previous run without re-spending a credit on the LLM).
+// =============================================================
+router.get("/ai/estimate-effort/latest", aiHandler(async (req, res) => {
+  const projectId = requireString(req.query?.projectId, "projectId", { min: 1 });
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, projectId, "viewer");
+    if (access === false) return;
+  }
+
+  const [project] = await db
+    .select({ id: projectsTable.id, name: projectsTable.name })
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const [latest] = await db
+    .select()
+    .from(effortEstimatesTable)
+    .where(eq(effortEstimatesTable.projectId, projectId))
+    .orderBy(desc(effortEstimatesTable.createdAt))
+    .limit(1);
+
+  if (!latest) {
+    res.status(404).json({ error: "No estimate yet" });
+    return;
+  }
+
+  res.json({
+    id: latest.id,
+    project,
+    requirementCount: latest.requirementCount,
+    estimates: latest.estimates,
+    totals: {
+      hours: latest.totalHours,
+      weeksAtOneFte: latest.weeksAtOneFte,
+      complexityBreakdown: latest.complexityBreakdown,
+    },
+    assumptions: latest.assumptions,
+    runAt: latest.createdAt.toISOString(),
   });
 }));
 
