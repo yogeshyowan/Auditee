@@ -129,72 +129,115 @@ const UNIVERSAL_KINDS: ReadonlySet<string> = new Set([
 // UNIVERSAL_KINDS ∪ (kinds required by any selected standard) and each
 // kind that is mandated by a selected standard is badged "Required by X".
 const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
-  // Functional safety
-  "ISO 26262": ["safety_plan", "hara", "safety_concept", "tech_safety_concept", "safety_case", "srs_safety", "fmea", "fta", "dia", "vnv_plan", "scmp", "change_control_plan"],
-  "IEC 61508": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan", "scmp"],
-  "EN 50128": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
-  "EN 50126": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
-  "EN 50129": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
-  "EN 50657": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
-  "IEC 61511": ["safety_plan", "srs_safety", "safety_case", "hara", "fmea", "fta"],
-  "ISO 13849-1": ["safety_plan", "srs_safety", "fmea", "fta", "vnv_plan"],
+  // ── Functional safety ────────────────────────────────────────────────
+  // ISO 26262: full automotive functional-safety lifecycle (Parts 2-9).
+  "ISO 26262": ["safety_plan", "hara", "safety_concept", "tech_safety_concept", "safety_case", "srs_safety", "fmea", "fta", "dia", "vnv_plan", "scmp", "ci_list", "change_control_plan", "software_dev_plan", "software_verification_plan", "software_qa_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  // IEC 61508: generic E/E/PE functional safety (Parts 1-7).
+  "IEC 61508": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan", "scmp", "ci_list", "change_control_plan", "software_dev_plan", "software_verification_plan", "software_qa_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  // EN 5012x: railway functional safety — RAMS, software, communications, applications, on-board.
+  "EN 50128": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan", "scmp", "ci_list", "change_control_plan", "software_dev_plan", "software_verification_plan", "software_qa_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  "EN 50126": ["safety_plan", "srs_safety", "safety_case", "hara", "fmea", "fta", "vnv_plan", "change_control_plan"],
+  "EN 50129": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan", "scmp", "architecture_doc", "hld"],
+  "EN 50657": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan", "scmp", "ci_list", "software_dev_plan", "software_verification_plan", "software_qa_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  // IEC 61511: process-industry SIS — closely tied to IEC 61508.
+  "IEC 61511": ["safety_plan", "srs_safety", "safety_case", "hara", "fmea", "fta", "vnv_plan", "change_control_plan"],
+  // ISO 13849-1: safety of machinery (PL-based).
+  "ISO 13849-1": ["safety_plan", "srs_safety", "fmea", "fta", "vnv_plan", "change_control_plan"],
 
-  // Cybersecurity
-  "ISO/SAE 21434": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "security_risk_assessment"],
-  "IEC 62443": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "security_risk_assessment"],
-  "ASPICE Cybersecurity 2.0": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case"],
-  "ISO/IEC 27001": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "ISO/IEC 27002": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "NIST CSF 2.0": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "PCI DSS 4.0": ["compliance_audit", "security_risk_assessment"],
-  "HIPAA": ["compliance_audit", "security_risk_assessment"],
-  "DORA": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "NIS2": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "NERC CIP": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "API 1164": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  // ── Cybersecurity ─────────────────────────────────────────────────────
+  // ISO/SAE 21434: automotive cybersecurity engineering lifecycle.
+  "ISO/SAE 21434": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "security_risk_assessment", "vnv_plan", "change_control_plan"],
+  // IEC 62443: industrial automation & control system security (-2-1 / -3-2 / -4-1 / -4-2).
+  "IEC 62443": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "security_risk_assessment", "software_dev_plan", "software_verification_plan", "vnv_plan", "change_control_plan"],
+  // ASPICE Cybersecurity 2.0: process-assessment companion to ISO/SAE 21434.
+  "ASPICE Cybersecurity 2.0": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "change_control_plan", "software_qa_plan"],
+  // ISO/IEC 27001 / 27002: ISMS + control catalogue.
+  "ISO/IEC 27001": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan", "software_qa_plan"],
+  "ISO/IEC 27002": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan"],
+  // NIST CSF 2.0: govern / identify / protect / detect / respond / recover.
+  "NIST CSF 2.0": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan"],
+  // PCI DSS 4.0: cardholder data security — req 6 secure-dev, req 12 policy.
+  "PCI DSS 4.0": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan", "vnv_plan", "software_dev_plan"],
+  // HIPAA Security Rule: admin / physical / technical safeguards.
+  "HIPAA": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan"],
+  // DORA: digital operational resilience (financial sector).
+  "DORA": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan", "vnv_plan"],
+  // NIS2 directive: essential & important entities cyber.
+  "NIS2": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan"],
+  // NERC CIP: bulk electric system cyber.
+  "NERC CIP": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan", "vnv_plan"],
+  // API 1164: pipeline SCADA cybersecurity.
+  "API 1164": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan"],
 
-  // Software-aspects standards
-  "DO-178C": ["psac", "software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "vnv_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  // ── Software-aspects standards ───────────────────────────────────────
+  // DO-178C: airborne software (DAL A-E) — full plan/design/V&V/CM/QA stack.
+  "DO-178C": ["psac", "software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "vnv_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases", "srs_safety"],
+  // IEC 62304: medical-device software lifecycle.
   "IEC 62304": ["software_dev_plan", "software_verification_plan", "software_qa_plan", "soup_list", "scmp", "ci_list", "vnv_plan", "risk_management_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  // IEEE point-standards.
   "IEEE 730": ["software_qa_plan"],
   "IEEE 828": ["scmp", "ci_list", "change_control_plan"],
-  "IEEE 1012": ["vnv_plan"],
+  "IEEE 1012": ["vnv_plan", "test_cases", "software_verification_plan"],
   "IEEE 1016": ["hld", "lld"],
   "IEEE 1063": ["user_manual"],
-  "ISO/IEC/IEEE 42010": ["architecture_doc"],
-  "ISO/IEC/IEEE 29119": ["test_cases"],
+  "ISO/IEC/IEEE 42010": ["architecture_doc", "hld"],
+  "ISO/IEC/IEEE 29119": ["test_cases", "software_verification_plan", "vnv_plan"],
 
-  // Risk management
-  "ISO 14971": ["risk_management_plan", "fmea", "fta"],
+  // ── Risk management ──────────────────────────────────────────────────
+  // ISO 14971: medical-device risk management.
+  "ISO 14971": ["risk_management_plan", "fmea", "fta", "change_control_plan"],
+  // ISO 31000: enterprise risk management framework.
   "ISO 31000": ["risk_management_plan"],
 
-  // Medical / regulated devices — these expect a full QMS document set
-  "ISO 13485": ["risk_management_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "user_manual"],
-  "21 CFR 820": ["risk_management_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan"],
-  "21 CFR 807": ["compliance_audit"],
-  "21 CFR 814": ["compliance_audit", "risk_management_plan"],
-  "IEC 60601": ["risk_management_plan", "software_qa_plan", "vnv_plan", "user_manual"],
-  "MDR 2017/745": ["compliance_audit", "risk_management_plan", "vnv_plan", "user_manual"],
-  "IVDR 2017/746": ["compliance_audit", "risk_management_plan", "vnv_plan", "user_manual"],
-  "IEC 62366": ["risk_management_plan", "vnv_plan", "user_manual"],
-  "ISO 14155": ["compliance_audit", "risk_management_plan"],
-  "21 CFR Part 11": ["compliance_audit", "software_qa_plan", "change_control_plan", "security_risk_assessment"],
+  // ── Medical / regulated devices ──────────────────────────────────────
+  // ISO 13485: medical-device QMS — full QMS document set.
+  "ISO 13485": ["risk_management_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "user_manual", "software_dev_plan", "software_verification_plan", "fmea"],
+  // 21 CFR 820: FDA Quality System Regulation (design controls).
+  "21 CFR 820": ["risk_management_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "software_dev_plan", "software_verification_plan", "fmea", "user_manual", "hld", "lld"],
+  // 21 CFR 807: device establishment registration & listing.
+  "21 CFR 807": ["compliance_audit", "change_control_plan"],
+  // 21 CFR 814: PMA premarket approval submission.
+  "21 CFR 814": ["compliance_audit", "risk_management_plan", "vnv_plan", "software_qa_plan", "change_control_plan", "test_cases"],
+  // IEC 60601: medical electrical equipment (with 60601-1-6 usability + 62304 software).
+  "IEC 60601": ["risk_management_plan", "software_qa_plan", "vnv_plan", "user_manual", "software_dev_plan", "software_verification_plan", "scmp", "ci_list", "change_control_plan", "fmea"],
+  // EU MDR / IVDR: technical documentation Annex II/III + post-market surveillance.
+  "MDR 2017/745": ["compliance_audit", "risk_management_plan", "vnv_plan", "user_manual", "software_dev_plan", "software_verification_plan", "scmp", "change_control_plan", "software_qa_plan", "test_cases", "fmea"],
+  "IVDR 2017/746": ["compliance_audit", "risk_management_plan", "vnv_plan", "user_manual", "software_dev_plan", "software_verification_plan", "scmp", "change_control_plan", "software_qa_plan", "test_cases", "fmea"],
+  // IEC 62366: medical-device usability engineering.
+  "IEC 62366": ["risk_management_plan", "vnv_plan", "user_manual", "software_qa_plan", "change_control_plan", "test_cases"],
+  // ISO 14155: clinical investigation of medical devices.
+  "ISO 14155": ["compliance_audit", "risk_management_plan", "change_control_plan", "software_qa_plan"],
+  // 21 CFR Part 11: electronic records & signatures (CSV — Computerized System Validation).
+  // GxP CSV requires validation lifecycle, audit trails, access controls,
+  // change control, training, SOPs, and software-development documentation.
+  "21 CFR Part 11": ["compliance_audit", "software_qa_plan", "change_control_plan", "security_risk_assessment", "vnv_plan", "software_verification_plan", "software_dev_plan", "test_cases", "ci_list", "scmp", "cybersecurity_plan", "user_manual", "risk_management_plan"],
 
-  // Quality / process
-  "ISO 9001": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan"],
-  "CMMI 3.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "architecture_doc", "hld", "lld", "test_cases"],
-  "ASPICE 4.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "software_dev_plan", "software_verification_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  // ── Quality / process ────────────────────────────────────────────────
+  // ISO 9001: QMS — clause 7 documented info, clause 8 operations.
+  "ISO 9001": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "risk_management_plan"],
+  // CMMI 3.0: dev process maturity — TS, VV, CM, RSK, PQA practice areas.
+  "CMMI 3.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "architecture_doc", "hld", "lld", "test_cases", "software_dev_plan", "software_verification_plan", "risk_management_plan"],
+  // ASPICE 4.0: automotive SPICE — SYS, SWE, SUP, MAN process groups.
+  "ASPICE 4.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "software_dev_plan", "software_verification_plan", "architecture_doc", "hld", "lld", "test_cases", "risk_management_plan"],
 
-  // Industrial / OT control
-  "IEC 61131-3": ["srs_safety", "fmea", "hld", "lld", "test_cases"],
-  "IEC 60204-1": ["srs_safety", "fmea", "hld", "lld", "test_cases"],
-  "ISO 10218-1": ["srs_safety", "fmea", "hld", "test_cases"],
-  "ISA-95": ["hld", "lld", "architecture_doc"],
+  // ── Industrial / OT control ──────────────────────────────────────────
+  // IEC 61131-3: PLC programming languages & lifecycle.
+  "IEC 61131-3": ["srs_safety", "fmea", "hld", "lld", "test_cases", "software_dev_plan", "software_verification_plan"],
+  // IEC 60204-1: electrical equipment of machines.
+  "IEC 60204-1": ["srs_safety", "fmea", "hld", "lld", "test_cases", "user_manual"],
+  // ISO 10218-1: industrial robot safety.
+  "ISO 10218-1": ["srs_safety", "fmea", "hld", "lld", "test_cases", "user_manual"],
+  // ISA-95: enterprise-control system integration.
+  "ISA-95": ["hld", "lld", "architecture_doc", "software_dev_plan"],
 
-  // Privacy / AI / regulated software
-  "GDPR": ["compliance_audit", "risk_management_plan"],
-  "SOC 2": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "EU AI Act": ["compliance_audit", "risk_management_plan", "security_risk_assessment", "cybersecurity_plan", "vnv_plan"],
+  // ── Privacy / AI / cross-cutting regulation ──────────────────────────
+  // GDPR: lawful basis, security of processing (Art. 32), DPIA (Art. 35).
+  "GDPR": ["compliance_audit", "risk_management_plan", "security_risk_assessment", "cybersecurity_plan", "change_control_plan"],
+  // SOC 2 Trust Services Criteria.
+  "SOC 2": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan", "software_qa_plan"],
+  // EU AI Act: Annex IV technical documentation for high-risk AI systems
+  // (risk mgmt, data governance, accuracy/robustness/cybersecurity, human oversight).
+  "EU AI Act": ["compliance_audit", "risk_management_plan", "security_risk_assessment", "cybersecurity_plan", "vnv_plan", "change_control_plan", "test_cases", "architecture_doc", "software_qa_plan"],
 };
 
 export default function Reports() {
