@@ -205,10 +205,11 @@ export type CoverageStage = {
 
 export type RequirementCoverage = {
   requirementCode: string;
+  architecture: CoverageStage;
   design: CoverageStage;
-  code: CoverageStage;
-  tests: CoverageStage;
-  reports: CoverageStage;
+  implementation: CoverageStage;
+  testing: CoverageStage;
+  deployment: CoverageStage;
   recommendation: string;
 };
 
@@ -218,17 +219,18 @@ export type TraceabilityAuditResult = {
   headlineFindings: string[];
   requirementCoverage: RequirementCoverage[];
   completenessPercentage: number;
-  stagePercentages: { design: number; code: number; tests: number; reports: number };
+  stagePercentages: Record<LifecycleStage, number>;
   requirementsAudited: number;
   sourcesUsed: Array<{
     sourceId: string;
     sourceLabel: string;
     sourceKind: string;
     fileCount: number;
+    architectureCount: number;
     designCount: number;
-    codeCount: number;
-    testCount: number;
-    reportCount: number;
+    implementationCount: number;
+    testingCount: number;
+    deploymentCount: number;
   }>;
 };
 

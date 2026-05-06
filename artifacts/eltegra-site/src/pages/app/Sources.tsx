@@ -345,7 +345,7 @@ export default function Sources() {
                   className="bg-indigo-600 hover:bg-indigo-700"
                   disabled={s.status !== "ready"}
                   onClick={() => setTracing(s)}
-                  title={s.status !== "ready" ? "Source must be in 'ready' state to check completeness" : "Audit traceability completeness across design → code → tests → reports"}
+                  title={s.status !== "ready" ? "Source must be in 'ready' state to check completeness" : "Audit traceability completeness across architecture → design → implementation → testing → deployment"}
                 >
                   <ShieldCheck className="h-3 w-3 mr-1" /> Check completeness
                 </Button>
@@ -1367,7 +1367,7 @@ function TraceabilityAuditDialog({
             Traceability completeness — “{source.label}”
           </DialogTitle>
           <DialogDescription>
-            For every requirement in the project, Auditee checks whether design, code, tests, and test reports exist in this source.
+            For every requirement in the project, Auditee checks whether evidence exists across all 5 lifecycle stages — architecture, design, implementation, testing, and deployment — in this source.
           </DialogDescription>
         </DialogHeader>
 
@@ -1381,7 +1381,7 @@ function TraceabilityAuditDialog({
                 {source.fileCount} files · {bytesHuman(source.byteCount)} indexed from <span className="font-mono">{source.kind}</span>
               </div>
               <div className="mt-2 text-[11px] text-slate-500">
-                Files are bucketed into 4 stages — design (architecture/specs), code (source files), tests (test files), reports (build/test reports) — and assessed per requirement.
+                Files are bucketed into 5 lifecycle stages — architecture (design docs/ADRs), design (specs/UX), implementation (source code), testing (test suites/results), and deployment (release/runbook artifacts) — and assessed per requirement.
               </div>
             </div>
             <DialogFooter>
@@ -1446,8 +1446,8 @@ function TraceabilityAuditDialog({
             </div>
 
             {result.stagePercentages && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(["design", "code", "tests", "reports"] as const).map((stage) => {
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {(["architecture", "design", "implementation", "testing", "deployment"] as const).map((stage) => {
                   const v = Math.round(result.stagePercentages[stage] ?? 0);
                   const tone: "emerald" | "amber" | "rose" = v >= 80 ? "emerald" : v >= 50 ? "amber" : "rose";
                   const cls = STAGE_TONE_CLASSES[tone];
@@ -1482,10 +1482,11 @@ function TraceabilityAuditDialog({
                   <thead className="bg-slate-100 text-slate-700">
                     <tr>
                       <th className="text-left p-2 font-medium">Requirement</th>
+                      <th className="text-left p-2 font-medium">Architecture</th>
                       <th className="text-left p-2 font-medium">Design</th>
-                      <th className="text-left p-2 font-medium">Code</th>
-                      <th className="text-left p-2 font-medium">Tests</th>
-                      <th className="text-left p-2 font-medium">Reports</th>
+                      <th className="text-left p-2 font-medium">Implementation</th>
+                      <th className="text-left p-2 font-medium">Testing</th>
+                      <th className="text-left p-2 font-medium">Deployment</th>
                       <th className="text-left p-2 font-medium">Recommendation</th>
                     </tr>
                   </thead>
@@ -1493,10 +1494,11 @@ function TraceabilityAuditDialog({
                     {result.requirementCoverage.map((r, i) => (
                       <tr key={i} className="border-t align-top">
                         <td className="p-2 font-mono whitespace-nowrap">{r.requirementCode}</td>
+                        <td className="p-2"><StageCell stage={r.architecture} /></td>
                         <td className="p-2"><StageCell stage={r.design} /></td>
-                        <td className="p-2"><StageCell stage={r.code} /></td>
-                        <td className="p-2"><StageCell stage={r.tests} /></td>
-                        <td className="p-2"><StageCell stage={r.reports} /></td>
+                        <td className="p-2"><StageCell stage={r.implementation} /></td>
+                        <td className="p-2"><StageCell stage={r.testing} /></td>
+                        <td className="p-2"><StageCell stage={r.deployment} /></td>
                         <td className="p-2 text-slate-700">{r.recommendation}</td>
                       </tr>
                     ))}
@@ -1538,28 +1540,31 @@ const STAGE_TONE_CLASSES: Record<"emerald" | "amber" | "rose", { box: string; he
   },
 };
 
-function StageCell({ stage }: { stage: CoverageStage }) {
+const EMPTY_STAGE: CoverageStage = { status: "missing", artifacts: [], note: "" };
+
+function StageCell({ stage }: { stage: CoverageStage | undefined }) {
+  const s: CoverageStage = stage ?? EMPTY_STAGE;
   const tone: "emerald" | "amber" | "rose" =
-    stage.status === "covered" ? "emerald" :
-    stage.status === "partial" ? "amber" :
+    s.status === "covered" ? "emerald" :
+    s.status === "partial" ? "amber" :
     "rose";
   const cls = STAGE_TONE_CLASSES[tone];
   return (
     <div className="space-y-1 min-w-[140px]">
       <Badge variant="outline" className={`${cls.badge} capitalize`}>
-        {stage.status}
+        {s.status}
       </Badge>
-      {stage.artifacts && stage.artifacts.length > 0 && (
+      {s.artifacts && s.artifacts.length > 0 && (
         <div className="space-y-0.5">
-          {stage.artifacts.slice(0, 3).map((a) => (
+          {s.artifacts.slice(0, 3).map((a) => (
             <div key={a} className="font-mono text-[10px] text-slate-600 truncate" title={a}>{a}</div>
           ))}
-          {stage.artifacts.length > 3 && (
-            <div className="text-[10px] text-slate-500">+{stage.artifacts.length - 3} more</div>
+          {s.artifacts.length > 3 && (
+            <div className="text-[10px] text-slate-500">+{s.artifacts.length - 3} more</div>
           )}
         </div>
       )}
-      {stage.note && <div className="text-[10px] text-slate-500 italic">{stage.note}</div>}
+      {s.note && <div className="text-[10px] text-slate-500 italic">{s.note}</div>}
     </div>
   );
 }
@@ -1575,7 +1580,13 @@ function renderTraceMarkdown(r: TraceabilityAuditResult, source: ProjectSourceRo
   lines.push(`**Completeness:** **${Math.round(r.completenessPercentage)}%** across ${r.requirementsAudited} requirement(s)`);
   if (r.stagePercentages) {
     lines.push(``);
-    lines.push(`**Stage completeness:** design ${Math.round(r.stagePercentages.design)}% · code ${Math.round(r.stagePercentages.code)}% · tests ${Math.round(r.stagePercentages.tests)}% · reports ${Math.round(r.stagePercentages.reports)}%`);
+    lines.push(
+      `**Stage completeness:** architecture ${Math.round(r.stagePercentages.architecture ?? 0)}% · ` +
+      `design ${Math.round(r.stagePercentages.design ?? 0)}% · ` +
+      `implementation ${Math.round(r.stagePercentages.implementation ?? 0)}% · ` +
+      `testing ${Math.round(r.stagePercentages.testing ?? 0)}% · ` +
+      `deployment ${Math.round(r.stagePercentages.deployment ?? 0)}%`
+    );
   }
   lines.push(``);
   if (r.headlineFindings?.length) {
@@ -1585,15 +1596,16 @@ function renderTraceMarkdown(r: TraceabilityAuditResult, source: ProjectSourceRo
   }
   lines.push(`## Per-requirement coverage`);
   lines.push(``);
-  lines.push(`| Requirement | Design | Code | Tests | Reports | Recommendation |`);
-  lines.push(`|---|---|---|---|---|---|`);
+  lines.push(`| Requirement | Architecture | Design | Implementation | Testing | Deployment | Recommendation |`);
+  lines.push(`|---|---|---|---|---|---|---|`);
   r.requirementCoverage.forEach((req) => {
-    function cell(s: CoverageStage): string {
-      const a = (s.artifacts ?? []).map((p) => `\`${mdCell(p)}\``).join("<br/>");
-      return `${mdCell(s.status)}${a ? "<br/>" + a : ""}${s.note ? "<br/>_" + mdCell(s.note) + "_" : ""}`;
+    function cell(s: CoverageStage | undefined): string {
+      const stage = s ?? EMPTY_STAGE;
+      const a = (stage.artifacts ?? []).map((p) => `\`${mdCell(p)}\``).join("<br/>");
+      return `${mdCell(stage.status)}${a ? "<br/>" + a : ""}${stage.note ? "<br/>_" + mdCell(stage.note) + "_" : ""}`;
     }
     lines.push(
-      `| \`${mdCell(req.requirementCode)}\` | ${cell(req.design)} | ${cell(req.code)} | ${cell(req.tests)} | ${cell(req.reports)} | ${mdCell(req.recommendation)} |`,
+      `| \`${mdCell(req.requirementCode)}\` | ${cell(req.architecture)} | ${cell(req.design)} | ${cell(req.implementation)} | ${cell(req.testing)} | ${cell(req.deployment)} | ${mdCell(req.recommendation)} |`,
     );
   });
   return lines.join("\n");
@@ -1663,20 +1675,25 @@ function renderTraceCsv(r: TraceabilityAuditResult): string {
   const rows: string[] = [];
   rows.push(csvRow([
     "Requirement",
+    "Architecture status", "Architecture artifacts", "Architecture note",
     "Design status", "Design artifacts", "Design note",
-    "Code status", "Code artifacts", "Code note",
-    "Tests status", "Tests artifacts", "Tests note",
-    "Reports status", "Reports artifacts", "Reports note",
+    "Implementation status", "Implementation artifacts", "Implementation note",
+    "Testing status", "Testing artifacts", "Testing note",
+    "Deployment status", "Deployment artifacts", "Deployment note",
     "Recommendation",
   ]));
   for (const req of r.requirementCoverage) {
-    const stage = (s: CoverageStage) => [s.status, (s.artifacts ?? []).join(" | "), s.note ?? ""];
+    const stage = (s: CoverageStage | undefined) => {
+      const x = s ?? EMPTY_STAGE;
+      return [x.status, (x.artifacts ?? []).join(" | "), x.note ?? ""];
+    };
     rows.push(csvRow([
       req.requirementCode,
+      ...stage(req.architecture),
       ...stage(req.design),
-      ...stage(req.code),
-      ...stage(req.tests),
-      ...stage(req.reports),
+      ...stage(req.implementation),
+      ...stage(req.testing),
+      ...stage(req.deployment),
       req.recommendation ?? "",
     ]));
   }
@@ -1775,18 +1792,20 @@ function renderAuditHtml(r: ComplianceAuditResult, source: ProjectSourceRow): st
 
 function renderTraceHtml(r: TraceabilityAuditResult, source: ProjectSourceRow): string {
   const headlines = (r.headlineFindings ?? []).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
-  const stageCell = (s: CoverageStage) => {
-    const arts = (s.artifacts ?? []).length
-      ? `<ul>${(s.artifacts ?? []).map((p) => `<li class="mono">${escapeHtml(p)}</li>`).join("")}</ul>`
+  const stageCell = (s: CoverageStage | undefined) => {
+    const x = s ?? EMPTY_STAGE;
+    const arts = (x.artifacts ?? []).length
+      ? `<ul>${(x.artifacts ?? []).map((p) => `<li class="mono">${escapeHtml(p)}</li>`).join("")}</ul>`
       : "";
-    return `${statusPillHtml(s.status)}${arts}${s.note ? `<div style="color:#64748b;font-style:italic;margin-top:2px">${escapeHtml(s.note)}</div>` : ""}`;
+    return `${statusPillHtml(x.status)}${arts}${x.note ? `<div style="color:#64748b;font-style:italic;margin-top:2px">${escapeHtml(x.note)}</div>` : ""}`;
   };
   const rows = r.requirementCoverage.map((req) => `<tr>
     <td class="mono">${escapeHtml(req.requirementCode)}</td>
+    <td>${stageCell(req.architecture)}</td>
     <td>${stageCell(req.design)}</td>
-    <td>${stageCell(req.code)}</td>
-    <td>${stageCell(req.tests)}</td>
-    <td>${stageCell(req.reports)}</td>
+    <td>${stageCell(req.implementation)}</td>
+    <td>${stageCell(req.testing)}</td>
+    <td>${stageCell(req.deployment)}</td>
     <td>${escapeHtml(req.recommendation ?? "")}</td>
   </tr>`).join("");
   const body = `
@@ -1800,15 +1819,18 @@ function renderTraceHtml(r: TraceabilityAuditResult, source: ProjectSourceRow): 
       <strong>Completeness:</strong> ${Math.round(r.completenessPercentage)}% across ${r.requirementsAudited} requirement(s)
     </div>
     ${r.stagePercentages ? `<div class="meta"><strong>Stage completeness:</strong>
-      design ${Math.round(r.stagePercentages.design)}% ·
-      code ${Math.round(r.stagePercentages.code)}% ·
-      tests ${Math.round(r.stagePercentages.tests)}% ·
-      reports ${Math.round(r.stagePercentages.reports)}%</div>` : ""}
+      architecture ${Math.round(r.stagePercentages.architecture ?? 0)}% ·
+      design ${Math.round(r.stagePercentages.design ?? 0)}% ·
+      implementation ${Math.round(r.stagePercentages.implementation ?? 0)}% ·
+      testing ${Math.round(r.stagePercentages.testing ?? 0)}% ·
+      deployment ${Math.round(r.stagePercentages.deployment ?? 0)}%</div>` : ""}
     ${headlines ? `<h2>Headline findings</h2><ul>${headlines}</ul>` : ""}
     <h2>Per-requirement coverage</h2>
     <table>
       <thead><tr>
-        <th>Requirement</th><th>Design</th><th>Code</th><th>Tests</th><th>Reports</th><th>Recommendation</th>
+        <th>Requirement</th>
+        <th>Architecture</th><th>Design</th><th>Implementation</th><th>Testing</th><th>Deployment</th>
+        <th>Recommendation</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
