@@ -448,6 +448,32 @@ export type InterviewQuestionsResult = {
   questions: InterviewQuestion[];
 };
 
+export type InterviewExtractInput = {
+  projectId: string;
+  brief?: string;
+  applicableFrameworkIds?: string[];
+  qa: Array<{ id: string; category: string; prompt: string; answer: string }>;
+};
+
+export type InterviewExtractResult = {
+  created: GeneratedRequirement[];
+  count: number;
+  skipped?: Array<{ title: string; duplicateOfCode: string; reason: string }>;
+  skippedCount?: number;
+  questionsAnswered?: number;
+};
+
+export function useExtractInterview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: InterviewExtractInput) =>
+      aiFetch<InterviewExtractResult>("/ai/interview/extract", body),
+    onSuccess: () => {
+      qc.invalidateQueries();
+    },
+  });
+}
+
 export function useInterviewQuestions() {
   return useMutation({
     mutationFn: (body: { projectId: string; brief: string; applicableFrameworkIds?: string[] }) =>

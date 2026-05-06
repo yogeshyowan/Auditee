@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useProjectContext } from "@/lib/project-context";
-import { useInterviewQuestions, useGenerateRequirements, type InterviewQuestion } from "@/lib/ai-api";
+import { useInterviewQuestions, useExtractInterview, type InterviewQuestion } from "@/lib/ai-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -73,7 +73,7 @@ export default function InterviewPage() {
   const [creatingProject, setCreatingProject] = useState(false);
 
   const questionsMut = useInterviewQuestions();
-  const generateMut = useGenerateRequirements();
+  const extractMut = useExtractInterview();
 
   // Auto-create a project from the brief if one isn't selected yet, so a
   // first-time user can go from "I've typed a brief" → "I'm answering AI
@@ -165,27 +165,33 @@ export default function InterviewPage() {
       });
       return;
     }
-    // Build an enriched brief that combines the original brief + every Q&A pair.
-    // Re-using /ai/generate-requirements means we get the same validated output
-    // shape (categorisation, framework links, draft status, activity log) for free.
-    const transcript = questions
-      .map((q) => {
-        const a = (answers[q.id] ?? "").trim();
-        return `Q: ${q.prompt}\nA: ${a || "(no answer)"}`;
-      })
-      .join("\n\n");
-    const enriched = `Original brief:\n${brief}\n\nDiscovery interview transcript:\n${transcript}`;
+    // eltegra-style: send the STRUCTURED Q&A list (not a prose dump) so the
+    // server-side extractor can produce 1-3 atomic requirements per answered
+    // question with category-driven type assignment + provenance tags.
+    const qa = answered.map((q) => ({
+      id: q.id,
+      category: q.category,
+      prompt: q.prompt,
+      answer: (answers[q.id] ?? "").trim(),
+    }));
 
     setStage("extracting");
-    generateMut.mutate(
-      { projectId, brief: enriched.slice(0, 7900), applicableFrameworkIds: frameworkIds },
+    extractMut.mutate(
+      {
+        projectId,
+        brief: brief.slice(0, 4000),
+        applicableFrameworkIds: frameworkIds,
+        qa,
+      },
       {
         onSuccess: (r) => {
           setCreatedCount(r.count);
           setStage("done");
           toast({
             title: `Generated ${r.count} requirements`,
-            description: "View them in the Requirements page.",
+            description: r.skippedCount
+              ? `${r.skippedCount} duplicate(s) skipped. View the new ones in the Requirements page.`
+              : "View them in the Requirements page.",
           });
         },
         onError: (err: any) => {
@@ -360,7 +366,7 @@ export default function InterviewPage() {
               </Button>
               <Button
                 onClick={extractRequirements}
-                disabled={answeredCount === 0 || stage === "extracting"}
+                disabled={answeredCount === 0 || stage === "extracting" || extractMut.isPending}
                 className="gap-2"
                 data-testid="button-extract-requirements"
               >

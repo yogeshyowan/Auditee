@@ -2954,6 +2954,257 @@ ${brief}${fwLine}`;
 }));
 
 // =============================================================
+// AI: Smart Interview → Extract requirements (eltegra-style)
+//
+// Replaces the old "concat brief + Q&A → reuse /ai/generate-requirements"
+// path. The old approach lost per-question category metadata, capped output
+// at 3-8 requirements regardless of how many questions were answered, and
+// could silently return 0 because a 7900-char prose dump tripped duplicate
+// detection or model truncation.
+//
+// New flow (mirrors per-question, category-driven extraction):
+//   1. Accept the STRUCTURED Q&A — per-question category preserved.
+//   2. Map category → requirement type deterministically:
+//        users / success                          → BRD
+//        functional                               → FRD
+//        data / integration                       → PRD
+//        non_functional / compliance / constraints → NFR
+//   3. Send a structured JSON Q&A list to the model (not prose dump),
+//      asking for 1-3 requirements per answered question, each with a
+//      `sourceQuestionId` for provenance.
+//   4. Tag each created requirement with `interview:<questionId>` and the
+//      category so they remain traceable in the UI.
+//   5. Deterministic fallback: if the model returns 0 (rare), synthesise
+//      one templated requirement per answered question so the user never
+//      gets a dead-end "0 requirements" toast after answering 10 questions.
+// =============================================================
+router.post("/ai/interview/extract", consumeCredit(), aiHandler(async (req, res) => {
+  const projectId = requireString(req.body?.projectId, "projectId", { min: 1 });
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, projectId, "developer");
+    if (access === false) return;
+  }
+
+  const brief = typeof req.body?.brief === "string"
+    ? req.body.brief.trim().slice(0, 4000)
+    : "";
+
+  const rawQA = Array.isArray(req.body?.qa) ? req.body.qa : null;
+  if (!rawQA || rawQA.length === 0) {
+    res.status(400).json({ error: "qa[] is required" });
+    return;
+  }
+
+  const ALLOWED_CATEGORIES = new Set([
+    "users", "functional", "data", "integration",
+    "non_functional", "compliance", "constraints", "success",
+  ]);
+  const CATEGORY_TO_TYPE: Record<string, "BRD" | "PRD" | "FRD" | "NFR"> = {
+    users: "BRD",
+    success: "BRD",
+    functional: "FRD",
+    data: "PRD",
+    integration: "PRD",
+    non_functional: "NFR",
+    compliance: "NFR",
+    constraints: "NFR",
+  };
+
+  type QA = { id: string; category: string; prompt: string; answer: string };
+  const qa: QA[] = (rawQA as unknown[])
+    .map((row): QA | null => {
+      if (!row || typeof row !== "object") return null;
+      const r = row as Record<string, unknown>;
+      const id = typeof r.id === "string" ? r.id.trim().slice(0, 80) : "";
+      const prompt = typeof r.prompt === "string" ? r.prompt.trim().slice(0, 400) : "";
+      const answer = typeof r.answer === "string" ? r.answer.trim().slice(0, 2000) : "";
+      const rawCat = typeof r.category === "string" ? r.category : "functional";
+      const category = ALLOWED_CATEGORIES.has(rawCat) ? rawCat : "functional";
+      if (!id || !prompt || !answer) return null;
+      return { id, category, prompt, answer };
+    })
+    .filter((x): x is QA => x !== null)
+    .slice(0, 20);
+
+  if (qa.length === 0) {
+    res.status(400).json({ error: "No answered questions provided" });
+    return;
+  }
+
+  const rawAppFwIds = Array.isArray(req.body?.applicableFrameworkIds)
+    ? (req.body.applicableFrameworkIds as unknown[])
+        .filter((x): x is string => typeof x === "string" && x.length > 0)
+        .slice(0, 8)
+    : [];
+  const applicableFrameworkIds = Array.from(new Set(rawAppFwIds));
+
+  const [project] = await db
+    .select()
+    .from(projectsTable)
+    .where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const allFrameworks = await db
+    .select({
+      id: complianceFrameworksTable.id,
+      code: complianceFrameworksTable.code,
+      name: complianceFrameworksTable.name,
+    })
+    .from(complianceFrameworksTable);
+  const frameworks = applicableFrameworkIds.length > 0
+    ? allFrameworks.filter((f) => applicableFrameworkIds.includes(f.id))
+    : allFrameworks;
+  const fwCodes = frameworks.map((f) => f.code).join(", ") || "(none)";
+  const codeToId = new Map(frameworks.map((f) => [f.code, f.id]));
+
+  const standardsBlueprints = selectStandardsBlueprints(
+    applicableFrameworkIds.length > 0 ? frameworks : [],
+  );
+  const standardsAddendum = renderStandardsAddendum(standardsBlueprints, "requirements");
+
+  const minOut = qa.length;
+  const maxOut = Math.min(60, qa.length * 3);
+
+  const system = `You are Auditee, an enterprise requirements analyst. You are given the answers to a structured discovery interview. Convert each answered question into 1-3 atomic, testable requirements.
+
+Return STRICT JSON of shape:
+{"requirements":[{"sourceQuestionId":string,"title":string,"description":string,"type":"BRD"|"PRD"|"FRD"|"NFR","priority":"low"|"medium"|"high"|"critical","tags":string[],"linkedFrameworkCodes":string[]}]}
+
+Rules:
+- Total requirements: ${minOut}-${maxOut}. EVERY answered question must produce at least one requirement (use sourceQuestionId to point back).
+- title: <=90 chars, action-oriented ("System shall …" style), derived from the answer.
+- description: 1-3 sentences, testable, referencing the specific answer content.
+- type follows the question category: users/success → BRD; functional → FRD; data/integration → PRD; non_functional/compliance/constraints → NFR. Use the suggested type unless the answer clearly demands another.
+- priority: infer from the answer (must/critical/required → high or critical; should → medium; could/may → low).
+- tags: include short topic keywords AND a tag of the form "interview:<sourceQuestionId>".
+- linkedFrameworkCodes must be a subset of: ${fwCodes}. Only include codes whose clauses the requirement actually addresses.
+- Output JSON only, no commentary.${standardsAddendum}`;
+
+  const qaJson = JSON.stringify(
+    qa.map((q) => ({
+      id: q.id,
+      category: q.category,
+      suggestedType: CATEGORY_TO_TYPE[q.category],
+      question: q.prompt,
+      answer: q.answer,
+    })),
+    null,
+    2,
+  );
+
+  const user = `Project: ${project.name}
+Project context: ${project.description ?? "(none)"}
+
+${brief ? `Original brief:\n${brief}\n\n` : ""}Discovery interview answers (JSON):
+${qaJson}`;
+
+  type GenResult = {
+    requirements: Array<{
+      sourceQuestionId?: string;
+      title: string;
+      description: string;
+      type: "BRD" | "PRD" | "FRD" | "NFR";
+      priority: "low" | "medium" | "high" | "critical";
+      tags?: string[];
+      linkedFrameworkCodes?: string[];
+    }>;
+  };
+
+  let candidates: GenResult["requirements"] = [];
+  try {
+    const result = await jsonCompletion<GenResult>(system, user);
+    if (Array.isArray(result.requirements)) candidates = result.requirements;
+  } catch (err) {
+    req.log.warn({ err }, "interview extract: model call failed, using deterministic fallback");
+  }
+
+  if (candidates.length === 0) {
+    req.log.warn("interview extract: empty model output, falling back to per-question templates");
+    candidates = qa.map((q) => ({
+      sourceQuestionId: q.id,
+      title: q.prompt.replace(/\?$/, "").slice(0, 80),
+      description: q.answer.slice(0, 600),
+      type: CATEGORY_TO_TYPE[q.category],
+      priority: "medium" as const,
+      tags: [q.category, `interview:${q.id}`],
+      linkedFrameworkCodes: [],
+    }));
+  }
+
+  const dedupIndex = await loadProjectDedupIndex(projectId);
+  const created: Array<typeof requirementsTable.$inferSelect> = [];
+  const skipped: Array<{ title: string; duplicateOfCode: string; reason: string }> = [];
+
+  for (const r of candidates) {
+    if (!r || typeof r.title !== "string" || typeof r.description !== "string") continue;
+    const dup = findDuplicate({ title: r.title, description: r.description }, dedupIndex);
+    if (dup) {
+      skipped.push({
+        title: r.title.slice(0, 200),
+        duplicateOfCode: dup.duplicateOfCode,
+        reason: dup.reason,
+      });
+      continue;
+    }
+    const code = await nextRequirementCode(projectId);
+    const sourceQ = qa.find((q) => q.id === r.sourceQuestionId);
+    const tags = Array.isArray(r.tags) ? r.tags.filter((t) => typeof t === "string").slice(0, 8) : [];
+    if (sourceQ && !tags.some((t) => t.startsWith("interview:"))) {
+      tags.push(`interview:${sourceQ.id}`);
+    }
+    const linkedFrameworks = (r.linkedFrameworkCodes ?? [])
+      .map((c) => codeToId.get(c))
+      .filter((x): x is string => Boolean(x));
+    const [row] = await db
+      .insert(requirementsTable)
+      .values({
+        id: randomUUID(),
+        projectId,
+        code,
+        title: r.title.slice(0, 200),
+        description: r.description.slice(0, 4000),
+        type: r.type,
+        status: "draft",
+        priority: r.priority,
+        owner: "Auditee",
+        tags,
+        linkedFrameworks,
+        externalSystem: "auditee_smart_interview",
+        externalId: code,
+      })
+      .returning();
+    created.push(row);
+    indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
+    await logActivity(
+      "requirement",
+      `${code} drafted by Smart Interview from ${sourceQ ? `Q "${sourceQ.prompt.slice(0, 60)}"` : "interview"}`,
+      "Auditee",
+      code,
+    );
+  }
+
+  if (created.length === 0 && skipped.length > 0) {
+    res.status(409).json({
+      error: "Every extracted requirement matched one already in this project — nothing new to add.",
+      skipped,
+      skippedCount: skipped.length,
+    });
+    return;
+  }
+
+  res.status(201).json({
+    created,
+    count: created.length,
+    skipped,
+    skippedCount: skipped.length,
+    questionsAnswered: qa.length,
+  });
+}));
+
+// =============================================================
 // AI: Effort Estimation
 // Estimates implementation effort (in man-hours) for every
 // requirement in a project. Returns per-requirement estimates
