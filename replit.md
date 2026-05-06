@@ -1,84 +1,80 @@
-# Workspace
+# Auditee
 
-## Overview
+Auditee is an AI-native enterprise platform for managing the entire Product Development Lifecycle (PDLC) with AI-powered analysis and report generation.
 
-Auditee is an AI-native enterprise platform designed to manage the entire Product Development Lifecycle (PDLC). It provides comprehensive tools for requirements management, traceability, compliance, defect tracking, and advanced AI-powered analysis and report generation. The platform aims to automate and streamline product development processes, offering AI-driven requirement generation, code analysis, compliance auditing, extraction from legacy systems, and natural language Q&A. The business vision is to transform product development efficiency and compliance through AI-accelerated PDLC management.
+## Run & Operate
 
-## User Preferences
+-   **Run Dev Server**: `pnpm dev`
+-   **Build**: `pnpm build`
+-   **Typecheck**: `pnpm typecheck`
+-   **Codegen**: `pnpm codegen` (for OpenAPI client)
+-   **DB Push**: `pnpm db:push` (Drizzle ORM schema migrations)
+
+**Required Environment Variables**:
+`OPENAI_API_KEY`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `GITHUB_WEBHOOK_SECRET`, `SLACK_WEBHOOK_URL`, `TEAMS_WEBHOOK_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `GOOGLE_SHEET_ID`, `LEAD_ADMIN_EMAILS`
+
+## Stack
+
+-   **Frameworks**: React, Express 5
+-   **Runtime**: Node.js, TypeScript
+-   **ORM**: Drizzle ORM
+-   **Validation**: Zod
+-   **Build Tool**: Vite
+-   **Auth**: Clerk
+
+## Where things live
+
+-   **Backend API**: `packages/api/src/routes/`
+-   **Frontend App**: `packages/app/src/pages/`
+-   **Database Schema**: `packages/db/src/schema/`
+-   **AI Logic**: `packages/api/src/lib/ai/`
+-   **OpenAPI Spec**: `packages/api/openapi.yaml`
+-   **UI Components**: `packages/ui/src/components/`
+-   **Marketing Site**: `packages/marketing/src/pages/`
+-   **Prompt Library Data**: `artifacts/eltegra-site/src/data/promptLibrary.ts`
+-   **UI Theme/Branding**: `packages/app/src/index.css` (uses Shadcn, Auditee purple, Inter Tight font)
+
+## Architecture decisions
+
+-   **Monorepo Structure**: pnpm workspace for managing multiple packages (api, app, db, ui, marketing).
+-   **AI RAG Implementation**: Per-project RAG using `pgvector` for contextual AI responses, with graceful fallback.
+-   **Multi-step AI Extraction**: Complex document analysis uses a pipeline of focused LLM calls for classification and entity extraction, improving accuracy over single-prompt approaches.
+-   **Deterministic Traceability**: Traceability scoring is based on graph traversal of database relationships, not LLM self-scoring, ensuring accuracy and auditability.
+-   **External HTTP Routing**: All external HTTP requests go through `lib/safe-fetch.ts` for SSRF protection.
+-   **Security Headers**: Comprehensive HTTP security headers applied via Helmet for API responses.
+
+## Product
+
+-   **Requirements Management**: AI-powered generation, extraction, and management of requirements.
+-   **Traceability**: 5-stage lifecycle traceability with AI-driven recommendations.
+-   **Compliance**: AI-driven compliance auditing, standards-aware generation, and automated control closure.
+-   **Defect Tracking**: Integration with various defect management systems.
+-   **AI-powered Reporting**: Generation of BRD, PRD, test cases, and other standards-compliant documents.
+-   **Code Analysis**: Static code analysis for legacy systems and business rule extraction.
+-   **Project Management**: Creation and management of development projects.
+-   **User/Role Management**: RBAC with workspace and project-level roles.
+-   **Audit & Security Logs**: Append-only audit logs with integrity hashes and security event logging.
+-   **Integrations**: GitHub webhooks for continuous gap detection, Slack/MS Teams notifications.
+-   **Billing**: Subscription-based plan gating with Razorpay integration.
+-   **Lead Capture**: Google Sheet sync for user sign-ups and waitlist.
+
+## User preferences
 
 I prefer iterative development with clear communication at each stage. Ask before making major architectural changes or introducing new dependencies. For code, I prefer readable and maintainable solutions over overly clever or complex ones.
 
-## System Architecture
+## Gotchas
 
-The project is structured as a pnpm workspace monorepo using Node.js and TypeScript.
+-   **GitHub Webhook Secret**: `GITHUB_WEBHOOK_SECRET` must be configured for GitHub integration to work; otherwise, it returns a 503.
+-   **Lead Admin Access**: Access to `/app/admin/leads` requires both `owner` role and `LEAD_ADMIN_EMAILS` allowlist match, due to `lead_captures` being a global table.
+-   **Razorpay RBI Cap**: Annual plans use one-time orders to work around the RBI ₹15k auto-renew cap.
+-   **AI Fallbacks**: AI features gracefully fall back (e.g., when `OPENAI_API_KEY` is unset or pipeline errors occur).
 
-### UI/UX Decisions
+## Pointers
 
-The marketing site is optimized for SEO, while the application (`/app/*`) is configured for `noindex, nofollow`. The application features a logical navigation and a floating "Ask Auditee" AI chat button. The UI adheres to a branded `shadcn` appearance with Auditee purple (`#6366f1`) and Inter Tight font.
-
-### Technical Implementations
-
-The backend is an Express 5 API server. Data persistence is managed by PostgreSQL with Drizzle ORM, utilizing Zod for validation. API client code is generated from an OpenAPI specification. The frontend is built with React and Vite. All external HTTP requests are routed through `lib/safe-fetch.ts` for SSRF protection. Authentication and authorization are handled by Clerk, supporting a workspace-scoped, seat-based billing model.
-
-### AI Architecture (closes eltegra.ai parity gaps)
-
--   **Per-project RAG (pgvector)**: `document_chunks` table stores 1536-dim embeddings (text-embedding-3-small) of every text source file, chunked ~1800 chars with 200-char overlap. `lib/rag.ts` exposes `indexSourceForRAG`, `retrieveChunks` (cosine via pgvector `<=>`), `formatChunksAsContext`. Source ingestion auto-indexes in the background; `sources` delete prunes chunks. `/api/ai/ask` augments structured context with top-8 retrieved chunks per question. Falls back gracefully when `OPENAI_API_KEY` is unset.
--   **Smart Interview → Extract requirements (per-question, category-driven)**: `POST /api/ai/interview/extract` accepts the structured Q&A list (id + category + prompt + answer) — not a prose dump — and produces 1-3 atomic, testable requirements per answered question. Question category drives requirement type deterministically (users/success → BRD; functional → FRD; data/integration → PRD; non_functional/compliance/constraints → NFR). Every created row is tagged `interview:<questionId>` for provenance back to the source question. Falls back to a per-question template synthesis when the model returns 0, so a 10-question interview never dead-ends as "0 requirements". Frontend hook: `useExtractInterview` in `lib/ai-api.ts`; UI: `pages/app/Interview.tsx`.
--   **Multi-step extraction pipeline**: `lib/extraction-pipeline.ts` runs classify → extract entities (actors/features/constraints/risks/data) → synthesise standards-aware requirements as three focused LLM calls with intermediate structured JSON, replacing the single-prompt collapse for long documents. Wired into `/api/ai/generate-requirements`: when `mode === "brief"` AND `brief.length > 4000`, the pipeline runs first and its structured digest (sections + actors/features/constraints/risks/data/external systems) replaces the raw brief in the final standards-aware synthesis prompt. Falls back to the raw brief on any pipeline error.
--   **Static code analyzer**: `lib/code-analyzer.ts` deterministically extracts symbols, imports, call-graph edges, cyclomatic-complexity estimates, and business-rule candidate lines for 13 languages (TS/JS/Python/Java/C#/Kotlin/Go/Rust/Ruby/PHP/SQL/COBOL/JCL) with no native deps. `/api/ai/legacy-extract` now feeds the analysis skeleton to the LLM alongside raw source.
--   **Deterministic traceability scoring**: graph traversal of `traceability_links` × `code_artifacts` × `test_cases` in `routes/traceability.ts` (not LLM self-scoring).
-
-### BA Tools & Outbound Integrations
-
--   **AI Prompt Library**: Public marketing page at `/prompt-library` listing 15 named, copy-to-clipboard BA prompts across Discovery, Gap Detection, BRD/PRD Drafting, Stakeholder Validation, and Compliance categories. Source of truth: `artifacts/eltegra-site/src/data/promptLibrary.ts`.
--   **GitHub Commit Webhook (continuous gap detection)**: `POST /api/webhooks/github` receives push events with `x-hub-signature-256` HMAC verification (timing-safe) against `GITHUB_WEBHOOK_SECRET`. On match against any `project_sources` row with `kind=github` whose `config.repoUrl|url|repository` equals the pushed repo, queues a `gap_analysis_pending` activity event per matched project. Returns 503 if secret not configured, 401 on bad signature, ack-only on non-push events.
--   **Audit-Readiness Score**: `GET /api/projects/:id/audit-readiness` returns the headline `% ready for an external audit` metric — weighted roll-up of compliance adherence (0.35) + traceability coverage (0.25) + CAPA closure (0.20) + test pass rate (0.20), bucketed into low / moderate / high / audit-ready bands. Returns the four component scores so leadership can see what's pulling the number down.
--   **Slack / MS Teams notifications**: `lib/notify.ts` pushes the same notification payload to `SLACK_WEBHOOK_URL` (incoming-webhook) and `TEAMS_WEBHOOK_URL` (Office 365 connector card) when those env vars are set. Defaults to in-app + chat-when-configured; failures are best-effort and logged, never thrown.
-
-### Enterprise Features
-
--   **RBAC**: Four workspace roles (`owner`, `admin`, `editor`, `viewer`) and four project roles (`manager`, `developer`, `reviewer`, `auditor`) with detailed permission matrices and server-side checks.
--   **Audit Log**: An append-only `audit_logs` table records all mutations with read access for admin+ roles and Enterprise plans. Each row now carries a SHA-256 `integrity_hash` over its canonical fields (id, workspaceId, actorUserId, action, resourceType, resourceId, createdAt) for offline tamper-detection.
--   **Security Event Log**: A `logSecurityEvent()` helper writes `security.*` actions (permission denials, rate-limit hits, suspicious input) to the same audit trail; fired automatically on every 403 from project-access checks.
--   **HTTP Security Headers (Helmet)**: Every API response carries `Strict-Transport-Security` (2 yr + preload), `Content-Security-Policy` (deny-all for this pure-API origin), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geo/payment/usb/bluetooth all denied), and `X-Powered-By` removed.
--   **IP Rate Limiting**: Four tiers via `express-rate-limit` — general (200 req/15 min), workspace/auth-adjacent (30 req/15 min), AI generation (20 req/15 min), billing webhook (60 req/min). All keyed by the first `X-Forwarded-For` IP.
--   **Audit Coverage**: Requirements `create`, `update`, `delete` now produce `requirement.*` audit rows in addition to the existing `project.*`, `workspace.*` events.
--   **SSO**: SAML / OIDC via Clerk Enterprise for owner-only, Enterprise-only access.
--   **Plan-gating**: Features are gated by plan, returning HTTP 402 for Free/Pro plans.
--   **Trust / Security Center**: A public page detailing security posture and compliance.
-
-AI features are exposed via `/api/ai/*` endpoints for `generate-requirements`, `analyze-code`, `compliance-audit`, `legacy-extract`, `ask`, `gap-analysis`, `promote`, and `estimate-effort`. AI document generators support various report types (e.g., `compliance_audit`, `requirements_summary`) and can export to DOCX/PDF/HTML, leveraging canonical blueprints. Standards-aware generation allows AI outputs to conform to multiple regulatory frameworks. Free-trial AI credits are provided for anonymous and Free plan users.
-
-### Pricing & Credit Model
-
-A single source of truth for pricing/seats/credits is defined in `lib/db/src/schema/workspaces.ts` with tiers: Free, Standard, Professional, and Enterprise, each with specific seats and monthly AI credits. One credit equals one successful AI generation, with failures auto-refunded. Anonymous users receive a Free allowance tracked locally and verified server-side.
-
-### Feature Specifications
-
--   **Project Management**: Creation and management of projects.
--   **Requirements Management Connectors**: Integrations with various RM tools (e.g., Doors Next, Jama, Jira) for importing requirements.
--   **Defect Management Connectors**: Integrations with multiple defect tracking systems (e.g., Jira, Azure DevOps, GitHub Issues) for importing defects.
--   **AI-powered Reporting**: Generation of various reports (e.g., BRD, PRD, test cases) with standards-aware content.
--   **Standards Documentation Set**: Five dedicated AI report kinds for engineering documentation conforming to international standards (e.g., `architecture_doc`, `hld`, `lld`).
--   **Standards Compliance**: AI generators and reports adhere to multiple compliance standards, incorporating native rating vocabularies and framework-specific filters.
--   **Medical Device Standards Bundle**: A comprehensive set of medical-device regulatory frameworks (e.g., IEC 60601, ISO 13485, FDA 21 CFR Part 820) available across compliance audits and document generation.
--   **Company Letterhead Templates**: Per-workspace `.docx` templates for custom branding on PDLC reports with dynamic placeholders.
--   **5-Stage Lifecycle Traceability**: End-to-end traceability across Architecture, Design, Implementation, Testing, and Deployment, visualized with completeness badges and AI-driven recommendations.
--   **Automated Control Closure & Evidence Locker**: Compliance controls auto-close with new evidence, maintaining a full evidence trail.
--   **Test Management & Notifications**: A dedicated test-cases module with AI-powered suite generation and automated notifications for stale requirements.
--   **Multi-Level Test Suite Generation & AI Execution**: Test cases span ISTQB-aligned levels and eleven disciplines, generated from various sources in static or dynamic mode. An AI executor evaluates cases and produces a `Test Execution Report`, exportable as a ZIP bundle.
--   **Push to Connected GitHub Repo**: A reusable affordance to commit generated artifacts (reports, test bundles, CAPA actions) to a project's connected GitHub repository using the GitHub Git Data API.
--   **Pre-Audit Source Auto-Pull**: Before scheduled compliance audits, the system automatically refreshes all linked sources (GitHub, RM tools, defect tools, remote systems) to ensure AI evaluates the current state.
--   **Tutorial Videos (Dark Theme)**: The `auditee-tutorial` artifact uses a dark theme (`--color-bg-dark: #0b0f1a`, `--color-bg-muted: #1a1630`) with light text across all video scenes (Scene1-5, ScenePayment, CaseIntake/Requirements/Traceability/Report/Audit/Gaps/Capa/Workflow/Conclude) and all 17 module files. Shorts (9:16 format) hide the AppShell sidebar via `.short-mode` CSS class and `data-appshell-*` attributes.
--   **SEO & Content**: The marketing site incorporates comprehensive SEO infrastructure, including a declarative SEO component, `robots.txt`, a build-time sitemap generator, and a blog.
--   **Hetzner / Docker Deployment**: The codebase supports deployment on Replit or a self-hosted Hetzner VPS via `docker compose up -d` with `db`, `api`, and `web` containers. Replit-specific code paths are gated and activate only when relevant environment variables are present.
--   **Lead Capture & Google Sheet Sync**: Every signed-in user (signup, login, and waitlist click) is captured into the `lead_captures` table with a unique `(email, source)` constraint. A "Join the waitlist with Google" button on the marketing pages opens Clerk's Google OAuth modal. Captures are appended as new rows to a Google Sheet via the connected Replit `google-sheet` integration (OAuth-based; no Apps Script or service account required) when `GOOGLE_SHEET_ID` is set. The sheet's header row is created automatically on the first append, and any rows captured before the integration was wired up are back-filled on the next API server start. An admin page at `/app/admin/leads` lists every captured row newest-first with a per-row green/red sheet-sync indicator and a "Resync all unforwarded" button. Access requires both the workspace `owner` role AND a match in the `LEAD_ADMIN_EMAILS` env var allowlist (comma-separated emails). Both checks are required because `lead_captures` is a single global table (not workspace-scoped) and `requireWorkspace` auto-creates a workspace where the caller is owner — an owner-only check by itself would let any signed-in user read every other user's signup PII. The "Captured Leads" sidebar entry is hidden for users who do not pass both checks; direct navigation shows a 403 card.
-
-## External Dependencies
-
--   **OpenAI**: Used for all AI functionalities (via Replit AI Integrations proxy or `OPENAI_API_KEY`).
--   **PostgreSQL**: Primary database.
--   **Clerk**: Authentication and user management.
--   **Requirements Management Tools**: DOORS Next, DOORS Classic, Jama, Polarion, Codebeamer, Helix RM, Visure, Azure DevOps, Jira.
--   **Defect Management Tools**: Jira, Azure DevOps, Bugzilla, Mantis, Redmine, YouTrack, ClickUp, Linear, ServiceNow, ALM Octane, GitHub Issues, GitLab Issues.
--   **Razorpay**: Live billing. Monthly plans (Standard ₹1,999 / Professional ₹7,999) use Razorpay Subscriptions (auto-renew). Annual plans (Standard ₹19,990 / Professional ₹79,990) use one-time Razorpay Orders (no auto-renew, RBI ₹15k cap workaround; expire after 12 months). Enterprise is contact-sales only. Keys live in `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`. Webhook URL: `https://<domain>/api/billing/webhook` — register in Razorpay dashboard with events: `payment.captured`, `subscription.activated`, `subscription.charged`, `subscription.cancelled`, `subscription.completed`, `subscription.halted`, `order.paid`. All HMAC verification (checkout + webhook) uses timing-safe comparison. The `billingPlanSync.ts` helper is the single source of truth for workspace plan transitions; it contains a CAS guard to prevent stale webhook events from re-granting paid access.
+-   **Clerk Documentation**: `https://clerk.com/docs`
+-   **Drizzle ORM Documentation**: `https://orm.drizzle.team/docs`
+-   **Zod Documentation**: `https://zod.dev/`
+-   **Shadcn UI Documentation**: `https://ui.shadcn.com/docs`
+-   **OpenAPI Specification**: `https://spec.openapis.org/oas/v3.1.0`
+-   **Express Rate Limit**: `https://www.npmjs.com/package/express-rate-limit`
+-   **Helmet**: `https://helmetjs.github.io/`
