@@ -313,9 +313,11 @@ export async function jsonCompletion<T>(
   const byoCfg = await getWorkspaceLlmConfig(opts?.workspaceId);
 
   const openrouterClients = getOpenRouterClients();
+  // Order: BYO → OpenRouter keys 1..5 (free quotas first) → OpenAI → Anthropic.
+  // OpenAI and Anthropic stay at the tail so paid keys are only spent once
+  // every free OpenRouter slot has been exhausted.
   const chain: Array<Provider<string> | null> = [
     buildByoProvider(byoCfg, "json", jsonSystemPrompt, userPrompt, maxTokens),
-    openAICompatibleJsonProvider("openai", getOpenAI(), OPENAI_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
     ...openrouterClients.map(({ label, client }) =>
       openAICompatibleJsonProvider(
         label,
@@ -326,6 +328,7 @@ export async function jsonCompletion<T>(
         Math.min(maxTokens, OPENROUTER_MAX_TOKENS_CAP),
       ),
     ),
+    openAICompatibleJsonProvider("openai", getOpenAI(), OPENAI_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
     anthropicProvider(getAnthropic(), ANTHROPIC_HAIKU_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
   ];
 
