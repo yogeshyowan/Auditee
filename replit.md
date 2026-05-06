@@ -13,6 +13,9 @@ Auditee is an AI-native enterprise platform for managing the entire Product Deve
 **Required Environment Variables**:
 `OPENAI_API_KEY`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `GITHUB_WEBHOOK_SECRET`, `SLACK_WEBHOOK_URL`, `TEAMS_WEBHOOK_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `GOOGLE_SHEET_ID`, `LEAD_ADMIN_EMAILS`
 
+**Optional AI fallback keys**:
+`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2`, `OPENROUTER_API_KEY_3`, `OPENROUTER_API_KEY_4`, `OPENROUTER_API_KEY_5`, `ANTHROPIC_API_KEY` — see Architecture decisions for rotation order.
+
 ## Stack
 
 -   **Frameworks**: React, Express 5
@@ -69,6 +72,7 @@ I prefer iterative development with clear communication at each stage. Ask befor
 -   **Lead Admin Access**: Access to `/app/admin/leads` requires both `owner` role and `LEAD_ADMIN_EMAILS` allowlist match, due to `lead_captures` being a global table.
 -   **Razorpay RBI Cap**: Annual plans use one-time orders to work around the RBI ₹15k auto-renew cap.
 -   **AI Fallbacks**: AI features gracefully fall back (e.g., when `OPENAI_API_KEY` is unset or pipeline errors occur).
+-   **AI Provider Chain**: `lib/ai.ts` runs providers in order — BYO (workspace key) → OpenAI → OpenRouter keys 1-5 (each `OPENROUTER_API_KEY[_N]`) → Anthropic. `isRetryable` + `classifyProviderError` treat 401/402/403/408/429/5xx and provider-specific quota errors (Anthropic "credit balance is too low", OpenRouter `insufficient_credits`) as retryable, so a depleted key automatically advances to the next.
 
 ## Pointers
 

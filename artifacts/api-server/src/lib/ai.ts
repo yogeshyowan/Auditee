@@ -47,6 +47,22 @@ export function classifyProviderError(
     };
   }
 
+  // OpenRouter free / paid credits exhausted. Their API surfaces this as
+  // HTTP 402 with `code: "insufficient_credits"` or a message containing
+  // "credits". We want this to be retryable so the chain advances to the
+  // next OpenRouter key.
+  if (
+    code === "insufficient_credits" ||
+    haystack.includes("insufficient_credits") ||
+    haystack.includes("not enough credits")
+  ) {
+    return {
+      status: 503,
+      message:
+        "AI provider (OpenRouter) credits exhausted on this key. Please add another key or top up.",
+    };
+  }
+
   // OpenAI quota exhausted (HTTP 429 with code "insufficient_quota").
   if (
     code === "insufficient_quota" ||
@@ -73,7 +89,7 @@ export function classifyProviderError(
 }
 
 let cachedOpenAI: OpenAI | null = null;
-let cachedOpenRouter: OpenAI | null = null;
+let cachedOpenRouterClients: Array<{ label: string; client: OpenAI }> | null = null;
 let cachedAnthropic: Anthropic | null = null;
 
 function getOpenAI(): OpenAI | null {
@@ -83,14 +99,34 @@ function getOpenAI(): OpenAI | null {
   return cachedOpenAI;
 }
 
-function getOpenRouter(): OpenAI | null {
-  if (cachedOpenRouter) return cachedOpenRouter;
-  if (!process.env.OPENROUTER_API_KEY) return null;
-  cachedOpenRouter = new OpenAI({
-    apiKey: process.env.OPENROUTER_API_KEY,
-    baseURL: OPENROUTER_BASE_URL,
-  });
-  return cachedOpenRouter;
+/**
+ * Returns up to 5 OpenRouter clients, one per configured API key
+ * (`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` … `OPENROUTER_API_KEY_5`).
+ *
+ * Each key has its own free-tier quota — when one is depleted (HTTP 402
+ * "insufficient_credits" / 429 rate limit), the runChain fallback advances
+ * to the next key automatically. Order is deterministic so usage is
+ * predictable: the unsuffixed key is tried first, then _2 through _5.
+ */
+function getOpenRouterClients(): Array<{ label: string; client: OpenAI }> {
+  if (cachedOpenRouterClients) return cachedOpenRouterClients;
+  const slots: Array<{ envKey: string; label: string }> = [
+    { envKey: "OPENROUTER_API_KEY", label: "openrouter:1" },
+    { envKey: "OPENROUTER_API_KEY_2", label: "openrouter:2" },
+    { envKey: "OPENROUTER_API_KEY_3", label: "openrouter:3" },
+    { envKey: "OPENROUTER_API_KEY_4", label: "openrouter:4" },
+    { envKey: "OPENROUTER_API_KEY_5", label: "openrouter:5" },
+  ];
+  cachedOpenRouterClients = slots
+    .filter((s) => !!process.env[s.envKey])
+    .map((s) => ({
+      label: s.label,
+      client: new OpenAI({
+        apiKey: process.env[s.envKey] as string,
+        baseURL: OPENROUTER_BASE_URL,
+      }),
+    }));
+  return cachedOpenRouterClients;
 }
 
 function getAnthropic(): Anthropic | null {
@@ -100,7 +136,20 @@ function getAnthropic(): Anthropic | null {
   return cachedAnthropic;
 }
 
+/**
+ * Decide whether to fall through to the next provider in the chain. We retry
+ * on:
+ *   - Network/no-status errors (timeouts, DNS, etc.)
+ *   - HTTP 401/402/403 (auth, billing, forbidden) — typically a depleted key
+ *   - HTTP 408/429 (timeout, rate-limit)
+ *   - HTTP 5xx (upstream outage)
+ *   - Provider-specific quota / credit errors that arrive as HTTP 400, e.g.
+ *     Anthropic's "Your credit balance is too low ..." or OpenRouter's
+ *     "insufficient_credits". Without this, a depleted Anthropic / OpenRouter
+ *     key would short-circuit the chain since 400 is otherwise non-retryable.
+ */
 function isRetryable(err: unknown): boolean {
+  if (classifyProviderError(err)) return true;
   const status = (err as { status?: number })?.status;
   if (typeof status !== "number") return true;
   return (
@@ -263,16 +312,19 @@ export async function jsonCompletion<T>(
   const jsonSystemPrompt = `${systemPrompt}\n\nRespond with a single valid JSON object and no other text.`;
   const byoCfg = await getWorkspaceLlmConfig(opts?.workspaceId);
 
+  const openrouterClients = getOpenRouterClients();
   const chain: Array<Provider<string> | null> = [
     buildByoProvider(byoCfg, "json", jsonSystemPrompt, userPrompt, maxTokens),
     openAICompatibleJsonProvider("openai", getOpenAI(), OPENAI_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
-    openAICompatibleJsonProvider(
-      "openrouter",
-      getOpenRouter(),
-      OPENROUTER_MODEL,
-      jsonSystemPrompt,
-      userPrompt,
-      Math.min(maxTokens, OPENROUTER_MAX_TOKENS_CAP),
+    ...openrouterClients.map(({ label, client }) =>
+      openAICompatibleJsonProvider(
+        label,
+        client,
+        OPENROUTER_MODEL,
+        jsonSystemPrompt,
+        userPrompt,
+        Math.min(maxTokens, OPENROUTER_MAX_TOKENS_CAP),
+      ),
     ),
     anthropicProvider(getAnthropic(), ANTHROPIC_HAIKU_MODEL, jsonSystemPrompt, userPrompt, maxTokens),
   ];
@@ -289,10 +341,20 @@ export async function textCompletion(
   const maxTokens = 8192;
   const byoCfg = await getWorkspaceLlmConfig(opts?.workspaceId);
 
+  const openrouterClients = getOpenRouterClients();
   const chain: Array<Provider<string> | null> = [
     buildByoProvider(byoCfg, "text", systemPrompt, userPrompt, maxTokens),
     openAICompatibleTextProvider("openai", getOpenAI(), OPENAI_MODEL, systemPrompt, userPrompt, maxTokens),
-    openAICompatibleTextProvider("openrouter", getOpenRouter(), OPENROUTER_MODEL, systemPrompt, userPrompt, maxTokens),
+    ...openrouterClients.map(({ label, client }) =>
+      openAICompatibleTextProvider(
+        label,
+        client,
+        OPENROUTER_MODEL,
+        systemPrompt,
+        userPrompt,
+        Math.min(maxTokens, OPENROUTER_MAX_TOKENS_CAP),
+      ),
+    ),
     anthropicProvider(getAnthropic(), ANTHROPIC_HAIKU_MODEL, systemPrompt, userPrompt, maxTokens),
   ];
 
