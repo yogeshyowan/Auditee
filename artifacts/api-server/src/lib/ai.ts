@@ -100,13 +100,13 @@ function getOpenAI(): OpenAI | null {
 }
 
 /**
- * Returns up to 10 OpenRouter clients, one per configured API key
- * (`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` … `OPENROUTER_API_KEY_10`).
+ * Returns up to 14 OpenRouter clients, one per configured API key
+ * (`OPENROUTER_API_KEY`, `OPENROUTER_API_KEY_2` … `OPENROUTER_API_KEY_14`).
  *
  * Each key has its own free-tier quota — when one is depleted (HTTP 402
  * "insufficient_credits" / 429 rate limit), the runChain fallback advances
  * to the next key automatically. Order is deterministic so usage is
- * predictable: the unsuffixed key is tried first, then _2 through _10.
+ * predictable: the unsuffixed key is tried first, then _2 through _14.
  */
 function getOpenRouterClients(): Array<{ label: string; client: OpenAI }> {
   if (cachedOpenRouterClients) return cachedOpenRouterClients;
@@ -121,6 +121,10 @@ function getOpenRouterClients(): Array<{ label: string; client: OpenAI }> {
     { envKey: "OPENROUTER_API_KEY_8", label: "openrouter:8" },
     { envKey: "OPENROUTER_API_KEY_9", label: "openrouter:9" },
     { envKey: "OPENROUTER_API_KEY_10", label: "openrouter:10" },
+    { envKey: "OPENROUTER_API_KEY_11", label: "openrouter:11" },
+    { envKey: "OPENROUTER_API_KEY_12", label: "openrouter:12" },
+    { envKey: "OPENROUTER_API_KEY_13", label: "openrouter:13" },
+    { envKey: "OPENROUTER_API_KEY_14", label: "openrouter:14" },
   ];
   cachedOpenRouterClients = slots
     .filter((s) => !!process.env[s.envKey])
