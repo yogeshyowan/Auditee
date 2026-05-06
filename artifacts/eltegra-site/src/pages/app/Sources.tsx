@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useProjectContext } from "@/lib/project-context";
 import { useListComplianceFrameworks } from "@workspace/api-client-react";
 import {
   useComplianceAudit,
   useTraceabilityAudit,
+  useLatestAuditRun,
   type ComplianceAuditResult,
   type TraceabilityAuditResult,
   type CoverageStage,
@@ -863,6 +864,16 @@ function RunAuditDialog({
   const { toast } = useToast();
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<ComplianceAuditResult | null>(null);
+  const [hydratedRunAt, setHydratedRunAt] = useState<string | null>(null);
+  // Re-load any prior run for this (source, framework) so the dialog can
+  // show it instead of forcing a re-spend on the LLM.
+  const latest = useLatestAuditRun<ComplianceAuditResult>(source?.id ?? null, "compliance", picked);
+  useEffect(() => {
+    if (latest.data && !result) {
+      setResult(latest.data.result);
+      setHydratedRunAt(latest.data.runAt);
+    }
+  }, [latest.data, result]);
 
   if (!source) return null;
 
@@ -885,21 +896,23 @@ function RunAuditDialog({
     }
   }
 
-  function reset() { setResult(null); setPicked(null); }
+  function reset() { setResult(null); setPicked(null); setHydratedRunAt(null); }
   function close() { reset(); onClose(); }
 
+  function fileBase() {
+    return `audit-${result!.framework.code.replace(/\s+/g, "-")}-${source!.label.replace(/\s+/g, "-")}`;
+  }
   function downloadMarkdown() {
     if (!result) return;
-    const md = renderAuditMarkdown(result, source!);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-${result.framework.code.replace(/\s+/g, "-")}-${source!.label.replace(/\s+/g, "-")}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(renderAuditMarkdown(result, source!), "text/markdown", `${fileBase()}.md`);
+  }
+  function downloadCsv() {
+    if (!result) return;
+    downloadBlob(renderAuditCsv(result), "text/csv;charset=utf-8", `${fileBase()}.csv`);
+  }
+  function downloadPdf() {
+    if (!result) return;
+    openPrintWindow(renderAuditHtml(result, source!), `${fileBase()}.pdf`);
   }
 
   const verdictColor: Record<ComplianceAuditResult["overallVerdict"], string> = {
@@ -999,10 +1012,31 @@ function RunAuditDialog({
                   pct={result.compliancePercentage}
                   summary={result.controlSummary}
                 />
-                <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white">
-                  <Download className="h-3.5 w-3.5 mr-1.5" /> Download .md
-                </Button>
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white" data-testid="audit-download-md">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .md
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadCsv} className="bg-white" data-testid="audit-download-csv">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .csv
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadPdf} className="bg-white" data-testid="audit-download-pdf">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .pdf
+                  </Button>
+                </div>
               </div>
+              {hydratedRunAt && (
+                <div className="mt-2 text-[11px] opacity-80 flex items-center gap-2 flex-wrap">
+                  <span>Showing previous run from {new Date(hydratedRunAt).toLocaleString()}.</span>
+                  <button
+                    type="button"
+                    className="underline hover:opacity-100 opacity-90"
+                    onClick={() => { setResult(null); setHydratedRunAt(null); run(); }}
+                    disabled={audit.isPending}
+                  >
+                    Re-run audit
+                  </button>
+                </div>
+              )}
             </div>
 
             {result.nativeRating && (
@@ -1262,6 +1296,15 @@ function TraceabilityAuditDialog({
   const { toast } = useToast();
   const [result, setResult] = useState<TraceabilityAuditResult | null>(null);
   const [started, setStarted] = useState(false);
+  const [hydratedRunAt, setHydratedRunAt] = useState<string | null>(null);
+  const latest = useLatestAuditRun<TraceabilityAuditResult>(source?.id ?? null, "traceability");
+  useEffect(() => {
+    if (latest.data && !result) {
+      setResult(latest.data.result);
+      setHydratedRunAt(latest.data.runAt);
+      setStarted(true);
+    }
+  }, [latest.data, result]);
 
   if (!source) return null;
 
@@ -1288,21 +1331,24 @@ function TraceabilityAuditDialog({
   function close() {
     setResult(null);
     setStarted(false);
+    setHydratedRunAt(null);
     onClose();
   }
 
+  function traceFileBase() {
+    return `traceability-${source!.label.replace(/\s+/g, "-")}`;
+  }
   function downloadMarkdown() {
     if (!result) return;
-    const md = renderTraceMarkdown(result, source!);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `traceability-${source!.label.replace(/\s+/g, "-")}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(renderTraceMarkdown(result, source!), "text/markdown", `${traceFileBase()}.md`);
+  }
+  function downloadCsv() {
+    if (!result) return;
+    downloadBlob(renderTraceCsv(result), "text/csv;charset=utf-8", `${traceFileBase()}.csv`);
+  }
+  function downloadPdf() {
+    if (!result) return;
+    openPrintWindow(renderTraceHtml(result, source!), `${traceFileBase()}.pdf`);
   }
 
   const verdictColor: Record<TraceabilityAuditResult["overallVerdict"], string> = {
@@ -1372,10 +1418,31 @@ function TraceabilityAuditDialog({
                   <div className="text-xs opacity-80 mt-0.5">{result.requirementsAudited} requirement(s) audited</div>
                 </div>
                 <CompliancePctGauge pct={result.completenessPercentage} />
-                <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white">
-                  <Download className="h-3.5 w-3.5 mr-1.5" /> Download .md
-                </Button>
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white" data-testid="trace-download-md">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .md
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadCsv} className="bg-white" data-testid="trace-download-csv">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .csv
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadPdf} className="bg-white" data-testid="trace-download-pdf">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .pdf
+                  </Button>
+                </div>
               </div>
+              {hydratedRunAt && (
+                <div className="mt-2 text-[11px] opacity-80 flex items-center gap-2 flex-wrap">
+                  <span>Showing previous run from {new Date(hydratedRunAt).toLocaleString()}.</span>
+                  <button
+                    type="button"
+                    className="underline hover:opacity-100 opacity-90"
+                    onClick={() => { setResult(null); setHydratedRunAt(null); run(); }}
+                    disabled={trace.isPending}
+                  >
+                    Re-run check
+                  </button>
+                </div>
+              )}
             </div>
 
             {result.stagePercentages && (
@@ -1530,4 +1597,236 @@ function renderTraceMarkdown(r: TraceabilityAuditResult, source: ProjectSourceRo
     );
   });
   return lines.join("\n");
+}
+
+// ───────── Generic download / CSV / PDF (print) helpers ─────────
+function downloadBlob(content: string, mime: string, filename: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(v: unknown): string {
+  let s = v == null ? "" : String(v);
+  // CSV-injection guard: cells starting with =, +, -, @, tab, or CR could be
+  // interpreted as formulas by Excel / Sheets. Prefix with a single quote so
+  // the value is treated as text.
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = "'" + s;
+  }
+  // RFC 4180: quote if contains comma, quote, CR, or LF (also quote if we
+  // just prepended a single quote so opening single-quote is preserved).
+  if (/[",\r\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+function csvRow(cols: unknown[]): string {
+  return cols.map(csvCell).join(",");
+}
+
+function renderAuditCsv(r: ComplianceAuditResult): string {
+  const rows: string[] = [];
+  rows.push(csvRow([
+    "Control",
+    "Verdict",
+    "Native rating",
+    "Required evidence",
+    "Found evidence",
+    "Missing evidence",
+    "Files cited",
+    "Recommendation",
+  ]));
+  for (const a of r.controlAssessments) {
+    const native = r.nativeRating?.perControl?.[a.controlCode];
+    rows.push(csvRow([
+      a.controlCode,
+      a.verdict,
+      native ? `${native.value} — ${native.label}` : "",
+      (a.requiredEvidence ?? []).join(" | "),
+      (a.foundEvidence ?? []).join(" | "),
+      (a.missingEvidence ?? []).join(" | "),
+      (a.evidenceFiles ?? []).join(" | "),
+      a.recommendation ?? "",
+    ]));
+  }
+  return rows.join("\r\n");
+}
+
+function renderTraceCsv(r: TraceabilityAuditResult): string {
+  const rows: string[] = [];
+  rows.push(csvRow([
+    "Requirement",
+    "Design status", "Design artifacts", "Design note",
+    "Code status", "Code artifacts", "Code note",
+    "Tests status", "Tests artifacts", "Tests note",
+    "Reports status", "Reports artifacts", "Reports note",
+    "Recommendation",
+  ]));
+  for (const req of r.requirementCoverage) {
+    const stage = (s: CoverageStage) => [s.status, (s.artifacts ?? []).join(" | "), s.note ?? ""];
+    rows.push(csvRow([
+      req.requirementCode,
+      ...stage(req.design),
+      ...stage(req.code),
+      ...stage(req.tests),
+      ...stage(req.reports),
+      req.recommendation ?? "",
+    ]));
+  }
+  return rows.join("\r\n");
+}
+
+function escapeHtml(s: unknown): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function pdfDocShell(title: string, body: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Inter,Arial,sans-serif;color:#0f172a;margin:32px;font-size:11px;line-height:1.45}
+  h1{font-size:20px;margin:0 0 4px 0}
+  h2{font-size:14px;margin:18px 0 8px 0;border-bottom:1px solid #e2e8f0;padding-bottom:3px}
+  .meta{color:#475569;font-size:11px;margin-bottom:8px}
+  .verdict{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:600;text-transform:capitalize}
+  .v-strong{background:#d1fae5;color:#065f46}
+  .v-adequate{background:#dbeafe;color:#1e40af}
+  .v-weak{background:#fef3c7;color:#92400e}
+  .v-failing{background:#fee2e2;color:#991b1b}
+  table{border-collapse:collapse;width:100%;margin-top:6px;font-size:10px}
+  th,td{border:1px solid #cbd5e1;padding:5px 6px;text-align:left;vertical-align:top}
+  th{background:#f1f5f9;font-weight:600}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-size:9.5px}
+  ul{margin:4px 0 0 16px;padding:0}
+  li{margin:0}
+  .pill{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:600;text-transform:capitalize}
+  .p-met,.p-covered{background:#d1fae5;color:#065f46}
+  .p-partial{background:#fef3c7;color:#92400e}
+  .p-gap,.p-missing{background:#fee2e2;color:#991b1b}
+  @media print{body{margin:18mm}}
+</style></head><body>${body}
+<script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},250);});</script>
+</body></html>`;
+}
+
+function verdictPillHtml(v: string): string {
+  return `<span class="verdict v-${escapeHtml(v)}">${escapeHtml(v)}</span>`;
+}
+function statusPillHtml(s: string): string {
+  return `<span class="pill p-${escapeHtml(s)}">${escapeHtml(s)}</span>`;
+}
+
+function renderAuditHtml(r: ComplianceAuditResult, source: ProjectSourceRow): string {
+  const summary = r.controlSummary
+    ? ` (${r.controlSummary.met} met / ${r.controlSummary.partial} partial / ${r.controlSummary.gap} gap of ${r.controlSummary.total})`
+    : "";
+  const headlines = (r.headlineFindings ?? []).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
+  const rows = r.controlAssessments.map((a) => {
+    const native = r.nativeRating?.perControl?.[a.controlCode];
+    const list = (xs?: string[]) => (xs && xs.length ? `<ul>${xs.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` : "—");
+    const files = (a.evidenceFiles ?? []).length
+      ? `<ul>${(a.evidenceFiles ?? []).map((p) => `<li class="mono">${escapeHtml(p)}</li>`).join("")}</ul>`
+      : "—";
+    return `<tr>
+      <td class="mono">${escapeHtml(a.controlCode)}</td>
+      <td>${statusPillHtml(a.verdict)}</td>
+      <td>${native ? `<span class="mono">${escapeHtml(native.value)}</span> — ${escapeHtml(native.label)}` : "—"}</td>
+      <td>${list(a.requiredEvidence)}</td>
+      <td>${list(a.foundEvidence)}</td>
+      <td>${list(a.missingEvidence)}</td>
+      <td>${files}</td>
+      <td>${escapeHtml(a.recommendation ?? "")}</td>
+    </tr>`;
+  }).join("");
+  const body = `
+    <h1>Compliance Audit — ${escapeHtml(r.framework.name)}</h1>
+    <div class="meta">
+      <strong>Project:</strong> ${escapeHtml(r.project.name)} ·
+      <strong>Source:</strong> ${escapeHtml(source.label)} (${escapeHtml(source.kind)}) — ${source.fileCount} files indexed ·
+      <strong>Generated:</strong> ${escapeHtml(new Date().toLocaleString())}
+    </div>
+    <div><strong>Overall verdict:</strong> ${verdictPillHtml(r.overallVerdict)}
+    ${typeof r.compliancePercentage === "number" ? ` · <strong>Compliance:</strong> ${Math.round(r.compliancePercentage)}%${escapeHtml(summary)}` : ""}
+    ${r.nativeRating ? ` · <strong>${escapeHtml(r.nativeRating.schemeName)}:</strong> <span class="mono">${escapeHtml(r.nativeRating.overall.value)}</span> — ${escapeHtml(r.nativeRating.overall.label)}` : ""}
+    </div>
+    ${headlines ? `<h2>Headline findings</h2><ul>${headlines}</ul>` : ""}
+    <h2>Per-control assessment</h2>
+    <table>
+      <thead><tr>
+        <th>Control</th><th>Verdict</th><th>Native rating</th>
+        <th>Required evidence</th><th>Found evidence</th><th>Missing evidence</th>
+        <th>Files cited</th><th>Recommendation</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  return pdfDocShell(`Compliance Audit — ${r.framework.name}`, body);
+}
+
+function renderTraceHtml(r: TraceabilityAuditResult, source: ProjectSourceRow): string {
+  const headlines = (r.headlineFindings ?? []).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
+  const stageCell = (s: CoverageStage) => {
+    const arts = (s.artifacts ?? []).length
+      ? `<ul>${(s.artifacts ?? []).map((p) => `<li class="mono">${escapeHtml(p)}</li>`).join("")}</ul>`
+      : "";
+    return `${statusPillHtml(s.status)}${arts}${s.note ? `<div style="color:#64748b;font-style:italic;margin-top:2px">${escapeHtml(s.note)}</div>` : ""}`;
+  };
+  const rows = r.requirementCoverage.map((req) => `<tr>
+    <td class="mono">${escapeHtml(req.requirementCode)}</td>
+    <td>${stageCell(req.design)}</td>
+    <td>${stageCell(req.code)}</td>
+    <td>${stageCell(req.tests)}</td>
+    <td>${stageCell(req.reports)}</td>
+    <td>${escapeHtml(req.recommendation ?? "")}</td>
+  </tr>`).join("");
+  const body = `
+    <h1>Traceability Completeness Audit</h1>
+    <div class="meta">
+      <strong>Project:</strong> ${escapeHtml(r.project.name)} ·
+      <strong>Source:</strong> ${escapeHtml(source.label)} (${escapeHtml(source.kind)}) — ${source.fileCount} files indexed ·
+      <strong>Generated:</strong> ${escapeHtml(new Date().toLocaleString())}
+    </div>
+    <div><strong>Overall verdict:</strong> ${verdictPillHtml(r.overallVerdict)} ·
+      <strong>Completeness:</strong> ${Math.round(r.completenessPercentage)}% across ${r.requirementsAudited} requirement(s)
+    </div>
+    ${r.stagePercentages ? `<div class="meta"><strong>Stage completeness:</strong>
+      design ${Math.round(r.stagePercentages.design)}% ·
+      code ${Math.round(r.stagePercentages.code)}% ·
+      tests ${Math.round(r.stagePercentages.tests)}% ·
+      reports ${Math.round(r.stagePercentages.reports)}%</div>` : ""}
+    ${headlines ? `<h2>Headline findings</h2><ul>${headlines}</ul>` : ""}
+    <h2>Per-requirement coverage</h2>
+    <table>
+      <thead><tr>
+        <th>Requirement</th><th>Design</th><th>Code</th><th>Tests</th><th>Reports</th><th>Recommendation</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  return pdfDocShell("Traceability Completeness Audit", body);
+}
+
+/**
+ * Open a new window with a self-contained HTML document, then trigger the
+ * browser's print dialog. Users can choose "Save as PDF" — works in every
+ * modern browser, no extra dependencies needed.
+ */
+function openPrintWindow(html: string, _suggestedName: string) {
+  const w = window.open("", "_blank", "width=900,height=900");
+  if (!w) {
+    alert("Please allow pop-ups to download the PDF.");
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }

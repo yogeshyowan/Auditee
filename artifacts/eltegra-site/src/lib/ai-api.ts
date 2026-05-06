@@ -254,6 +254,40 @@ export function useTraceabilityAudit() {
   });
 }
 
+export type LatestAuditRun<T> = {
+  id: string;
+  kind: "compliance" | "traceability";
+  frameworkId: string | null;
+  frameworkCode: string | null;
+  runAt: string;
+  result: T;
+};
+
+/**
+ * Fetch the most recent persisted audit for a (sourceId, kind[, frameworkId])
+ * tuple so the dialog can re-open without re-spending an AI credit.
+ * Returns null when no prior run exists.
+ */
+export function useLatestAuditRun<T>(
+  sourceId: string | null | undefined,
+  kind: "compliance" | "traceability",
+  frameworkId?: string | null,
+) {
+  return useQuery<LatestAuditRun<T> | null>({
+    queryKey: ["latest-audit-run", sourceId, kind, frameworkId ?? null],
+    queryFn: async () => {
+      const params = new URLSearchParams({ sourceId: sourceId ?? "", kind });
+      if (frameworkId) params.set("frameworkId", frameworkId);
+      const r = await fetch(`${apiBase}/ai/audit-runs/latest?${params.toString()}`);
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error((await r.text()) || `Request failed (${r.status})`);
+      return r.json() as Promise<LatestAuditRun<T>>;
+    },
+    enabled: !!sourceId && (kind !== "compliance" || !!frameworkId),
+    staleTime: 60_000,
+  });
+}
+
 export type LegacyExtractRequirement = {
   title: string;
   description: string;

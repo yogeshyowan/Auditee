@@ -30,6 +30,7 @@ import {
   testCasesTable,
   aiReportsTable,
   effortEstimatesTable,
+  auditRunsTable,
 } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
@@ -1568,7 +1569,7 @@ Rules:
     framework.code,
   );
 
-  res.json({
+  const responsePayload = {
     framework: { id: framework.id, code: framework.code, name: framework.name },
     project: { id: project.id, name: project.name },
     capasCreated,
@@ -1587,7 +1588,30 @@ Rules:
     // afterwards so the model can never overwrite the standard-native rating.
     ...result,
     nativeRating,
-  });
+  };
+
+  // Persist so the dialog can re-open without re-spending a credit.
+  // We persist one row per (sourceId, framework) combination — the latest is
+  // returned on next dialog open. Failures are logged but never block the
+  // client response.
+  try {
+    const persistSourceId = includedSources[0]?.id ?? null;
+    const persistSourceLabel = includedSources[0]?.label ?? null;
+    await db.insert(auditRunsTable).values({
+      id: randomUUID(),
+      projectId: project.id,
+      sourceId: persistSourceId,
+      kind: "compliance",
+      frameworkId: framework.id,
+      frameworkCode: framework.code,
+      sourceLabel: persistSourceLabel,
+      result: responsePayload as unknown as Record<string, unknown>,
+    });
+  } catch (err) {
+    req.log?.warn?.({ err }, "Failed to persist compliance audit run");
+  }
+
+  res.json(responsePayload);
 }));
 
 // =============================================================
@@ -1870,7 +1894,7 @@ Rules:
     project.slug ?? project.id,
   );
 
-  res.json({
+  const tracePayload = {
     project: { id: project.id, name: project.name },
     overallVerdict: result.overallVerdict,
     headlineFindings: result.headlineFindings ?? [],
@@ -1889,6 +1913,74 @@ Rules:
       testingCount: buckets[s.id]?.testing.length ?? 0,
       deploymentCount: buckets[s.id]?.deployment.length ?? 0,
     })),
+  };
+
+  try {
+    const persistSourceId = includedSources[0]?.id ?? null;
+    const persistSourceLabel = includedSources[0]?.label ?? null;
+    await db.insert(auditRunsTable).values({
+      id: randomUUID(),
+      projectId: project.id,
+      sourceId: persistSourceId,
+      kind: "traceability",
+      sourceLabel: persistSourceLabel,
+      result: tracePayload as unknown as Record<string, unknown>,
+    });
+  } catch (err) {
+    req.log?.warn?.({ err }, "Failed to persist traceability audit run");
+  }
+
+  res.json(tracePayload);
+}));
+
+// =============================================================
+// GET latest audit run (compliance or traceability) for a source
+// so the dialog can re-open without re-running the LLM.
+// =============================================================
+router.get("/ai/audit-runs/latest", aiHandler(async (req, res) => {
+  const sourceId = requireString(req.query?.sourceId, "sourceId", { min: 1 });
+  const kindRaw = requireString(req.query?.kind, "kind", { min: 1 });
+  if (kindRaw !== "compliance" && kindRaw !== "traceability") {
+    res.status(400).json({ error: "kind must be 'compliance' or 'traceability'" });
+    return;
+  }
+  const kind = kindRaw as "compliance" | "traceability";
+  const frameworkId = typeof req.query?.frameworkId === "string" && req.query.frameworkId.length > 0
+    ? (req.query.frameworkId as string)
+    : null;
+
+  const conditions = [
+    eq(auditRunsTable.sourceId, sourceId),
+    eq(auditRunsTable.kind, kind),
+  ];
+  if (kind === "compliance" && frameworkId) {
+    conditions.push(eq(auditRunsTable.frameworkId, frameworkId));
+  }
+  const [latest] = await db
+    .select()
+    .from(auditRunsTable)
+    .where(and(...conditions))
+    .orderBy(desc(auditRunsTable.createdAt))
+    .limit(1);
+
+  if (!latest) {
+    res.status(404).json({ error: "No prior audit" });
+    return;
+  }
+
+  // Project-level access check using the persisted projectId.
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, latest.projectId, "viewer");
+    if (access === false) return;
+  }
+
+  res.json({
+    id: latest.id,
+    kind: latest.kind,
+    frameworkId: latest.frameworkId,
+    frameworkCode: latest.frameworkCode,
+    runAt: latest.createdAt.toISOString(),
+    result: latest.result,
   });
 }));
 
