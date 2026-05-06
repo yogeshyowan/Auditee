@@ -19,15 +19,22 @@ export function BackgroundMusic({
   active = true,
   audioRef,
   gain = 0.28,
+  muted = false,
+  paused = false,
 }: {
   active?: boolean;
   audioRef?: React.RefObject<HTMLAudioElement | null>;
   gain?: number;
+  muted?: boolean;
+  paused?: boolean;
 }) {
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
   const startedRef = useRef(false);
   const targetGainRef = useRef<number>(gain);
+  const mutedRef = useRef<boolean>(muted);
+  const audioElRef = useRef<HTMLAudioElement | null>(audioRef?.current ?? null);
+  useEffect(() => { audioElRef.current = audioRef?.current ?? null; });
 
   useEffect(() => {
     if (!active) return;
@@ -202,7 +209,8 @@ export function BackgroundMusic({
       try {
         build();
         const m = masterRef.current!;
-        const target = audioRef?.current && !audioRef.current.paused ? gain * 0.35 : gain;
+        const ducking = audioRef?.current && !audioRef.current.paused ? 0.35 : 1;
+        const target = mutedRef.current ? 0 : gain * ducking;
         targetGainRef.current = gain;
         m.gain.cancelScheduledValues(ctx.currentTime);
         m.gain.setValueAtTime(0, ctx.currentTime);
@@ -220,19 +228,49 @@ export function BackgroundMusic({
 
     function duck() {
       if (!ctxRef.current || !masterRef.current) return;
+      if (mutedRef.current) return;
       const m = masterRef.current;
       m.gain.cancelScheduledValues(ctxRef.current.currentTime);
       m.gain.linearRampToValueAtTime(targetGainRef.current * 0.22, ctxRef.current.currentTime + 0.25);
     }
     function unduck() {
       if (!ctxRef.current || !masterRef.current) return;
+      if (mutedRef.current) return;
       const m = masterRef.current;
       m.gain.cancelScheduledValues(ctxRef.current.currentTime);
       m.gain.linearRampToValueAtTime(targetGainRef.current, ctxRef.current.currentTime + 0.6);
     }
+    function applyMute() {
+      if (!ctxRef.current || !masterRef.current) return;
+      const m = masterRef.current;
+      m.gain.cancelScheduledValues(ctxRef.current.currentTime);
+      m.gain.linearRampToValueAtTime(0, ctxRef.current.currentTime + 0.15);
+    }
+    function applyUnmute() {
+      if (!ctxRef.current || !masterRef.current) return;
+      const m = masterRef.current;
+      // Honor narration ducking when unmuting mid-playback.
+      const el = audioElRef.current;
+      const ducking = el && !el.paused ? 0.22 : 1;
+      m.gain.cancelScheduledValues(ctxRef.current.currentTime);
+      m.gain.linearRampToValueAtTime(
+        targetGainRef.current * ducking,
+        ctxRef.current.currentTime + 0.4,
+      );
+    }
+    function onMuteEvent() {
+      mutedRef.current = true;
+      applyMute();
+    }
+    function onUnmuteEvent() {
+      mutedRef.current = false;
+      applyUnmute();
+    }
 
     window.addEventListener('auditee:narration:start', duck);
     window.addEventListener('auditee:narration:end', unduck);
+    window.addEventListener('auditee:music:mute', onMuteEvent);
+    window.addEventListener('auditee:music:unmute', onUnmuteEvent);
 
     let audioCleanup: (() => void) | undefined;
     if (audioRef?.current) {
@@ -255,6 +293,8 @@ export function BackgroundMusic({
       if (stepTimer) clearInterval(stepTimer);
       window.removeEventListener('auditee:narration:start', duck);
       window.removeEventListener('auditee:narration:end', unduck);
+      window.removeEventListener('auditee:music:mute', onMuteEvent);
+      window.removeEventListener('auditee:music:unmute', onUnmuteEvent);
       window.removeEventListener('click', onGesture);
       window.removeEventListener('keydown', onGesture);
       window.removeEventListener('touchstart', onGesture);
@@ -266,6 +306,36 @@ export function BackgroundMusic({
       startedRef.current = false;
     };
   }, [active, audioRef, gain]);
+
+  // React to prop-driven mute changes (in addition to the event-based control).
+  useEffect(() => {
+    mutedRef.current = muted;
+    if (!ctxRef.current || !masterRef.current) return;
+    const m = masterRef.current;
+    const el = audioElRef.current;
+    const ducking = el && !el.paused ? 0.22 : 1;
+    m.gain.cancelScheduledValues(ctxRef.current.currentTime);
+    m.gain.linearRampToValueAtTime(
+      muted ? 0 : targetGainRef.current * ducking,
+      ctxRef.current.currentTime + (muted ? 0.15 : 0.4),
+    );
+  }, [muted]);
+
+  // React to prop-driven pause changes — suspend/resume the AudioContext so
+  // synth playback truly halts when the player is paused.
+  useEffect(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    if (paused) {
+      try {
+        if (ctx.state === 'running') ctx.suspend().catch(() => {});
+      } catch { /* noop */ }
+    } else {
+      try {
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      } catch { /* noop */ }
+    }
+  }, [paused]);
 
   return null;
 }

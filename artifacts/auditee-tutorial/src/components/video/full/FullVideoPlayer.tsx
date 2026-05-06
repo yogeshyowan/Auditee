@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { MODULE_ORDER } from '@/lib/shortsConfig';
 import type { ModuleKey } from '@/lib/demoUseCases';
 import { BackgroundMusic } from '../BackgroundMusic';
@@ -73,12 +74,20 @@ const TOTAL_MS = TIMELINE[TIMELINE.length - 1].endMs;
 
 export function FullVideoPlayer() {
   const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [muted, setMuted] = useState(false);
+
+  // Pause-aware elapsed tracking: when paused we freeze elapsed; when running
+  // we anchor `start` so that (now - start) === resumed elapsed.
+  const elapsedRef = useRef(0);
 
   useEffect(() => {
-    const start = performance.now();
+    if (paused) return;
     let raf = 0;
+    const start = performance.now() - elapsedRef.current;
     const tick = () => {
       const elapsed = (performance.now() - start) % TOTAL_MS;
+      elapsedRef.current = elapsed;
       let i = 0;
       while (i < TIMELINE.length - 1 && TIMELINE[i].endMs <= elapsed) i++;
       setIdx((curr) => (curr !== i ? i : curr));
@@ -86,6 +95,17 @@ export function FullVideoPlayer() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
+  }, [paused]);
+
+  const togglePause = useCallback(() => setPaused((p) => !p), []);
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      try {
+        window.dispatchEvent(new Event(next ? 'auditee:music:mute' : 'auditee:music:unmute'));
+      } catch { /* noop */ }
+      return next;
+    });
   }, []);
 
   const current = TIMELINE[idx].cue;
@@ -94,7 +114,7 @@ export function FullVideoPlayer() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-950 text-white">
-      <BackgroundMusic />
+      <BackgroundMusic muted={muted} paused={paused} />
 
       <AnimatePresence mode="wait">
         {current.kind === 'hook' && <FullHookScene key="hook" />}
@@ -120,6 +140,28 @@ export function FullVideoPlayer() {
       {/* Chapter index badge */}
       <div className="absolute top-3 right-3 z-50 px-3 py-1 rounded-full bg-black/60 backdrop-blur text-[0.8vw] font-bold tracking-wide">
         Auditee · Full Demo Tour
+      </div>
+
+      {/* Playback controls */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/60 backdrop-blur rounded-full px-2 py-2">
+        <button
+          onClick={togglePause}
+          className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/15 rounded-full transition-colors"
+          title={paused ? 'Play' : 'Pause'}
+          aria-label={paused ? 'Play' : 'Pause'}
+          aria-pressed={paused}
+        >
+          {paused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+        </button>
+        <button
+          onClick={toggleMute}
+          className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/15 rounded-full transition-colors"
+          title={muted ? 'Unmute' : 'Mute'}
+          aria-label={muted ? 'Unmute' : 'Mute'}
+          aria-pressed={muted}
+        >
+          {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </button>
       </div>
     </div>
   );
