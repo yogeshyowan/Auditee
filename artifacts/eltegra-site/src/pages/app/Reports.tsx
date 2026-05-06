@@ -238,6 +238,125 @@ const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
   // EU AI Act: Annex IV technical documentation for high-risk AI systems
   // (risk mgmt, data governance, accuracy/robustness/cybersecurity, human oversight).
   "EU AI Act": ["compliance_audit", "risk_management_plan", "security_risk_assessment", "cybersecurity_plan", "vnv_plan", "change_control_plan", "test_cases", "architecture_doc", "software_qa_plan"],
+
+  // ── Cross-industry management systems ────────────────────────────────
+  "ISO 14001": ["compliance_audit", "risk_management_plan", "change_control_plan", "software_qa_plan"],
+  "ISO 45001": ["compliance_audit", "risk_management_plan", "change_control_plan", "software_qa_plan"],
+  "ISO 50001": ["compliance_audit", "change_control_plan", "software_qa_plan"],
+  "ISO 19011": ["compliance_audit", "software_qa_plan"],
+  "ISO 10002": ["compliance_audit", "change_control_plan", "software_qa_plan"],
+  "ISO 10004": ["compliance_audit", "software_qa_plan"],
+  "ISO 26000": ["compliance_audit", "risk_management_plan"],
+  "ISO 28000": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "risk_management_plan", "change_control_plan"],
+  "ISO 22301": ["compliance_audit", "risk_management_plan", "change_control_plan", "deployment_doc"],
+  "ISO 41001": ["compliance_audit", "software_qa_plan", "change_control_plan"],
+
+  // ── Quality (additional) ─────────────────────────────────────────────
+  "ISO 9000": ["software_qa_plan"],
+  "ISO 9004": ["software_qa_plan", "change_control_plan", "compliance_audit"],
+  "Lean Six Sigma": ["software_qa_plan", "change_control_plan", "fmea", "test_cases"],
+
+  // ── Automotive (additional) ──────────────────────────────────────────
+  // IATF 16949: automotive-specific QMS — APQP, PPAP, FMEA, control plans.
+  "IATF 16949": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "fmea", "risk_management_plan", "test_cases", "compliance_audit"],
+  // ISO 21448 (SOTIF): functional-insufficiency safety, complementary to ISO 26262.
+  "ISO 21448": ["safety_plan", "hara", "safety_case", "fmea", "fta", "vnv_plan", "srs_safety", "risk_management_plan", "test_cases"],
+  "ISO 20077": ["architecture_doc", "hld", "lld", "security_risk_assessment", "change_control_plan"],
+  "ISO 20078": ["architecture_doc", "hld", "lld", "security_risk_assessment", "cybersecurity_plan", "change_control_plan"],
+  // ISO 24089: in-vehicle SW update engineering — needs full SW dev / V&V / CM stack.
+  "ISO 24089": ["software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "cybersecurity_plan", "deployment_doc", "test_cases"],
+  // UNECE R155: vehicle-type cybersecurity + CSMS.
+  "UNECE R155": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "security_risk_assessment", "change_control_plan", "compliance_audit"],
+  // UNECE R156: vehicle-type SW update + SUMS.
+  "UNECE R156": ["change_control_plan", "scmp", "ci_list", "cybersecurity_plan", "vnv_plan", "software_dev_plan", "software_verification_plan", "deployment_doc", "compliance_audit"],
+
+  // ── Aerospace (additional) ───────────────────────────────────────────
+  // AS9100: aerospace QMS — adds product safety, counterfeit-parts, risk.
+  "AS9100": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "risk_management_plan", "fmea", "compliance_audit"],
+  "AS9110": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "compliance_audit", "user_manual"],
+  "AS9120": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "compliance_audit"],
+  // DO-254: airborne electronic hardware — analogous to DO-178C for hardware.
+  "DO-254": ["hld", "lld", "vnv_plan", "scmp", "ci_list", "change_control_plan", "srs_safety", "software_qa_plan", "test_cases"],
+  // ARP 4754A: aircraft system development at the system level.
+  "ARP 4754A": ["safety_plan", "srs_safety", "vnv_plan", "architecture_doc", "hld", "change_control_plan", "fmea", "risk_management_plan"],
+  // ARP 4761: aerospace safety assessment (FHA/PSSA/SSA, FTA, FMEA, CMA).
+  "ARP 4761": ["safety_plan", "hara", "safety_case", "fmea", "fta", "srs_safety", "risk_management_plan"],
+  "NADCAP": ["software_qa_plan", "change_control_plan", "compliance_audit"],
+  "EASA Part 21": ["compliance_audit", "change_control_plan", "software_qa_plan", "risk_management_plan"],
+  "EASA Part 145": ["compliance_audit", "software_qa_plan", "change_control_plan", "user_manual"],
+
+  // ── Railway (additional) ─────────────────────────────────────────────
+  "EN 45545": ["srs_safety", "fmea", "vnv_plan", "compliance_audit"],
+  "EN 50155": ["srs_safety", "vnv_plan", "hld", "test_cases", "software_qa_plan"],
+  // EN 50159: safety-related communications — strong cyber overlap.
+  "EN 50159": ["cybersecurity_plan", "security_risk_assessment", "srs_safety", "tara", "vnv_plan"],
+  // TS 22163 (IRIS): rail-sector business management system.
+  "TS 22163": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "risk_management_plan", "compliance_audit"],
+  "UIC Standards": ["software_qa_plan", "change_control_plan", "compliance_audit", "user_manual"],
+
+  // ── Medical Devices (additional) ─────────────────────────────────────
+  "ISO 10993": ["risk_management_plan", "vnv_plan", "test_cases", "compliance_audit"],
+  "ISO 11607": ["vnv_plan", "test_cases", "change_control_plan", "software_qa_plan"],
+  "ISO 11135": ["vnv_plan", "test_cases", "change_control_plan", "software_qa_plan"],
+  "ISO 11137": ["vnv_plan", "test_cases", "change_control_plan", "software_qa_plan"],
+  "ISO 15223-1": ["user_manual", "change_control_plan", "compliance_audit"],
+  "ISO 20417": ["user_manual", "change_control_plan", "compliance_audit"],
+  "IEC 61010": ["srs_safety", "vnv_plan", "fmea", "user_manual", "test_cases"],
+  "CLIA": ["compliance_audit", "software_qa_plan", "change_control_plan", "vnv_plan"],
+  "CAP": ["compliance_audit", "software_qa_plan", "change_control_plan", "vnv_plan"],
+  // EudraLex Vol 4: EU GMP (Annex 11 = computerised systems, Annex 15 = qualification & validation).
+  "EudraLex Vol 4": ["compliance_audit", "software_qa_plan", "change_control_plan", "vnv_plan", "scmp", "ci_list", "software_dev_plan", "software_verification_plan", "risk_management_plan", "test_cases", "user_manual"],
+
+  // ── Industrial / OT (additional) ─────────────────────────────────────
+  "IEC 62061": ["safety_plan", "srs_safety", "fmea", "vnv_plan", "change_control_plan", "software_dev_plan", "software_verification_plan", "test_cases"],
+  "ISO 13850": ["srs_safety", "fmea", "user_manual", "test_cases"],
+  "ISO 14119": ["srs_safety", "fmea", "vnv_plan", "test_cases"],
+  "API 570": ["risk_management_plan", "fmea", "change_control_plan", "compliance_audit"],
+  "API 580": ["risk_management_plan", "fmea", "change_control_plan", "compliance_audit"],
+  "API 581": ["risk_management_plan", "fmea", "change_control_plan", "compliance_audit"],
+
+  // ── Cybersecurity (additional) ───────────────────────────────────────
+  "ISO 27017": ["compliance_audit", "cybersecurity_plan", "security_risk_assessment", "change_control_plan"],
+  "ISO 27018": ["compliance_audit", "cybersecurity_plan", "security_risk_assessment", "change_control_plan", "risk_management_plan"],
+  // ISO 27701: PIMS — extends 27001 to PII handling.
+  "ISO 27701": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan", "risk_management_plan"],
+  "ISO 27035": ["cybersecurity_plan", "change_control_plan", "security_risk_assessment", "compliance_audit"],
+  // NIST SP 800-53: federal control catalogue — broad and deep.
+  "NIST 800-53": ["cybersecurity_plan", "security_risk_assessment", "change_control_plan", "vnv_plan", "software_dev_plan", "compliance_audit", "scmp", "ci_list"],
+  "NIST 800-171": ["cybersecurity_plan", "security_risk_assessment", "compliance_audit", "change_control_plan", "scmp", "ci_list"],
+  "FedRAMP": ["cybersecurity_plan", "security_risk_assessment", "vnv_plan", "change_control_plan", "compliance_audit", "software_dev_plan", "deployment_doc"],
+  "CMMC 2.0": ["cybersecurity_plan", "security_risk_assessment", "compliance_audit", "change_control_plan", "vnv_plan", "scmp"],
+  "CSA STAR": ["cybersecurity_plan", "security_risk_assessment", "compliance_audit"],
+
+  // ── Privacy (additional) ─────────────────────────────────────────────
+  "CCPA/CPRA": ["compliance_audit", "risk_management_plan", "change_control_plan", "security_risk_assessment"],
+  "PIPEDA": ["compliance_audit", "risk_management_plan", "change_control_plan", "security_risk_assessment"],
+  "LGPD": ["compliance_audit", "risk_management_plan", "change_control_plan", "security_risk_assessment"],
+  "ePrivacy Directive": ["compliance_audit", "risk_management_plan", "change_control_plan", "security_risk_assessment", "cybersecurity_plan"],
+
+  // ── AI Governance (additional) ───────────────────────────────────────
+  "ISO/IEC 42001": ["compliance_audit", "risk_management_plan", "change_control_plan", "software_qa_plan", "vnv_plan", "security_risk_assessment"],
+  "NIST AI RMF": ["risk_management_plan", "security_risk_assessment", "vnv_plan", "change_control_plan", "compliance_audit"],
+  "ISO/IEC 23894": ["risk_management_plan", "security_risk_assessment", "change_control_plan", "compliance_audit"],
+  "OECD AI Principles": ["compliance_audit", "risk_management_plan"],
+
+  // ── Financial Services (additional) ──────────────────────────────────
+  "ISO 20022": ["architecture_doc", "hld", "lld", "change_control_plan", "test_cases"],
+  "Basel III": ["compliance_audit", "risk_management_plan", "change_control_plan"],
+  "FFIEC IT Handbook": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan", "change_control_plan", "vnv_plan", "risk_management_plan"],
+  "AML/KYC (FATF)": ["compliance_audit", "risk_management_plan", "change_control_plan", "security_risk_assessment"],
+  // SOX: §404 ICFR + ITGCs across change mgmt, access, ops, dev.
+  "SOX": ["compliance_audit", "change_control_plan", "software_qa_plan", "security_risk_assessment", "vnv_plan", "scmp", "ci_list"],
+
+  // ── Software Engineering (additional) ────────────────────────────────
+  // ISO/IEC 12207: full software lifecycle process catalogue.
+  "ISO/IEC 12207": ["software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "architecture_doc", "hld", "lld", "test_cases", "risk_management_plan"],
+  "ISO/IEC 15504": ["software_qa_plan", "software_dev_plan", "software_verification_plan", "scmp", "vnv_plan", "compliance_audit"],
+  "ISO/IEC 25010": ["software_qa_plan", "vnv_plan", "test_cases", "software_verification_plan", "architecture_doc"],
+  "ISO/IEC 27034": ["cybersecurity_plan", "security_risk_assessment", "software_dev_plan", "software_verification_plan", "change_control_plan", "vnv_plan", "test_cases"],
+  "SAFe": ["software_qa_plan", "change_control_plan", "scmp", "ci_list", "software_dev_plan", "deployment_doc"],
+  "ITIL 4": ["change_control_plan", "software_qa_plan", "deployment_doc", "ci_list", "compliance_audit"],
+  "COBIT 2019": ["compliance_audit", "change_control_plan", "software_qa_plan", "risk_management_plan", "security_risk_assessment", "scmp"],
 };
 
 export default function Reports() {
