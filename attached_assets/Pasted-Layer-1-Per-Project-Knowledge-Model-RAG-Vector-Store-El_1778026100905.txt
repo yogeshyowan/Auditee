@@ -1,0 +1,39 @@
+Layer 1: Per-Project Knowledge Model (RAG / Vector Store)
+
+Eltegra.ai: Builds a "dedicated data model for each project" from your uploaded BRDs/PRDs — almost certainly a per-project vector store where documents are chunked, embedded, and retrieved semantically when generating requirements.
+
+Auditee: requirementDedup.ts explicitly states — "We deliberately keep the scoring purely lexical (no embeddings)". No vector database exists (no pgvector, Pinecone, Weaviate). Project sources are stored as raw text in PostgreSQL and passed wholesale as string context into LLM prompts. There is no semantic retrieval layer.
+
+Gap: ❌ Critical missing piece. Auditee does not have RAG. When a project has 50+ documents, the context window approach breaks down and quality degrades. Eltegra builds a persistent queryable knowledge model per project.
+
+Layer 2: Structured Document → Schema Extraction Pipeline
+
+Eltegra.ai: Multi-step pipeline — parse document → classify sections → extract entities (features, actors, constraints, risks) → store as structured records. LLM is one step in a larger deterministic pipeline.
+
+Auditee: standardExtractor.ts uses pdf-parse and mammoth to extract raw text from PDF/DOCX. That text then goes directly to an LLM prompt. From ai.ts: "Read the legacy code and extract the implicit business and functional requirements" — this is a single LLM step, not a pipeline. There is no intermediate entity recognition, section classification, or actor/constraint extraction layer.
+
+Gap: ⚠️ Partial. PDF/DOCX text extraction exists. But the structured extraction pipeline (classify → entity extract → structure) is collapsed into a single prompt call. This means quality depends entirely on the LLM's context handling.
+
+Layer 3: Static Code Analysis Engine (AST-based)
+
+Eltegra.ai: Legacy modernisation across 40+ languages (COBOL, Java, SQL) implies AST/grammar-based parsing to extract dependency maps, call graphs, and business rule locations before feeding structured summaries to AI.
+
+Auditee: From ai.ts:1602 — the system prompt is: "Read the legacy code and extract the implicit business and functional requirements it encodes". That's it — raw code is pasted into an LLM prompt. No AST parser, no tree-sitter, no Babel, no dependency graph builder exists in the codebase.
+
+Gap: ❌ Missing entirely. Auditee's legacy analysis is pure prompt-in, text-out. For large codebases or COBOL/Java systems, this fails completely — LLMs cannot reliably trace call chains or business rule locations without static analysis providing that structure first.
+
+Layer 4: Deterministic Traceability Scoring Engine
+
+Eltegra.ai: Dashboard shows live metrics — "Traceability 96.64%", "API coverage ratio 98.53%" — computed scores based on actual graph traversal (requirement → code → test coverage).
+
+Auditee: ai.ts:1513 — "Compute completeness % — average of 5 stage scores across ALL project requirements". This score EXISTS, but it is computed by asking the LLM to self-score each requirement against 5 lifecycle stages. It is an LLM opinion, not a deterministic graph traversal.
+
+Gap: ⚠️ Partial. A percentage score exists but is AI-generated, not deterministic. Eltegra's score is computed by actually checking if code/tests reference the requirement. Auditee's score is the LLM guessing how covered something feels.
+
+Layer 5: Industry-Specific Domain Models
+
+Eltegra.ai: Claims "proprietary knowledge models trained on industry-specific data" for finance, healthcare, retail — suggesting fine-tuned embeddings or classifiers that understand domain-specific compliance nuance beyond what general LLMs know.
+
+Auditee: Domain knowledge lives in standards-blueprints.ts and bootstrap-frameworks.ts — extremely detailed framework definitions (ISO 26262, IEC 62304, FDA QMSR, ASPICE, etc.) injected as system prompt context. BYOK is supported (Azure OpenAI, Bedrock, Anthropic). But no fine-tuning, no custom embeddings, no domain classifiers.
+
+Gap: ⚠️ Partial — but this is actually a strength. Auditee's compliance framework library is genuinely deeper than eltegra.ai (23+ frameworks with native rating vocabularies, ASIL/SIL/DAL scoring). The difference is Auditee's knowledge is in prompts/blueprints, while eltegra claims it's in model weights. For regulated industries specifically, Auditee's blueprint depth may actually exceed eltegra's.

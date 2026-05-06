@@ -1,5 +1,5 @@
 /**
- * Static code analyzer pre-processor.
+ * Static code analyzer pre-processor (regex layer).
  *
  * Closes architectural gap 3 vs eltegra.ai: instead of pasting raw legacy
  * code into an LLM prompt and hoping it can trace control flow across
@@ -8,13 +8,18 @@
  * pass that compact, language-aware summary to the model alongside selected
  * source excerpts.
  *
- * This is a regex / line-based parser, not a full AST builder — but it is
- * intentionally multi-language (TypeScript, JavaScript, Java, C#, C/C++,
- * Python, Go, Rust, Ruby, PHP, SQL, COBOL, JCL, ABAP) which is what legacy
- * modernization actually requires. A real Tree-sitter integration is the
- * obvious next iteration; the regex layer keeps the pipeline working today
- * with zero native deps.
+ * This file is the *regex* layer — line-based extractors for every supported
+ * language. It is the fallback when no real AST grammar is available, AND
+ * the primary analyzer for column-rigid mainframe languages where regex is
+ * the industry-standard approach (COBOL, JCL, RPG, ABAP, PL/I, Fortran).
+ *
+ * For modern languages (Java, C, C++, C#, Python, JS/TS, Go, Rust, Ruby,
+ * PHP, Kotlin, Scala, Swift, Solidity, Lua, etc.) the AST analyzer in
+ * `ast-analyzer.ts` runs first via the `analyzeCodeBest` wrapper and
+ * supersedes this regex output. See `analyzeCodeBest` at the bottom of this
+ * file for the unified entry point used by routes.
  */
+import { analyzeCodeAst } from "./ast-analyzer.js";
 
 export type CodeSymbol = {
   kind: "function" | "method" | "class" | "module" | "import" | "constant" | "rule" | "paragraph" | "table";
@@ -320,4 +325,23 @@ export function formatAnalysisForPrompt(a: CodeAnalysis, opts?: { maxSymbols?: n
     `## Likely encoded business rules (first ${maxRules})`,
     a.businessRules.slice(0, maxRules).map((r) => `- L${r.line}: ${r.snippet}`).join("\n") || "- (none detected)",
   ].join("\n");
+}
+
+/**
+ * Unified entry point used by AI routes. Tries the tree-sitter AST analyzer
+ * first; if no grammar is registered for the language (or the WASM runtime
+ * fails to init / parse crashes), falls back to the deterministic regex
+ * analyzer above.
+ *
+ * This is the function callers should use — it gives the strongest analysis
+ * available for the input and never throws on a missing grammar.
+ */
+export async function analyzeCodeBest(source: string, language?: string | null): Promise<CodeAnalysis> {
+  try {
+    const ast = await analyzeCodeAst(source, language);
+    if (ast) return ast;
+  } catch {
+    // fall through to regex
+  }
+  return analyzeCode(source, language);
 }

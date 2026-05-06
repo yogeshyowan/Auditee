@@ -35,7 +35,7 @@ import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
 import { retrieveChunks, formatChunksAsContext } from "../lib/rag.js";
-import { analyzeCode, formatAnalysisForPrompt } from "../lib/code-analyzer.js";
+import { analyzeCode, analyzeCodeBest, formatAnalysisForPrompt } from "../lib/code-analyzer.js";
 import { rateAudit, getRatingScheme } from "../lib/framework-rating";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 import { consumeCredit } from "../middlewares/creditMiddleware";
@@ -1606,7 +1606,11 @@ router.post("/ai/legacy-extract", consumeCredit(), aiHandler(async (req, res) =>
   // business rules) before sending anything to the LLM. Lets the model focus
   // on the structured summary + selected high-complexity excerpts instead of
   // re-deriving program structure from raw text on every call.
-  const analysis = analyzeCode(body.code, system.language);
+  // analyzeCodeBest tries tree-sitter AST first (Java/C/C++/C#/Python/JS/TS/
+  // Go/Rust/Ruby/PHP/Kotlin/Scala/Swift/Solidity/Lua and 20+ more) and falls
+  // back to the regex analyzer for mainframe languages (COBOL/JCL/RPG/ABAP/
+  // PL-I/Fortran) where column-rigid syntax makes regex the standard tool.
+  const analysis = await analyzeCodeBest(body.code, system.language);
   const analysisBlock = formatAnalysisForPrompt(analysis);
 
   const sysPrompt = `You are Auditee's legacy modernization analyst. You are given (1) a deterministic static-analysis summary of the legacy code and (2) the raw source. Use the static analysis as ground truth for structure and call-graph; use the raw code for behaviour. Extract the implicit business and functional requirements the code encodes, and surface hidden risks (compliance gaps, brittle patterns, hard-coded rules).

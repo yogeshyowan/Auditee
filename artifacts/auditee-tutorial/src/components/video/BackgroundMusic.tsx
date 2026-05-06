@@ -38,6 +38,8 @@ export function BackgroundMusic({
 
     let ctx: AudioContext;
     let stepTimer: ReturnType<typeof setInterval> | null = null;
+    let eagerStartTimer: ReturnType<typeof setTimeout> | null = null;
+    let mounted = true;
     const cleanups: (() => void)[] = [];
 
     // ----- Music: D major, I-vi-IV-V (D - Bm - G - A) ---------------------
@@ -195,6 +197,7 @@ export function BackgroundMusic({
 
     function onStart() {
       if (startedRef.current) return;
+      if (!mounted) return;
       startedRef.current = true;
       try {
         build();
@@ -213,7 +216,7 @@ export function BackgroundMusic({
     window.addEventListener('touchstart', onGesture, { once: true });
 
     // Try eager start (if audio policy allows; otherwise waits for gesture)
-    setTimeout(() => onStart(), 50);
+    eagerStartTimer = setTimeout(() => onStart(), 50);
 
     function duck() {
       if (!ctxRef.current || !masterRef.current) return;
@@ -247,6 +250,8 @@ export function BackgroundMusic({
     }
 
     return () => {
+      mounted = false;
+      if (eagerStartTimer) clearTimeout(eagerStartTimer);
       if (stepTimer) clearInterval(stepTimer);
       window.removeEventListener('auditee:narration:start', duck);
       window.removeEventListener('auditee:narration:end', unduck);
