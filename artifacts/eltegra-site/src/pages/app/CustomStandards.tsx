@@ -119,7 +119,12 @@ export default function CustomStandards() {
 
   return (
     <div className="space-y-6">
-      <SEO title="Custom Standards · Auditee" />
+      <SEO
+        title="Custom Standards · Auditee"
+        description="Upload and manage your organization's custom compliance standards."
+        path="/app/custom-standards"
+        noindex
+      />
 
       <div>
         <h1 className="text-2xl font-display font-bold text-slate-900 flex items-center gap-2">

@@ -73,7 +73,8 @@ export function SEO(props: SEOProps) {
   } = props;
 
   useEffect(() => {
-    const fullUrl = `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+    const safePath = typeof path === "string" && path.length > 0 ? path : "/";
+    const fullUrl = `${SITE_URL}${safePath.startsWith("/") ? safePath : `/${safePath}`}`;
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
 
     document.title = fullTitle;
@@ -190,7 +191,7 @@ export function SEO(props: SEOProps) {
     // use it for site-hierarchy context. Skipped on "/" (just Home is
     // noise) and skipped if the page already provides a BreadcrumbList
     // (e.g. Pricing) to avoid duplicates. Same shape as breadcrumbsLd().
-    const trimmedPath = path.replace(/^\/+|\/+$/g, "");
+    const trimmedPath = safePath.replace(/^\/+|\/+$/g, "");
     const hasUserBreadcrumb = userLds.some(
       (d) => (d as Record<string, unknown>)["@type"] === "BreadcrumbList",
     );
