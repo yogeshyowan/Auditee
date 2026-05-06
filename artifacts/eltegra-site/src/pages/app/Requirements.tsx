@@ -709,7 +709,7 @@ export default function RequirementsPage() {
                     <Upload className="h-3.5 w-3.5 mr-1" /> Local file
                   </TabsTrigger>
                   <TabsTrigger value="github" data-testid="tab-github">
-                    <Github className="h-3.5 w-3.5 mr-1" /> GitHub URL
+                    <Github className="h-3.5 w-3.5 mr-1" /> Repo URL
                   </TabsTrigger>
                   <TabsTrigger value="source" data-testid="tab-source">
                     <FolderOpen className="h-3.5 w-3.5 mr-1" /> Project source
@@ -761,13 +761,13 @@ export default function RequirementsPage() {
 
                 <TabsContent value="github" className="space-y-3 pt-3">
                   <p className="text-sm text-slate-600">
-                    Paste any public GitHub URL — a whole repo, a folder (<code className="px-1 bg-slate-100 rounded text-[11px]">.../tree/main/lib</code>), or a single file (<code className="px-1 bg-slate-100 rounded text-[11px]">.../blob/main/src/foo.ts</code>). For repo and folder URLs, Auditee scans up to 40 source files and packs them into one prompt. For private repos, connect a GitHub source on the Project Sources page first, then use the "Project source" tab.
+                    Paste a public repo, folder, or single-file URL from <strong>GitHub</strong>, <strong>GitLab</strong>, <strong>Bitbucket Cloud</strong>, <strong>Azure DevOps</strong>, or a self-hosted <strong>Gitea/Forgejo</strong> server (operator must allowlist the host). For repo and folder URLs, Auditee scans up to 40 source files and packs them into one prompt. For private repos, connect a source on the Project Sources page first, then use the "Project source" tab.
                   </p>
                   <div className="flex gap-2">
                     <Input
                       value={githubUrl}
                       onChange={(e) => setGithubUrl(e.target.value)}
-                      placeholder="https://github.com/owner/repo  or  .../tree/main/src  or  .../blob/main/src/foo.ts"
+                      placeholder="https://github.com/owner/repo  •  gitlab.com/group/proj  •  bitbucket.org/ws/repo  •  dev.azure.com/org/proj/_git/repo"
                       data-testid="input-github-url"
                     />
                     <Button

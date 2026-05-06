@@ -41,6 +41,7 @@ Auditee is an AI-native enterprise platform for managing the entire Product Deve
 -   **Multi-step AI Extraction**: Complex document analysis uses a pipeline of focused LLM calls for classification and entity extraction, improving accuracy over single-prompt approaches.
 -   **Deterministic Traceability**: Traceability scoring is based on graph traversal of database relationships, not LLM self-scoring, ensuring accuracy and auditability.
 -   **External HTTP Routing**: All external HTTP requests go through `lib/safe-fetch.ts` for SSRF protection.
+-   **Multi-provider repo fetch**: `/ai/fetch-code-url` accepts URLs from GitHub, GitLab (SaaS + self-hosted), Bitbucket Cloud, Azure DevOps, and self-hosted Gitea/Forgejo. Self-hosted hosts must be allowlisted via `GITEA_HOSTS` / `GITLAB_HOSTS` / `BITBUCKET_HOSTS` / `AZURE_DEVOPS_HOSTS` env vars. Each provider has its own URL parser, default-branch resolver, tree lister, and raw-URL builder; all fetches route through `fetchAllowlistedFollow` for per-hop SSRF re-validation.
 -   **Security Headers**: Comprehensive HTTP security headers applied via Helmet for API responses.
 
 ## Product

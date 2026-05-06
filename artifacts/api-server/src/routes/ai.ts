@@ -330,17 +330,63 @@ Rules:
 }));
 
 // =============================================================
-// AI: Fetch source code from a URL (currently GitHub blob/raw)
+// AI: Fetch source code from a URL — multi-provider Git host support
+//
 // Used by the "Generate from code" dialog so users can paste a
-// GitHub link instead of pasting raw code. Server-side because
-// raw.githubusercontent.com does not allow browser CORS.
+// repo / folder / file link from any of the major Git hosts instead
+// of pasting raw code. Runs server-side because none of the providers
+// allow browser CORS for raw file content.
+//
+// Supported providers:
+//   - GitHub          (github.com)
+//   - GitLab SaaS     (gitlab.com)
+//   - Bitbucket Cloud (bitbucket.org)
+//   - Azure DevOps    (dev.azure.com, *.visualstudio.com)
+//   - Gitea / Forgejo (any host on GITEA_HOSTS env allowlist)
+//
+// Each provider implements a small strategy: parse(url) → location,
+// optional defaultBranch(), listTree(), and a rawUrl() builder.
+//
+// SSRF protection: every outbound fetch goes through
+// fetchAllowlistedFollow() which manually re-validates the destination
+// host on every redirect hop against a per-provider allowlist.
 // =============================================================
 const RAW_FETCH_MAX_BYTES = 600_000; // ~30k chars after slicing
 const FETCH_TIMEOUT_MS = 15_000;
-const ALLOWED_FETCH_HOSTS = new Set([
-  "github.com",
-  "raw.githubusercontent.com",
-  "api.github.com",
+
+// Public-cloud hosts each provider may legitimately serve content from.
+// Self-hosted GitLab / Gitea / Bitbucket DC hosts are added at runtime
+// from the *_HOSTS env vars — see SELF_HOSTED_*_HOSTS below.
+const GITHUB_HOSTS = new Set(["github.com", "raw.githubusercontent.com", "api.github.com"]);
+const GITLAB_HOSTS = new Set(["gitlab.com"]);
+const BITBUCKET_HOSTS = new Set(["bitbucket.org", "api.bitbucket.org"]);
+const AZURE_HOSTS = new Set(["dev.azure.com"]);
+// Self-hosted Gitea/Forgejo (and self-hosted GitLab) — operator must
+// explicitly allowlist so we never fetch from arbitrary internal hosts.
+function parseHostList(env: string | undefined): Set<string> {
+  return new Set(
+    (env ?? "")
+      .split(/[\s,]+/)
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+const SELF_HOSTED_GITEA_HOSTS = parseHostList(process.env.GITEA_HOSTS);
+const SELF_HOSTED_GITLAB_HOSTS = parseHostList(process.env.GITLAB_HOSTS);
+const SELF_HOSTED_BITBUCKET_HOSTS = parseHostList(process.env.BITBUCKET_HOSTS);
+const SELF_HOSTED_AZURE_HOSTS = parseHostList(process.env.AZURE_DEVOPS_HOSTS); // legacy *.visualstudio.com etc.
+
+// Union of every host we are willing to talk to. Used by
+// fetchAllowlistedFollow() as the per-redirect-hop SSRF guard.
+const ALLOWED_FETCH_HOSTS = new Set<string>([
+  ...GITHUB_HOSTS,
+  ...GITLAB_HOSTS,
+  ...BITBUCKET_HOSTS,
+  ...AZURE_HOSTS,
+  ...SELF_HOSTED_GITEA_HOSTS,
+  ...SELF_HOSTED_GITLAB_HOSTS,
+  ...SELF_HOSTED_BITBUCKET_HOSTS,
+  ...SELF_HOSTED_AZURE_HOSTS,
 ]);
 const LANGUAGE_BY_EXT: Record<string, string> = {
   ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
@@ -379,7 +425,7 @@ const TREE_TOTAL_CHAR_CAP = 30_000;
 // Manually follow redirects so we can re-validate the host on every hop.
 // This prevents an open-redirect on github.com from sending us to an
 // arbitrary backend host.
-async function fetchAllowlistedFollow(startUrl: string, maxHops = 5): Promise<Response> {
+async function fetchAllowlistedFollow(startUrl: string, maxHops = 5, headers: Record<string, string> = {}): Promise<Response> {
   let current = startUrl;
   for (let hop = 0; hop <= maxHops; hop++) {
     const u = new URL(current);
@@ -393,7 +439,7 @@ async function fetchAllowlistedFollow(startUrl: string, maxHops = 5): Promise<Re
     const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
     let resp: Response;
     try {
-      resp = await fetch(current, { redirect: "manual", signal: ctrl.signal });
+      resp = await fetch(current, { redirect: "manual", signal: ctrl.signal, headers });
     } finally {
       clearTimeout(t);
     }
@@ -468,109 +514,319 @@ function pathPriority(p: string): number {
   return 5;
 }
 
-type ParsedGithubLocation =
-  | { kind: "blob"; owner: string; repo: string; ref: string; path: string }
-  | { kind: "tree"; owner: string; repo: string; ref: string | null; path: string }
-  | { kind: "repo"; owner: string; repo: string }
-  | { kind: "raw"; owner: string; repo: string; ref: string; path: string };
+// ----- Multi-provider repo location model ------------------------------
+//
+// All providers normalize to one of these three shapes after parsing.
+// `owner` is the path-encoded owner identifier:
+//   - GitHub:    "owner"
+//   - GitLab:    "namespace/subgroup/..." (full path, slash-preserved)
+//   - Bitbucket: "workspace"
+//   - Azure:     "{org}/{project}" (the URL-encoded "_apis" base anchor)
+//   - Gitea:     "owner"
+// `repo` is the repo / project / Azure repository name.
+type ProviderId = "github" | "gitlab" | "bitbucket" | "azure" | "gitea";
 
-function parseGithubUrl(u: URL): ParsedGithubLocation | null {
-  if (u.hostname === "raw.githubusercontent.com") {
+type ParsedRepoLocation =
+  | { kind: "blob"; provider: ProviderId; host: string; owner: string; repo: string; ref: string; path: string }
+  | { kind: "tree"; provider: ProviderId; host: string; owner: string; repo: string; ref: string | null; path: string }
+  | { kind: "repo"; provider: ProviderId; host: string; owner: string; repo: string }
+  | { kind: "raw"; provider: ProviderId; host: string; owner: string; repo: string; ref: string; path: string };
+
+const PROVIDER_LABEL: Record<ProviderId, string> = {
+  github: "GitHub", gitlab: "GitLab", bitbucket: "Bitbucket",
+  azure: "Azure DevOps", gitea: "Gitea/Forgejo",
+};
+
+// Detect which provider a URL belongs to. Returns null if the host is
+// not on any allowlist (which prevents SSRF to arbitrary internal hosts).
+function detectProvider(u: URL): ProviderId | null {
+  const h = u.hostname.toLowerCase();
+  if (GITHUB_HOSTS.has(h)) return "github";
+  if (GITLAB_HOSTS.has(h) || SELF_HOSTED_GITLAB_HOSTS.has(h)) return "gitlab";
+  if (BITBUCKET_HOSTS.has(h) || SELF_HOSTED_BITBUCKET_HOSTS.has(h)) return "bitbucket";
+  if (AZURE_HOSTS.has(h) || SELF_HOSTED_AZURE_HOSTS.has(h)) return "azure";
+  if (SELF_HOSTED_GITEA_HOSTS.has(h)) return "gitea";
+  return null;
+}
+
+// ----- Parsers (one per provider) -------------------------------------
+
+function parseGithubUrl(u: URL): ParsedRepoLocation | null {
+  const host = u.hostname;
+  if (host === "raw.githubusercontent.com") {
     const segs = u.pathname.split("/").filter(Boolean);
     if (segs.length < 4) return null;
     const [owner, repo, ref, ...rest] = segs;
-    return { kind: "raw", owner, repo, ref, path: rest.join("/") };
+    return { kind: "raw", provider: "github", host, owner, repo, ref, path: rest.join("/") };
   }
-  if (u.hostname !== "github.com") return null;
+  if (host !== "github.com") return null;
   const segs = u.pathname.split("/").filter(Boolean);
   if (segs.length < 2) return null;
   const [owner, repo, mode, ...rest] = segs;
-  // .git suffix is sometimes pasted from clone URLs
   const cleanRepo = repo.replace(/\.git$/i, "");
-  if (!mode) {
-    return { kind: "repo", owner, repo: cleanRepo };
-  }
+  if (!mode) return { kind: "repo", provider: "github", host, owner, repo: cleanRepo };
   if (mode === "blob" && rest.length >= 2) {
-    // refAndPath: rest. Most refs are single-segment; for slashy refs (e.g.
-    // "release/v1") this naive split is wrong — caller should paste the raw
-    // URL or tag without slashes. We mark a flag below for clearer error msgs.
     const refAndPath = rest.join("/");
     const slash = refAndPath.indexOf("/");
     if (slash < 0) return null;
-    return {
-      kind: "blob",
-      owner,
-      repo: cleanRepo,
-      ref: refAndPath.slice(0, slash),
-      path: refAndPath.slice(slash + 1),
-    };
+    return { kind: "blob", provider: "github", host, owner, repo: cleanRepo, ref: refAndPath.slice(0, slash), path: refAndPath.slice(slash + 1) };
   }
   if (mode === "tree") {
-    if (rest.length === 0) {
-      return { kind: "repo", owner, repo: cleanRepo };
-    }
+    if (rest.length === 0) return { kind: "repo", provider: "github", host, owner, repo: cleanRepo };
     const refAndPath = rest.join("/");
     const slash = refAndPath.indexOf("/");
-    if (slash < 0) {
-      return { kind: "tree", owner, repo: cleanRepo, ref: refAndPath, path: "" };
-    }
-    // Naive single-segment ref split. If the actual branch name has a slash,
-    // the tree-API call will 404 and we surface a friendly error.
-    return {
-      kind: "tree",
-      owner,
-      repo: cleanRepo,
-      ref: refAndPath.slice(0, slash),
-      path: refAndPath.slice(slash + 1),
-    };
+    if (slash < 0) return { kind: "tree", provider: "github", host, owner, repo: cleanRepo, ref: refAndPath, path: "" };
+    return { kind: "tree", provider: "github", host, owner, repo: cleanRepo, ref: refAndPath.slice(0, slash), path: refAndPath.slice(slash + 1) };
   }
-  // Bare repo URL with trailing path we don't recognize (issues, pulls, etc.)
-  return { kind: "repo", owner, repo: cleanRepo };
+  return { kind: "repo", provider: "github", host, owner, repo: cleanRepo };
 }
 
-async function getDefaultBranch(owner: string, repo: string): Promise<string | null> {
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-    let r: Response;
-    try {
-      r = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-        headers: { "User-Agent": "Auditee", Accept: "application/vnd.github+json" },
-        signal: ctrl.signal,
-      });
-    } finally {
-      clearTimeout(t);
+// GitLab URLs use "/-/" as a separator between project path and view kind.
+// Supports nested groups: gitlab.com/group/sub/project/-/blob/main/foo.ts
+function parseGitlabUrl(u: URL): ParsedRepoLocation | null {
+  const host = u.hostname;
+  const path = u.pathname.replace(/^\/+|\/+$/g, "");
+  if (!path) return null;
+  const dashIdx = path.indexOf("/-/");
+  if (dashIdx < 0) {
+    // Bare project URL: gitlab.com/group/sub/project
+    const segs = path.split("/").filter(Boolean);
+    if (segs.length < 2) return null;
+    const repo = segs[segs.length - 1].replace(/\.git$/i, "");
+    const owner = segs.slice(0, -1).join("/");
+    return { kind: "repo", provider: "gitlab", host, owner, repo };
+  }
+  const projectPath = path.slice(0, dashIdx);
+  const after = path.slice(dashIdx + 3); // skip "/-/"
+  const projectSegs = projectPath.split("/").filter(Boolean);
+  if (projectSegs.length < 2) return null;
+  const repo = projectSegs[projectSegs.length - 1].replace(/\.git$/i, "");
+  const owner = projectSegs.slice(0, -1).join("/");
+  const afterSegs = after.split("/").filter(Boolean);
+  const mode = afterSegs[0]; // blob | tree | raw
+  const rest = afterSegs.slice(1);
+  if ((mode === "blob" || mode === "raw") && rest.length >= 2) {
+    const ref = rest[0];
+    return { kind: mode === "raw" ? "raw" : "blob", provider: "gitlab", host, owner, repo, ref, path: rest.slice(1).join("/") };
+  }
+  if (mode === "tree" && rest.length >= 1) {
+    return { kind: "tree", provider: "gitlab", host, owner, repo, ref: rest[0], path: rest.slice(1).join("/") };
+  }
+  return { kind: "repo", provider: "gitlab", host, owner, repo };
+}
+
+// Bitbucket Cloud URLs: bitbucket.org/{workspace}/{repo}[/src/{ref}/{path}]
+// Single-file vs folder is ambiguous from URL alone; treat as "blob" if the
+// last segment looks like a file (has a dot in basename), else "tree".
+function parseBitbucketUrl(u: URL): ParsedRepoLocation | null {
+  const host = u.hostname;
+  const segs = u.pathname.split("/").filter(Boolean);
+  if (segs.length < 2) return null;
+  const [owner, repoRaw, mode, ...rest] = segs;
+  const repo = repoRaw.replace(/\.git$/i, "");
+  if (!mode) return { kind: "repo", provider: "bitbucket", host, owner, repo };
+  if ((mode === "src" || mode === "raw") && rest.length >= 1) {
+    const ref = rest[0];
+    const filePath = rest.slice(1).join("/");
+    if (!filePath) return { kind: "tree", provider: "bitbucket", host, owner, repo, ref, path: "" };
+    const last = rest[rest.length - 1];
+    const looksLikeFile = last.includes(".") && !last.endsWith("/");
+    if (looksLikeFile) {
+      return { kind: mode === "raw" ? "raw" : "blob", provider: "bitbucket", host, owner, repo, ref, path: filePath };
     }
-    if (!r.ok) return null;
-    const j = await r.json() as { default_branch?: string };
-    return j.default_branch ?? null;
-  } catch {
-    return null;
+    return { kind: "tree", provider: "bitbucket", host, owner, repo, ref, path: filePath };
+  }
+  return { kind: "repo", provider: "bitbucket", host, owner, repo };
+}
+
+// Azure DevOps URLs: dev.azure.com/{org}/{project}/_git/{repo}?path=&version=GB{branch}
+// We pack {org}/{project} into `owner` so downstream API calls can rebuild it.
+function parseAzureUrl(u: URL): ParsedRepoLocation | null {
+  const host = u.hostname;
+  const segs = u.pathname.split("/").filter(Boolean);
+  const gitIdx = segs.indexOf("_git");
+  if (gitIdx < 1 || gitIdx >= segs.length - 1) return null;
+  const orgProj = segs.slice(0, gitIdx).join("/");
+  if (orgProj.split("/").length < 2) return null;
+  const repo = segs[gitIdx + 1];
+  const path = u.searchParams.get("path") ?? "";
+  const versionRaw = u.searchParams.get("version") ?? "";
+  // version is GB{branch}, GT{tag}, or GC{commit}; we only support branches.
+  const ref = versionRaw.startsWith("GB") ? versionRaw.slice(2) : (versionRaw.startsWith("GT") ? versionRaw.slice(2) : null);
+  const cleanPath = path.replace(/^\/+/, "");
+  if (cleanPath) {
+    const last = cleanPath.split("/").pop() ?? "";
+    const looksLikeFile = last.includes(".") && !cleanPath.endsWith("/");
+    if (looksLikeFile && ref) return { kind: "blob", provider: "azure", host, owner: orgProj, repo, ref, path: cleanPath };
+    return { kind: "tree", provider: "azure", host, owner: orgProj, repo, ref, path: cleanPath };
+  }
+  if (ref) return { kind: "tree", provider: "azure", host, owner: orgProj, repo, ref, path: "" };
+  return { kind: "repo", provider: "azure", host, owner: orgProj, repo };
+}
+
+// Gitea/Forgejo URLs mirror GitHub but use "/src/branch/" / "/src/commit/"
+// instead of "/blob/" or "/tree/". Raw is "/raw/branch/{ref}/{path}".
+function parseGiteaUrl(u: URL): ParsedRepoLocation | null {
+  const host = u.hostname;
+  const segs = u.pathname.split("/").filter(Boolean);
+  if (segs.length < 2) return null;
+  const [owner, repoRaw, mode, refKind, ...rest] = segs;
+  const repo = repoRaw.replace(/\.git$/i, "");
+  if (!mode) return { kind: "repo", provider: "gitea", host, owner, repo };
+  if ((mode === "src" || mode === "raw") && (refKind === "branch" || refKind === "commit" || refKind === "tag") && rest.length >= 1) {
+    const ref = rest[0];
+    const filePath = rest.slice(1).join("/");
+    if (!filePath) return { kind: "tree", provider: "gitea", host, owner, repo, ref, path: "" };
+    const last = rest[rest.length - 1];
+    const looksLikeFile = last.includes(".") && !last.endsWith("/");
+    if (looksLikeFile) return { kind: mode === "raw" ? "raw" : "blob", provider: "gitea", host, owner, repo, ref, path: filePath };
+    return { kind: "tree", provider: "gitea", host, owner, repo, ref, path: filePath };
+  }
+  return { kind: "repo", provider: "gitea", host, owner, repo };
+}
+
+function parseRepoUrl(u: URL): ParsedRepoLocation | null {
+  const p = detectProvider(u);
+  if (!p) return null;
+  switch (p) {
+    case "github": return parseGithubUrl(u);
+    case "gitlab": return parseGitlabUrl(u);
+    case "bitbucket": return parseBitbucketUrl(u);
+    case "azure": return parseAzureUrl(u);
+    case "gitea": return parseGiteaUrl(u);
   }
 }
 
-async function listRepoTree(owner: string, repo: string, ref: string): Promise<{ files: Array<{ path: string; size: number }>; truncated: boolean } | null> {
+// ----- Default branch resolvers ---------------------------------------
+
+const FETCH_HEADERS = { "User-Agent": "Auditee" };
+
+// Use fetchAllowlistedFollow for metadata calls too — a malicious or
+// compromised repo provider could 302 us to an internal IP otherwise.
+// fetchAllowlistedFollow re-validates the host on every redirect hop
+// against ALLOWED_FETCH_HOSTS, which is the union of every provider's
+// public + self-hosted-allowlisted hosts.
+async function fetchJsonWithTimeout<T = unknown>(url: string, headers: Record<string, string> = {}): Promise<T | null> {
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-    let r: Response;
-    try {
-      r = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`, {
-        headers: { "User-Agent": "Auditee", Accept: "application/vnd.github+json" },
-        signal: ctrl.signal,
-      });
-    } finally {
-      clearTimeout(t);
-    }
+    const r = await fetchAllowlistedFollow(url, 5, { ...FETCH_HEADERS, ...headers });
     if (!r.ok) return null;
-    const j = await r.json() as { tree?: Array<{ path: string; type: string; size?: number }>; truncated?: boolean };
-    if (!Array.isArray(j.tree)) return null;
+    return await r.json() as T;
+  } catch { return null; }
+}
+
+async function getDefaultBranch(loc: { provider: ProviderId; host: string; owner: string; repo: string }): Promise<string | null> {
+  const { provider, host, owner, repo } = loc;
+  if (provider === "github") {
+    const j = await fetchJsonWithTimeout<{ default_branch?: string }>(`https://api.github.com/repos/${owner}/${repo}`, { Accept: "application/vnd.github+json" });
+    return j?.default_branch ?? null;
+  }
+  if (provider === "gitlab") {
+    const j = await fetchJsonWithTimeout<{ default_branch?: string }>(`https://${host}/api/v4/projects/${encodeURIComponent(`${owner}/${repo}`)}`);
+    return j?.default_branch ?? null;
+  }
+  if (provider === "bitbucket") {
+    const j = await fetchJsonWithTimeout<{ mainbranch?: { name?: string } }>(`https://api.bitbucket.org/2.0/repositories/${owner}/${repo}`);
+    return j?.mainbranch?.name ?? null;
+  }
+  if (provider === "azure") {
+    // owner = "{org}/{project}"
+    const j = await fetchJsonWithTimeout<{ defaultBranch?: string }>(`https://${host}/${owner}/_apis/git/repositories/${encodeURIComponent(repo)}?api-version=7.1`);
+    const ref = j?.defaultBranch ?? null;
+    return ref ? ref.replace(/^refs\/heads\//, "") : null;
+  }
+  if (provider === "gitea") {
+    const j = await fetchJsonWithTimeout<{ default_branch?: string }>(`https://${host}/api/v1/repos/${owner}/${repo}`);
+    return j?.default_branch ?? null;
+  }
+  return null;
+}
+
+// ----- Tree listers ---------------------------------------------------
+
+async function listRepoTree(loc: { provider: ProviderId; host: string; owner: string; repo: string }, ref: string): Promise<{ files: Array<{ path: string; size: number }>; truncated: boolean } | null> {
+  const { provider, host, owner, repo } = loc;
+  if (provider === "github") {
+    const j = await fetchJsonWithTimeout<{ tree?: Array<{ path: string; type: string; size?: number }>; truncated?: boolean }>(
+      `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
+      { Accept: "application/vnd.github+json" },
+    );
+    if (!j?.tree) return null;
+    return { files: j.tree.filter((e) => e.type === "blob").map((e) => ({ path: e.path, size: e.size ?? 0 })), truncated: j.truncated === true };
+  }
+  if (provider === "gitlab") {
+    // GitLab paginates at 100 entries; pull a few pages so we can find ~40 source files.
+    const all: Array<{ path: string; size: number }> = [];
+    let truncated = false;
+    for (let page = 1; page <= 5; page++) {
+      const j = await fetchJsonWithTimeout<Array<{ path: string; type: string }>>(
+        `https://${host}/api/v4/projects/${encodeURIComponent(`${owner}/${repo}`)}/repository/tree?ref=${encodeURIComponent(ref)}&recursive=true&per_page=100&page=${page}`,
+      );
+      if (!Array.isArray(j) || j.length === 0) break;
+      for (const e of j) if (e.type === "blob") all.push({ path: e.path, size: 0 });
+      if (j.length < 100) break;
+      if (page === 5) truncated = true;
+    }
+    if (all.length === 0) return null;
+    return { files: all, truncated };
+  }
+  if (provider === "bitbucket") {
+    // Bitbucket has no recursive flag; we fetch the source tree paginated.
+    const all: Array<{ path: string; size: number }> = [];
+    let truncated = false;
+    let next: string | null = `https://api.bitbucket.org/2.0/repositories/${owner}/${repo}/src/${encodeURIComponent(ref)}/?max_depth=10&pagelen=100`;
+    let pages = 0;
+    while (next && pages < 5) {
+      const j: { values?: Array<{ path: string; type: string; size?: number }>; next?: string } | null = await fetchJsonWithTimeout(next);
+      if (!j?.values) break;
+      for (const e of j.values) if (e.type === "commit_file") all.push({ path: e.path, size: e.size ?? 0 });
+      next = j.next ?? null;
+      pages += 1;
+      if (pages === 5 && next) truncated = true;
+    }
+    if (all.length === 0) return null;
+    return { files: all, truncated };
+  }
+  if (provider === "azure") {
+    const j = await fetchJsonWithTimeout<{ value?: Array<{ path: string; gitObjectType: string; size?: number }> }>(
+      `https://${host}/${owner}/_apis/git/repositories/${encodeURIComponent(repo)}/items?recursionLevel=Full&versionDescriptor.version=${encodeURIComponent(ref)}&versionDescriptor.versionType=branch&api-version=7.1`,
+    );
+    if (!j?.value) return null;
     return {
-      files: j.tree.filter((e) => e.type === "blob").map((e) => ({ path: e.path, size: e.size ?? 0 })),
-      truncated: j.truncated === true,
+      files: j.value
+        .filter((e) => e.gitObjectType === "blob")
+        .map((e) => ({ path: e.path.replace(/^\/+/, ""), size: e.size ?? 0 })),
+      truncated: false,
     };
-  } catch {
-    return null;
+  }
+  if (provider === "gitea") {
+    // Gitea needs a commit SHA for git/trees; resolve branch first.
+    const branchInfo = await fetchJsonWithTimeout<{ commit?: { id?: string } }>(`https://${host}/api/v1/repos/${owner}/${repo}/branches/${encodeURIComponent(ref)}`);
+    const sha = branchInfo?.commit?.id;
+    if (!sha) return null;
+    const j = await fetchJsonWithTimeout<{ tree?: Array<{ path: string; type: string; size?: number }>; truncated?: boolean }>(
+      `https://${host}/api/v1/repos/${owner}/${repo}/git/trees/${sha}?recursive=true&per_page=1000`,
+    );
+    if (!j?.tree) return null;
+    return { files: j.tree.filter((e) => e.type === "blob").map((e) => ({ path: e.path, size: e.size ?? 0 })), truncated: j.truncated === true };
+  }
+  return null;
+}
+
+// ----- Raw URL builders -----------------------------------------------
+
+function rawUrlFor(loc: { provider: ProviderId; host: string; owner: string; repo: string }, ref: string, path: string): string {
+  const { provider, host, owner, repo } = loc;
+  switch (provider) {
+    case "github":
+      return `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
+    case "gitlab":
+      return `https://${host}/${owner}/${repo}/-/raw/${ref}/${path.split("/").map(encodeURIComponent).join("/")}`;
+    case "bitbucket":
+      return `https://${host === "api.bitbucket.org" ? "bitbucket.org" : host}/${owner}/${repo}/raw/${ref}/${path.split("/").map(encodeURIComponent).join("/")}`;
+    case "azure":
+      return `https://${host}/${owner}/_apis/git/repositories/${encodeURIComponent(repo)}/items?path=${encodeURIComponent("/" + path)}&versionDescriptor.version=${encodeURIComponent(ref)}&versionDescriptor.versionType=branch&api-version=7.1&download=true&$format=octetStream`;
+    case "gitea":
+      return `https://${host}/${owner}/${repo}/raw/branch/${encodeURIComponent(ref)}/${path.split("/").map(encodeURIComponent).join("/")}`;
   }
 }
 
@@ -607,33 +863,35 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
     return;
   }
   if (!ALLOWED_FETCH_HOSTS.has(parsed.hostname)) {
-    res.status(400).json({ error: "Only github.com and raw.githubusercontent.com URLs are supported" });
+    res.status(400).json({ error: `Host '${parsed.hostname}' not supported. Supported: GitHub, GitLab (gitlab.com), Bitbucket Cloud (bitbucket.org), Azure DevOps (dev.azure.com), or a self-hosted Gitea/Forgejo/GitLab/Bitbucket-DC host configured by the operator (GITEA_HOSTS / GITLAB_HOSTS / BITBUCKET_HOSTS / AZURE_DEVOPS_HOSTS).` });
     return;
   }
 
-  const loc = parseGithubUrl(parsed);
+  const loc = parseRepoUrl(parsed);
   if (!loc) {
-    res.status(400).json({ error: "Could not understand that GitHub URL. Paste a repo URL (https://github.com/owner/repo), a folder URL (.../tree/branch/path), or a single file URL (.../blob/branch/path/file.ts)." });
+    res.status(400).json({ error: "Could not understand that repo URL. Paste a project URL, a folder URL, or a single file URL from GitHub / GitLab / Bitbucket / Azure DevOps / Gitea." });
     return;
   }
+  const providerName = PROVIDER_LABEL[loc.provider];
+  const repoLabel = `${loc.owner}/${loc.repo}`;
 
-  // ---------- Single file path (existing behaviour) ----------
+  // ---------- Single file path ----------
   if (loc.kind === "blob" || loc.kind === "raw") {
     const { owner, repo, ref, path } = loc;
-    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
-    const label = `${owner}/${repo}@${ref}:${path}`;
+    const rawUrl = rawUrlFor(loc, ref, path);
+    const label = `${repoLabel}@${ref}:${path}`;
     let response: Response;
     try {
       response = await fetchAllowlistedFollow(rawUrl);
     } catch (err) {
-      res.status(502).json({ error: `Could not reach GitHub: ${(err as Error).message}` });
+      res.status(502).json({ error: `Could not reach ${providerName}: ${(err as Error).message}` });
       return;
     }
     if (!response.ok) {
       res.status(response.status === 404 ? 404 : 502).json({
         error: response.status === 404
-          ? "File not found on GitHub (private repo, wrong branch, or branch name contains '/' — try the raw.githubusercontent.com URL instead)"
-          : `GitHub returned ${response.status}`,
+          ? `File not found on ${providerName} (private repo, wrong branch, or path mismatch). For ${providerName} private repos, connect a project source first.`
+          : `${providerName} returned ${response.status}`,
       });
       return;
     }
@@ -654,7 +912,7 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
     const code = text.length > TREE_TOTAL_CHAR_CAP ? text.slice(0, TREE_TOTAL_CHAR_CAP) : text;
     const ext = (path.split(".").pop() ?? "").toLowerCase();
     const language = LANGUAGE_BY_EXT[ext] ?? "";
-    res.json({ code, language, label, truncated: text.length > TREE_TOTAL_CHAR_CAP, mode: "file", filesIncluded: 1 });
+    res.json({ code, language, label, truncated: text.length > TREE_TOTAL_CHAR_CAP, mode: "file", filesIncluded: 1, provider: loc.provider });
     return;
   }
 
@@ -664,15 +922,15 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
   let ref: string | null = loc.kind === "tree" ? loc.ref : null;
   const basePath = loc.kind === "tree" ? loc.path : "";
   if (!ref) {
-    ref = await getDefaultBranch(owner, repo);
+    ref = await getDefaultBranch(loc);
     if (!ref) {
-      res.status(404).json({ error: `Repository ${owner}/${repo} not found or private. Public repos only — for private repos, connect a GitHub source on the Project Sources page.` });
+      res.status(404).json({ error: `Repository ${repoLabel} not found on ${providerName} or private. Public repos only — for private repos, connect a source on the Project Sources page.` });
       return;
     }
   }
-  const tree = await listRepoTree(owner, repo, ref);
+  const tree = await listRepoTree(loc, ref);
   if (!tree) {
-    res.status(404).json({ error: `Could not list ${owner}/${repo}@${ref}. Repo may be private, the branch name might contain a '/', or it doesn't exist. Try pasting a folder URL with the exact branch name.` });
+    res.status(404).json({ error: `Could not list ${repoLabel}@${ref} on ${providerName}. Repo may be private, the branch name might be wrong, or it doesn't exist.` });
     return;
   }
   // GitHub's git/trees endpoint truncates at ~100k entries. We can still pack
@@ -691,8 +949,8 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
 
   if (candidates.length === 0) {
     res.status(404).json({ error: basePath
-      ? `No source files found under '${basePath}' in ${owner}/${repo}@${ref}.`
-      : `No source files found in ${owner}/${repo}@${ref}.` });
+      ? `No source files found under '${basePath}' in ${repoLabel}@${ref} on ${providerName}.`
+      : `No source files found in ${repoLabel}@${ref} on ${providerName}.` });
     return;
   }
 
@@ -706,7 +964,7 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
       while (queue.length > 0) {
         const item = queue.shift();
         if (!item) break;
-        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${item.path}`;
+        const rawUrl = rawUrlFor(loc, ref!, item.path);
         const text = await fetchRawFileText(rawUrl, RAW_FETCH_MAX_BYTES);
         if (text != null) {
           results.push({ path: item.path, text });
@@ -750,8 +1008,8 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
   if (filesIncluded === 0) {
     res.status(502).json({
       error: results.length === 0
-        ? `Found ${candidates.length} candidate file${candidates.length === 1 ? "" : "s"} in ${owner}/${repo}@${ref}, but none could be downloaded from raw.githubusercontent.com.`
-        : `Could not pack any source from ${owner}/${repo}@${ref} into the prompt budget.`,
+        ? `Found ${candidates.length} candidate file${candidates.length === 1 ? "" : "s"} in ${repoLabel}@${ref} on ${providerName}, but none could be downloaded.`
+        : `Could not pack any source from ${repoLabel}@${ref} into the prompt budget.`,
     });
     return;
   }
@@ -768,7 +1026,7 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
   const truncSuffix = truncated
     ? (treeTruncated ? " (repo too large — partial scan)" : " (truncated)")
     : "";
-  const label = `${owner}/${repo}@${ref}:${scope} — ${filesIncluded} file${filesIncluded === 1 ? "" : "s"}${truncSuffix}`;
+  const label = `${repoLabel}@${ref}:${scope} — ${filesIncluded} file${filesIncluded === 1 ? "" : "s"}${truncSuffix}`;
 
   res.json({
     code,
@@ -779,6 +1037,7 @@ router.post("/ai/fetch-code-url", aiHandler(async (req, res) => {
     filesIncluded,
     filesAvailable: candidates.length,
     treeTruncated,
+    provider: loc.provider,
   });
 }));
 
