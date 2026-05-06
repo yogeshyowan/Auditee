@@ -50,7 +50,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { AskAuditeeFloater } from "@/components/AskAuditeeFloater";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useProjectContext } from "@/lib/project-context";
-import { startTour, maybeAutoStartTour } from "@/lib/tour";
+import { startTour } from "@/lib/tour";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 
@@ -197,9 +197,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    maybeAutoStartTour(navigate);
-  }, [navigate]);
+  // Product tour is opt-in only — launch it manually from the "Take a tour"
+  // button in the header. Auto-start was dropped because the localStorage flag
+  // it relied on (`STORAGE_SEEN`) gets wiped in preview iframes / fresh
+  // sessions, causing the tour to re-trigger on every reload.
+  // useEffect(() => {
+  //   maybeAutoStartTour(navigate);
+  // }, [navigate]);
 
   // Look up the active project across ALL projects (connected or not) so
   // freshly-created projects with 0 sources still appear in the switcher button.
