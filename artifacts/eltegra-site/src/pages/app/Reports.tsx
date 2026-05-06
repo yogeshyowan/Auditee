@@ -131,8 +131,8 @@ const UNIVERSAL_KINDS: ReadonlySet<string> = new Set([
 // kind that is mandated by a selected standard is badged "Required by X".
 const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
   // Functional safety
-  "ISO 26262": ["safety_plan", "hara", "safety_concept", "tech_safety_concept", "safety_case", "fmea", "fta", "dia", "vnv_plan"],
-  "IEC 61508": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
+  "ISO 26262": ["safety_plan", "hara", "safety_concept", "tech_safety_concept", "safety_case", "srs_safety", "fmea", "fta", "dia", "vnv_plan", "scmp", "change_control_plan"],
+  "IEC 61508": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan", "scmp"],
   "EN 50128": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
   "EN 50126": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
   "EN 50129": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
@@ -147,18 +147,16 @@ const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
   "ISO/IEC 27001": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
   "ISO/IEC 27002": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
   "NIST CSF 2.0": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
-  "SOC 2": ["compliance_audit", "security_risk_assessment"],
   "PCI DSS 4.0": ["compliance_audit", "security_risk_assessment"],
   "HIPAA": ["compliance_audit", "security_risk_assessment"],
-  "GDPR": ["compliance_audit"],
   "DORA": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
   "NIS2": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
   "NERC CIP": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
   "API 1164": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
 
   // Software-aspects standards
-  "DO-178C": ["psac", "software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "vnv_plan", "change_control_plan"],
-  "IEC 62304": ["software_dev_plan", "software_verification_plan", "software_qa_plan", "soup_list", "scmp", "ci_list", "vnv_plan", "risk_management_plan"],
+  "DO-178C": ["psac", "software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "vnv_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases", "test_execution_report"],
+  "IEC 62304": ["software_dev_plan", "software_verification_plan", "software_qa_plan", "soup_list", "scmp", "ci_list", "vnv_plan", "risk_management_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases"],
   "IEEE 730": ["software_qa_plan"],
   "IEEE 828": ["scmp", "ci_list", "change_control_plan"],
   "IEEE 1012": ["vnv_plan"],
@@ -177,25 +175,27 @@ const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
   "21 CFR 807": ["compliance_audit"],
   "21 CFR 814": ["compliance_audit", "risk_management_plan"],
   "IEC 60601": ["risk_management_plan", "software_qa_plan", "vnv_plan", "user_manual"],
-  "MDR 2017/745": ["compliance_audit", "risk_management_plan", "vnv_plan"],
-  "IVDR 2017/746": ["compliance_audit", "risk_management_plan", "vnv_plan"],
-  "IEC 62366": ["risk_management_plan", "vnv_plan"],
+  "MDR 2017/745": ["compliance_audit", "risk_management_plan", "vnv_plan", "user_manual"],
+  "IVDR 2017/746": ["compliance_audit", "risk_management_plan", "vnv_plan", "user_manual"],
+  "IEC 62366": ["risk_management_plan", "vnv_plan", "user_manual"],
   "ISO 14155": ["compliance_audit", "risk_management_plan"],
-  "21 CFR Part 11": ["compliance_audit", "software_qa_plan", "change_control_plan"],
+  "21 CFR Part 11": ["compliance_audit", "software_qa_plan", "change_control_plan", "security_risk_assessment"],
 
   // Quality / process
   "ISO 9001": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan"],
-  "CMMI 3.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan"],
-  "ASPICE 4.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "hld", "lld"],
+  "CMMI 3.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "architecture_doc", "hld", "lld", "test_cases"],
+  "ASPICE 4.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "software_dev_plan", "software_verification_plan", "architecture_doc", "hld", "lld", "test_cases"],
 
   // Industrial / OT control
-  "IEC 61131-3": ["srs_safety", "fmea", "hld", "lld"],
-  "IEC 60204-1": ["srs_safety", "fmea", "hld", "lld"],
-  "ISO 10218-1": ["srs_safety", "fmea", "hld"],
-  "ISA-95": ["hld", "lld"],
+  "IEC 61131-3": ["srs_safety", "fmea", "hld", "lld", "test_cases"],
+  "IEC 60204-1": ["srs_safety", "fmea", "hld", "lld", "test_cases"],
+  "ISO 10218-1": ["srs_safety", "fmea", "hld", "test_cases"],
+  "ISA-95": ["hld", "lld", "architecture_doc"],
 
-  // AI / regulated software
-  "EU AI Act": ["compliance_audit", "risk_management_plan", "security_risk_assessment"],
+  // Privacy / AI / regulated software
+  "GDPR": ["compliance_audit", "risk_management_plan"],
+  "SOC 2": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  "EU AI Act": ["compliance_audit", "risk_management_plan", "security_risk_assessment", "cybersecurity_plan", "vnv_plan"],
 };
 
 export default function Reports() {
