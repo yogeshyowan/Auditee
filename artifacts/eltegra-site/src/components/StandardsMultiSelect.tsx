@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useListComplianceFrameworks } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronDown, ShieldCheck, X } from "lucide-react";
+import { ChevronDown, Search, ShieldCheck, X } from "lucide-react";
 
 type Framework = { id: string; code: string; name: string };
 
@@ -30,8 +31,27 @@ export function StandardsMultiSelect({
   const { data } = useListComplianceFrameworks();
   const frameworks = (data ?? []) as Framework[];
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
 
   const selected = frameworks.filter((f) => value.includes(f.id));
+
+  // Case-insensitive substring match against both the framework code (e.g.
+  // "ISO 26262") and its full human name. Selected items are pinned to the
+  // top of the filtered list so the user never loses track of them while
+  // narrowing the search.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const matches = q
+      ? frameworks.filter(
+          (f) =>
+            f.code.toLowerCase().includes(q) ||
+            f.name.toLowerCase().includes(q),
+        )
+      : frameworks;
+    const sel = matches.filter((f) => value.includes(f.id));
+    const rest = matches.filter((f) => !value.includes(f.id));
+    return [...sel, ...rest];
+  }, [frameworks, query, value]);
 
   const toggle = (id: string) => {
     if (value.includes(id)) {
@@ -113,11 +133,34 @@ export function StandardsMultiSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <div className="border-b border-slate-200 p-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <Input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search standards (e.g. ISO 26262, HIPAA, automotive safety…)"
+                className="h-8 pl-7 text-sm"
+                data-testid="standards-search-input"
+              />
+            </div>
+            <div className="flex items-center justify-between mt-1.5 px-1">
+              <span className="text-[10px] text-slate-500">
+                {query ? `${filtered.length} match${filtered.length === 1 ? "" : "es"}` : `${frameworks.length} standards`}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {value.length}/{max} selected
+              </span>
+            </div>
+          </div>
           <div className="max-h-72 overflow-y-auto py-1">
             {frameworks.length === 0 ? (
               <div className="p-4 text-sm text-slate-500">No frameworks available.</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-4 text-sm text-slate-500">No standards match "{query}".</div>
             ) : (
-              frameworks.map((f) => {
+              filtered.map((f) => {
                 const checked = value.includes(f.id);
                 return (
                   <label

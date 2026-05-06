@@ -46,7 +46,6 @@ const KIND_GROUPS: Array<{ label: string; kinds: Array<{ kind: string; label: st
       { kind: "hld", label: "High-Level Design (HLD, IEEE 1016)", description: "HLD per IEEE 1016 — module decomposition, component interactions, external interface design, data design, tech stack, cross-cutting concerns." },
       { kind: "lld", label: "Low-Level Design (LLD, IEEE 1016)", description: "LLD per IEEE 1016 — class/method specs, API contracts, schemas, algorithms with pseudocode, error model, concurrency & state machines." },
       { kind: "test_cases", label: "Test Case Suite", description: "Standards-grade test suite generated from requirements — functional, negative/edge, non-functional, e2e — each case linked back to its requirement code." },
-      { kind: "test_execution_report", label: "Test Execution Report", description: "AI-executed test run output — per-case verdicts (pass/fail/inconclusive) with evidence, reasoning and traceability back to the cases. Auto-saved when you run a test suite from the Test Cases page." },
       { kind: "deployment_doc", label: "Deployment Document", description: "Build, release, observability and rollback documentation — environments, infra components, CI pipeline, release strategy, runbook, DR posture." },
       { kind: "user_manual", label: "User Manual (IEEE 1063)", description: "End-user documentation per IEEE 1063 — getting started, key concepts, task-oriented procedures, screen reference, troubleshooting, glossary." },
     ],
@@ -155,7 +154,7 @@ const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
   "API 1164": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
 
   // Software-aspects standards
-  "DO-178C": ["psac", "software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "vnv_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases", "test_execution_report"],
+  "DO-178C": ["psac", "software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "vnv_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases"],
   "IEC 62304": ["software_dev_plan", "software_verification_plan", "software_qa_plan", "soup_list", "scmp", "ci_list", "vnv_plan", "risk_management_plan", "change_control_plan", "architecture_doc", "hld", "lld", "test_cases"],
   "IEEE 730": ["software_qa_plan"],
   "IEEE 828": ["scmp", "ci_list", "change_control_plan"],
@@ -163,7 +162,7 @@ const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
   "IEEE 1016": ["hld", "lld"],
   "IEEE 1063": ["user_manual"],
   "ISO/IEC/IEEE 42010": ["architecture_doc"],
-  "ISO/IEC/IEEE 29119": ["test_cases", "test_execution_report"],
+  "ISO/IEC/IEEE 29119": ["test_cases"],
 
   // Risk management
   "ISO 14971": ["risk_management_plan", "fmea", "fta"],
