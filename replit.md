@@ -74,6 +74,7 @@ I prefer iterative development with clear communication at each stage. Ask befor
 -   **AI Fallbacks**: AI features gracefully fall back (e.g., when `OPENAI_API_KEY` is unset or pipeline errors occur).
 -   **Persisted audits**: Run-Audit and Traceability dialogs persist their last result to `audit_runs` and re-hydrate on dialog open via `GET /ai/audit-runs/latest?sourceId=&kind=&frameworkId=` — users can re-open without re-spending an AI credit. Reports can be downloaded as `.md`, `.csv`, or `.pdf` (PDF uses the browser's native print-to-PDF dialog, no extra deps).
 -   **AI Provider Chain**: `lib/ai.ts` runs providers in order — BYO (workspace key) → OpenRouter keys 1-5 (each `OPENROUTER_API_KEY[_N]`, free quotas first) → OpenAI → Anthropic. Paid OpenAI / Anthropic keys are only spent after every OpenRouter slot is exhausted. `isRetryable` + `classifyProviderError` treat 401/402/403/408/429/5xx and provider-specific quota errors (Anthropic "credit balance is too low", OpenRouter `insufficient_credits`) as retryable, so a depleted key automatically advances to the next.
+-   **AI JSON repair**: `parseJson` in `lib/ai.ts` runs a `tryRepairTruncatedJson` pass when `JSON.parse` fails — it closes any still-open arrays/objects/strings and drops the trailing partial element so a provider hitting `max_tokens` mid-stream returns a usable (slightly shorter) payload instead of a 502. Downstream reconcilers (e.g. `/ai/traceability-audit`) treat omitted entries as "fully missing", so completeness scores are never silently inflated.
 
 ## Pointers
 

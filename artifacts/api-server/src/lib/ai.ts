@@ -369,7 +369,28 @@ function parseJson<T>(content: string): T {
   try {
     return JSON.parse(content) as T;
   } catch {
-    throw new AIResponseError("AI returned malformed JSON. Try again.");
+    // Most common cause of failure here is the provider truncating its
+    // output at max_tokens mid-array (e.g. OpenRouter's free tier capped
+    // at 8192 tokens for a long traceability run). Rather than throw away
+    // an expensive AI call, try a best-effort repair pass that closes any
+    // still-open strings / arrays / objects and drops the trailing
+    // partial element. The caller will still see a structurally valid
+    // payload — just with the last few entries missing — and downstream
+    // reconcilers (e.g. the traceability handler) already treat any
+    // omitted requirement as fully missing, so completeness numbers are
+    // never silently inflated.
+    try {
+      const repaired = tryRepairTruncatedJson(content);
+      const parsed = JSON.parse(repaired) as T;
+      console.warn(
+        `[ai] parseJson: recovered truncated JSON via repair pass (${content.length} → ${repaired.length} chars).`,
+      );
+      return parsed;
+    } catch {
+      throw new AIResponseError(
+        "AI response was incomplete or malformed (the provider may have hit its token limit). Please try again.",
+      );
+    }
   }
 }
 
@@ -383,5 +404,119 @@ function extractJsonObject(text: string): string {
   if (start !== -1 && end !== -1 && end > start) {
     return trimmed.slice(start, end + 1);
   }
+  // Truncated: no closing brace at all. Hand the substring from the first
+  // "{" to the repair pass and let it auto-close.
+  if (start !== -1) return trimmed.slice(start);
   return trimmed;
+}
+
+/**
+ * Best-effort recovery for JSON that got truncated mid-stream by an LLM
+ * provider's max_tokens cap. Walks the input with a brace/bracket/string-
+ * aware scanner, finds the last "safe cut" point (end of a balanced value
+ * or just before a comma at array/object level), then re-closes any still-
+ * open strings / arrays / objects so JSON.parse can succeed.
+ *
+ * Not a general JSON5 parser — only handles the truncation case. Returns
+ * the input unchanged if it's already balanced (the parse failure is then
+ * something else and will propagate).
+ */
+function tryRepairTruncatedJson(input: string): string {
+  const s = input;
+  const stack: Array<"{" | "["> = [];
+  let inStr = false;
+  let escape = false;
+  // Index AFTER the last balanced value boundary — i.e. a position we can
+  // safely truncate to and then re-close from.
+  let lastSafeCut = -1;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (inStr) {
+      if (c === "\\") {
+        escape = true;
+        continue;
+      }
+      if (c === '"') {
+        inStr = false;
+        lastSafeCut = i + 1; // end of a complete string value
+      }
+      continue;
+    }
+    if (c === '"') {
+      inStr = true;
+      continue;
+    }
+    if (c === "{" || c === "[") {
+      stack.push(c as "{" | "[");
+      continue;
+    }
+    if (c === "}" || c === "]") {
+      stack.pop();
+      lastSafeCut = i + 1; // end of a balanced object/array
+      continue;
+    }
+    if (c === "," && stack.length > 0) {
+      lastSafeCut = i; // cut BEFORE the comma so we can re-close cleanly
+      continue;
+    }
+  }
+  // Already balanced and not truncated mid-string — nothing to repair.
+  if (stack.length === 0 && !inStr) return s;
+
+  let cut = lastSafeCut > 0 ? s.slice(0, lastSafeCut) : s;
+  cut = cut.replace(/[\s,]+$/, "");
+
+  // Strip any dangling object key (with optional trailing colon and any
+  // partial value start) that has no completed value behind it. This
+  // handles the common case where truncation hit mid-value-string, e.g.
+  // `..., "note": "this got cu` would otherwise leave `..., "note"` in
+  // place which is not valid inside an object literal.
+  // We loop because the cut may need to shed multiple layers (e.g. a
+  // dangling key inside an object that is itself the only entry of an
+  // array element we now want to drop too).
+  for (let pass = 0; pass < 4; pass++) {
+    const before = cut;
+    // Drop trailing `"key" :? <partial>?` that is not followed by a value.
+    cut = cut.replace(/(?:,\s*)?"(?:[^"\\]|\\.)*"\s*:?\s*$/, "");
+    cut = cut.replace(/[\s,]+$/, "");
+    if (cut === before) break;
+  }
+
+  // Re-scan the cut prefix to know exactly which closers we still need
+  // (lastSafeCut tracking is best-effort; the real source of truth is
+  // whatever's still open in `cut`).
+  const stack2: Array<"{" | "["> = [];
+  let inStr2 = false;
+  let escape2 = false;
+  for (let i = 0; i < cut.length; i++) {
+    const c = cut[i];
+    if (escape2) {
+      escape2 = false;
+      continue;
+    }
+    if (inStr2) {
+      if (c === "\\") {
+        escape2 = true;
+        continue;
+      }
+      if (c === '"') inStr2 = false;
+      continue;
+    }
+    if (c === '"') {
+      inStr2 = true;
+      continue;
+    }
+    if (c === "{" || c === "[") stack2.push(c as "{" | "[");
+    else if (c === "}" || c === "]") stack2.pop();
+  }
+  if (inStr2) cut += '"';
+  while (stack2.length) {
+    const open = stack2.pop()!;
+    cut += open === "{" ? "}" : "]";
+  }
+  return cut;
 }
