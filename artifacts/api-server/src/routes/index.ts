@@ -35,6 +35,7 @@ import scimRouter from "./scim";
 import enterpriseRouter from "./enterprise";
 import enterpriseExtraRouter from "./enterpriseExtra";
 import chatMessagesRouter from "./chatMessages";
+import githubWebhookRouter from "./githubWebhook";
 
 const router: IRouter = Router();
 
@@ -74,5 +75,6 @@ router.use(scimRouter);
 router.use(enterpriseRouter);
 router.use(enterpriseExtraRouter);
 router.use(chatMessagesRouter);
+router.use(githubWebhookRouter);
 
 export default router;

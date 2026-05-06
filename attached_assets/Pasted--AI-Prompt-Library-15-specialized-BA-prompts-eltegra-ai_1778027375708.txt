@@ -1,0 +1,48 @@
+. AI Prompt Library (15 specialized BA prompts)
+
+    eltegra.ai claims: A browsable library of 15 named prompts for BAs covering discovery, gap detection, BRD/PRD drafting, and stakeholder validation
+    In codebase: No such library exists as a UI page or named prompt set. Prompts are hardcoded inside AI route handlers — users cannot browse, copy, or run them directly
+    Status: ❌ Not built — marketing claim with no implementation behind it
+
+2. Living Knowledge Graph (Requirements → Code → Tests → CAPA → Standards)
+
+    eltegra.ai claims: A queryable semantic graph of 5 node types with bidirectional traceability and dynamic updates on every commit
+    In codebase: 5-stage lifecycle traceability exists per requirement (Architecture → Design → Implementation → Testing → Deployment). linkedFrameworkCodes links requirements to standards. But there is no actual graph data model with Requirements, Code, Tests, CAPA, and Standards as interconnected nodes
+    Status: ⚠️ Partial — stage traceability is real; the full 5-node graph model is not
+
+3. Continuous Gap Detection on Every Commit
+
+    eltegra.ai claims: Scans run on every code commit to check for missing requirements or non-conformance
+    In codebase: Gap detection exists as a manual on-demand AI call (/api/ai/gap-analysis). There is no commit webhook, no CI/CD hook, no automatic trigger on push
+    Status: ❌ Not built — gap analysis is manual only
+
+4. Audit-Readiness Score
+
+    eltegra.ai claims: A real-time roll-up percentage score for project leadership
+    In codebase: Compliance verdicts (met/partial/gap) exist per framework control. Dashboard exists. A numeric readiness score may be derived but there is no dedicated "audit readiness %" surface visible as a headline metric
+    Status: ⚠️ Partial — raw data exists but not surfaced as a prominent readiness score
+
+5. Evidence Bundling / Evidence Locker
+
+    eltegra.ai claims: One-click export of evidence bundles (PDF, DOCX, CSV) ready for assessors; control auto-closure with evidence
+    In codebase: DOCX/PDF/HTML report export is real and working. But the evidence locker (attaching files per control, auto-closing controls when evidence is submitted) explicitly appears in bootstrap-gap-requirements.ts as a planned gap feature — not yet built
+    Status: ⚠️ Partial — export is real; per-control evidence locker is not
+
+6. BYOK (Bring Your Own AI Key — Azure OpenAI, AWS Bedrock)
+
+    eltegra.ai claims: Enterprise "Bring Your Own Key" for AI providers
+    In codebase: ✅ Actually implemented — byoCfg provider logic exists in ai.ts with BYO routing
+    Status: ✅ Built
+
+7. Slack / Microsoft Teams Notifications
+
+    eltegra.ai claims: Findings and CAPA actions surfaced in Slack or Teams
+    In codebase: In-app notification bell exists. notify.ts handles workflow/CAPA/audit events — but there is no Slack webhook or Teams connector
+    Status: ❌ Not built — in-app only, no external push
+
+8. SCIM Provisioning
+
+    eltegra.ai claims: Enterprise SCIM user provisioning
+    In codebase: A scim.ts route file exists but needs verification of how complete it is
+    Status: ⚠️ Likely partial — route exists but full SCIM compliance uncertain
+

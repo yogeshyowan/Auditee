@@ -27,6 +27,13 @@ The backend is an Express 5 API server. Data persistence is managed by PostgreSQ
 -   **Static code analyzer**: `lib/code-analyzer.ts` deterministically extracts symbols, imports, call-graph edges, cyclomatic-complexity estimates, and business-rule candidate lines for 13 languages (TS/JS/Python/Java/C#/Kotlin/Go/Rust/Ruby/PHP/SQL/COBOL/JCL) with no native deps. `/api/ai/legacy-extract` now feeds the analysis skeleton to the LLM alongside raw source.
 -   **Deterministic traceability scoring**: graph traversal of `traceability_links` × `code_artifacts` × `test_cases` in `routes/traceability.ts` (not LLM self-scoring).
 
+### BA Tools & Outbound Integrations
+
+-   **AI Prompt Library**: Public marketing page at `/prompt-library` listing 15 named, copy-to-clipboard BA prompts across Discovery, Gap Detection, BRD/PRD Drafting, Stakeholder Validation, and Compliance categories. Source of truth: `artifacts/eltegra-site/src/data/promptLibrary.ts`.
+-   **GitHub Commit Webhook (continuous gap detection)**: `POST /api/webhooks/github` receives push events with `x-hub-signature-256` HMAC verification (timing-safe) against `GITHUB_WEBHOOK_SECRET`. On match against any `project_sources` row with `kind=github` whose `config.repoUrl|url|repository` equals the pushed repo, queues a `gap_analysis_pending` activity event per matched project. Returns 503 if secret not configured, 401 on bad signature, ack-only on non-push events.
+-   **Audit-Readiness Score**: `GET /api/projects/:id/audit-readiness` returns the headline `% ready for an external audit` metric — weighted roll-up of compliance adherence (0.35) + traceability coverage (0.25) + CAPA closure (0.20) + test pass rate (0.20), bucketed into low / moderate / high / audit-ready bands. Returns the four component scores so leadership can see what's pulling the number down.
+-   **Slack / MS Teams notifications**: `lib/notify.ts` pushes the same notification payload to `SLACK_WEBHOOK_URL` (incoming-webhook) and `TEAMS_WEBHOOK_URL` (Office 365 connector card) when those env vars are set. Defaults to in-app + chat-when-configured; failures are best-effort and logged, never thrown.
+
 ### Enterprise Features
 
 -   **RBAC**: Four workspace roles (`owner`, `admin`, `editor`, `viewer`) and four project roles (`manager`, `developer`, `reviewer`, `auditor`) with detailed permission matrices and server-side checks.

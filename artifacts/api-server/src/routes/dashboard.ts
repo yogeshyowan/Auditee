@@ -5,9 +5,90 @@ import {
   requirementsTable,
   traceabilityLinksTable,
   complianceFrameworksTable,
+  capaActionsTable,
+  testCasesTable,
 } from "@workspace/db";
 
 const router: IRouter = Router();
+
+/**
+ * Audit-readiness score — the "% ready for an external audit" headline metric.
+ * Weighted roll-up of four signals already tracked in the project:
+ *   - Compliance adherence (avg framework score)              35%
+ *   - Traceability coverage (req → code/test links)           25%
+ *   - CAPA closure rate (done / total)                        20%
+ *   - Test pass rate (passing / non-blocked)                  20%
+ * If any input is empty, that signal contributes 0 (not silently dropped) so
+ * an empty project is honestly "0% ready" rather than "ready by default".
+ */
+router.get("/projects/:id/audit-readiness", async (req, res) => {
+  const projectId = req.params.id;
+
+  const frameworks = await db.select().from(complianceFrameworksTable);
+  const complianceAdherence = frameworks.length
+    ? Math.round(frameworks.reduce((acc, f) => acc + f.score, 0) / frameworks.length)
+    : 0;
+
+  const [{ value: totalReqs }] = await db
+    .select({ value: count() })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, projectId));
+  const [{ value: linkedReqCount }] = await db
+    .select({ value: sql<number>`COUNT(DISTINCT ${traceabilityLinksTable.requirementId})::int` })
+    .from(traceabilityLinksTable);
+  const traceabilityCoverage = Number(totalReqs) > 0
+    ? Math.round((Number(linkedReqCount) / Number(totalReqs)) * 100)
+    : 0;
+
+  const capaRows = await db
+    .select({ status: capaActionsTable.status, cnt: count() })
+    .from(capaActionsTable)
+    .where(eq(capaActionsTable.projectId, projectId))
+    .groupBy(capaActionsTable.status);
+  const capaTotal = capaRows.reduce((a, r) => a + Number(r.cnt), 0);
+  const capaDone = capaRows
+    .filter((r) => r.status === "done" || r.status === "cancelled")
+    .reduce((a, r) => a + Number(r.cnt), 0);
+  const capaClosure = capaTotal > 0 ? Math.round((capaDone / capaTotal) * 100) : 0;
+
+  const testRows = await db
+    .select({ status: testCasesTable.status, cnt: count() })
+    .from(testCasesTable)
+    .where(eq(testCasesTable.projectId, projectId))
+    .groupBy(testCasesTable.status);
+  const testEligible = testRows
+    .filter((r) => r.status !== "blocked")
+    .reduce((a, r) => a + Number(r.cnt), 0);
+  const testPassing = testRows
+    .filter((r) => r.status === "passing")
+    .reduce((a, r) => a + Number(r.cnt), 0);
+  const testPassRate = testEligible > 0 ? Math.round((testPassing / testEligible) * 100) : 0;
+
+  const score = Math.round(
+    complianceAdherence * 0.35 +
+      traceabilityCoverage * 0.25 +
+      capaClosure * 0.20 +
+      testPassRate * 0.20,
+  );
+
+  let band: "low" | "moderate" | "high" | "audit-ready";
+  if (score >= 90) band = "audit-ready";
+  else if (score >= 75) band = "high";
+  else if (score >= 50) band = "moderate";
+  else band = "low";
+
+  res.json({
+    score,
+    band,
+    components: {
+      complianceAdherence,
+      traceabilityCoverage,
+      capaClosure,
+      testPassRate,
+    },
+    weights: { complianceAdherence: 0.35, traceabilityCoverage: 0.25, capaClosure: 0.20, testPassRate: 0.20 },
+  });
+});
 
 router.get("/dashboard/summary", async (_req, res) => {
   const [{ value: totalRequirements }] = await db
