@@ -345,9 +345,9 @@ export async function textCompletion(
   const byoCfg = await getWorkspaceLlmConfig(opts?.workspaceId);
 
   const openrouterClients = getOpenRouterClients();
+  // Order: BYO → OpenRouter keys 1..5 (free quotas first) → OpenAI → Anthropic.
   const chain: Array<Provider<string> | null> = [
     buildByoProvider(byoCfg, "text", systemPrompt, userPrompt, maxTokens),
-    openAICompatibleTextProvider("openai", getOpenAI(), OPENAI_MODEL, systemPrompt, userPrompt, maxTokens),
     ...openrouterClients.map(({ label, client }) =>
       openAICompatibleTextProvider(
         label,
@@ -358,6 +358,7 @@ export async function textCompletion(
         Math.min(maxTokens, OPENROUTER_MAX_TOKENS_CAP),
       ),
     ),
+    openAICompatibleTextProvider("openai", getOpenAI(), OPENAI_MODEL, systemPrompt, userPrompt, maxTokens),
     anthropicProvider(getAnthropic(), ANTHROPIC_HAIKU_MODEL, systemPrompt, userPrompt, maxTokens),
   ];
 

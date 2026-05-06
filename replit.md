@@ -72,7 +72,7 @@ I prefer iterative development with clear communication at each stage. Ask befor
 -   **Lead Admin Access**: Access to `/app/admin/leads` requires both `owner` role and `LEAD_ADMIN_EMAILS` allowlist match, due to `lead_captures` being a global table.
 -   **Razorpay RBI Cap**: Annual plans use one-time orders to work around the RBI ₹15k auto-renew cap.
 -   **AI Fallbacks**: AI features gracefully fall back (e.g., when `OPENAI_API_KEY` is unset or pipeline errors occur).
--   **AI Provider Chain**: `lib/ai.ts` runs providers in order — BYO (workspace key) → OpenAI → OpenRouter keys 1-5 (each `OPENROUTER_API_KEY[_N]`) → Anthropic. `isRetryable` + `classifyProviderError` treat 401/402/403/408/429/5xx and provider-specific quota errors (Anthropic "credit balance is too low", OpenRouter `insufficient_credits`) as retryable, so a depleted key automatically advances to the next.
+-   **AI Provider Chain**: `lib/ai.ts` runs providers in order — BYO (workspace key) → OpenRouter keys 1-5 (each `OPENROUTER_API_KEY[_N]`, free quotas first) → OpenAI → Anthropic. Paid OpenAI / Anthropic keys are only spent after every OpenRouter slot is exhausted. `isRetryable` + `classifyProviderError` treat 401/402/403/408/429/5xx and provider-specific quota errors (Anthropic "credit balance is too low", OpenRouter `insufficient_credits`) as retryable, so a depleted key automatically advances to the next.
 
 ## Pointers
 
