@@ -34,7 +34,7 @@ import {
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
 import { desc } from "drizzle-orm";
-import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
+import { jsonCompletion, AIUnavailableError, AIResponseError, classifyProviderError } from "../lib/ai";
 import { retrieveChunks, formatChunksAsContext } from "../lib/rag.js";
 import { extractRequirementsFromDocument } from "../lib/extraction-pipeline.js";
 import { analyzeCode, analyzeCodeBest, formatAnalysisForPrompt } from "../lib/code-analyzer.js";
@@ -59,6 +59,14 @@ function aiHandler(
       }
       if (err instanceof AIResponseError) {
         res.status(502).json({ error: err.message });
+        return;
+      }
+      const provider = classifyProviderError(err);
+      if (provider) {
+        // Log the underlying provider message once so operators can see which
+        // key is depleted, but never echo it to the client.
+        console.warn(`[ai] ${req.path} provider error: ${provider.message} (raw: ${err?.status ?? "?"} ${String(err?.message ?? "").slice(0, 200)})`);
+        res.status(provider.status).json({ error: provider.message });
         return;
       }
       const status = typeof err?.status === "number" ? err.status : 500;

@@ -22,6 +22,56 @@ export class AIResponseError extends Error {
   }
 }
 
+/**
+ * Detects upstream LLM provider quota / billing failures (Anthropic
+ * "credit balance is too low", OpenAI `insufficient_quota`, generic 429
+ * rate limits) and returns a stable, user-friendly status + message
+ * instead of leaking raw provider error JSON to the client. Without this
+ * a depleted API key surfaces as a confusing "400" with a stringified
+ * blob to every AI feature in the app.
+ */
+export function classifyProviderError(
+  err: any,
+): { status: number; message: string } | null {
+  const raw = String(err?.message ?? "");
+  const code = err?.code ?? err?.error?.code ?? err?.error?.error?.code ?? "";
+  const innerMsg = err?.error?.message ?? err?.error?.error?.message ?? "";
+  const haystack = `${raw} ${innerMsg}`.toLowerCase();
+
+  // Anthropic billing exhausted (HTTP 400 from upstream).
+  if (haystack.includes("credit balance is too low")) {
+    return {
+      status: 503,
+      message:
+        "AI provider (Anthropic) is out of credits. Please top up the Anthropic API key or contact your workspace admin.",
+    };
+  }
+
+  // OpenAI quota exhausted (HTTP 429 with code "insufficient_quota").
+  if (
+    code === "insufficient_quota" ||
+    haystack.includes("insufficient_quota") ||
+    haystack.includes("exceeded your current quota")
+  ) {
+    return {
+      status: 503,
+      message:
+        "AI provider (OpenAI) quota exhausted. Please check OpenAI billing/usage on the configured API key.",
+    };
+  }
+
+  // Generic upstream rate limit — surface as 503 so the client treats it
+  // as a transient backend issue rather than a malformed request.
+  if (err?.status === 429 || haystack.includes("rate limit")) {
+    return {
+      status: 503,
+      message: "AI provider is rate-limiting requests. Please retry in a moment.",
+    };
+  }
+
+  return null;
+}
+
 let cachedOpenAI: OpenAI | null = null;
 let cachedOpenRouter: OpenAI | null = null;
 let cachedAnthropic: Anthropic | null = null;

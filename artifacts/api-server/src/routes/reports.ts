@@ -14,7 +14,7 @@ import {
   activityEventsTable,
   type ReportContent,
 } from "@workspace/db";
-import { jsonCompletion, AIUnavailableError, AIResponseError } from "../lib/ai";
+import { jsonCompletion, AIUnavailableError, AIResponseError, classifyProviderError } from "../lib/ai";
 import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/standards-blueprints";
 import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 import { inArray } from "drizzle-orm";
@@ -35,6 +35,12 @@ function asyncH(fn: (req: import("express").Request, res: import("express").Resp
       }
       if (err instanceof AIResponseError) {
         res.status(502).json({ error: err.message });
+        return;
+      }
+      const provider = classifyProviderError(err);
+      if (provider) {
+        console.warn(`[reports] ${req.path} provider error: ${provider.message} (raw: ${err?.status ?? "?"} ${String(err?.message ?? "").slice(0, 200)})`);
+        res.status(provider.status).json({ error: provider.message });
         return;
       }
       const status = typeof err?.status === "number" ? err.status : 500;
