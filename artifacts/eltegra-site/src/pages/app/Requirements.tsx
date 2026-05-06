@@ -309,7 +309,31 @@ export default function RequirementsPage() {
   const estimateEffort = useEstimateEffort();
   const [estimateOpen, setEstimateOpen] = useState(false);
   const [estimateData, setEstimateData] = useState<EffortEstimateResult | null>(null);
-  const latestEstimateQ = useLatestEffortEstimate(projectId, estimateOpen);
+  // Always-on latest estimate so the table can render Hours per requirement.
+  // Falls back to nothing if no estimate has been run.
+  const latestEstimateQ = useLatestEffortEstimate(projectId, true);
+  // All test cases for this project — used to render a Tests count per row.
+  const allTestCasesQ = useTestCases(projectId);
+
+  // Map requirementCode -> {hours, complexity} from the latest effort estimate.
+  const effortByCode = useMemo(() => {
+    const m = new Map<string, { hours: number; complexity: string }>();
+    const estimates = latestEstimateQ.data?.estimates ?? [];
+    for (const e of estimates) {
+      m.set(e.requirementCode, { hours: e.hours, complexity: e.complexity });
+    }
+    return m;
+  }, [latestEstimateQ.data]);
+
+  // Map requirementId -> testCase count (for the table column).
+  const testCountByReqId = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const tc of allTestCasesQ.data?.testCases ?? []) {
+      if (!tc.requirementId) continue;
+      m.set(tc.requirementId, (m.get(tc.requirementId) ?? 0) + 1);
+    }
+    return m;
+  }, [allTestCasesQ.data]);
 
   // When the sheet opens (or the project changes while open), surface the
   // last persisted run so the user doesn't lose work on refresh.
@@ -1095,12 +1119,17 @@ export default function RequirementsPage() {
                 <TableHead className="w-20">Type</TableHead>
                 <TableHead className="w-32">Status</TableHead>
                 <TableHead className="w-24">Priority</TableHead>
+                <TableHead className="w-20 text-right">Tests</TableHead>
+                <TableHead className="w-24 text-right">Effort</TableHead>
                 <TableHead className="w-40">Owner</TableHead>
                 <TableHead>Frameworks</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requirements.map(req => (
+              {requirements.map(req => {
+                const tests = testCountByReqId.get(req.id) ?? 0;
+                const effort = effortByCode.get(req.code);
+                return (
                 <TableRow
                   key={req.id}
                   onClick={() => setSelected(req)}
@@ -1116,6 +1145,25 @@ export default function RequirementsPage() {
                   <TableCell><Badge variant="outline">{req.type}</Badge></TableCell>
                   <TableCell><Badge className={STATUS_COLOR[req.status] + " border"}>{STATUS_LABEL[req.status]}</Badge></TableCell>
                   <TableCell><span className={"text-xs px-2 py-0.5 rounded font-medium " + PRIORITY_COLOR[req.priority]}>{req.priority}</span></TableCell>
+                  <TableCell className="text-right" data-testid={`cell-tests-${req.code}`}>
+                    {tests > 0 ? (
+                      <Badge variant="secondary" className="font-mono text-[11px]">
+                        <TestTube2 className="h-3 w-3 mr-1" />{tests}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-slate-300">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right" data-testid={`cell-effort-${req.code}`}>
+                    {effort ? (
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span className="text-sm font-semibold text-slate-900">{effort.hours}h</span>
+                        <Badge variant="outline" className="text-[10px] capitalize">{effort.complexity}</Badge>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-300">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm text-slate-600">{req.owner}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
@@ -1125,7 +1173,8 @@ export default function RequirementsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -1178,6 +1227,32 @@ export default function RequirementsPage() {
                     <div className="mt-2 text-sm text-slate-700">{selected.linkedCodeCount ?? 0} artifacts</div>
                   </div>
                 </div>
+                {(() => {
+                  const eff = effortByCode.get(selected.code);
+                  if (!eff) return null;
+                  const full = (latestEstimateQ.data?.estimates ?? []).find((e) => e.requirementCode === selected.code);
+                  return (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3" data-testid="sheet-effort-section">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" /> Effort estimate
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-slate-900">{eff.hours}h</span>
+                          <Badge variant="outline" className="text-[10px] capitalize">{eff.complexity}</Badge>
+                        </div>
+                      </div>
+                      {full?.rationale && (
+                        <p className="mt-2 text-xs text-slate-600 leading-relaxed">{full.rationale}</p>
+                      )}
+                      {full?.risks && full.risks.length > 0 && (
+                        <p className="mt-1.5 text-xs text-rose-700">
+                          <span className="font-semibold">Risks:</span> {full.risks.join("; ")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
                 {selected.linkedFrameworks && selected.linkedFrameworks.length > 0 && (
                   <div>
                     <Label className="text-xs uppercase text-slate-500 tracking-wider">Frameworks</Label>
