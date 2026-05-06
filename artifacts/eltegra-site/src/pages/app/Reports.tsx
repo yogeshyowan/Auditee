@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useProjectContext } from "@/lib/project-context";
+import { useListComplianceFrameworks } from "@workspace/api-client-react";
 import {
   useReports,
   useReport,
@@ -109,9 +110,99 @@ const KIND_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
   KIND_GROUPS.flatMap((g) => g.kinds.map((k) => [k.kind, k.description])),
 );
 
+// Reports that are useful regardless of which standard is in scope (or when
+// no standard has been picked yet). These are always shown in the report-kind
+// dropdown so the user is never blocked.
+const UNIVERSAL_KINDS: ReadonlySet<string> = new Set([
+  "exec_brief",
+  "compliance_audit",
+  "requirements_summary",
+  "traceability",
+  "brd",
+  "prd",
+  "frd",
+  "deployment_doc",
+]);
+
+// Map every supported framework code to the set of report kinds it
+// effectively requires (or is the canonical author of). When the user
+// picks one or more standards, the report-kind dropdown is narrowed to
+// UNIVERSAL_KINDS ∪ (kinds required by any selected standard) and each
+// kind that is mandated by a selected standard is badged "Required by X".
+const STANDARD_REQUIRED_KINDS: Record<string, readonly string[]> = {
+  // Functional safety
+  "ISO 26262": ["safety_plan", "hara", "safety_concept", "tech_safety_concept", "safety_case", "fmea", "fta", "dia", "vnv_plan"],
+  "IEC 61508": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
+  "EN 50128": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
+  "EN 50126": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
+  "EN 50129": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
+  "EN 50657": ["safety_plan", "srs_safety", "safety_case", "fmea", "fta", "vnv_plan"],
+  "IEC 61511": ["safety_plan", "srs_safety", "safety_case", "hara", "fmea", "fta"],
+  "ISO 13849-1": ["safety_plan", "srs_safety", "fmea", "fta", "vnv_plan"],
+
+  // Cybersecurity
+  "ISO/SAE 21434": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "security_risk_assessment"],
+  "IEC 62443": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case", "security_risk_assessment"],
+  "ASPICE Cybersecurity 2.0": ["cybersecurity_plan", "tara", "cybersecurity_concept", "cybersecurity_case"],
+  "ISO/IEC 27001": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  "ISO/IEC 27002": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  "NIST CSF 2.0": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  "SOC 2": ["compliance_audit", "security_risk_assessment"],
+  "PCI DSS 4.0": ["compliance_audit", "security_risk_assessment"],
+  "HIPAA": ["compliance_audit", "security_risk_assessment"],
+  "GDPR": ["compliance_audit"],
+  "DORA": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  "NIS2": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  "NERC CIP": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+  "API 1164": ["compliance_audit", "security_risk_assessment", "cybersecurity_plan"],
+
+  // Software-aspects standards
+  "DO-178C": ["psac", "software_dev_plan", "software_verification_plan", "software_qa_plan", "scmp", "ci_list", "vnv_plan", "change_control_plan"],
+  "IEC 62304": ["software_dev_plan", "software_verification_plan", "software_qa_plan", "soup_list", "scmp", "ci_list", "vnv_plan", "risk_management_plan"],
+  "IEEE 730": ["software_qa_plan"],
+  "IEEE 828": ["scmp", "ci_list", "change_control_plan"],
+  "IEEE 1012": ["vnv_plan"],
+  "IEEE 1016": ["hld", "lld"],
+  "IEEE 1063": ["user_manual"],
+  "ISO/IEC/IEEE 42010": ["architecture_doc"],
+  "ISO/IEC/IEEE 29119": ["test_cases", "test_execution_report"],
+
+  // Risk management
+  "ISO 14971": ["risk_management_plan", "fmea", "fta"],
+  "ISO 31000": ["risk_management_plan"],
+
+  // Medical / regulated devices — these expect a full QMS document set
+  "ISO 13485": ["risk_management_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "user_manual"],
+  "21 CFR 820": ["risk_management_plan", "software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan"],
+  "21 CFR 807": ["compliance_audit"],
+  "21 CFR 814": ["compliance_audit", "risk_management_plan"],
+  "IEC 60601": ["risk_management_plan", "software_qa_plan", "vnv_plan", "user_manual"],
+  "MDR 2017/745": ["compliance_audit", "risk_management_plan", "vnv_plan"],
+  "IVDR 2017/746": ["compliance_audit", "risk_management_plan", "vnv_plan"],
+  "IEC 62366": ["risk_management_plan", "vnv_plan"],
+  "ISO 14155": ["compliance_audit", "risk_management_plan"],
+  "21 CFR Part 11": ["compliance_audit", "software_qa_plan", "change_control_plan"],
+
+  // Quality / process
+  "ISO 9001": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan"],
+  "CMMI 3.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan"],
+  "ASPICE 4.0": ["software_qa_plan", "scmp", "ci_list", "change_control_plan", "vnv_plan", "hld", "lld"],
+
+  // Industrial / OT control
+  "IEC 61131-3": ["srs_safety", "fmea", "hld", "lld"],
+  "IEC 60204-1": ["srs_safety", "fmea", "hld", "lld"],
+  "ISO 10218-1": ["srs_safety", "fmea", "hld"],
+  "ISA-95": ["hld", "lld"],
+
+  // AI / regulated software
+  "EU AI Act": ["compliance_audit", "risk_management_plan", "security_risk_assessment"],
+};
+
 export default function Reports() {
   const { projectId } = useProjectContext();
   const { data, isLoading } = useReports(projectId);
+  const { data: frameworksData } = useListComplianceFrameworks();
+  const allFrameworks = (frameworksData ?? []) as Array<{ id: string; code: string; name: string }>;
   const generate = useGenerateReport();
   const del = useDeleteReport();
   const [open, setOpen] = useState(false);
@@ -127,6 +218,58 @@ export default function Reports() {
     frameworkIds: [],
     instructions: "",
   });
+
+  // Resolve the codes for the currently-selected standards. We key our
+  // filtering map by code (not id) because codes are stable across DB seeds
+  // and human-readable in the badge UI.
+  const selectedCodes = useMemo(
+    () => allFrameworks.filter((f) => form.frameworkIds.includes(f.id)).map((f) => f.code),
+    [allFrameworks, form.frameworkIds],
+  );
+
+  // For each report kind, the list of selected standards that explicitly
+  // require it. Empty when the kind is universal or simply not standard-bound.
+  const requiredByMap = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const code of selectedCodes) {
+      const kinds = STANDARD_REQUIRED_KINDS[code];
+      if (!kinds) continue;
+      for (const k of kinds) {
+        if (!m[k]) m[k] = [];
+        m[k].push(code);
+      }
+    }
+    return m;
+  }, [selectedCodes]);
+
+  // Narrow the report-kind dropdown to just universal kinds + anything any
+  // selected standard demands. With nothing selected, show everything so
+  // the user is never blocked from picking a non-standards-bound report.
+  const filteredKindGroups = useMemo(() => {
+    if (selectedCodes.length === 0) return KIND_GROUPS;
+    const allowed = new Set<string>(UNIVERSAL_KINDS);
+    for (const code of selectedCodes) {
+      for (const k of STANDARD_REQUIRED_KINDS[code] ?? []) allowed.add(k);
+    }
+    return KIND_GROUPS
+      .map((g) => ({ ...g, kinds: g.kinds.filter((k) => allowed.has(k.kind)) }))
+      .filter((g) => g.kinds.length > 0);
+  }, [selectedCodes]);
+
+  const allowedKindSet = useMemo(
+    () => new Set(filteredKindGroups.flatMap((g) => g.kinds.map((k) => k.kind))),
+    [filteredKindGroups],
+  );
+
+  // If the user changes their standards selection in a way that excludes
+  // the currently-chosen kind, jump them to the first surviving kind so
+  // the form never sits in an invalid state.
+  useEffect(() => {
+    if (allowedKindSet.size > 0 && !allowedKindSet.has(form.kind)) {
+      setForm((f) => ({ ...f, kind: filteredKindGroups[0]!.kinds[0]!.kind }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedKindSet]);
 
   function submit() {
     if (!projectId) return;
@@ -181,26 +324,57 @@ export default function Reports() {
                 <DialogTitle>Generate AI report</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
+                {/* 1. Standards first — they drive what reports are offered next. */}
+                <StandardsMultiSelect
+                  value={form.frameworkIds}
+                  onChange={(ids) => setForm({ ...form, frameworkIds: ids })}
+                  required={form.kind === "compliance_audit"}
+                  helper="Pick every standard this document must satisfy. The list of available reports below will adapt to cover everything those standards require."
+                />
+                {form.kind === "compliance_audit" && form.frameworkIds.length === 0 && (
+                  <p className="text-[11px] text-amber-600">
+                    Compliance audit reports need at least one standard selected.
+                  </p>
+                )}
+
+                {/* 2. Report kind — filtered to what the selected standards require. */}
                 <div>
-                  <label className="text-xs font-medium text-slate-600">Report kind</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-slate-600">Report kind</label>
+                    {selectedCodes.length > 0 && (
+                      <span className="text-[10px] text-slate-500">
+                        Showing reports required by {selectedCodes.join(", ")}
+                      </span>
+                    )}
+                  </div>
                   <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v })}>
                     <SelectTrigger data-testid="report-kind-select"><SelectValue /></SelectTrigger>
                     <SelectContent className="max-h-[420px]">
-                      {KIND_GROUPS.map((group) => (
+                      {filteredKindGroups.map((group) => (
                         <SelectGroup key={group.label}>
                           <SelectLabel className="text-[11px] uppercase tracking-wide text-slate-500">
                             {group.label}
                           </SelectLabel>
-                          {group.kinds.map((k) => (
-                            <SelectItem key={k.kind} value={k.kind}>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{k.label}</span>
-                                <span className="text-[10px] text-slate-500 max-w-[320px]">
-                                  {k.description}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                          {group.kinds.map((k) => {
+                            const requiredBy = requiredByMap[k.kind];
+                            return (
+                              <SelectItem key={k.kind} value={k.kind}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium flex items-center gap-1.5">
+                                    {k.label}
+                                    {requiredBy && requiredBy.length > 0 && (
+                                      <Badge variant="secondary" className="text-[9px] py-0 px-1.5 font-normal">
+                                        Required by {requiredBy.join(", ")}
+                                      </Badge>
+                                    )}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 max-w-[320px]">
+                                    {k.description}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
                         </SelectGroup>
                       ))}
                     </SelectContent>
@@ -209,6 +383,8 @@ export default function Reports() {
                     <p className="text-[11px] text-slate-500 mt-1">{KIND_DESCRIPTIONS[form.kind]}</p>
                   )}
                 </div>
+
+                {/* 3. Audience tone. */}
                 <div>
                   <label className="text-xs font-medium text-slate-600">Audience tone</label>
                   <Select value={form.tone} onValueChange={(v) => setForm({ ...form, tone: v })}>
@@ -220,17 +396,7 @@ export default function Reports() {
                     </SelectContent>
                   </Select>
                 </div>
-                <StandardsMultiSelect
-                  value={form.frameworkIds}
-                  onChange={(ids) => setForm({ ...form, frameworkIds: ids })}
-                  required={form.kind === "compliance_audit"}
-                  helper="Pick every standard this document must satisfy. Auditee will follow each one's required structure, language and citations."
-                />
-                {form.kind === "compliance_audit" && form.frameworkIds.length === 0 && (
-                  <p className="text-[11px] text-amber-600">
-                    Compliance audit reports need at least one standard selected.
-                  </p>
-                )}
+
                 <div>
                   <label className="text-xs font-medium text-slate-600">Extra instructions (optional)</label>
                   <Textarea
