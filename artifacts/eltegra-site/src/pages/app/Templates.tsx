@@ -22,11 +22,11 @@ interface WorkspaceMe {
 }
 
 const PLACEHOLDERS: Array<{ token: string; description: string }> = [
-  { token: "{title}", description: "Report title (e.g. Functional Safety Plan)" },
-  { token: "{subtitle}", description: "Optional sub-title (e.g. Project Phoenix v2.0)" },
-  { token: "{date}", description: "Generation date in YYYY-MM-DD" },
+  { token: "{title}", description: "Defaults to the selected report name (no 'Auditee' prefix)" },
+  { token: "{subtitle}", description: "Defaults to the selected project name" },
+  { token: "{date}", description: "Optional — generation date in YYYY-MM-DD. Delete the placeholder to omit." },
   { token: "{tone}", description: "Audience tone — executive | technical | regulator" },
-  { token: "{generated_by}", description: "Always 'Auditee'" },
+  { token: "{generated_by}", description: "'Auditee' on free plans · empty on paid plans (white-label)" },
   { token: "{executive_summary}", description: "AI-written executive summary block" },
   { token: "{#sections}…{/sections}", description: "Loop — repeats once per section" },
   { token: "{heading}", description: "Inside the sections loop — section title" },
@@ -260,6 +260,11 @@ export default function Templates() {
               will use your template — automatically, no extra clicks.
             </li>
           </ol>
+
+          <div className="mt-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
+            <p><strong>Headers &amp; footers are preserved.</strong> Auditee only fills in the {`{placeholders}`} inside the document body. Your branded header (logo, company name) and footer (page numbers, address line, confidentiality notice) come through your export byte-for-byte unchanged.</p>
+            <p><strong>White-label on paid plans.</strong> The {`{generated_by}`} placeholder resolves to <em>Auditee</em> on free plans and to an empty string on any paid plan, so customer-facing exports don't advertise the underlying tool.</p>
+          </div>
 
           {canManage && (
             <div className="mt-4 p-4 border-2 border-dashed border-slate-300 rounded-lg text-center bg-slate-50">

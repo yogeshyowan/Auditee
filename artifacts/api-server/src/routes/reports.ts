@@ -12,6 +12,7 @@ import {
   codeArtifactsTable,
   capaActionsTable,
   activityEventsTable,
+  workspacesTable,
   type ReportContent,
 } from "@workspace/db";
 import { jsonCompletion, AIUnavailableError, AIResponseError, classifyProviderError } from "../lib/ai";
@@ -1103,10 +1104,19 @@ router.get("/reports/:id/export", asyncH(async (req, res) => {
     let buf: Buffer | null = null;
     if (!skipTemplate && report.projectId) {
       const [proj] = await db
-        .select({ workspaceId: projectsTable.workspaceId })
+        .select({
+          workspaceId: projectsTable.workspaceId,
+          projectName: projectsTable.name,
+        })
         .from(projectsTable)
         .where(eq(projectsTable.id, report.projectId));
       if (proj?.workspaceId) {
+        // Look up the workspace plan so the renderer can decide whether
+        // {generated_by} should say "Auditee" (free) or "" (paid).
+        const [ws] = await db
+          .select({ plan: workspacesTable.plan })
+          .from(workspacesTable)
+          .where(eq(workspacesTable.id, proj.workspaceId));
         try {
           buf = await renderWithCompanyTemplate(proj.workspaceId, {
             title: report.title,
@@ -1114,6 +1124,8 @@ router.get("/reports/:id/export", asyncH(async (req, res) => {
             tone: report.tone,
             updatedAt: report.updatedAt,
             content: report.content,
+            projectName: proj.projectName ?? null,
+            workspacePlan: ws?.plan ?? null,
           });
         } catch (err: any) {
           res.status(500).json({
