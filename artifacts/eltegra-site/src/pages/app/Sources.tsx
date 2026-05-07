@@ -245,6 +245,7 @@ export default function Sources() {
   }
 
   const sources = data?.sources ?? [];
+  const connectedKinds = new Set(sources.map((s) => s.kind));
 
   return (
     <div className="flex flex-col gap-6">
@@ -263,23 +264,31 @@ export default function Sources() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {KIND_DEFS.map((d) => (
-              <button
-                key={d.kind}
-                data-testid={`kind-card-${d.kind}`}
-                onClick={() => setPicker(d.kind)}
-                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
-              >
-                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
-                  <d.icon className="h-5 w-5" />
-                </div>
-                <div className="font-medium text-sm">{d.title}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
-                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
-                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
-                </div>
-              </button>
-            ))}
+            {KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -295,23 +304,31 @@ export default function Sources() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {RM_KIND_DEFS.map((d) => (
-              <button
-                key={d.kind}
-                data-testid={`kind-card-${d.kind}`}
-                onClick={() => setPicker(d.kind)}
-                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
-              >
-                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
-                  <d.icon className="h-5 w-5" />
-                </div>
-                <div className="font-medium text-sm">{d.title}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
-                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
-                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
-                </div>
-              </button>
-            ))}
+            {RM_KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -329,23 +346,31 @@ export default function Sources() {
           <DefectFileUploadPanel projectId={projectId} onUpload={onUploadDefectsFile} />
           <div className="text-xs text-muted-foreground uppercase tracking-wide pt-1">Or connect a live tool</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {DEFECT_KIND_DEFS.map((d) => (
-              <button
-                key={d.kind}
-                data-testid={`kind-card-${d.kind}`}
-                onClick={() => setPicker(d.kind)}
-                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
-              >
-                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
-                  <d.icon className="h-5 w-5" />
-                </div>
-                <div className="font-medium text-sm">{d.title}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
-                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
-                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
-                </div>
-              </button>
-            ))}
+            {DEFECT_KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
