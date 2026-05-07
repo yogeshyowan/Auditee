@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   useGetTraceabilityGraph,
   useListRequirements,
@@ -29,7 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Network, Code2, Loader2, Layers, FileText, FileCode2, Beaker, Rocket, Building2 } from "lucide-react";
+import { Network, Code2, Loader2, Layers, FileText, FileCode2, Beaker, Rocket, Building2, Search } from "lucide-react";
+import { INDUSTRY_FRAMEWORKS, INDUSTRY_OPTIONS } from "@/lib/industry-frameworks";
 import {
   useAnalyzeCode,
   useLifecycleTraceability,
@@ -68,8 +69,20 @@ export default function Traceability() {
   const [code, setCode] = useState("");
   const analyzeMut = useAnalyzeCode();
   const [frameworkId, setFrameworkId] = useState<string>("all");
+  const [industry, setIndustry] = useState<string>("all");
+  const [fwSearch, setFwSearch] = useState<string>("");
   const { data: requirements } = useListRequirements(projectId ? ({ projectId } as any) : ({} as any));
   const { data: frameworks } = useListComplianceFrameworks();
+
+  const filteredFrameworks = useMemo(() => {
+    const all = frameworks ?? [];
+    const industryAllow = industry === "all" ? null : new Set(INDUSTRY_FRAMEWORKS[industry] ?? []);
+    const pool = industryAllow ? all.filter((f) => industryAllow.has(f.code)) : all;
+    const q = fwSearch.trim().toLowerCase();
+    return q
+      ? pool.filter((f) => f.code.toLowerCase().includes(q) || f.name.toLowerCase().includes(q))
+      : pool;
+  }, [frameworks, industry, fwSearch]);
 
   const { data: graph, isLoading } = useGetTraceabilityGraph(
     {
@@ -281,16 +294,54 @@ export default function Traceability() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="min-w-[260px]">
+          <div className="min-w-[300px] space-y-1.5">
             <Label className="text-xs uppercase text-slate-500 tracking-wider">Standard</Label>
+            {/* Industry filter row */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 shrink-0 text-[11px] text-slate-500">
+                <Building2 className="h-3.5 w-3.5" /> Industry
+              </div>
+              <Select
+                value={industry}
+                onValueChange={(v) => {
+                  setIndustry(v);
+                  setFwSearch("");
+                  setFrameworkId("all");
+                }}
+              >
+                <SelectTrigger className="h-7 text-xs flex-1" data-testid="select-industry">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INDUSTRY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Search + framework select */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <Input
+                value={fwSearch}
+                onChange={(e) => { setFwSearch(e.target.value); setFrameworkId("all"); }}
+                placeholder="Search standards…"
+                className="h-8 pl-8 text-xs"
+                data-testid="input-framework-search"
+              />
+            </div>
             <Select value={frameworkId} onValueChange={setFrameworkId}>
-              <SelectTrigger className="mt-1.5" data-testid="select-framework">
+              <SelectTrigger className="h-8 text-xs" data-testid="select-framework">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All frameworks</SelectItem>
-                {(frameworks ?? []).map((f) => (
-                  <SelectItem key={f.id} value={f.id}>
+                <SelectItem value="all">
+                  All{industry !== "all" ? ` (${filteredFrameworks.length} in industry)` : " frameworks"}
+                </SelectItem>
+                {filteredFrameworks.map((f) => (
+                  <SelectItem key={f.id} value={f.id} className="text-xs">
                     {f.code} — {f.name}
                   </SelectItem>
                 ))}
