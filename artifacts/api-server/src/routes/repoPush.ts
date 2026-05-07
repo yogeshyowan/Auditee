@@ -85,7 +85,7 @@ router.get("/repo/push-targets", async (req, res) => {
     res.status(400).json({ error: "projectId required" });
     return;
   }
-  const access = await requireProjectAccessInline(req, res, projectId, "viewer");
+  const access = await requireProjectAccessInline(req, res, projectId, "auditor");
   if (!access) return;
 
   const sources = await db
