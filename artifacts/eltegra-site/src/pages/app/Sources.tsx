@@ -70,6 +70,7 @@ import {
   Activity,
   Layers,
   Zap,
+  Upload,
 } from "lucide-react";
 
 type Kind = ProjectSourceRow["kind"];
