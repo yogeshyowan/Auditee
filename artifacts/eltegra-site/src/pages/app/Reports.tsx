@@ -372,7 +372,12 @@ export default function Reports() {
   const { toast } = useToast();
   const onDownload = async (r: ReportRow, format: "html" | "docx" | "pdf") => {
     try {
-      await downloadReport(r.id, format, getToken, r.title);
+      await downloadReport(r.id, format, getToken, r.title, (msg) => {
+        toast({
+          title: "Company template skipped",
+          description: `Your uploaded letterhead couldn't render — used the standard layout instead. (${msg})`,
+        });
+      });
     } catch (err: any) {
       toast({
         title: "Couldn't download report",
@@ -670,7 +675,12 @@ function ReportViewer({ id, onClose }: { id: string; onClose: () => void }) {
   const onDownload = async (format: "html" | "docx" | "pdf") => {
     if (!report) return;
     try {
-      await downloadReport(report.id, format, getToken, report.title);
+      await downloadReport(report.id, format, getToken, report.title, (msg) => {
+        toast({
+          title: "Company template skipped",
+          description: `Your uploaded letterhead couldn't render — used the standard layout instead. (${msg})`,
+        });
+      });
     } catch (err: any) {
       toast({
         title: "Couldn't download report",

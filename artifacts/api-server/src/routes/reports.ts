@@ -1128,13 +1128,21 @@ router.get("/reports/:id/export", asyncH(async (req, res) => {
             workspacePlan: ws?.plan ?? null,
           });
         } catch (err: any) {
-          res.status(500).json({
-            error:
-              "Company template failed to render. Re-upload a valid .docx with the standard placeholders, " +
-              "or append ?template=skip to the export URL to bypass it. Detail: " +
-              (err?.message ?? String(err)),
-          });
-          return;
+          // The user's uploaded company template is malformed (most often a
+          // stray `{` or `}` in the body that Docxtemplater interprets as a
+          // tag delimiter). Returning 500 here hands the user a broken
+          // download with no recovery path. Instead, fall back to the
+          // standard builder so they always get a valid .docx, and surface
+          // the parse error via response headers so the client can toast a
+          // non-blocking warning. They can fix the template in Settings →
+          // Company Template at their leisure.
+          req.log.warn({ err, workspaceId: proj.workspaceId, reportId: report.id }, "company template render failed; falling back to standard builder");
+          buf = null;
+          // ASCII-safe header value so HTTP doesn't choke on UTF-8 in error messages.
+          const safeDetail = String(err?.message ?? err ?? "unknown error")
+            .replace(/[^\x20-\x7E]/g, " ")
+            .slice(0, 240);
+          res.setHeader("X-Auditee-Template-Error", safeDetail);
         }
       }
     }

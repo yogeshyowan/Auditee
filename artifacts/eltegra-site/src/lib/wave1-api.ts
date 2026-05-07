@@ -233,6 +233,7 @@ export async function downloadReport(
   format: "html" | "docx" | "pdf",
   getToken: () => Promise<string | null>,
   filenameHint?: string,
+  onWarning?: (message: string) => void,
 ): Promise<void> {
   const token = await getToken().catch(() => null);
   const headers: Record<string, string> = {};
@@ -252,6 +253,14 @@ export async function downloadReport(
     }
     throw new Error(msg);
   }
+
+  // The DOCX export route falls back to the standard builder when a
+  // workspace's company template fails to render (typically a stray
+  // `{`/`}` in the user's letterhead). It signals that via a custom
+  // header so the UI can show a non-blocking warning — the user still
+  // gets a valid .docx download.
+  const tplErr = res.headers.get("x-auditee-template-error");
+  if (tplErr && onWarning) onWarning(tplErr);
 
   // Honour server-provided filename when present, else build one from the hint.
   const cd = res.headers.get("content-disposition") ?? "";
