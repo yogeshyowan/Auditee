@@ -36,6 +36,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { INDUSTRY_FRAMEWORKS, INDUSTRY_OPTIONS } from "@/lib/industry-frameworks";
 import { useToast } from "@/hooks/use-toast";
 import {
   Github,
@@ -987,6 +989,8 @@ function RunAuditDialog({
   const audit = useComplianceAudit();
   const { toast } = useToast();
   const [picked, setPicked] = useState<string | null>(null);
+  const [industry, setIndustry] = useState<string>("all");
+  const [fwQuery, setFwQuery] = useState<string>("");
   const [result, setResult] = useState<ComplianceAuditResult | null>(null);
   const [hydratedRunAt, setHydratedRunAt] = useState<string | null>(null);
   // Re-load any prior run for this (source, framework) so the dialog can
@@ -1020,7 +1024,7 @@ function RunAuditDialog({
     }
   }
 
-  function reset() { setResult(null); setPicked(null); setHydratedRunAt(null); }
+  function reset() { setResult(null); setPicked(null); setHydratedRunAt(null); setIndustry("all"); setFwQuery(""); }
   function close() { reset(); onClose(); }
 
   function fileBase() {
@@ -1076,26 +1080,84 @@ function RunAuditDialog({
                   No compliance frameworks are configured. Ask an admin to seed standards before running audits.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                  {frameworks.map((fw: any) => {
-                    const active = picked === fw.id;
-                    return (
-                      <button
-                        key={fw.id}
-                        onClick={() => setPicked(fw.id)}
-                        className={`text-left border rounded-md p-3 transition ${
-                          active ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500" : "hover:border-slate-400"
-                        }`}
+                <>
+                  {/* Industry → standards filter (matches StandardsMultiSelect
+                      pattern). Narrows ~100 frameworks down to the ones that
+                      apply to the user's domain so the framework grid is
+                      actually navigable. */}
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2 mb-2">
+                    <div className="sm:w-72">
+                      <label className="text-[10px] font-medium text-slate-600 flex items-center gap-1 mb-1">
+                        <Building2 className="h-3 w-3 text-slate-400" /> Industry
+                      </label>
+                      <Select
+                        value={industry}
+                        onValueChange={(v) => { setIndustry(v); setFwQuery(""); setPicked(null); }}
                       >
-                        <div className="text-xs font-mono text-emerald-700">{fw.code}</div>
-                        <div className="font-medium text-sm mt-0.5">{fw.name}</div>
-                        {fw.category && (
-                          <div className="text-xs text-muted-foreground mt-1">{fw.category}</div>
-                        )}
-                      </button>
+                        <SelectTrigger className="h-8 text-xs" data-testid="audit-industry-select">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDUSTRY_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] font-medium text-slate-600 mb-1 block">Search</label>
+                      <Input
+                        value={fwQuery}
+                        onChange={(e) => setFwQuery(e.target.value)}
+                        placeholder={industry === "all" ? "Search standards (e.g. ISO 26262, HIPAA…)" : "Search within this industry…"}
+                        className="h-8 text-sm"
+                        data-testid="audit-framework-search"
+                      />
+                    </div>
+                  </div>
+                  {(() => {
+                    const allow = industry === "all" ? null : new Set(INDUSTRY_FRAMEWORKS[industry] ?? []);
+                    const q = fwQuery.trim().toLowerCase();
+                    const filtered = (frameworks as any[])
+                      .filter((fw) => !allow || allow.has(fw.code))
+                      .filter((fw) => !q || fw.code.toLowerCase().includes(q) || fw.name.toLowerCase().includes(q));
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="text-sm text-slate-500 bg-slate-50 border border-dashed rounded-md p-4 text-center">
+                          No standards match this filter. {industry !== "all" && "Try a different industry or clear the search."}
+                        </div>
+                      );
+                    }
+                    return (
+                      <>
+                        <div className="text-[10px] text-slate-500 mb-1.5">{filtered.length} standard{filtered.length === 1 ? "" : "s"}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                          {filtered.map((fw: any) => {
+                            const active = picked === fw.id;
+                            return (
+                              <button
+                                key={fw.id}
+                                onClick={() => setPicked(fw.id)}
+                                className={`text-left border rounded-md p-3 transition ${
+                                  active ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500" : "hover:border-slate-400"
+                                }`}
+                                data-testid={`audit-framework-${fw.code.replace(/\s+/g, "-").toLowerCase()}`}
+                              >
+                                <div className="text-xs font-mono text-emerald-700">{fw.code}</div>
+                                <div className="font-medium text-sm mt-0.5">{fw.name}</div>
+                                {fw.category && (
+                                  <div className="text-xs text-muted-foreground mt-1">{fw.category}</div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
                     );
-                  })}
-                </div>
+                  })()}
+                </>
               )}
             </div>
 
