@@ -150,14 +150,31 @@ export async function ingestGithub(
     Accept: "application/vnd.github+json",
     "User-Agent": "Auditee-Sources/1.0",
   };
-  if (cfg.token) headers.Authorization = `Bearer ${cfg.token}`;
+  // Token precedence:
+  //   1. The per-source token (user supplied) — required for private repos
+  //      and for push operations (handled elsewhere).
+  //   2. The platform-level GITHUB_PAT secret — used as a read-only fallback
+  //      so anonymous additions of *public* repos don't immediately fail
+  //      with the unauthenticated 60-req/hour rate limit. This is the path
+  //      most users hit when they paste a public repo URL without a PAT.
+  const effectiveToken = cfg.token || process.env.GITHUB_PAT || null;
+  if (effectiveToken) headers.Authorization = `Bearer ${effectiveToken}`;
 
   let branch = cfg.branch;
   if (!branch) {
     const repoMeta = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
     if (!repoMeta.ok) {
-      const hint = repoMeta.status === 403 ? "rate limit hit — supply a personal access token" : `HTTP ${repoMeta.status}`;
-      throw new Error(`GitHub: cannot read repo (${hint}). For private repos pass a token.`);
+      const hint =
+        repoMeta.status === 404
+          ? "repo not found — check the URL, and pass a personal access token if it's private"
+          : repoMeta.status === 401
+            ? "the supplied token was rejected — make sure it's valid and has `repo` scope"
+            : repoMeta.status === 403
+              ? effectiveToken
+                ? "GitHub denied access — the supplied token may lack `repo` scope, or you've hit the authenticated rate limit"
+                : "rate limit hit — supply a personal access token (or set GITHUB_PAT on the server)"
+              : `HTTP ${repoMeta.status}`;
+      throw new Error(`GitHub: cannot read repo (${hint}).`);
     }
     const meta = (await repoMeta.json()) as { default_branch: string };
     branch = meta.default_branch;
