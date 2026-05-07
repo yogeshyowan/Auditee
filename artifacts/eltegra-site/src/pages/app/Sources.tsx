@@ -19,6 +19,7 @@ import {
   uploadZip,
   uploadFolder,
   uploadReqif,
+  uploadDefectsFile,
   type ProjectSourceRow,
 } from "@/lib/wave1-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,7 +134,39 @@ const DEFECT_KIND_DEFS: KindDef[] = [
   { kind: "gitlab_issues", title: "GitLab Issues", blurb: "Pulls bug-labelled issues from a GitLab project.", icon: GitBranch, color: "bg-orange-100 text-orange-800", ingests: "metadata" },
 ];
 
-const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS];
+// Synthetic kind for files uploaded via the "Upload exported file" flow
+// (CSV / TSV / XLSX / XLS / PDF / JSON). Not shown as a connector tile, but
+// rendered correctly in the Connected sources list when present.
+const DEFECT_FILE_KIND_DEF: KindDef = {
+  kind: "defects_file",
+  title: "Defects file (uploaded)",
+  blurb: "CSV / Excel / PDF / JSON export from any defect tool.",
+  icon: Bug,
+  color: "bg-rose-100 text-rose-800",
+  ingests: "metadata",
+};
+
+const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS, DEFECT_FILE_KIND_DEF];
+
+const DEFECT_FILE_TOOLS: Array<{ value: string; label: string }> = [
+  { value: "", label: "Auto-detect / generic" },
+  { value: "jira", label: "Jira" },
+  { value: "ado", label: "Azure DevOps" },
+  { value: "bugzilla", label: "Bugzilla" },
+  { value: "mantis", label: "MantisBT" },
+  { value: "redmine", label: "Redmine" },
+  { value: "youtrack", label: "JetBrains YouTrack" },
+  { value: "clickup", label: "ClickUp" },
+  { value: "linear", label: "Linear" },
+  { value: "servicenow", label: "ServiceNow" },
+  { value: "alm_octane", label: "OpenText ALM Octane" },
+  { value: "github_issues", label: "GitHub Issues" },
+  { value: "gitlab_issues", label: "GitLab Issues" },
+  { value: "hp_qc", label: "HP / Micro Focus Quality Center" },
+  { value: "trac", label: "Trac" },
+  { value: "rally", label: "CA Rally / Broadcom Rally" },
+  { value: "other", label: "Other" },
+];
 
 function statusBadge(s: ProjectSourceRow["status"]) {
   if (s === "ready") return <Badge variant="outline" className="bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-3 w-3 mr-1" />ready</Badge>;
@@ -192,6 +225,19 @@ export default function Sources() {
       window.location.reload();
     } catch (err: any) {
       toast({ title: "ReqIF import failed", description: err.message, variant: "destructive" });
+    }
+  }
+  async function onUploadDefectsFile(file: File, tool?: string) {
+    if (!projectId) return;
+    try {
+      const r = await uploadDefectsFile(projectId, file, tool, file.name);
+      toast({
+        title: "Defects file imported",
+        description: r.syncResult?.summary ?? `${r.syncResult?.count ?? 0} defect(s) imported`,
+      });
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: "Defects import failed", description: err.message, variant: "destructive" });
     }
   }
 
@@ -273,10 +319,12 @@ export default function Sources() {
             <Bug className="h-4 w-4 text-rose-700" /> Defect management
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Connect your bug-tracker of record. Imported defects are weighed by the auditor: open critical bugs count against incident-response and problem-resolution controls; healthy close-rates count for them.
+            Connect your bug-tracker of record — or skip the connector and just upload an exported file. Imported defects are weighed by the auditor: open critical bugs count against incident-response and problem-resolution controls; healthy close-rates count for them.
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <DefectFileUploadPanel projectId={projectId} onUpload={onUploadDefectsFile} />
+          <div className="text-xs text-muted-foreground uppercase tracking-wide pt-1">Or connect a live tool</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
             {DEFECT_KIND_DEFS.map((d) => (
               <button
@@ -312,7 +360,7 @@ export default function Sources() {
           )}
           {sources.map((s) => {
             const def = ALL_KIND_DEFS.find((d) => d.kind === s.kind);
-            const canSync = s.kind !== "zip" && s.kind !== "folder" && s.kind !== "reqif" && s.kind !== "doors";
+            const canSync = s.kind !== "zip" && s.kind !== "folder" && s.kind !== "reqif" && s.kind !== "doors" && s.kind !== "defects_file";
             return (
               <div key={s.id} className="flex items-center gap-3 border rounded-md p-3 hover:bg-slate-50">
                 <div className={`h-9 w-9 rounded-md flex items-center justify-center ${def?.color ?? "bg-slate-100"}`}>
@@ -396,7 +444,82 @@ export default function Sources() {
   );
 }
 
-// ───────── Connect dialog (per-kind form) ─────────
+// ───────── Defect-file upload panel ─────────
+// Inline upload control inside the Defect-management card. Lets the user pick
+// a CSV / TSV / XLSX / XLS / PDF / JSON exported from any defect tool, tag
+// which tool it came from (display only), and post it to /sources/upload-defects-file.
+function DefectFileUploadPanel({
+  projectId,
+  onUpload,
+}: {
+  projectId: string | undefined;
+  onUpload: (file: File, tool?: string) => Promise<void>;
+}) {
+  const [tool, setTool] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const onPick = () => inputRef.current?.click();
+  const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      await onUpload(file, tool || undefined);
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+  return (
+    <div className="rounded-lg border-2 border-dashed border-rose-200 bg-rose-50/40 p-4 flex flex-col sm:flex-row sm:items-end gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold text-rose-900 flex items-center gap-2">
+          <FileArchive className="h-4 w-4" /> Upload an exported defects file
+        </div>
+        <div className="text-xs text-muted-foreground mt-1">
+          Supports <strong>CSV, TSV, Excel (.xlsx / .xls), PDF, and JSON</strong> exports from
+          Jira, Azure DevOps, Bugzilla, MantisBT, Redmine, YouTrack, ClickUp, Linear,
+          ServiceNow, ALM Octane, GitHub / GitLab Issues, HP QC, Trac, Rally, or any
+          other tool. Header columns are auto-mapped (ID/Key, Title/Summary, Status,
+          Severity, Priority, Created, Resolved). No connector or credentials needed.
+        </div>
+      </div>
+      <div className="flex items-end gap-2">
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] font-medium text-muted-foreground uppercase">Source tool</label>
+          <select
+            value={tool}
+            onChange={(e) => setTool(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            data-testid="select-defect-tool"
+          >
+            {DEFECT_FILE_TOOLS.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,.tsv,.xlsx,.xls,.pdf,.json,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/pdf,application/json"
+          className="hidden"
+          onChange={onChange}
+          data-testid="input-defect-file"
+        />
+        <Button
+          onClick={onPick}
+          disabled={!projectId || busy}
+          className="bg-rose-600 hover:bg-rose-700 text-white gap-2"
+          data-testid="button-upload-defects-file"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {busy ? "Uploading…" : "Choose file"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ConnectDialog({
   kind,
   onClose,

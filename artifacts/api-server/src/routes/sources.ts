@@ -7,13 +7,17 @@ import { ingestZipBuffer, ingestGithub, ingestRemoteSystem, persistFiles, type I
 import { deleteSourceChunks } from "../lib/rag.js";
 import { ingestRequirementsTool, ingestReqifBuffer, isRmKind, RM_KINDS } from "../lib/rm-ingestion.js";
 import { ingestDefectsTool, isDefectKind, DEFECT_KINDS } from "../lib/defect-ingestion.js";
+import { ingestDefectsFileBuffer } from "../lib/defect-file-ingestion.js";
 import { requireProjectAccessInline } from "../lib/projectAccess";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100 MB
 const router: IRouter = Router();
 
 const CODE_KINDS = ["github", "zip", "folder", "jira", "jenkins", "aws_s3", "gdrive", "alm", "cloud_server", "url"];
-const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS, ...DEFECT_KINDS];
+// `defects_file` is created when the user uploads an exported defect file
+// (CSV / Excel / PDF / JSON) from any defect-management tool.
+const DEFECT_FILE_KIND = "defects_file";
+const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS, ...DEFECT_KINDS, DEFECT_FILE_KIND];
 
 // Strip secrets from config before returning to the client.
 function safeConfig(kind: string, cfg: Record<string, any>): Record<string, any> {
@@ -318,6 +322,59 @@ router.post("/sources/upload-reqif", upload.single("file"), async (req, res) => 
     res.status(201).json({ ...row, config: safeConfig(row.kind, row.config), syncResult: result });
   } catch (err: any) {
     res.status(400).json({ error: err.message ?? "Could not parse ReqIF" });
+  }
+});
+
+// Upload a defect-management export (CSV / TSV / XLSX / XLS / PDF / JSON)
+// produced by any defect tool. Field name: "file". Optional: "tool" form field
+// records which tool the user exported from (jira, ado, bugzilla, mantis, …)
+// for nicer labels and downstream filtering — purely a label, parsing is
+// header-driven and tool-agnostic.
+router.post("/sources/upload-defects-file", upload.single("file"), async (req, res) => {
+  const projectId = req.body?.projectId;
+  const tool = typeof req.body?.tool === "string" ? req.body.tool.trim().slice(0, 64) : "";
+  const labelInput = req.body?.label || req.file?.originalname || "Defects upload";
+  if (!projectId || !req.file) {
+    res.status(400).json({ error: "projectId and file are required" });
+    return;
+  }
+  const access = await requireProjectAccessInline(req, res, projectId, "developer");
+  if (access === false) return;
+  const id = randomUUID();
+  const externalSystemLabel = tool ? `${tool} (file)` : "Uploaded file";
+  await db.insert(projectSourcesTable).values({
+    id,
+    projectId,
+    kind: DEFECT_FILE_KIND,
+    label: String(labelInput).slice(0, 240),
+    config: {
+      originalName: req.file.originalname,
+      sizeBytes: req.file.size,
+      mimeType: req.file.mimetype,
+      tool: tool || null,
+    },
+    status: "syncing",
+  });
+  try {
+    const result = await ingestDefectsFileBuffer(
+      id,
+      projectId,
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      externalSystemLabel,
+    );
+    const [row] = await db.select().from(projectSourcesTable).where(eq(projectSourcesTable.id, id));
+    await db.insert(activityEventsTable).values({
+      id: randomUUID(),
+      kind: "defect",
+      message: `Defects file imported: ${row.label} — ${result.count} defect(s)`,
+      actor: "avery.kim",
+      entityCode: id,
+    });
+    res.status(201).json({ ...row, config: safeConfig(row.kind, row.config), syncResult: result });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message ?? "Could not parse defects file" });
   }
 });
 

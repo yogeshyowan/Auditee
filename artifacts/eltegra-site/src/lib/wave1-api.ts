@@ -602,6 +602,25 @@ export async function uploadReqif(projectId: string, file: File, label?: string)
   return r.json();
 }
 
+// Upload a defect-management export file (CSV / TSV / XLSX / XLS / PDF / JSON)
+// from any defect tool. `tool` is a free-form label (e.g. "jira", "ado",
+// "bugzilla") used purely for display — parsing is header-driven.
+export async function uploadDefectsFile(
+  projectId: string,
+  file: File,
+  tool?: string,
+  label?: string,
+): Promise<ProjectSourceRow & { syncResult?: { count: number; summary: string } }> {
+  const fd = new FormData();
+  fd.append("projectId", projectId);
+  fd.append("file", file);
+  if (tool) fd.append("tool", tool);
+  if (label) fd.append("label", label);
+  const r = await fetch(`/api/sources/upload-defects-file`, { method: "POST", body: fd });
+  if (!r.ok) throw new Error((await r.json()).error ?? "Defects file import failed");
+  return r.json();
+}
+
 // ───────── Custom Standards ─────────
 export type UploadedStandard = {
   id: string;
