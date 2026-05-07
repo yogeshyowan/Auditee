@@ -4,7 +4,7 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://auditee.site/</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.00</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee — AI-native enterprise PDLC platform</image:title></image:image>
@@ -12,560 +12,560 @@
   </url>
   <url>
     <loc>https://auditee.site/features</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee feature set</image:title></image:image>
   </url>
   <url>
     <loc>https://auditee.site/pricing</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee pricing</image:title></image:image>
   </url>
   <url>
     <loc>https://auditee.site/roi-calculator</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/about</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.60</priority>
   </url>
   <url>
     <loc>https://auditee.site/contact</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://auditee.site/security</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee security &amp; trust</image:title></image:image>
   </url>
   <url>
     <loc>https://auditee.site/ai-product-development</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/automated-compliance</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/ai-requirements-management</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/ai-requirements-generation</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/missing-requirements-analysis</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/test-case-generation</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/requirements-linked-test-cases</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/requirements-management</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/intelligent-document-analysis</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/brd-generation</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/qa-and-compliance</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/industries</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/ai-for-healthcare</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/ai-for-finance</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/ai-for-automotive</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/ai-for-telecom</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/cpo</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/cto</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/business-analyst</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/compare</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/compare/doors</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/compare/jama</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/compare/polarion</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/blog</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/glossary</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/case-studies</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee case studies</image:title></image:image>
   </url>
   <url>
     <loc>https://auditee.site/customers</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/use-cases</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee use cases</image:title></image:image>
   </url>
   <url>
     <loc>https://auditee.site/whitepapers</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/changelog</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://auditee.site/trust</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee Trust Center</image:title></image:image>
   </url>
   <url>
     <loc>https://auditee.site/developers</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee for developers</image:title></image:image>
   </url>
   <url>
     <loc>https://auditee.site/partners</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/status</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.60</priority>
   </url>
   <url>
     <loc>https://auditee.site/demo-videos</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/faqs</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/roadmap</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/careers</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://auditee.site/newsroom</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://auditee.site/brand</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.50</priority>
   </url>
   <url>
     <loc>https://auditee.site/webinars</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/help</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://auditee.site/migrations</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/affiliates</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://auditee.site/free-tools</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/templates</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/for-startups</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/for-enterprise</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/customers</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/standards</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/teams</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://auditee.site/vdp</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.50</priority>
   </url>
   <url>
     <loc>https://auditee.site/sitemap</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.45</priority>
   </url>
   <url>
     <loc>https://auditee.site/community</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.65</priority>
   </url>
   <url>
     <loc>https://auditee.site/accessibility</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.50</priority>
   </url>
   <url>
     <loc>https://auditee.site/refund-policy</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
     <loc>https://auditee.site/cancellation-policy</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
     <loc>https://auditee.site/shipping-policy</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
     <loc>https://auditee.site/aspice</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/iec-62304</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/fda-qmsr</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/jira</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/azure-devops</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/iso-26262</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/iso-21434</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/dpdp-act</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/github</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/slack</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/gdpr</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/soc-2</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/iso-27001</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/gitlab</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/confluence</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/hipaa</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/dora</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/eu-ai-act</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/servicenow</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/integrations/microsoft-teams</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://auditee.site/privacy-policy</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
     <loc>https://auditee.site/terms-of-service</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
     <loc>https://auditee.site/cookie-policy</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.40</priority>
   </url>
   <url>
     <loc>https://auditee.site/sla</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.55</priority>
   </url>
   <url>
     <loc>https://auditee.site/dpa</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.55</priority>
   </url>
   <url>
     <loc>https://auditee.site/sub-processors</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.55</priority>
   </url>
   <url>
     <loc>https://auditee.site/aup</loc>
-    <lastmod>2026-05-04</lastmod>
+    <lastmod>2026-05-07</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.45</priority>
   </url>
