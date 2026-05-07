@@ -90,7 +90,7 @@ export async function pushFilesToRepo(opts: {
   authorEmail?: string;
 }): Promise<PushResult> {
   if (opts.files.length === 0) throw new Error("No files to push.");
-  if (!opts.token) throw new Error("This GitHub source has no token configured. Re-add it with a `repo`-scoped personal access token.");
+  if (!opts.token) throw new Error("No GitHub token available for push. Re-add this source with a `repo`-scoped personal access token (or set GITHUB_PAT on the server).");
 
   const { owner, repo } = parseRepoUrl(opts.repoUrl);
   const token = opts.token;

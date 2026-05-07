@@ -69,6 +69,7 @@ I prefer iterative development with clear communication at each stage. Ask befor
 ## Gotchas
 
 -   **GitHub Webhook Secret**: `GITHUB_WEBHOOK_SECRET` must be configured for GitHub integration to work; otherwise, it returns a 503.
+-   **GitHub PAT fallback**: When a project's GitHub source has no per-source `token`, both the read path (`lib/source-ingestion.ts → ingestGithub`) and the write path (`routes/repoPush.ts → loadGithubSource`) fall back to `process.env.GITHUB_PAT`. This lifts anonymous reads off GitHub's 60-req/hour rate limit and lets pushes succeed against any repo the platform PAT can write to. Per-source tokens still take precedence — needed for private repos or pushing to user-owned repos the platform PAT can't write to.
 -   **Lead Admin Access**: Access to `/app/admin/leads` requires both `owner` role and `LEAD_ADMIN_EMAILS` allowlist match, due to `lead_captures` being a global table.
 -   **Razorpay RBI Cap**: Annual plans use one-time orders to work around the RBI ₹15k auto-renew cap.
 -   **AI Fallbacks**: AI features gracefully fall back (e.g., when `OPENAI_API_KEY` is unset or pipeline errors occur).
