@@ -8,9 +8,11 @@ import {
   useGenerateReport,
   useRefineReport,
   useDeleteReport,
-  reportExportUrl,
+  downloadReport,
   type ReportRow,
 } from "@/lib/wave1-api";
+import { useAuth } from "@clerk/react";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -366,6 +368,19 @@ export default function Reports() {
   const allFrameworks = (frameworksData ?? []) as Array<{ id: string; code: string; name: string }>;
   const generate = useGenerateReport();
   const del = useDeleteReport();
+  const { getToken } = useAuth();
+  const { toast } = useToast();
+  const onDownload = async (r: ReportRow, format: "html" | "docx" | "pdf") => {
+    try {
+      await downloadReport(r.id, format, getToken, r.title);
+    } catch (err: any) {
+      toast({
+        title: "Couldn't download report",
+        description: err?.message ?? "Please try again or refresh the page.",
+        variant: "destructive",
+      });
+    }
+  };
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [form, setForm] = useState<{
@@ -605,12 +620,22 @@ export default function Reports() {
                     <div className="text-xs text-slate-500">Updated {new Date(r.updatedAt).toLocaleString()}</div>
                   </button>
                   <div className="flex items-center gap-1">
-                    <a href={reportExportUrl(r.id, "pdf")} target="_blank" rel="noreferrer">
-                      <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />PDF</Button>
-                    </a>
-                    <a href={reportExportUrl(r.id, "docx")}>
-                      <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />DOCX</Button>
-                    </a>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDownload(r, "pdf")}
+                      data-testid={`download-pdf-${r.id}`}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1" />PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDownload(r, "docx")}
+                      data-testid={`download-docx-${r.id}`}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1" />DOCX
+                    </Button>
                     <PushToRepoButton
                       projectId={projectId}
                       kind="report"
@@ -636,9 +661,24 @@ export default function Reports() {
 }
 
 function ReportViewer({ id, onClose }: { id: string; onClose: () => void }) {
+  const { projectId } = useProjectContext();
   const { data: report, isLoading } = useReport(id);
   const refine = useRefineReport();
   const [instr, setInstr] = useState("");
+  const { getToken } = useAuth();
+  const { toast } = useToast();
+  const onDownload = async (format: "html" | "docx" | "pdf") => {
+    if (!report) return;
+    try {
+      await downloadReport(report.id, format, getToken, report.title);
+    } catch (err: any) {
+      toast({
+        title: "Couldn't download report",
+        description: err?.message ?? "Please try again or refresh the page.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -651,15 +691,15 @@ function ReportViewer({ id, onClose }: { id: string; onClose: () => void }) {
               {report.content.subtitle && <p className="text-sm text-slate-500">{report.content.subtitle}</p>}
             </DialogHeader>
             <div className="flex gap-2 mb-2 flex-wrap">
-              <a href={reportExportUrl(report.id, "html")} target="_blank" rel="noreferrer">
-                <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />HTML</Button>
-              </a>
-              <a href={reportExportUrl(report.id, "pdf")} target="_blank" rel="noreferrer">
-                <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />PDF (print)</Button>
-              </a>
-              <a href={reportExportUrl(report.id, "docx")}>
-                <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />DOCX</Button>
-              </a>
+              <Button variant="outline" size="sm" onClick={() => onDownload("html")} data-testid="viewer-download-html">
+                <Download className="h-3.5 w-3.5 mr-1" />HTML
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onDownload("pdf")} data-testid="viewer-download-pdf">
+                <Download className="h-3.5 w-3.5 mr-1" />PDF (print)
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onDownload("docx")} data-testid="viewer-download-docx">
+                <Download className="h-3.5 w-3.5 mr-1" />DOCX
+              </Button>
               <PushToRepoButton
                 projectId={projectId}
                 kind="report"

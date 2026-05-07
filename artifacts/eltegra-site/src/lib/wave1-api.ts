@@ -211,6 +211,92 @@ export function reportExportUrl(id: string, format: "html" | "docx" | "pdf") {
   return `${apiBase}/reports/${id}/export?format=${format}`;
 }
 
+/**
+ * Authenticated report download. The export endpoint sits behind
+ * `requireProjectAccessInline`, which 401s any request without a userId.
+ * Plain `<a href>` clicks don't pick up Clerk's Bearer token (the React SDK
+ * only injects it into `fetch` calls), so anchor downloads were silently
+ * failing with 401. This helper:
+ *
+ *   - fetches the export with `Authorization: Bearer <clerk token>` AND
+ *     `credentials: include` so both auth modes (Bearer + session cookie)
+ *     are covered,
+ *   - reads the Content-Disposition filename if the server sent one,
+ *   - for `docx`: triggers a save via a temporary anchor + object URL,
+ *   - for `html` / `pdf`: opens the rendered HTML in a new tab so the
+ *     embedded `window.print()` (PDF format) can fire.
+ *
+ * Throws a user-friendly error on failure — callers should toast it.
+ */
+export async function downloadReport(
+  id: string,
+  format: "html" | "docx" | "pdf",
+  getToken: () => Promise<string | null>,
+  filenameHint?: string,
+): Promise<void> {
+  const token = await getToken().catch(() => null);
+  const headers: Record<string, string> = {};
+  if (token) headers.authorization = `Bearer ${token}`;
+  const res = await fetch(reportExportUrl(id, format), {
+    method: "GET",
+    credentials: "include",
+    headers,
+  });
+  if (!res.ok) {
+    let msg = `Export failed (${res.status})`;
+    try {
+      const j = await res.json();
+      msg = j.error ?? j.message ?? msg;
+    } catch {
+      /* not JSON — keep generic message */
+    }
+    throw new Error(msg);
+  }
+
+  // Honour server-provided filename when present, else build one from the hint.
+  const cd = res.headers.get("content-disposition") ?? "";
+  const m = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  const ext = format === "html" ? "html" : format === "docx" ? "docx" : "html";
+  const fallbackBase = (filenameHint ?? "report").replace(/[^\w\d-]+/g, "-").slice(0, 80) || "report";
+  let filename = `${fallbackBase}.${ext}`;
+  if (m?.[1]) {
+    try {
+      filename = decodeURIComponent(m[1]);
+    } catch {
+      filename = m[1];
+    }
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  if (format === "docx") {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Give the browser a moment to start the download before revoking.
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    return;
+  }
+
+  // html / pdf: open in a new tab. PDF is HTML with an embedded
+  // window.print() autotrigger, so the new tab will pop the print dialog.
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if (!win) {
+    // Popup blocker fired — fall back to download instead of losing the file.
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 // ───────── Workflows ─────────
 export type WorkflowStepDef = {
   id: string;
