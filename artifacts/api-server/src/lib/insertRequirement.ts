@@ -18,7 +18,28 @@ export type RequirementBuilder = (code: string) => Omit<
 const MAX_CODE_RETRIES = 8;
 
 function projectPrefix(slug: string | null | undefined): string {
-  return (slug ?? "REQ").toUpperCase().slice(0, 4);
+  // Letters only, uppercase, capped at 4 chars. Stripping non-alphanumerics
+  // (especially `-`) keeps allocated codes single-segment (`PROJ-0042`) so
+  // the trailing-number parser below stays unambiguous.
+  const cleaned = (slug ?? "REQ").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return (cleaned || "REQ").slice(0, 4);
+}
+
+/**
+ * Drizzle wraps pg errors in DrizzleQueryError — the SQLSTATE / constraint
+ * name we care about live on `err.cause`, not on the outer error. Walk the
+ * cause chain so we don't miss a unique-violation that should be retried.
+ */
+function isProjectCodeUniqueViolation(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let i = 0; i < 5 && cur; i++) {
+    const e = cur as { code?: string; constraint?: string; cause?: unknown };
+    if (e?.code === "23505" && e?.constraint === "requirements_project_code_unique") {
+      return true;
+    }
+    cur = e?.cause;
+  }
+  return false;
 }
 
 /**
@@ -57,7 +78,11 @@ export async function insertRequirement(
           .from(requirementsTable)
           .where(eq(requirementsTable.projectId, projectId));
         const max = rows.reduce((m, r) => {
-          const n = Number(r.code.split("-")[1] ?? "0");
+          // Match the trailing numeric segment regardless of how many `-`
+          // segments precede it. Robust against legacy multi-segment codes
+          // (e.g. `A-PA-0044`) that broke the old `split("-")[1]` parse.
+          const tail = r.code.match(/(\d+)$/);
+          const n = tail ? Number(tail[1]) : 0;
           return Number.isFinite(n) && n > m ? n : m;
         }, 0);
         const code = `${prefix}-${String(max + 1 + attempt).padStart(4, "0")}`;
@@ -77,10 +102,8 @@ export async function insertRequirement(
       // Postgres unique_violation. Could be requirements_project_code_unique
       // (we lost a race for this code number) or requirements_provenance_unique
       // (caller passed a sourceId/externalId that already exists — not a
-      // retryable condition).
-      const pgCode = (err as { code?: string } | null)?.code;
-      const constraint = (err as { constraint?: string } | null)?.constraint;
-      if (pgCode === "23505" && constraint === "requirements_project_code_unique") {
+      // retryable condition). Drizzle wraps pg errors so we walk err.cause.
+      if (isProjectCodeUniqueViolation(err)) {
         lastErr = err;
         continue;
       }
