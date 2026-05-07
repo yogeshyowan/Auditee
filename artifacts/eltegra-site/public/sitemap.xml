@@ -68,12 +68,6 @@
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://auditee.site/ai-requirements-generation</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <url>
     <loc>https://auditee.site/missing-requirements-analysis</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
@@ -213,12 +207,6 @@
     <image:image><image:loc>https://auditee.site/opengraph.jpg</image:loc><image:title>Auditee case studies</image:title></image:image>
   </url>
   <url>
-    <loc>https://auditee.site/customers</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
-  <url>
     <loc>https://auditee.site/use-cases</loc>
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
@@ -346,12 +334,6 @@
     <lastmod>2026-05-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://auditee.site/customers</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.80</priority>
   </url>
   <url>
     <loc>https://auditee.site/standards</loc>

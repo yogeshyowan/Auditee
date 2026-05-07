@@ -470,8 +470,6 @@ function Router() {
       <Route path="/gdpr" component={Gdpr} />
       <Route path="/eu-gdpr" component={Gdpr} />
       <Route path="/uk-gdpr" component={Gdpr} />
-      <Route path="/soc-2" component={Soc2} />
-      <Route path="/soc2" component={Soc2} />
       <Route path="/soc-2-type-ii" component={Soc2} />
       <Route path="/iso-27001" component={Iso27001} />
       <Route path="/iso27001" component={Iso27001} />
