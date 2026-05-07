@@ -172,6 +172,7 @@ export const UpdateRequirementBody = zod.object({
   priority: zod.enum(["low", "medium", "high", "critical"]).optional(),
   owner: zod.string().optional(),
   tags: zod.array(zod.string()).optional(),
+  linkedFrameworks: zod.array(zod.string()).optional(),
 });
 
 export const UpdateRequirementResponse = zod.object({

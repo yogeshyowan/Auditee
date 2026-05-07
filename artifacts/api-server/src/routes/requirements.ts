@@ -186,6 +186,7 @@ router.patch("/requirements/:requirementId", async (req, res) => {
   if (body.priority !== undefined) updates.priority = body.priority;
   if (body.owner !== undefined) updates.owner = body.owner;
   if (body.tags !== undefined) updates.tags = body.tags;
+  if (body.linkedFrameworks !== undefined) updates.linkedFrameworks = body.linkedFrameworks;
   const [row] = await db
     .update(requirementsTable)
     .set(updates)

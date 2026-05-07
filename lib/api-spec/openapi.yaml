@@ -419,6 +419,9 @@ components:
         tags:
           type: array
           items: { type: string }
+        linkedFrameworks:
+          type: array
+          items: { type: string }
 
     CodeArtifact:
       type: object

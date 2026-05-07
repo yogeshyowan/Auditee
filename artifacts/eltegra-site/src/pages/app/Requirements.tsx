@@ -3,6 +3,7 @@ import {
   useListRequirements,
   useCreateRequirement,
   useUpdateRequirement,
+  useListComplianceFrameworks,
   RequirementStatus,
   RequirementType,
   RequirementPriority,
@@ -251,6 +252,11 @@ export default function RequirementsPage() {
   // show in the filter dropdown and the source-counter chips.
   const projectAllParams = useMemo(() => (projectId ? ({ projectId } as any) : ({} as any)), [projectId]);
   const { data: allProjectReqs } = useListRequirements(projectAllParams);
+  const { data: allFrameworksData } = useListComplianceFrameworks();
+  const fwById = useMemo(
+    () => new Map((allFrameworksData ?? []).map((f) => [f.id, f.code] as const)),
+    [allFrameworksData],
+  );
 
   // Build a list of source options for the dropdown from the unfiltered set:
   //   {value: "manual", label: "Manual entries", count: N}
@@ -1222,7 +1228,7 @@ export default function RequirementsPage() {
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {(req.linkedFrameworks ?? []).slice(0, 3).map(fw => (
-                        <Badge key={fw} variant="secondary" className="text-[10px]">{fw}</Badge>
+                        <Badge key={fw} variant="secondary" className="text-[10px]">{fwById.get(fw) ?? fw}</Badge>
                       ))}
                     </div>
                   </TableCell>
@@ -1307,14 +1313,18 @@ export default function RequirementsPage() {
                     </div>
                   );
                 })()}
-                {selected.linkedFrameworks && selected.linkedFrameworks.length > 0 && (
-                  <div>
-                    <Label className="text-xs uppercase text-slate-500 tracking-wider">Frameworks</Label>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {selected.linkedFrameworks.map(fw => <Badge key={fw} variant="secondary">{fw}</Badge>)}
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <StandardsMultiSelect
+                    label="Linked standards"
+                    helper="Requirements tagged with a standard appear in the Traceability Graph when that standard is selected."
+                    value={selected.linkedFrameworks ?? []}
+                    onChange={(ids) => {
+                      updateMut.mutate({ requirementId: selected.id, data: { linkedFrameworks: ids } as any });
+                      setSelected({ ...selected, linkedFrameworks: ids });
+                    }}
+                    disabled={updateMut.isPending}
+                  />
+                </div>
                 {selected.tags && selected.tags.length > 0 && (
                   <div>
                     <Label className="text-xs uppercase text-slate-500 tracking-wider">Tags</Label>
