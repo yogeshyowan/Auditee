@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen, ChevronDown, FileType, FileCog, TestTube2, Clock, AlertCircle } from "lucide-react";
+import { Plus, Search, FileText, Sparkles, Loader2, Code2, Github, Upload, FolderOpen, ChevronDown, FileType, FileCog, TestTube2, Clock, AlertCircle, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateRequirements, useFetchCodeUrl, useEstimateEffort, useLatestEffortEstimate, type EffortEstimateResult } from "@/lib/ai-api";
@@ -551,6 +551,60 @@ export default function RequirementsPage() {
             )}
             {estimateEffort.isPending ? "Estimating…" : "Estimate effort"}
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2"
+                disabled={!projectId}
+                data-testid="button-export-requirements"
+              >
+                <Download className="h-4 w-4" /> Export
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!projectId) return;
+                  window.open(`/api/requirements/export?projectId=${encodeURIComponent(projectId)}&format=reqif`, "_blank");
+                }}
+                data-testid="menu-export-reqif"
+              >
+                <FileCog className="h-4 w-4 mr-2 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">ReqIF (.reqif)</span>
+                  <span className="text-xs text-slate-500">DOORS, Jama, Polarion, codeBeamer…</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!projectId) return;
+                  window.open(`/api/requirements/export?projectId=${encodeURIComponent(projectId)}&format=csv`, "_blank");
+                }}
+                data-testid="menu-export-csv"
+              >
+                <FileText className="h-4 w-4 mr-2 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">CSV (.csv)</span>
+                  <span className="text-xs text-slate-500">Universal · Excel, Sheets, any RM tool</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!projectId) return;
+                  window.open(`/api/requirements/export?projectId=${encodeURIComponent(projectId)}&format=json`, "_blank");
+                }}
+                data-testid="menu-export-json"
+              >
+                <FileType className="h-4 w-4 mr-2 text-primary" />
+                <div className="flex flex-col">
+                  <span className="font-medium">JSON (.json)</span>
+                  <span className="text-xs text-slate-500">Custom integrations / scripts</span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button onClick={() => setCreateOpen(true)} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" /> New Requirement
           </Button>
