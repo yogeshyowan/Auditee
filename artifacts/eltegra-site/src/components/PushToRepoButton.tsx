@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { Link } from "wouter";
 import { GitBranch, Loader2, AlertTriangle, CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,13 +76,18 @@ export function PushToRepoButton({
 
   const picked = useMemo(() => sources.find((s) => s.id === sourceId), [sources, sourceId]);
   const pending = pushReport.isPending || pushBundle.isPending;
+  // Distinguish "no GitHub source on THIS project" from "no token". The
+  // confusion users hit is having a GitHub source on a *different* project
+  // and assuming it carries over — the per-project Sources page is the
+  // single source of truth, so we route them straight there.
   const blockingMsg = !projectId
     ? "Select a project first."
     : sources.length === 0
-      ? "No GitHub source connected. Add one in the Sources tab."
+      ? "This project has no GitHub source connected yet. Connect one in the Sources tab — sources are per-project, so a repo added to a different project won't appear here."
       : picked && !picked.hasToken
         ? "This source has no token. Re-add it with a personal-access-token (repo scope)."
         : null;
+  const showSourcesLink = projectId && sources.length === 0;
 
   const onPush = async () => {
     if (!projectId) return;
@@ -148,7 +154,22 @@ export function PushToRepoButton({
         ) : blockingMsg ? (
           <div className="rounded-md border border-amber-200 bg-amber-50 text-amber-900 text-sm p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-            <div>{blockingMsg}</div>
+            <div className="space-y-2">
+              <div>{blockingMsg}</div>
+              {showSourcesLink && (
+                <Link href="/app/sources">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                    className="bg-white"
+                    data-testid="open-sources-tab"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open Sources tab
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         ) : result ? (
           <div className="rounded-md border border-emerald-200 bg-emerald-50 text-emerald-900 text-sm p-3 space-y-2">
