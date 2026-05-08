@@ -219,6 +219,24 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/PdlcStage" }
 
+  /pdlc/stages/{id}:
+    patch:
+      operationId: updatePdlcStage
+      tags: [pdlc]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PatchPdlcStageBody" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PdlcStage" }
+
   /legacy/systems:
     get:
       operationId: listLegacySystems
@@ -563,6 +581,12 @@ components:
         completion: { type: integer, description: "0-100" }
         requirementCount: { type: integer }
         blockers: { type: integer }
+
+    PatchPdlcStageBody:
+      type: object
+      properties:
+        blockers: { type: integer, minimum: 0, description: "Number of active blockers for this stage" }
+        completion: { type: integer, minimum: 0, maximum: 100, description: "Manual completion override 0-100" }
 
     LegacySystem:
       type: object

@@ -2,7 +2,11 @@ import { Router, type IRouter } from "express";
 import { eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db, pdlcStagesTable, requirementsTable } from "@workspace/db";
-import { GetPdlcStagesQueryParams } from "@workspace/api-zod";
+import {
+  GetPdlcStagesQueryParams,
+  PatchPdlcStagePathParams,
+  PatchPdlcStageBody,
+} from "@workspace/api-zod";
 
 // Which requirement status "belongs" at this stage (drives requirementCount)
 const STAGE_CURRENT_STATUS: Record<string, string> = {
@@ -15,7 +19,6 @@ const STAGE_CURRENT_STATUS: Record<string, string> = {
 };
 
 // Statuses that mean a requirement has "passed through" a stage (drives completion %)
-// completion = count(reqs with status in passedStatuses) / total * 100
 const STAGE_PASSED_STATUSES: Record<string, string[]> = {
   ideation:    ["in_review", "approved", "implemented", "verified"],
   design:      ["approved", "implemented", "verified"],
@@ -34,12 +37,51 @@ const DEFAULT_STAGES: Array<{ stage: string; title: string; sortOrder: number }>
   { stage: "governance",  title: "Governance",  sortOrder: 5 },
 ];
 
+async function buildStageOutput(
+  s: typeof pdlcStagesTable.$inferSelect,
+  byStatus: Record<string, number>,
+  totalReqs: number,
+) {
+  const currentStatus = STAGE_CURRENT_STATUS[s.stage] ?? "";
+  const requirementCount = byStatus[currentStatus] ?? 0;
+  const passedStatuses = STAGE_PASSED_STATUSES[s.stage] ?? [];
+  const passedCount = passedStatuses.reduce((sum, st) => sum + (byStatus[st] ?? 0), 0);
+  const completion = totalReqs > 0 ? Math.round((passedCount / totalReqs) * 100) : 0;
+  return {
+    id: s.id,
+    projectId: s.projectId,
+    stage: s.stage,
+    title: s.title,
+    completion,
+    blockers: s.blockers,
+    requirementCount,
+  };
+}
+
+async function getStatusCounts(projectId: string) {
+  const rows = await db
+    .select({
+      status: requirementsTable.status,
+      cnt: sql<number>`cast(count(*) as int)`,
+    })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, projectId))
+    .groupBy(requirementsTable.status);
+
+  const byStatus: Record<string, number> = {};
+  let totalReqs = 0;
+  for (const row of rows) {
+    byStatus[row.status] = row.cnt;
+    totalReqs += row.cnt;
+  }
+  return { byStatus, totalReqs };
+}
+
 const router: IRouter = Router();
 
 router.get("/pdlc/stages", async (req, res) => {
   const params = GetPdlcStagesQueryParams.parse(req.query);
 
-  // Ensure stages exist for this project (lazy seed)
   let stages = await db
     .select()
     .from(pdlcStagesTable)
@@ -60,42 +102,37 @@ router.get("/pdlc/stages", async (req, res) => {
     stages = rows;
   }
 
-  // Single query: count requirements grouped by status for this project
-  const statusCounts = await db
-    .select({
-      status: requirementsTable.status,
-      cnt: sql<number>`cast(count(*) as int)`,
-    })
-    .from(requirementsTable)
-    .where(eq(requirementsTable.projectId, params.projectId))
-    .groupBy(requirementsTable.status);
+  const { byStatus, totalReqs } = await getStatusCounts(params.projectId);
+  const out = await Promise.all(stages.map((s) => buildStageOutput(s, byStatus, totalReqs)));
+  res.json(out);
+});
 
-  const byStatus: Record<string, number> = {};
-  let totalReqs = 0;
-  for (const row of statusCounts) {
-    byStatus[row.status] = row.cnt;
-    totalReqs += row.cnt;
+router.patch("/pdlc/stages/:id", async (req, res) => {
+  const { id } = PatchPdlcStagePathParams.parse(req.params);
+  const body = PatchPdlcStageBody.parse(req.body);
+
+  const updates: Partial<typeof pdlcStagesTable.$inferInsert> = {};
+  if (body.blockers !== undefined) updates.blockers = body.blockers;
+  if (body.completion !== undefined) updates.completion = body.completion;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
   }
 
-  const out = stages.map((s) => {
-    const currentStatus = STAGE_CURRENT_STATUS[s.stage] ?? "";
-    const requirementCount = byStatus[currentStatus] ?? 0;
+  const [updated] = await db
+    .update(pdlcStagesTable)
+    .set(updates)
+    .where(eq(pdlcStagesTable.id, id))
+    .returning();
 
-    const passedStatuses = STAGE_PASSED_STATUSES[s.stage] ?? [];
-    const passedCount = passedStatuses.reduce((sum, st) => sum + (byStatus[st] ?? 0), 0);
-    const completion = totalReqs > 0 ? Math.round((passedCount / totalReqs) * 100) : 0;
+  if (!updated) {
+    res.status(404).json({ error: "Stage not found" });
+    return;
+  }
 
-    return {
-      id: s.id,
-      projectId: s.projectId,
-      stage: s.stage,
-      title: s.title,
-      completion,
-      blockers: s.blockers,
-      requirementCount,
-    };
-  });
-
+  const { byStatus, totalReqs } = await getStatusCounts(updated.projectId);
+  const out = await buildStageOutput(updated, byStatus, totalReqs);
   res.json(out);
 });
 

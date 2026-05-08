@@ -207,6 +207,13 @@ export interface PdlcStage {
   blockers?: number;
 }
 
+export interface PatchPdlcStageBody {
+  /** Number of active blockers for this stage */
+  blockers?: number;
+  /** Manual completion override 0-100 */
+  completion?: number;
+}
+
 export interface LegacySystem {
   id: string;
   name: string;

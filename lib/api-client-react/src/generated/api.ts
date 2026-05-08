@@ -40,6 +40,7 @@ import type {
   LegacySystem,
   ListCodeArtifactsParams,
   ListRequirementsParams,
+  PatchPdlcStageBody,
   PdlcStage,
   Project,
   Requirement,
@@ -1274,6 +1275,86 @@ export function useGetPdlcStages<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+export const getUpdatePdlcStageUrl = (id: string) => {
+  return `/api/pdlc/stages/${id}`;
+};
+
+export const updatePdlcStage = async (
+  id: string,
+  patchPdlcStageBody: PatchPdlcStageBody,
+  options?: RequestInit,
+): Promise<PdlcStage> => {
+  return customFetch<PdlcStage>(getUpdatePdlcStageUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(patchPdlcStageBody),
+  });
+};
+
+export const getUpdatePdlcStageMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePdlcStage>>,
+    TError,
+    { id: string; data: BodyType<PatchPdlcStageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePdlcStage>>,
+  TError,
+  { id: string; data: BodyType<PatchPdlcStageBody> },
+  TContext
+> => {
+  const mutationKey = ["updatePdlcStage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePdlcStage>>,
+    { id: string; data: BodyType<PatchPdlcStageBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+    return updatePdlcStage(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePdlcStageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePdlcStage>>
+>;
+export type UpdatePdlcStageMutationBody = BodyType<PatchPdlcStageBody>;
+export type UpdatePdlcStageMutationError = ErrorType<unknown>;
+
+export const useUpdatePdlcStage = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePdlcStage>>,
+    TError,
+    { id: string; data: BodyType<PatchPdlcStageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePdlcStage>>,
+  TError,
+  { id: string; data: BodyType<PatchPdlcStageBody> },
+  TContext
+> => {
+  return useMutation(getUpdatePdlcStageMutationOptions(options));
+};
 
 export const getListLegacySystemsUrl = () => {
   return `/api/legacy/systems`;
