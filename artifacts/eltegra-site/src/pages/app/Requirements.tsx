@@ -214,9 +214,10 @@ export default function RequirementsPage() {
       { url: githubUrl.trim() },
       {
         onSuccess: (data) => {
-          setCodeInput(data.code);
+          const sliced = data.code.length > 30000;
+          setCodeInput(sliced ? data.code.slice(0, 30000) : data.code);
           setCodeLanguage(data.language);
-          setCodeSourceLabel(`${data.label}${data.truncated ? " (truncated to 30k chars)" : ""}`);
+          setCodeSourceLabel(`${data.label}${data.truncated || sliced ? " (truncated to 30k chars)" : ""}`);
         },
         onError: (err: Error) => {
           toast({ title: "Could not fetch", description: err.message, variant: "destructive" });
