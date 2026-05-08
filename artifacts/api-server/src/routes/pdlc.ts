@@ -1,16 +1,28 @@
 import { Router, type IRouter } from "express";
-import { eq, and, inArray, count } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db, pdlcStagesTable, requirementsTable } from "@workspace/db";
 import { GetPdlcStagesQueryParams } from "@workspace/api-zod";
 
-const stageStatusMap: Record<string, string[]> = {
-  ideation: ["draft"],
-  design: ["in_review"],
-  development: ["approved"],
-  testing: ["implemented"],
-  launch: ["verified"],
-  governance: ["verified"],
+// Which requirement status "belongs" at this stage (drives requirementCount)
+const STAGE_CURRENT_STATUS: Record<string, string> = {
+  ideation:    "draft",
+  design:      "in_review",
+  development: "approved",
+  testing:     "implemented",
+  launch:      "verified",
+  governance:  "verified",
+};
+
+// Statuses that mean a requirement has "passed through" a stage (drives completion %)
+// completion = count(reqs with status in passedStatuses) / total * 100
+const STAGE_PASSED_STATUSES: Record<string, string[]> = {
+  ideation:    ["in_review", "approved", "implemented", "verified"],
+  design:      ["approved", "implemented", "verified"],
+  development: ["implemented", "verified"],
+  testing:     ["verified"],
+  launch:      ["verified"],
+  governance:  ["verified"],
 };
 
 const DEFAULT_STAGES: Array<{ stage: string; title: string; sortOrder: number }> = [
@@ -27,6 +39,7 @@ const router: IRouter = Router();
 router.get("/pdlc/stages", async (req, res) => {
   const params = GetPdlcStagesQueryParams.parse(req.query);
 
+  // Ensure stages exist for this project (lazy seed)
   let stages = await db
     .select()
     .from(pdlcStagesTable)
@@ -47,33 +60,42 @@ router.get("/pdlc/stages", async (req, res) => {
     stages = rows;
   }
 
-  const out = await Promise.all(
-    stages.map(async (s) => {
-      const statuses = stageStatusMap[s.stage] ?? [];
-      let requirementCount = 0;
-      if (statuses.length) {
-        const [{ value }] = await db
-          .select({ value: count() })
-          .from(requirementsTable)
-          .where(
-            and(
-              eq(requirementsTable.projectId, params.projectId),
-              inArray(requirementsTable.status, statuses),
-            ),
-          );
-        requirementCount = Number(value);
-      }
-      return {
-        id: s.id,
-        projectId: s.projectId,
-        stage: s.stage,
-        title: s.title,
-        completion: s.completion,
-        blockers: s.blockers,
-        requirementCount,
-      };
-    }),
-  );
+  // Single query: count requirements grouped by status for this project
+  const statusCounts = await db
+    .select({
+      status: requirementsTable.status,
+      cnt: sql<number>`cast(count(*) as int)`,
+    })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, params.projectId))
+    .groupBy(requirementsTable.status);
+
+  const byStatus: Record<string, number> = {};
+  let totalReqs = 0;
+  for (const row of statusCounts) {
+    byStatus[row.status] = row.cnt;
+    totalReqs += row.cnt;
+  }
+
+  const out = stages.map((s) => {
+    const currentStatus = STAGE_CURRENT_STATUS[s.stage] ?? "";
+    const requirementCount = byStatus[currentStatus] ?? 0;
+
+    const passedStatuses = STAGE_PASSED_STATUSES[s.stage] ?? [];
+    const passedCount = passedStatuses.reduce((sum, st) => sum + (byStatus[st] ?? 0), 0);
+    const completion = totalReqs > 0 ? Math.round((passedCount / totalReqs) * 100) : 0;
+
+    return {
+      id: s.id,
+      projectId: s.projectId,
+      stage: s.stage,
+      title: s.title,
+      completion,
+      blockers: s.blockers,
+      requirementCount,
+    };
+  });
+
   res.json(out);
 });
 
