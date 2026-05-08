@@ -5,27 +5,13 @@ import path from "path";
 
 const isReplit = process.env.REPL_ID !== undefined;
 
-const rawPort = process.env.PORT;
+// PORT is only used by the dev/preview server, not during `vite build`.
+// Use a safe fallback so production builds don't fail when PORT isn't injected.
+const port = Number(process.env.PORT ?? "3000");
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// BASE_PATH controls the Vite `base` option; default to "/" for builds that
+// don't set it explicitly (e.g. CI or local one-off builds).
+const basePath = process.env.BASE_PATH ?? "/";
 
 export default defineConfig({
   base: basePath,

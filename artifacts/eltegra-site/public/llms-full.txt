@@ -1,6 +1,6 @@
 # Auditee — Full Content (llms-full.txt)
 # Site: https://auditee.site
-# Last generated: 2026-05-04
+# Last generated: 2026-05-08
 # Convention: https://llmstxt.org
 #
 # This file consolidates the long-form public content of Auditee for
