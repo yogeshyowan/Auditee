@@ -21,27 +21,10 @@ const COOKIE_MAX_AGE_SEC = 60 * 60 * 24 * 365; // 1 year
 const COOKIE_SECRET =
   process.env.SESSION_SECRET ?? process.env.CLERK_SECRET_KEY ?? "auditee-anon-fallback";
 
-/**
- * Operator allowlist — these emails get unlimited AI credits regardless of
- * their workspace plan. Used for founders / internal staff / demo accounts.
- *
- * Default includes the project owner. Override or extend at deploy time via
- * the `UNLIMITED_CREDIT_EMAILS` env var (comma- or whitespace-separated).
- */
-const DEFAULT_UNLIMITED_EMAILS = ["yogesh.yowan@gmail.com"];
-const UNLIMITED_EMAILS = new Set(
-  [
-    ...DEFAULT_UNLIMITED_EMAILS,
-    ...(process.env.UNLIMITED_CREDIT_EMAILS ?? "")
-      .split(/[\s,]+/)
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean),
-  ].map((e) => e.toLowerCase()),
-);
-
-function isUnlimitedEmail(email: string | null): boolean {
-  return !!email && UNLIMITED_EMAILS.has(email.toLowerCase());
-}
+// Operator allowlist (unlimited credits + enterprise/admin override) lives in
+// lib/accessOverrides.ts so requireWorkspace can apply the same allowlist for
+// plan/role gating. Re-imported here for the credit-cap bypass.
+import { isUnlimitedEmail } from "../lib/accessOverrides";
 
 function signTrial(id: string): string {
   const sig = createHmac("sha256", COOKIE_SECRET).update(id).digest("hex").slice(0, 32);
