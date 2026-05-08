@@ -150,9 +150,14 @@ export default function DemoVideos() {
             banking, fintech and security. Watch a single feature or run the whole tour end-to-end.
           </p>
           <div className="mt-6 flex items-center justify-center gap-3 flex-wrap">
-            <Button asChild size="lg" className="gap-2" data-testid="demo-cta-full-tour">
+            <Button asChild size="lg" className="gap-2" data-testid="demo-cta-aspice">
+              <a href={`${TUTORIAL_BASE}?aspice=1`} target="_blank" rel="noopener noreferrer">
+                Watch ASPICE walkthrough (~7 min) <Play className="w-4 h-4" />
+              </a>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="gap-2" data-testid="demo-cta-full-tour">
               <a href={`${TUTORIAL_BASE}?full=1`} target="_blank" rel="noopener noreferrer">
-                Play full tour (~6 min) <Play className="w-4 h-4" />
+                Play full tour <Play className="w-4 h-4" />
               </a>
             </Button>
             <Button asChild size="lg" variant="outline" className="gap-2" data-testid="demo-cta-shorts">
@@ -164,6 +169,9 @@ export default function DemoVideos() {
               <Link href="/contact">Book a live walkthrough</Link>
             </Button>
           </div>
+          <p className="mt-4 text-sm text-slate-500">
+            New: end-to-end <span className="font-semibold text-primary">Automotive SPICE 4.0</span> walkthrough on the Apollo EV BMS project — every module narrated step by step, from brief to signed audit packet.
+          </p>
           <div className="mt-6 flex justify-center">
             <ShareButtons url="/demo-videos" title={pageTitle} description={pageDesc} />
           </div>
