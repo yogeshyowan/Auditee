@@ -12,6 +12,7 @@ import {
   codeArtifactsTable,
   capaActionsTable,
   activityEventsTable,
+  workspacesTable,
   type ReportContent,
 } from "@workspace/db";
 import { jsonCompletion, AIUnavailableError, AIResponseError, classifyProviderError } from "../lib/ai";
@@ -1103,10 +1104,19 @@ router.get("/reports/:id/export", asyncH(async (req, res) => {
     let buf: Buffer | null = null;
     if (!skipTemplate && report.projectId) {
       const [proj] = await db
-        .select({ workspaceId: projectsTable.workspaceId })
+        .select({
+          workspaceId: projectsTable.workspaceId,
+          projectName: projectsTable.name,
+        })
         .from(projectsTable)
         .where(eq(projectsTable.id, report.projectId));
       if (proj?.workspaceId) {
+        // Look up the workspace plan so the renderer can decide whether
+        // {generated_by} should say "Auditee" (free) or "" (paid).
+        const [ws] = await db
+          .select({ plan: workspacesTable.plan })
+          .from(workspacesTable)
+          .where(eq(workspacesTable.id, proj.workspaceId));
         try {
           buf = await renderWithCompanyTemplate(proj.workspaceId, {
             title: report.title,
@@ -1114,15 +1124,25 @@ router.get("/reports/:id/export", asyncH(async (req, res) => {
             tone: report.tone,
             updatedAt: report.updatedAt,
             content: report.content,
+            projectName: proj.projectName ?? null,
+            workspacePlan: ws?.plan ?? null,
           });
         } catch (err: any) {
-          res.status(500).json({
-            error:
-              "Company template failed to render. Re-upload a valid .docx with the standard placeholders, " +
-              "or append ?template=skip to the export URL to bypass it. Detail: " +
-              (err?.message ?? String(err)),
-          });
-          return;
+          // The user's uploaded company template is malformed (most often a
+          // stray `{` or `}` in the body that Docxtemplater interprets as a
+          // tag delimiter). Returning 500 here hands the user a broken
+          // download with no recovery path. Instead, fall back to the
+          // standard builder so they always get a valid .docx, and surface
+          // the parse error via response headers so the client can toast a
+          // non-blocking warning. They can fix the template in Settings →
+          // Company Template at their leisure.
+          req.log.warn({ err, workspaceId: proj.workspaceId, reportId: report.id }, "company template render failed; falling back to standard builder");
+          buf = null;
+          // ASCII-safe header value so HTTP doesn't choke on UTF-8 in error messages.
+          const safeDetail = String(err?.message ?? err ?? "unknown error")
+            .replace(/[^\x20-\x7E]/g, " ")
+            .slice(0, 240);
+          res.setHeader("X-Auditee-Template-Error", safeDetail);
         }
       }
     }

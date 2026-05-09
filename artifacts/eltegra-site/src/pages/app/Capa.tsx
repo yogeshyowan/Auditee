@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { Comments } from "@/components/Comments";
+import { PushToConnectorButton } from "@/components/PushToConnectorButton";
 
 const SEVERITY_COLORS: Record<string, string> = {
   low: "bg-slate-100 text-slate-700",
@@ -211,6 +212,18 @@ export default function Capa() {
                       {a.dueAt ? ` · Due ${new Date(a.dueAt).toLocaleDateString()}` : ""}
                     </div>
                   </div>
+                  <PushToConnectorButton
+                    projectId={a.projectId}
+                    payload={{
+                      type: "workitem",
+                      title: `[${a.code}] ${a.title}`,
+                      description: `${a.description || "(no description)"}\n\nFramework: ${a.frameworkName ?? "—"}\nControl: ${a.controlCode ?? "—"}\nSeverity: ${a.severity}\nOwner: ${a.owner}\nSource: ${a.source}\nAuditee CAPA ID: ${a.id}`,
+                      workItemType: "Task",
+                      priority: a.severity,
+                      labels: ["auditee", `severity:${a.severity}`, ...(a.controlCode ? [`control:${a.controlCode}`] : [])],
+                    }}
+                    testid={`push-capa-${a.id}`}
+                  />
                   <Select value={a.status} onValueChange={(v) => update.mutate({ id: a.id, status: v as any })}>
                     <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>

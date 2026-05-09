@@ -149,7 +149,7 @@ export default function GapsPage() {
         <div>
           <h1 className="text-3xl font-display font-bold text-slate-950 flex items-center gap-2">
             <AlertTriangle className="text-rose-600" />
-            Automated Gap Detection
+            Automated Requirements Gap Detection
           </h1>
           <p className="text-slate-600 mt-2 max-w-2xl">
             AI analyses your project's requirements set against industry best practices,

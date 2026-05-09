@@ -6,7 +6,7 @@ const MODULE_LABELS: Record<string, string> = {
   sources: "Project Sources",
   interview: "Smart Interview",
   requirements: "Requirements",
-  gaps: "Gap Detection",
+  gaps: "Requirements Gap Detection",
   traceability: "Traceability Graph",
   compliance: "Compliance",
   capa: "CAPA Actions",

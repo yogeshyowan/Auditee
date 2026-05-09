@@ -4,7 +4,7 @@ import { SEO } from "@/components/SEO";
 
 const CATEGORIES: PromptCategory[] = [
   "Discovery",
-  "Gap Detection",
+  "Requirements Gap Detection",
   "BRD / PRD Drafting",
   "Stakeholder Validation",
   "Compliance",

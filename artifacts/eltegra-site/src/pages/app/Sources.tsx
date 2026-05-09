@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useProjectContext } from "@/lib/project-context";
 import { useListComplianceFrameworks } from "@workspace/api-client-react";
 import {
   useComplianceAudit,
   useTraceabilityAudit,
+  useLatestAuditRun,
   type ComplianceAuditResult,
   type TraceabilityAuditResult,
   type CoverageStage,
@@ -18,6 +19,7 @@ import {
   uploadZip,
   uploadFolder,
   uploadReqif,
+  uploadDefectsFile,
   type ProjectSourceRow,
 } from "@/lib/wave1-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +36,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { INDUSTRY_FRAMEWORKS, INDUSTRY_OPTIONS } from "@/lib/industry-frameworks";
 import { useToast } from "@/hooks/use-toast";
 import {
   Github,
@@ -68,9 +72,25 @@ import {
   Activity,
   Layers,
   Zap,
+  Upload,
+  Workflow,
+  Rocket,
+  TestTube2,
+  Database,
+  BrainCircuit,
+  ScanSearch,
+  Cog,
+  Copy,
+  Key,
 } from "lucide-react";
 
-type Kind = ProjectSourceRow["kind"];
+// `Kind` is intentionally widened to `string` — the backend `project_sources.kind`
+// column is `text`, and the strict Zod union in the OpenAPI spec lags behind the
+// connector catalog (defects_file, all pipeline kinds, etc. are valid at runtime
+// but not yet in the spec). Treating Kind as a free-form string here avoids
+// having to re-spec the API every time a connector is added; the create call
+// still validates server-side via SUPPORTED_KINDS in routes/sources.ts.
+type Kind = string;
 
 type KindDef = {
   kind: Kind;
@@ -132,7 +152,130 @@ const DEFECT_KIND_DEFS: KindDef[] = [
   { kind: "gitlab_issues", title: "GitLab Issues", blurb: "Pulls bug-labelled issues from a GitLab project.", icon: GitBranch, color: "bg-orange-100 text-orange-800", ingests: "metadata" },
 ];
 
-const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS];
+// Pipeline connectors — CI/CD, CD, test execution, data/ETL, MLOps,
+// security scanning, and infrastructure-as-code pipelines. All ingestion
+// is push-based: each tool POSTs runs to a per-source webhook URL or
+// uploads JUnit/SARIF artifacts. The audit pipeline reads runs as direct
+// evidence of build/test/deploy/scan/infra health.
+type PipelineCategory = "ci_cd" | "cd" | "test_exec" | "data" | "mlops" | "security_scan" | "infra";
+const PIPELINE_KIND_DEFS: Array<KindDef & { category: PipelineCategory }> = [
+  // CI/CD
+  { kind: "github_actions", title: "GitHub Actions", blurb: "Native webhook for workflow_run / check_run.", icon: Github, color: "bg-slate-900 text-white", ingests: "metadata", category: "ci_cd" },
+  { kind: "gitlab_ci", title: "GitLab CI", blurb: "Native Pipeline + Job webhook (SaaS or self-hosted).", icon: GitBranch, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "jenkins", title: "Jenkins (notification)", blurb: "Notification Plugin posts JSON on every build event.", icon: Hammer, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "azure_pipelines", title: "Azure Pipelines", blurb: "Service hook posts build/release JSON.", icon: Workflow, color: "bg-sky-100 text-sky-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "circleci", title: "CircleCI", blurb: "Project webhook for workflow-completed events.", icon: Workflow, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "bitbucket_pipelines", title: "Bitbucket Pipelines", blurb: "Repository webhook on pipeline status events.", icon: GitBranch, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "bamboo", title: "Bamboo", blurb: "Notification post on plan / job result.", icon: Workflow, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "teamcity", title: "TeamCity", blurb: "Webhook plugin posts build state JSON.", icon: Workflow, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "travis", title: "Travis CI", blurb: "Build webhook with signed payload.", icon: Workflow, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "tekton", title: "Tekton", blurb: "TaskRun / PipelineRun events via CloudEvents.", icon: Workflow, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "aws_codepipeline", title: "AWS CodePipeline", blurb: "EventBridge → API Destinations forwards state events.", icon: Workflow, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "google_cloudbuild", title: "Google Cloud Build", blurb: "Pub/Sub → Cloud Function forwards build events.", icon: Workflow, color: "bg-yellow-100 text-yellow-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "drone", title: "Drone CI", blurb: "Webhook plugin posts build status JSON.", icon: Workflow, color: "bg-slate-100 text-slate-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "buddy", title: "Buddy", blurb: "Pipeline webhook on execution events.", icon: Workflow, color: "bg-amber-100 text-amber-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "concourse", title: "Concourse", blurb: "Resource webhook posts build state JSON.", icon: Workflow, color: "bg-cyan-100 text-cyan-800", ingests: "metadata", category: "ci_cd" },
+  // CD
+  { kind: "spinnaker", title: "Spinnaker", blurb: "Echo webhook on pipeline / stage state changes.", icon: Rocket, color: "bg-indigo-100 text-indigo-800", ingests: "metadata", category: "cd" },
+  { kind: "argocd", title: "Argo CD", blurb: "Notifications controller posts sync / health events.", icon: Rocket, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "cd" },
+  { kind: "flux", title: "Flux CD", blurb: "Alerts notification provider posts reconciliation events.", icon: Rocket, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "cd" },
+  { kind: "harness", title: "Harness CD", blurb: "Notification webhook on pipeline execution events.", icon: Rocket, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "cd" },
+  { kind: "octopus_deploy", title: "Octopus Deploy", blurb: "Subscription webhook on deployment events.", icon: Rocket, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "cd" },
+  // Test execution
+  { kind: "test_junit", title: "JUnit XML upload", blurb: "Upload JUnit XML from any test framework.", icon: TestTube2, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "test_exec" },
+  { kind: "test_pipeline_generic", title: "Generic test webhook", blurb: "POST a JSON test summary from any CI step.", icon: TestTube2, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "test_exec" },
+  // Data / ETL
+  { kind: "airflow", title: "Apache Airflow", blurb: "DAG callback posts run summary.", icon: Database, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "data" },
+  { kind: "dagster", title: "Dagster", blurb: "Sensor / hook posts run-status events.", icon: Database, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "data" },
+  { kind: "prefect", title: "Prefect", blurb: "Automation webhook on flow-run state changes.", icon: Database, color: "bg-indigo-100 text-indigo-800", ingests: "metadata", category: "data" },
+  { kind: "dbt", title: "dbt (Cloud or Core)", blurb: "dbt Cloud webhook or run_results.json upload.", icon: Database, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "data" },
+  { kind: "fivetran", title: "Fivetran", blurb: "Connector webhook on sync state changes.", icon: Database, color: "bg-cyan-100 text-cyan-800", ingests: "metadata", category: "data" },
+  // MLOps
+  { kind: "kubeflow", title: "Kubeflow Pipelines", blurb: "Pipeline-completion event via exit handler.", icon: BrainCircuit, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "mlops" },
+  { kind: "mlflow", title: "MLflow", blurb: "Webhook on run / model-version events.", icon: BrainCircuit, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "mlops" },
+  { kind: "wandb", title: "Weights & Biases", blurb: "Automation webhook on run / artifact events.", icon: BrainCircuit, color: "bg-amber-100 text-amber-800", ingests: "metadata", category: "mlops" },
+  { kind: "vertex_ai_pipelines", title: "Vertex AI Pipelines", blurb: "Pub/Sub → Cloud Function forwards events.", icon: BrainCircuit, color: "bg-yellow-100 text-yellow-800", ingests: "metadata", category: "mlops" },
+  { kind: "sagemaker_pipelines", title: "SageMaker Pipelines", blurb: "EventBridge → API Destinations forwards events.", icon: BrainCircuit, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "mlops" },
+  // Security / scan
+  { kind: "sonarqube", title: "SonarQube / SonarCloud", blurb: "SARIF export from sonar-scanner; analysis webhook.", icon: ScanSearch, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "security_scan" },
+  { kind: "snyk", title: "Snyk", blurb: "SARIF + SBOM from `snyk test --sarif-file-output`.", icon: ScanSearch, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "security_scan" },
+  { kind: "blackduck", title: "Black Duck", blurb: "SARIF + CycloneDX SBOM from Detect.", icon: ScanSearch, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "security_scan" },
+  { kind: "veracode", title: "Veracode", blurb: "SARIF export from Veracode SAST / DAST scans.", icon: ScanSearch, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "security_scan" },
+  { kind: "checkmarx", title: "Checkmarx", blurb: "SARIF export from CxOne / SAST / SCA.", icon: ScanSearch, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "security_scan" },
+  { kind: "owasp_zap", title: "OWASP ZAP", blurb: "SARIF report output via the SARIF add-on.", icon: ScanSearch, color: "bg-amber-100 text-amber-800", ingests: "metadata", category: "security_scan" },
+  { kind: "semgrep", title: "Semgrep", blurb: "Native SARIF export with `semgrep --sarif`.", icon: ScanSearch, color: "bg-indigo-100 text-indigo-800", ingests: "metadata", category: "security_scan" },
+  { kind: "scan_sarif_generic", title: "Generic SARIF upload", blurb: "Drop in any SARIF v2.1.0 file from any tool.", icon: ScanSearch, color: "bg-slate-100 text-slate-800", ingests: "metadata", category: "security_scan" },
+  // Infra
+  { kind: "terraform_cloud", title: "Terraform Cloud", blurb: "Run-task webhook on plan / apply events.", icon: Cog, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "infra" },
+  { kind: "pulumi", title: "Pulumi", blurb: "Stack webhook on update / preview events.", icon: Cog, color: "bg-purple-100 text-purple-800", ingests: "metadata", category: "infra" },
+  { kind: "atlantis", title: "Atlantis", blurb: "Plan / apply webhook on Terraform PR workflow.", icon: Cog, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "infra" },
+];
+
+// Synthetic kind for files uploaded via the "Upload exported file" flow
+// (CSV / TSV / XLSX / XLS / PDF / JSON). Not shown as a connector tile, but
+// rendered correctly in the Connected sources list when present.
+const DEFECT_FILE_KIND_DEF: KindDef = {
+  kind: "defects_file",
+  title: "Defects file (uploaded)",
+  blurb: "CSV / Excel / PDF / JSON export from any defect tool.",
+  icon: Bug,
+  color: "bg-rose-100 text-rose-800",
+  ingests: "metadata",
+};
+
+// Document-target connectors — Auditee pushes generated reports out to
+// these. Read is not supported (the corresponding read-side already lives
+// under `confluence` ingestion in source-ingestion.ts; this is the WRITE
+// side, surfaced as "Publish to…" on every report).
+const DOC_TARGET_KIND_DEFS: KindDef[] = [
+  { kind: "confluence", title: "Confluence (push)", blurb: "Publish generated reports as Confluence pages in a space.", icon: BookOpen, color: "bg-blue-100 text-blue-800", ingests: "metadata" },
+  { kind: "sharepoint", title: "SharePoint (push)", blurb: "Upload reports to a SharePoint document library (Azure AD app-only).", icon: Cloud, color: "bg-sky-100 text-sky-800", ingests: "metadata" },
+];
+
+const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS, DEFECT_FILE_KIND_DEF, ...PIPELINE_KIND_DEFS, ...DOC_TARGET_KIND_DEFS];
+
+const DOC_TARGET_KINDS = DOC_TARGET_KIND_DEFS.map((d) => d.kind);
+function isDocTargetKindFE(k: string): boolean {
+  return DOC_TARGET_KINDS.includes(k);
+}
+
+const PIPELINE_CATEGORY_LABELS: Record<PipelineCategory, { label: string; blurb: string }> = {
+  ci_cd: { label: "Build pipelines (CI / CD)", blurb: "GitHub Actions, GitLab CI, Jenkins, Azure Pipelines, CircleCI, Bitbucket, Bamboo, TeamCity, Travis, Tekton, AWS CodePipeline, Cloud Build, Drone, Buddy, Concourse." },
+  cd: { label: "Deployment pipelines (CD)", blurb: "Spinnaker, Argo CD, Flux, Harness, Octopus Deploy." },
+  test_exec: { label: "Test-execution pipelines", blurb: "Upload JUnit XML or POST a JSON summary from any test runner." },
+  data: { label: "Data / ETL pipelines", blurb: "Airflow, Dagster, Prefect, dbt, Fivetran." },
+  mlops: { label: "MLOps pipelines", blurb: "Kubeflow, MLflow, Weights & Biases, Vertex AI Pipelines, SageMaker Pipelines." },
+  security_scan: { label: "Security / scan pipelines", blurb: "SonarQube, Snyk, Black Duck, Veracode, Checkmarx, OWASP ZAP, Semgrep, generic SARIF." },
+  infra: { label: "Infrastructure pipelines", blurb: "Terraform Cloud, Pulumi, Atlantis." },
+};
+const PIPELINE_CATEGORIES: PipelineCategory[] = ["ci_cd", "cd", "test_exec", "data", "mlops", "security_scan", "infra"];
+
+function isPipelineKindFE(k: string): boolean {
+  return PIPELINE_KIND_DEFS.some((d) => d.kind === k);
+}
+function pipelineToolDef(k: string) {
+  return PIPELINE_KIND_DEFS.find((d) => d.kind === k);
+}
+
+const DEFECT_FILE_TOOLS: Array<{ value: string; label: string }> = [
+  { value: "", label: "Auto-detect / generic" },
+  { value: "jira", label: "Jira" },
+  { value: "ado", label: "Azure DevOps" },
+  { value: "bugzilla", label: "Bugzilla" },
+  { value: "mantis", label: "MantisBT" },
+  { value: "redmine", label: "Redmine" },
+  { value: "youtrack", label: "JetBrains YouTrack" },
+  { value: "clickup", label: "ClickUp" },
+  { value: "linear", label: "Linear" },
+  { value: "servicenow", label: "ServiceNow" },
+  { value: "alm_octane", label: "OpenText ALM Octane" },
+  { value: "github_issues", label: "GitHub Issues" },
+  { value: "gitlab_issues", label: "GitLab Issues" },
+  { value: "hp_qc", label: "HP / Micro Focus Quality Center" },
+  { value: "trac", label: "Trac" },
+  { value: "rally", label: "CA Rally / Broadcom Rally" },
+  { value: "other", label: "Other" },
+];
 
 function statusBadge(s: ProjectSourceRow["status"]) {
   if (s === "ready") return <Badge variant="outline" className="bg-emerald-50 text-emerald-700"><CheckCircle2 className="h-3 w-3 mr-1" />ready</Badge>;
@@ -159,6 +302,7 @@ export default function Sources() {
   const [browsing, setBrowsing] = useState<ProjectSourceRow | null>(null);
   const [auditing, setAuditing] = useState<ProjectSourceRow | null>(null);
   const [tracing, setTracing] = useState<ProjectSourceRow | null>(null);
+  const [showingWebhook, setShowingWebhook] = useState<ProjectSourceRow | null>(null);
 
   async function onUploadZip(file: File) {
     if (!projectId) return;
@@ -193,8 +337,22 @@ export default function Sources() {
       toast({ title: "ReqIF import failed", description: err.message, variant: "destructive" });
     }
   }
+  async function onUploadDefectsFile(file: File, tool?: string) {
+    if (!projectId) return;
+    try {
+      const r = await uploadDefectsFile(projectId, file, tool, file.name);
+      toast({
+        title: "Defects file imported",
+        description: r.syncResult?.summary ?? `${r.syncResult?.count ?? 0} defect(s) imported`,
+      });
+      window.location.reload();
+    } catch (err: any) {
+      toast({ title: "Defects import failed", description: err.message, variant: "destructive" });
+    }
+  }
 
   const sources = data?.sources ?? [];
+  const connectedKinds = new Set<string>(sources.map((s) => s.kind as string));
 
   return (
     <div className="flex flex-col gap-6">
@@ -213,23 +371,31 @@ export default function Sources() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {KIND_DEFS.map((d) => (
-              <button
-                key={d.kind}
-                data-testid={`kind-card-${d.kind}`}
-                onClick={() => setPicker(d.kind)}
-                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
-              >
-                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
-                  <d.icon className="h-5 w-5" />
-                </div>
-                <div className="font-medium text-sm">{d.title}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
-                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
-                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
-                </div>
-              </button>
-            ))}
+            {KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -245,23 +411,31 @@ export default function Sources() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {RM_KIND_DEFS.map((d) => (
-              <button
-                key={d.kind}
-                data-testid={`kind-card-${d.kind}`}
-                onClick={() => setPicker(d.kind)}
-                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
-              >
-                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
-                  <d.icon className="h-5 w-5" />
-                </div>
-                <div className="font-medium text-sm">{d.title}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
-                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
-                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
-                </div>
-              </button>
-            ))}
+            {RM_KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -272,28 +446,129 @@ export default function Sources() {
             <Bug className="h-4 w-4 text-rose-700" /> Defect management
           </CardTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Connect your bug-tracker of record. Imported defects are weighed by the auditor: open critical bugs count against incident-response and problem-resolution controls; healthy close-rates count for them.
+            Connect your bug-tracker of record — or skip the connector and just upload an exported file. Imported defects are weighed by the auditor: open critical bugs count against incident-response and problem-resolution controls; healthy close-rates count for them.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <DefectFileUploadPanel projectId={projectId} onUpload={onUploadDefectsFile} />
+          <div className="text-xs text-muted-foreground uppercase tracking-wide pt-1">Or connect a live tool</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {DEFECT_KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Workflow className="h-4 w-4 text-indigo-700" /> Pipelines (CI/CD, CD, test, data, MLOps, scan, infra)
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Connect any pipeline tool — builds, deploys, tests, ETL/data pipelines, ML training runs, security scans (SAST/DAST/SCA/SBOM), and infrastructure-as-code provisioning. All ingestion is push-based via webhooks or JUnit/SARIF uploads. Every run becomes audit evidence: green builds and clean scans count for you, persistent failures and unresolved critical findings count against you.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {PIPELINE_CATEGORIES.map((cat) => {
+            const items = PIPELINE_KIND_DEFS.filter((d) => d.category === cat);
+            if (items.length === 0) return null;
+            const meta = PIPELINE_CATEGORY_LABELS[cat];
+            return (
+              <div key={cat}>
+                <div className="text-xs uppercase tracking-wide text-slate-500 font-medium">{meta.label}</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5 mb-2">{meta.blurb}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                  {items.map((d) => {
+                    const isConnected = connectedKinds.has(d.kind);
+                    return (
+                      <button
+                        key={d.kind}
+                        data-testid={`kind-card-${d.kind}`}
+                        onClick={() => setPicker(d.kind)}
+                        className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                      >
+                        {isConnected && (
+                          <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                          </span>
+                        )}
+                        <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                          <d.icon className="h-5 w-5" />
+                        </div>
+                        <div className="font-medium text-sm">{d.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                        <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                          {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4 text-blue-700" /> Document targets (push-only)
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Connect a Confluence space or SharePoint document library — every generated audit report (BRD, PRD, exec brief, compliance report, etc.) gains a "Publish to…" button that uploads it to the chosen target. No data is read back.
           </p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {DEFECT_KIND_DEFS.map((d) => (
-              <button
-                key={d.kind}
-                data-testid={`kind-card-${d.kind}`}
-                onClick={() => setPicker(d.kind)}
-                className="text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group"
-              >
-                <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
-                  <d.icon className="h-5 w-5" />
-                </div>
-                <div className="font-medium text-sm">{d.title}</div>
-                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
-                <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
-                  Connect <ChevronRight className="h-3 w-3 ml-0.5" />
-                </div>
-              </button>
-            ))}
+            {DOC_TARGET_KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -310,8 +585,13 @@ export default function Sources() {
             </div>
           )}
           {sources.map((s) => {
-            const def = ALL_KIND_DEFS.find((d) => d.kind === s.kind);
-            const canSync = s.kind !== "zip" && s.kind !== "folder" && s.kind !== "reqif" && s.kind !== "doors";
+            const sKind = s.kind as string;
+            const def = ALL_KIND_DEFS.find((d) => d.kind === sKind);
+            const isPipeline = isPipelineKindFE(sKind);
+            const isDocTarget = isDocTargetKindFE(sKind);
+            // Pipeline + document-target kinds are push-only — there's nothing
+            // to pull on Sync, so we hide the button to avoid confusion.
+            const canSync = !isPipeline && !isDocTarget && sKind !== "zip" && sKind !== "folder" && sKind !== "reqif" && sKind !== "doors" && sKind !== "defects_file";
             return (
               <div key={s.id} className="flex items-center gap-3 border rounded-md p-3 hover:bg-slate-50">
                 <div className={`h-9 w-9 rounded-md flex items-center justify-center ${def?.color ?? "bg-slate-100"}`}>
@@ -344,10 +624,15 @@ export default function Sources() {
                   className="bg-indigo-600 hover:bg-indigo-700"
                   disabled={s.status !== "ready"}
                   onClick={() => setTracing(s)}
-                  title={s.status !== "ready" ? "Source must be in 'ready' state to check completeness" : "Audit traceability completeness across design → code → tests → reports"}
+                  title={s.status !== "ready" ? "Source must be in 'ready' state to check completeness" : "Audit traceability completeness across architecture → design → implementation → testing → deployment"}
                 >
                   <ShieldCheck className="h-3 w-3 mr-1" /> Check completeness
                 </Button>
+                {isPipeline && (
+                  <Button variant="outline" size="sm" onClick={() => setShowingWebhook(s)} title="Show the webhook URL and secret to paste into the upstream tool">
+                    <Key className="h-3 w-3 mr-1" /> Webhook
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={() => setBrowsing(s)}>
                   <FileCode2 className="h-3 w-3 mr-1" /> Browse
                 </Button>
@@ -371,7 +656,7 @@ export default function Sources() {
         projectId={projectId}
         onCreate={async (kind, label, config) => {
           if (!projectId) return;
-          const created = await create.mutateAsync({ projectId, kind, label, config });
+          const created = await create.mutateAsync({ projectId, kind: kind as any, label, config });
           toast({ title: "Source connected", description: label });
           if (kind !== "zip" && kind !== "folder") {
             try {
@@ -389,13 +674,89 @@ export default function Sources() {
       />
 
       <BrowseDialog source={browsing} onClose={() => setBrowsing(null)} />
+      <PipelineWebhookDialog source={showingWebhook} onClose={() => setShowingWebhook(null)} />
       <RunAuditDialog source={auditing} projectId={projectId} onClose={() => setAuditing(null)} />
       <TraceabilityAuditDialog source={tracing} projectId={projectId} onClose={() => setTracing(null)} />
     </div>
   );
 }
 
-// ───────── Connect dialog (per-kind form) ─────────
+// ───────── Defect-file upload panel ─────────
+// Inline upload control inside the Defect-management card. Lets the user pick
+// a CSV / TSV / XLSX / XLS / PDF / JSON exported from any defect tool, tag
+// which tool it came from (display only), and post it to /sources/upload-defects-file.
+function DefectFileUploadPanel({
+  projectId,
+  onUpload,
+}: {
+  projectId: string | undefined;
+  onUpload: (file: File, tool?: string) => Promise<void>;
+}) {
+  const [tool, setTool] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const onPick = () => inputRef.current?.click();
+  const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      await onUpload(file, tool || undefined);
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+  return (
+    <div className="rounded-lg border-2 border-dashed border-rose-200 bg-rose-50/40 p-4 flex flex-col sm:flex-row sm:items-end gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold text-rose-900 flex items-center gap-2">
+          <FileArchive className="h-4 w-4" /> Upload an exported defects file
+        </div>
+        <div className="text-xs text-muted-foreground mt-1">
+          Supports <strong>CSV, TSV, Excel (.xlsx / .xls), PDF, and JSON</strong> exports from
+          Jira, Azure DevOps, Bugzilla, MantisBT, Redmine, YouTrack, ClickUp, Linear,
+          ServiceNow, ALM Octane, GitHub / GitLab Issues, HP QC, Trac, Rally, or any
+          other tool. Header columns are auto-mapped (ID/Key, Title/Summary, Status,
+          Severity, Priority, Created, Resolved). No connector or credentials needed.
+        </div>
+      </div>
+      <div className="flex items-end gap-2">
+        <div className="flex flex-col gap-1">
+          <label className="text-[11px] font-medium text-muted-foreground uppercase">Source tool</label>
+          <select
+            value={tool}
+            onChange={(e) => setTool(e.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+            data-testid="select-defect-tool"
+          >
+            {DEFECT_FILE_TOOLS.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,.tsv,.xlsx,.xls,.pdf,.json,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/pdf,application/json"
+          className="hidden"
+          onChange={onChange}
+          data-testid="input-defect-file"
+        />
+        <Button
+          onClick={onPick}
+          disabled={!projectId || busy}
+          className="bg-rose-600 hover:bg-rose-700 text-white gap-2"
+          data-testid="button-upload-defects-file"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {busy ? "Uploading…" : "Choose file"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ConnectDialog({
   kind,
   onClose,
@@ -500,6 +861,28 @@ function ConnectDialog({
         <Field label="Project key" placeholder="ABC" value={cfg.projectKey ?? ""} onChange={(v) => up("projectKey", v)} />
         <Field label="Email" value={cfg.email ?? ""} onChange={(v) => up("email", v)} />
         <Field label="API token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "confluence") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">Auditee will publish generated reports as new pages in this space. Use the same Atlassian email + API token as Jira.</p>
+        <Field label="Confluence host" placeholder="https://yourorg.atlassian.net" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Space key" placeholder="ENG" value={cfg.spaceKey ?? ""} onChange={(v) => up("spaceKey", v)} />
+        <Field label="Email" value={cfg.email ?? ""} onChange={(v) => up("email", v)} />
+        <Field label="API token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+        <Field label="Parent page ID (optional)" placeholder="123456" value={cfg.parentId ?? ""} onChange={(v) => up("parentId", v)} />
+      </div>
+    );
+  } else if (kind === "sharepoint") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">Auditee uploads reports as Markdown files to a SharePoint document library. Create an Azure AD app registration with <span className="font-mono">Sites.ReadWrite.All</span> (application permission) and grant admin consent — then paste its tenant/client/secret here.</p>
+        <Field label="Tenant ID" placeholder="00000000-0000-0000-0000-000000000000" value={cfg.tenantId ?? ""} onChange={(v) => up("tenantId", v)} />
+        <Field label="Client ID" value={cfg.clientId ?? ""} onChange={(v) => up("clientId", v)} />
+        <Field label="Client secret" type="password" value={cfg.clientSecret ?? ""} onChange={(v) => up("clientSecret", v)} />
+        <Field label="Site ID" placeholder="contoso.sharepoint.com,abcd...,efgh..." value={cfg.siteId ?? ""} onChange={(v) => up("siteId", v)} />
+        <Field label="Folder path" placeholder="Auditee" value={cfg.folderPath ?? "Auditee"} onChange={(v) => up("folderPath", v)} />
       </div>
     );
   } else if (kind === "jenkins") {
@@ -755,6 +1138,28 @@ function ConnectDialog({
         <Field label="Bug label (optional)" placeholder="bug" value={cfg.labels ?? ""} onChange={(v) => up("labels", v)} />
       </div>
     );
+  } else if (isPipelineKindFE(kind)) {
+    // All pipeline connectors share the same setup flow:
+    //   1) Create the source (no upstream config required up front).
+    //   2) After it's created, the Sources list shows a "Webhook URL" panel
+    //      with a per-source secret you paste into the upstream tool.
+    // The dialog itself just collects an optional friendly name.
+    const tool = pipelineToolDef(kind)!;
+    body = (
+      <div className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Pipeline sources receive runs <strong>push-side</strong>. After you click Connect, you'll get a unique webhook URL and a secret to paste into {tool.title}. Every run that {tool.title} reports will appear in this project's audit evidence.
+        </p>
+        <div className="rounded-md border bg-slate-50 p-3 text-xs leading-relaxed">
+          <div className="font-medium text-slate-700 mb-1">What happens next</div>
+          <ol className="list-decimal list-inside space-y-0.5 text-slate-600">
+            <li>We create the source and generate a webhook secret.</li>
+            <li>You copy the webhook URL into {tool.title}.</li>
+            <li>Each run posts here automatically — no polling, no agent.</li>
+          </ol>
+        </div>
+      </div>
+    );
   }
 
   // File-upload kinds handle their own submit flow.
@@ -778,6 +1183,121 @@ function ConnectDialog({
             <Button onClick={submit} disabled={busy}>{busy ? "Connecting…" : "Connect & sync"}</Button>
           </DialogFooter>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ───────── Pipeline webhook dialog ─────────
+//
+// Shows the per-source webhook URL + secret so the user can paste it into
+// the upstream pipeline tool (GitHub Actions, GitLab CI, Jenkins, etc).
+// "Generate / rotate secret" hits POST /api/sources/:id/pipeline-secret;
+// the previous secret stops working immediately on rotation.
+function PipelineWebhookDialog({ source, onClose }: { source: ProjectSourceRow | null; onClose: () => void }) {
+  const [secret, setSecret] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const { toast } = useToast();
+
+  if (!source) return null;
+  const sKind = source.kind as string;
+  const tool = pipelineToolDef(sKind);
+  const origin = window.location.origin;
+  const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  const webhookUrl = `${origin}${basePath}/api/integrations/pipelines/${sKind}/webhook?source=${source.id}`;
+  const isUploadKind = sKind === "test_junit" || sKind === "scan_sarif_generic";
+  const uploadUrl = `${origin}${basePath}/api/integrations/pipelines/${sKind}/upload?source=${source.id}`;
+
+  async function rotate() {
+    if (!source) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`${basePath}/api/sources/${source.id}/pipeline-secret`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const j = await r.json();
+      setSecret(j.secret);
+      toast({ title: "Secret generated", description: "Paste it into the upstream tool now — it won't be shown again unless you rotate." });
+    } catch (err: any) {
+      toast({ title: "Could not generate secret", description: err.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copy(text: string, what: string) {
+    navigator.clipboard.writeText(text).then(
+      () => toast({ title: `${what} copied` }),
+      () => toast({ title: "Copy failed", variant: "destructive" }),
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Workflow className="h-5 w-5" /> Webhook for {tool?.title ?? source.kind}
+          </DialogTitle>
+          <DialogDescription>
+            Paste the URL below into {tool?.title ?? "your pipeline tool"}. Each run posted here becomes audit evidence for this project.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 text-sm">
+          <div>
+            <Label className="text-xs uppercase text-muted-foreground">Webhook URL</Label>
+            <div className="flex gap-2 mt-1">
+              <Input readOnly value={webhookUrl} className="font-mono text-xs" />
+              <Button variant="outline" size="sm" onClick={() => copy(webhookUrl, "URL")}><Copy className="h-3 w-3" /></Button>
+            </div>
+          </div>
+
+          {isUploadKind && (
+            <div>
+              <Label className="text-xs uppercase text-muted-foreground">File-upload URL (multipart, field name: <code>file</code>)</Label>
+              <div className="flex gap-2 mt-1">
+                <Input readOnly value={uploadUrl} className="font-mono text-xs" />
+                <Button variant="outline" size="sm" onClick={() => copy(uploadUrl, "Upload URL")}><Copy className="h-3 w-3" /></Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {sKind === "test_junit"
+                  ? "Upload JUnit XML from any test runner (pytest, mocha, JUnit, NUnit, Go, etc.)."
+                  : "Upload any SARIF v2.1.0 file from any scanner."}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <Label className="text-xs uppercase text-muted-foreground">Webhook secret</Label>
+            {secret ? (
+              <div className="flex gap-2 mt-1">
+                <Input readOnly value={secret} className="font-mono text-xs" />
+                <Button variant="outline" size="sm" onClick={() => copy(secret, "Secret")}><Copy className="h-3 w-3" /></Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                No secret shown. Click <strong>Generate</strong> to create one. We display secrets only at the moment of creation — store it now.
+              </p>
+            )}
+            <Button variant="outline" size="sm" onClick={rotate} disabled={busy} className="mt-2">
+              <Key className="h-3 w-3 mr-1" /> {busy ? "Generating…" : secret ? "Rotate secret" : "Generate secret"}
+            </Button>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Use the secret as the upstream tool's webhook signing key. We accept either an HMAC-SHA256 signature header (recommended) or the secret as a shared bearer token, depending on what the tool supports.
+            </p>
+          </div>
+
+          <div className="rounded-md border bg-amber-50 border-amber-200 p-3 text-xs text-amber-900 leading-relaxed">
+            <strong>Setup hint.</strong> In {tool?.title ?? "your tool"}, paste the URL above as the webhook destination, and the generated secret as the signing key. The exact field names vary — see the tool's docs for "outgoing webhook" / "notification" / "service hook".
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -862,7 +1382,19 @@ function RunAuditDialog({
   const audit = useComplianceAudit();
   const { toast } = useToast();
   const [picked, setPicked] = useState<string | null>(null);
+  const [industry, setIndustry] = useState<string>("all");
+  const [fwQuery, setFwQuery] = useState<string>("");
   const [result, setResult] = useState<ComplianceAuditResult | null>(null);
+  const [hydratedRunAt, setHydratedRunAt] = useState<string | null>(null);
+  // Re-load any prior run for this (source, framework) so the dialog can
+  // show it instead of forcing a re-spend on the LLM.
+  const latest = useLatestAuditRun<ComplianceAuditResult>(source?.id ?? null, "compliance", picked);
+  useEffect(() => {
+    if (latest.data && !result) {
+      setResult(latest.data.result);
+      setHydratedRunAt(latest.data.runAt);
+    }
+  }, [latest.data, result]);
 
   if (!source) return null;
 
@@ -885,21 +1417,23 @@ function RunAuditDialog({
     }
   }
 
-  function reset() { setResult(null); setPicked(null); }
+  function reset() { setResult(null); setPicked(null); setHydratedRunAt(null); setIndustry("all"); setFwQuery(""); }
   function close() { reset(); onClose(); }
 
+  function fileBase() {
+    return `audit-${result!.framework.code.replace(/\s+/g, "-")}-${source!.label.replace(/\s+/g, "-")}`;
+  }
   function downloadMarkdown() {
     if (!result) return;
-    const md = renderAuditMarkdown(result, source!);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-${result.framework.code.replace(/\s+/g, "-")}-${source!.label.replace(/\s+/g, "-")}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(renderAuditMarkdown(result, source!), "text/markdown", `${fileBase()}.md`);
+  }
+  function downloadCsv() {
+    if (!result) return;
+    downloadBlob(renderAuditCsv(result), "text/csv;charset=utf-8", `${fileBase()}.csv`);
+  }
+  function downloadPdf() {
+    if (!result) return;
+    openPrintWindow(renderAuditHtml(result, source!), `${fileBase()}.pdf`);
   }
 
   const verdictColor: Record<ComplianceAuditResult["overallVerdict"], string> = {
@@ -939,26 +1473,84 @@ function RunAuditDialog({
                   No compliance frameworks are configured. Ask an admin to seed standards before running audits.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                  {frameworks.map((fw: any) => {
-                    const active = picked === fw.id;
-                    return (
-                      <button
-                        key={fw.id}
-                        onClick={() => setPicked(fw.id)}
-                        className={`text-left border rounded-md p-3 transition ${
-                          active ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500" : "hover:border-slate-400"
-                        }`}
+                <>
+                  {/* Industry → standards filter (matches StandardsMultiSelect
+                      pattern). Narrows ~100 frameworks down to the ones that
+                      apply to the user's domain so the framework grid is
+                      actually navigable. */}
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2 mb-2">
+                    <div className="sm:w-72">
+                      <label className="text-[10px] font-medium text-slate-600 flex items-center gap-1 mb-1">
+                        <Building2 className="h-3 w-3 text-slate-400" /> Industry
+                      </label>
+                      <Select
+                        value={industry}
+                        onValueChange={(v) => { setIndustry(v); setFwQuery(""); setPicked(null); }}
                       >
-                        <div className="text-xs font-mono text-emerald-700">{fw.code}</div>
-                        <div className="font-medium text-sm mt-0.5">{fw.name}</div>
-                        {fw.category && (
-                          <div className="text-xs text-muted-foreground mt-1">{fw.category}</div>
-                        )}
-                      </button>
+                        <SelectTrigger className="h-8 text-xs" data-testid="audit-industry-select">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDUSTRY_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] font-medium text-slate-600 mb-1 block">Search</label>
+                      <Input
+                        value={fwQuery}
+                        onChange={(e) => setFwQuery(e.target.value)}
+                        placeholder={industry === "all" ? "Search standards (e.g. ISO 26262, HIPAA…)" : "Search within this industry…"}
+                        className="h-8 text-sm"
+                        data-testid="audit-framework-search"
+                      />
+                    </div>
+                  </div>
+                  {(() => {
+                    const allow = industry === "all" ? null : new Set(INDUSTRY_FRAMEWORKS[industry] ?? []);
+                    const q = fwQuery.trim().toLowerCase();
+                    const filtered = (frameworks as any[])
+                      .filter((fw) => !allow || allow.has(fw.code))
+                      .filter((fw) => !q || fw.code.toLowerCase().includes(q) || fw.name.toLowerCase().includes(q));
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="text-sm text-slate-500 bg-slate-50 border border-dashed rounded-md p-4 text-center">
+                          No standards match this filter. {industry !== "all" && "Try a different industry or clear the search."}
+                        </div>
+                      );
+                    }
+                    return (
+                      <>
+                        <div className="text-[10px] text-slate-500 mb-1.5">{filtered.length} standard{filtered.length === 1 ? "" : "s"}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                          {filtered.map((fw: any) => {
+                            const active = picked === fw.id;
+                            return (
+                              <button
+                                key={fw.id}
+                                onClick={() => setPicked(fw.id)}
+                                className={`text-left border rounded-md p-3 transition ${
+                                  active ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500" : "hover:border-slate-400"
+                                }`}
+                                data-testid={`audit-framework-${fw.code.replace(/\s+/g, "-").toLowerCase()}`}
+                              >
+                                <div className="text-xs font-mono text-emerald-700">{fw.code}</div>
+                                <div className="font-medium text-sm mt-0.5">{fw.name}</div>
+                                {fw.category && (
+                                  <div className="text-xs text-muted-foreground mt-1">{fw.category}</div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
                     );
-                  })}
-                </div>
+                  })()}
+                </>
               )}
             </div>
 
@@ -999,10 +1591,31 @@ function RunAuditDialog({
                   pct={result.compliancePercentage}
                   summary={result.controlSummary}
                 />
-                <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white">
-                  <Download className="h-3.5 w-3.5 mr-1.5" /> Download .md
-                </Button>
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white" data-testid="audit-download-md">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .md
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadCsv} className="bg-white" data-testid="audit-download-csv">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .csv
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadPdf} className="bg-white" data-testid="audit-download-pdf">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .pdf
+                  </Button>
+                </div>
               </div>
+              {hydratedRunAt && (
+                <div className="mt-2 text-[11px] opacity-80 flex items-center gap-2 flex-wrap">
+                  <span>Showing previous run from {new Date(hydratedRunAt).toLocaleString()}.</span>
+                  <button
+                    type="button"
+                    className="underline hover:opacity-100 opacity-90"
+                    onClick={() => { setResult(null); setHydratedRunAt(null); run(); }}
+                    disabled={audit.isPending}
+                  >
+                    Re-run audit
+                  </button>
+                </div>
+              )}
             </div>
 
             {result.nativeRating && (
@@ -1262,6 +1875,15 @@ function TraceabilityAuditDialog({
   const { toast } = useToast();
   const [result, setResult] = useState<TraceabilityAuditResult | null>(null);
   const [started, setStarted] = useState(false);
+  const [hydratedRunAt, setHydratedRunAt] = useState<string | null>(null);
+  const latest = useLatestAuditRun<TraceabilityAuditResult>(source?.id ?? null, "traceability");
+  useEffect(() => {
+    if (latest.data && !result) {
+      setResult(latest.data.result);
+      setHydratedRunAt(latest.data.runAt);
+      setStarted(true);
+    }
+  }, [latest.data, result]);
 
   if (!source) return null;
 
@@ -1288,21 +1910,24 @@ function TraceabilityAuditDialog({
   function close() {
     setResult(null);
     setStarted(false);
+    setHydratedRunAt(null);
     onClose();
   }
 
+  function traceFileBase() {
+    return `traceability-${source!.label.replace(/\s+/g, "-")}`;
+  }
   function downloadMarkdown() {
     if (!result) return;
-    const md = renderTraceMarkdown(result, source!);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `traceability-${source!.label.replace(/\s+/g, "-")}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(renderTraceMarkdown(result, source!), "text/markdown", `${traceFileBase()}.md`);
+  }
+  function downloadCsv() {
+    if (!result) return;
+    downloadBlob(renderTraceCsv(result), "text/csv;charset=utf-8", `${traceFileBase()}.csv`);
+  }
+  function downloadPdf() {
+    if (!result) return;
+    openPrintWindow(renderTraceHtml(result, source!), `${traceFileBase()}.pdf`);
   }
 
   const verdictColor: Record<TraceabilityAuditResult["overallVerdict"], string> = {
@@ -1321,7 +1946,7 @@ function TraceabilityAuditDialog({
             Traceability completeness — “{source.label}”
           </DialogTitle>
           <DialogDescription>
-            For every requirement in the project, Auditee checks whether design, code, tests, and test reports exist in this source.
+            For every requirement in the project, Auditee checks whether evidence exists across all 5 lifecycle stages — architecture, design, implementation, testing, and deployment — in this source.
           </DialogDescription>
         </DialogHeader>
 
@@ -1335,7 +1960,7 @@ function TraceabilityAuditDialog({
                 {source.fileCount} files · {bytesHuman(source.byteCount)} indexed from <span className="font-mono">{source.kind}</span>
               </div>
               <div className="mt-2 text-[11px] text-slate-500">
-                Files are bucketed into 4 stages — design (architecture/specs), code (source files), tests (test files), reports (build/test reports) — and assessed per requirement.
+                Files are bucketed into 5 lifecycle stages — architecture (design docs/ADRs), design (specs/UX), implementation (source code), testing (test suites/results), and deployment (release/runbook artifacts) — and assessed per requirement.
               </div>
             </div>
             <DialogFooter>
@@ -1372,15 +1997,36 @@ function TraceabilityAuditDialog({
                   <div className="text-xs opacity-80 mt-0.5">{result.requirementsAudited} requirement(s) audited</div>
                 </div>
                 <CompliancePctGauge pct={result.completenessPercentage} />
-                <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white">
-                  <Download className="h-3.5 w-3.5 mr-1.5" /> Download .md
-                </Button>
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  <Button variant="outline" size="sm" onClick={downloadMarkdown} className="bg-white" data-testid="trace-download-md">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .md
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadCsv} className="bg-white" data-testid="trace-download-csv">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .csv
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={downloadPdf} className="bg-white" data-testid="trace-download-pdf">
+                    <Download className="h-3.5 w-3.5 mr-1.5" /> .pdf
+                  </Button>
+                </div>
               </div>
+              {hydratedRunAt && (
+                <div className="mt-2 text-[11px] opacity-80 flex items-center gap-2 flex-wrap">
+                  <span>Showing previous run from {new Date(hydratedRunAt).toLocaleString()}.</span>
+                  <button
+                    type="button"
+                    className="underline hover:opacity-100 opacity-90"
+                    onClick={() => { setResult(null); setHydratedRunAt(null); run(); }}
+                    disabled={trace.isPending}
+                  >
+                    Re-run check
+                  </button>
+                </div>
+              )}
             </div>
 
             {result.stagePercentages && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {(["design", "code", "tests", "reports"] as const).map((stage) => {
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {(["architecture", "design", "implementation", "testing", "deployment"] as const).map((stage) => {
                   const v = Math.round(result.stagePercentages[stage] ?? 0);
                   const tone: "emerald" | "amber" | "rose" = v >= 80 ? "emerald" : v >= 50 ? "amber" : "rose";
                   const cls = STAGE_TONE_CLASSES[tone];
@@ -1415,10 +2061,11 @@ function TraceabilityAuditDialog({
                   <thead className="bg-slate-100 text-slate-700">
                     <tr>
                       <th className="text-left p-2 font-medium">Requirement</th>
+                      <th className="text-left p-2 font-medium">Architecture</th>
                       <th className="text-left p-2 font-medium">Design</th>
-                      <th className="text-left p-2 font-medium">Code</th>
-                      <th className="text-left p-2 font-medium">Tests</th>
-                      <th className="text-left p-2 font-medium">Reports</th>
+                      <th className="text-left p-2 font-medium">Implementation</th>
+                      <th className="text-left p-2 font-medium">Testing</th>
+                      <th className="text-left p-2 font-medium">Deployment</th>
                       <th className="text-left p-2 font-medium">Recommendation</th>
                     </tr>
                   </thead>
@@ -1426,10 +2073,11 @@ function TraceabilityAuditDialog({
                     {result.requirementCoverage.map((r, i) => (
                       <tr key={i} className="border-t align-top">
                         <td className="p-2 font-mono whitespace-nowrap">{r.requirementCode}</td>
+                        <td className="p-2"><StageCell stage={r.architecture} /></td>
                         <td className="p-2"><StageCell stage={r.design} /></td>
-                        <td className="p-2"><StageCell stage={r.code} /></td>
-                        <td className="p-2"><StageCell stage={r.tests} /></td>
-                        <td className="p-2"><StageCell stage={r.reports} /></td>
+                        <td className="p-2"><StageCell stage={r.implementation} /></td>
+                        <td className="p-2"><StageCell stage={r.testing} /></td>
+                        <td className="p-2"><StageCell stage={r.deployment} /></td>
                         <td className="p-2 text-slate-700">{r.recommendation}</td>
                       </tr>
                     ))}
@@ -1471,28 +2119,31 @@ const STAGE_TONE_CLASSES: Record<"emerald" | "amber" | "rose", { box: string; he
   },
 };
 
-function StageCell({ stage }: { stage: CoverageStage }) {
+const EMPTY_STAGE: CoverageStage = { status: "missing", artifacts: [], note: "" };
+
+function StageCell({ stage }: { stage: CoverageStage | undefined }) {
+  const s: CoverageStage = stage ?? EMPTY_STAGE;
   const tone: "emerald" | "amber" | "rose" =
-    stage.status === "covered" ? "emerald" :
-    stage.status === "partial" ? "amber" :
+    s.status === "covered" ? "emerald" :
+    s.status === "partial" ? "amber" :
     "rose";
   const cls = STAGE_TONE_CLASSES[tone];
   return (
     <div className="space-y-1 min-w-[140px]">
       <Badge variant="outline" className={`${cls.badge} capitalize`}>
-        {stage.status}
+        {s.status}
       </Badge>
-      {stage.artifacts && stage.artifacts.length > 0 && (
+      {s.artifacts && s.artifacts.length > 0 && (
         <div className="space-y-0.5">
-          {stage.artifacts.slice(0, 3).map((a) => (
+          {s.artifacts.slice(0, 3).map((a) => (
             <div key={a} className="font-mono text-[10px] text-slate-600 truncate" title={a}>{a}</div>
           ))}
-          {stage.artifacts.length > 3 && (
-            <div className="text-[10px] text-slate-500">+{stage.artifacts.length - 3} more</div>
+          {s.artifacts.length > 3 && (
+            <div className="text-[10px] text-slate-500">+{s.artifacts.length - 3} more</div>
           )}
         </div>
       )}
-      {stage.note && <div className="text-[10px] text-slate-500 italic">{stage.note}</div>}
+      {s.note && <div className="text-[10px] text-slate-500 italic">{s.note}</div>}
     </div>
   );
 }
@@ -1508,7 +2159,13 @@ function renderTraceMarkdown(r: TraceabilityAuditResult, source: ProjectSourceRo
   lines.push(`**Completeness:** **${Math.round(r.completenessPercentage)}%** across ${r.requirementsAudited} requirement(s)`);
   if (r.stagePercentages) {
     lines.push(``);
-    lines.push(`**Stage completeness:** design ${Math.round(r.stagePercentages.design)}% · code ${Math.round(r.stagePercentages.code)}% · tests ${Math.round(r.stagePercentages.tests)}% · reports ${Math.round(r.stagePercentages.reports)}%`);
+    lines.push(
+      `**Stage completeness:** architecture ${Math.round(r.stagePercentages.architecture ?? 0)}% · ` +
+      `design ${Math.round(r.stagePercentages.design ?? 0)}% · ` +
+      `implementation ${Math.round(r.stagePercentages.implementation ?? 0)}% · ` +
+      `testing ${Math.round(r.stagePercentages.testing ?? 0)}% · ` +
+      `deployment ${Math.round(r.stagePercentages.deployment ?? 0)}%`
+    );
   }
   lines.push(``);
   if (r.headlineFindings?.length) {
@@ -1518,16 +2175,259 @@ function renderTraceMarkdown(r: TraceabilityAuditResult, source: ProjectSourceRo
   }
   lines.push(`## Per-requirement coverage`);
   lines.push(``);
-  lines.push(`| Requirement | Design | Code | Tests | Reports | Recommendation |`);
-  lines.push(`|---|---|---|---|---|---|`);
+  lines.push(`| Requirement | Architecture | Design | Implementation | Testing | Deployment | Recommendation |`);
+  lines.push(`|---|---|---|---|---|---|---|`);
   r.requirementCoverage.forEach((req) => {
-    function cell(s: CoverageStage): string {
-      const a = (s.artifacts ?? []).map((p) => `\`${mdCell(p)}\``).join("<br/>");
-      return `${mdCell(s.status)}${a ? "<br/>" + a : ""}${s.note ? "<br/>_" + mdCell(s.note) + "_" : ""}`;
+    function cell(s: CoverageStage | undefined): string {
+      const stage = s ?? EMPTY_STAGE;
+      const a = (stage.artifacts ?? []).map((p) => `\`${mdCell(p)}\``).join("<br/>");
+      return `${mdCell(stage.status)}${a ? "<br/>" + a : ""}${stage.note ? "<br/>_" + mdCell(stage.note) + "_" : ""}`;
     }
     lines.push(
-      `| \`${mdCell(req.requirementCode)}\` | ${cell(req.design)} | ${cell(req.code)} | ${cell(req.tests)} | ${cell(req.reports)} | ${mdCell(req.recommendation)} |`,
+      `| \`${mdCell(req.requirementCode)}\` | ${cell(req.architecture)} | ${cell(req.design)} | ${cell(req.implementation)} | ${cell(req.testing)} | ${cell(req.deployment)} | ${mdCell(req.recommendation)} |`,
     );
   });
   return lines.join("\n");
+}
+
+// ───────── Generic download / CSV / PDF (print) helpers ─────────
+function downloadBlob(content: string, mime: string, filename: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(v: unknown): string {
+  let s = v == null ? "" : String(v);
+  // CSV-injection guard: cells starting with =, +, -, @, tab, or CR could be
+  // interpreted as formulas by Excel / Sheets. Prefix with a single quote so
+  // the value is treated as text.
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = "'" + s;
+  }
+  // RFC 4180: quote if contains comma, quote, CR, or LF (also quote if we
+  // just prepended a single quote so opening single-quote is preserved).
+  if (/[",\r\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+function csvRow(cols: unknown[]): string {
+  return cols.map(csvCell).join(",");
+}
+
+function renderAuditCsv(r: ComplianceAuditResult): string {
+  const rows: string[] = [];
+  rows.push(csvRow([
+    "Control",
+    "Verdict",
+    "Native rating",
+    "Required evidence",
+    "Found evidence",
+    "Missing evidence",
+    "Files cited",
+    "Recommendation",
+  ]));
+  for (const a of r.controlAssessments) {
+    const native = r.nativeRating?.perControl?.[a.controlCode];
+    rows.push(csvRow([
+      a.controlCode,
+      a.verdict,
+      native ? `${native.value} — ${native.label}` : "",
+      (a.requiredEvidence ?? []).join(" | "),
+      (a.foundEvidence ?? []).join(" | "),
+      (a.missingEvidence ?? []).join(" | "),
+      (a.evidenceFiles ?? []).join(" | "),
+      a.recommendation ?? "",
+    ]));
+  }
+  return rows.join("\r\n");
+}
+
+function renderTraceCsv(r: TraceabilityAuditResult): string {
+  const rows: string[] = [];
+  rows.push(csvRow([
+    "Requirement",
+    "Architecture status", "Architecture artifacts", "Architecture note",
+    "Design status", "Design artifacts", "Design note",
+    "Implementation status", "Implementation artifacts", "Implementation note",
+    "Testing status", "Testing artifacts", "Testing note",
+    "Deployment status", "Deployment artifacts", "Deployment note",
+    "Recommendation",
+  ]));
+  for (const req of r.requirementCoverage) {
+    const stage = (s: CoverageStage | undefined) => {
+      const x = s ?? EMPTY_STAGE;
+      return [x.status, (x.artifacts ?? []).join(" | "), x.note ?? ""];
+    };
+    rows.push(csvRow([
+      req.requirementCode,
+      ...stage(req.architecture),
+      ...stage(req.design),
+      ...stage(req.implementation),
+      ...stage(req.testing),
+      ...stage(req.deployment),
+      req.recommendation ?? "",
+    ]));
+  }
+  return rows.join("\r\n");
+}
+
+function escapeHtml(s: unknown): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function pdfDocShell(title: string, body: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Inter,Arial,sans-serif;color:#0f172a;margin:32px;font-size:11px;line-height:1.45}
+  h1{font-size:20px;margin:0 0 4px 0}
+  h2{font-size:14px;margin:18px 0 8px 0;border-bottom:1px solid #e2e8f0;padding-bottom:3px}
+  .meta{color:#475569;font-size:11px;margin-bottom:8px}
+  .verdict{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:600;text-transform:capitalize}
+  .v-strong{background:#d1fae5;color:#065f46}
+  .v-adequate{background:#dbeafe;color:#1e40af}
+  .v-weak{background:#fef3c7;color:#92400e}
+  .v-failing{background:#fee2e2;color:#991b1b}
+  table{border-collapse:collapse;width:100%;margin-top:6px;font-size:10px}
+  th,td{border:1px solid #cbd5e1;padding:5px 6px;text-align:left;vertical-align:top}
+  th{background:#f1f5f9;font-weight:600}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-size:9.5px}
+  ul{margin:4px 0 0 16px;padding:0}
+  li{margin:0}
+  .pill{display:inline-block;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:600;text-transform:capitalize}
+  .p-met,.p-covered{background:#d1fae5;color:#065f46}
+  .p-partial{background:#fef3c7;color:#92400e}
+  .p-gap,.p-missing{background:#fee2e2;color:#991b1b}
+  @media print{body{margin:18mm}}
+</style></head><body>${body}
+<script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},250);});</script>
+</body></html>`;
+}
+
+function verdictPillHtml(v: string): string {
+  return `<span class="verdict v-${escapeHtml(v)}">${escapeHtml(v)}</span>`;
+}
+function statusPillHtml(s: string): string {
+  return `<span class="pill p-${escapeHtml(s)}">${escapeHtml(s)}</span>`;
+}
+
+function renderAuditHtml(r: ComplianceAuditResult, source: ProjectSourceRow): string {
+  const summary = r.controlSummary
+    ? ` (${r.controlSummary.met} met / ${r.controlSummary.partial} partial / ${r.controlSummary.gap} gap of ${r.controlSummary.total})`
+    : "";
+  const headlines = (r.headlineFindings ?? []).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
+  const rows = r.controlAssessments.map((a) => {
+    const native = r.nativeRating?.perControl?.[a.controlCode];
+    const list = (xs?: string[]) => (xs && xs.length ? `<ul>${xs.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` : "—");
+    const files = (a.evidenceFiles ?? []).length
+      ? `<ul>${(a.evidenceFiles ?? []).map((p) => `<li class="mono">${escapeHtml(p)}</li>`).join("")}</ul>`
+      : "—";
+    return `<tr>
+      <td class="mono">${escapeHtml(a.controlCode)}</td>
+      <td>${statusPillHtml(a.verdict)}</td>
+      <td>${native ? `<span class="mono">${escapeHtml(native.value)}</span> — ${escapeHtml(native.label)}` : "—"}</td>
+      <td>${list(a.requiredEvidence)}</td>
+      <td>${list(a.foundEvidence)}</td>
+      <td>${list(a.missingEvidence)}</td>
+      <td>${files}</td>
+      <td>${escapeHtml(a.recommendation ?? "")}</td>
+    </tr>`;
+  }).join("");
+  const body = `
+    <h1>Compliance Audit — ${escapeHtml(r.framework.name)}</h1>
+    <div class="meta">
+      <strong>Project:</strong> ${escapeHtml(r.project.name)} ·
+      <strong>Source:</strong> ${escapeHtml(source.label)} (${escapeHtml(source.kind)}) — ${source.fileCount} files indexed ·
+      <strong>Generated:</strong> ${escapeHtml(new Date().toLocaleString())}
+    </div>
+    <div><strong>Overall verdict:</strong> ${verdictPillHtml(r.overallVerdict)}
+    ${typeof r.compliancePercentage === "number" ? ` · <strong>Compliance:</strong> ${Math.round(r.compliancePercentage)}%${escapeHtml(summary)}` : ""}
+    ${r.nativeRating ? ` · <strong>${escapeHtml(r.nativeRating.schemeName)}:</strong> <span class="mono">${escapeHtml(r.nativeRating.overall.value)}</span> — ${escapeHtml(r.nativeRating.overall.label)}` : ""}
+    </div>
+    ${headlines ? `<h2>Headline findings</h2><ul>${headlines}</ul>` : ""}
+    <h2>Per-control assessment</h2>
+    <table>
+      <thead><tr>
+        <th>Control</th><th>Verdict</th><th>Native rating</th>
+        <th>Required evidence</th><th>Found evidence</th><th>Missing evidence</th>
+        <th>Files cited</th><th>Recommendation</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  return pdfDocShell(`Compliance Audit — ${r.framework.name}`, body);
+}
+
+function renderTraceHtml(r: TraceabilityAuditResult, source: ProjectSourceRow): string {
+  const headlines = (r.headlineFindings ?? []).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
+  const stageCell = (s: CoverageStage | undefined) => {
+    const x = s ?? EMPTY_STAGE;
+    const arts = (x.artifacts ?? []).length
+      ? `<ul>${(x.artifacts ?? []).map((p) => `<li class="mono">${escapeHtml(p)}</li>`).join("")}</ul>`
+      : "";
+    return `${statusPillHtml(x.status)}${arts}${x.note ? `<div style="color:#64748b;font-style:italic;margin-top:2px">${escapeHtml(x.note)}</div>` : ""}`;
+  };
+  const rows = r.requirementCoverage.map((req) => `<tr>
+    <td class="mono">${escapeHtml(req.requirementCode)}</td>
+    <td>${stageCell(req.architecture)}</td>
+    <td>${stageCell(req.design)}</td>
+    <td>${stageCell(req.implementation)}</td>
+    <td>${stageCell(req.testing)}</td>
+    <td>${stageCell(req.deployment)}</td>
+    <td>${escapeHtml(req.recommendation ?? "")}</td>
+  </tr>`).join("");
+  const body = `
+    <h1>Traceability Completeness Audit</h1>
+    <div class="meta">
+      <strong>Project:</strong> ${escapeHtml(r.project.name)} ·
+      <strong>Source:</strong> ${escapeHtml(source.label)} (${escapeHtml(source.kind)}) — ${source.fileCount} files indexed ·
+      <strong>Generated:</strong> ${escapeHtml(new Date().toLocaleString())}
+    </div>
+    <div><strong>Overall verdict:</strong> ${verdictPillHtml(r.overallVerdict)} ·
+      <strong>Completeness:</strong> ${Math.round(r.completenessPercentage)}% across ${r.requirementsAudited} requirement(s)
+    </div>
+    ${r.stagePercentages ? `<div class="meta"><strong>Stage completeness:</strong>
+      architecture ${Math.round(r.stagePercentages.architecture ?? 0)}% ·
+      design ${Math.round(r.stagePercentages.design ?? 0)}% ·
+      implementation ${Math.round(r.stagePercentages.implementation ?? 0)}% ·
+      testing ${Math.round(r.stagePercentages.testing ?? 0)}% ·
+      deployment ${Math.round(r.stagePercentages.deployment ?? 0)}%</div>` : ""}
+    ${headlines ? `<h2>Headline findings</h2><ul>${headlines}</ul>` : ""}
+    <h2>Per-requirement coverage</h2>
+    <table>
+      <thead><tr>
+        <th>Requirement</th>
+        <th>Architecture</th><th>Design</th><th>Implementation</th><th>Testing</th><th>Deployment</th>
+        <th>Recommendation</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  return pdfDocShell("Traceability Completeness Audit", body);
+}
+
+/**
+ * Open a new window with a self-contained HTML document, then trigger the
+ * browser's print dialog. Users can choose "Save as PDF" — works in every
+ * modern browser, no extra dependencies needed.
+ */
+function openPrintWindow(html: string, _suggestedName: string) {
+  const w = window.open("", "_blank", "width=900,height=900");
+  if (!w) {
+    alert("Please allow pop-ups to download the PDF.");
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }

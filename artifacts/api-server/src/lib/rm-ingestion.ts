@@ -13,6 +13,7 @@ import { randomUUID } from "node:crypto";
 import { db, requirementsTable, sourceFilesTable, projectSourcesTable, activityEventsTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { safeFetch } from "./safe-fetch.js";
+import { insertRequirement } from "./insertRequirement.js";
 
 export type NormalizedReq = {
   externalId: string;          // tool's own ID for the requirement
@@ -93,8 +94,11 @@ async function persistRequirements(
     // collapsing multiple distinct items onto the same row, so we skip them.
     const externalId = trim(r.externalId, 240);
     if (!externalId) { skipped++; continue; }
-    const code = trim(r.code || externalId, 64);
-    if (!code) { skipped++; continue; }
+    // The vendor's display code (e.g. "req-1") is preserved on the row as
+    // `externalId`. The `code` column is project-unique and allocated by
+    // `insertRequirement()`, so we never write the vendor code into it
+    // directly — that would collide with `requirements_project_code_unique`.
+    const fallbackTitle = trim(r.code || externalId, 64) || externalId;
     bytes += (r.title?.length ?? 0) + (r.description?.length ?? 0);
     const url = safeExternalUrl(r.externalUrl);
     const existing = await db
@@ -103,11 +107,12 @@ async function persistRequirements(
       .where(and(eq(requirementsTable.projectId, projectId), eq(requirementsTable.sourceId, sourceId), eq(requirementsTable.externalId, externalId)))
       .limit(1);
     if (existing.length > 0) {
+      // Re-sync: update content, but never touch `code` — it was allocated
+      // on the original insert and must remain stable across re-syncs.
       await db
         .update(requirementsTable)
         .set({
-          code,
-          title: trim(r.title, 240) || code,
+          title: trim(r.title, 240) || fallbackTitle,
           description: trim(r.description, 4000),
           type: r.type,
           status: trim(r.status, 32) || "draft",
@@ -119,23 +124,20 @@ async function persistRequirements(
         .where(eq(requirementsTable.id, existing[0]!.id));
       updated++;
     } else {
-      await db.insert(requirementsTable).values({
-        id: randomUUID(),
-        projectId,
-        code,
-        title: trim(r.title, 240) || code,
+      await insertRequirement(projectId, (code) => ({
+        title: trim(r.title, 240) || fallbackTitle,
         description: trim(r.description, 4000),
         type: r.type,
         status: trim(r.status, 32) || "draft",
         priority: r.priority,
         owner: "Imported",
         tags: [externalSystem.toLowerCase()],
-        linkedFrameworks: [],
+        linkedFrameworks: [] as string[],
         sourceId,
         externalId,
         externalUrl: url,
         externalSystem,
-      });
+      }));
       inserted++;
     }
   }

@@ -30,6 +30,8 @@ import {
   testCasesTable,
   aiReportsTable,
   effortEstimatesTable,
+  auditRunsTable,
+  pipelineRunsTable,
 } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
@@ -43,6 +45,7 @@ import { selectStandardsBlueprints, renderStandardsAddendum } from "../lib/stand
 import { consumeCredit } from "../middlewares/creditMiddleware";
 import { assertProjectAccessIfAuthed, requireProjectAccessInline } from "../lib/projectAccess";
 import { loadProjectDedupIndex, findDuplicate, indexNewRow } from "../lib/requirementDedup";
+import { insertRequirement } from "../lib/insertRequirement";
 
 const router: IRouter = Router();
 
@@ -94,23 +97,6 @@ async function logActivity(
   });
 }
 
-async function nextRequirementCode(projectId: string): Promise<string> {
-  const [project] = await db
-    .select({ slug: projectsTable.slug })
-    .from(projectsTable)
-    .where(eq(projectsTable.id, projectId));
-  if (!project) throw new Error("Project not found");
-  const prefix = project.slug.toUpperCase().slice(0, 4);
-  const existing = await db
-    .select({ code: requirementsTable.code })
-    .from(requirementsTable)
-    .where(eq(requirementsTable.projectId, projectId));
-  const max = existing.reduce((m, r) => {
-    const n = Number(r.code.split("-")[1] ?? "0");
-    return Number.isFinite(n) && n > m ? n : m;
-  }, 0);
-  return `${prefix}-${String(max + 1).padStart(4, "0")}`;
-}
 
 // =============================================================
 // AI: Generate Requirements from a brief
@@ -303,35 +289,28 @@ Rules:
       });
       continue;
     }
-    const code = await nextRequirementCode(body.projectId);
     const linkedFrameworks = (r.linkedFrameworkCodes ?? [])
       .map((c) => codeToId.get(c))
       .filter((x): x is string => Boolean(x));
-    const [row] = await db
-      .insert(requirementsTable)
-      .values({
-        id: randomUUID(),
-        projectId: body.projectId,
-        code,
-        title: r.title.slice(0, 200),
-        description: r.description,
-        type: r.type,
-        status: "draft",
-        priority: r.priority,
-        owner: "Auditee",
-        tags: r.tags ?? [],
-        linkedFrameworks,
-        externalSystem: "auditee_ai",
-        externalId: code,
-      })
-      .returning();
+    const row = await insertRequirement(body.projectId, (code) => ({
+      title: r.title.slice(0, 200),
+      description: r.description,
+      type: r.type,
+      status: "draft",
+      priority: r.priority,
+      owner: "Auditee",
+      tags: r.tags ?? [],
+      linkedFrameworks,
+      externalSystem: "auditee_ai",
+      externalId: code,
+    }));
     created.push(row);
     indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
     await logActivity(
       "requirement",
-      `${code} drafted by Auditee from ${mode}`,
+      `${row.code} drafted by Auditee from ${mode}`,
       "Auditee",
-      code,
+      row.code,
     );
   }
 
@@ -1234,6 +1213,19 @@ router.post("/ai/compliance-audit", consumeCredit(), aiHandler(async (req, res) 
     .from(defectsTable)
     .where(eq(defectsTable.projectId, body.projectId));
 
+  // ───────── Load pipeline runs (CI/CD/CD/test/data/MLOps/scan/infra) ────
+  // Pipeline runs are direct evidence of build/test/deploy/scan health and
+  // close compliance gaps that purely-static evidence can't (ASPICE MAN.3,
+  // SWE.4-6; IEC 62304 §5.5–5.8; ISO 26262-6 §11; SOC 2 CC7.1/CC8.1; ISO
+  // 21434; FDA 21 CFR Part 11 §11.10). We pull the most recent ~50 runs
+  // per project — older history is summarised, recent runs cited verbatim.
+  const allPipelineRuns = await db
+    .select()
+    .from(pipelineRunsTable)
+    .where(eq(pipelineRunsTable.projectId, body.projectId))
+    .orderBy(desc(pipelineRunsTable.receivedAt))
+    .limit(200);
+
   // ───────── Load project sources as evidence ─────────
   // Default: every "ready" source for the project.  If the caller passed sourceIds, scope to those.
   const sourcesForProject = await db
@@ -1353,13 +1345,46 @@ router.post("/ai/compliance-audit", consumeCredit(), aiHandler(async (req, res) 
     return `Totals by tool:\n${summary}\n\nMost severe / oldest first (sample of up to 25):\n${samples}`;
   })();
 
+  // ── Pipeline runs evidence block ─────────────────────────────────────
+  // Pipeline runs (CI/CD/CD/test/data/MLOps/security-scan/infra) are direct
+  // evidence of build, test, deploy, scan and infra health. They typically
+  // close compliance gaps that purely-static evidence can't (ASPICE MAN.3 /
+  // SWE.4-6, IEC 62304 §5.5–5.8, ISO 26262-6 §11, SOC 2 CC7.1/CC8.1, ISO
+  // 21434, FDA 21 CFR Part 11 §11.10, NIST CSF PR.IP-3).
+  const pipelineRunsForAudit = allPipelineRuns.filter((r) => includedSourceIds.has(r.sourceId));
+  const pipelineBlock = ((): string => {
+    if (pipelineRunsForAudit.length === 0) {
+      return "(no pipeline runs ingested from connected CI/CD, CD, test, data, MLOps, security-scan, or infrastructure pipelines)";
+    }
+    const byCategory: Record<string, { runs: number; success: number; failure: number; testsTotal: number; testsFailed: number; criticals: number; highs: number }> = {};
+    for (const r of pipelineRunsForAudit) {
+      byCategory[r.category] ??= { runs: 0, success: 0, failure: 0, testsTotal: 0, testsFailed: 0, criticals: 0, highs: 0 };
+      const c = byCategory[r.category]!;
+      c.runs++;
+      if (r.status === "success") c.success++;
+      else if (r.status === "failure") c.failure++;
+      c.testsTotal += r.testsTotal ?? 0;
+      c.testsFailed += r.testsFailed ?? 0;
+      c.criticals += r.findingsCritical ?? 0;
+      c.highs += r.findingsHigh ?? 0;
+    }
+    const summary = Object.entries(byCategory)
+      .map(([cat, t]) => `- ${cat}: ${t.runs} runs (${t.success} success / ${t.failure} failure)${t.testsTotal ? ` · tests ${t.testsTotal - t.testsFailed}/${t.testsTotal} pass` : ""}${t.criticals + t.highs > 0 ? ` · ${t.criticals} critical + ${t.highs} high findings` : ""}`)
+      .join("\n");
+    const recent = pipelineRunsForAudit.slice(0, 30)
+      .map((r) => `- [${r.kind}] ${r.name} (${r.status}${r.conclusion ? `/${r.conclusion}` : ""})${r.branch ? ` on ${r.branch}` : ""}${r.commitSha ? ` @ ${r.commitSha.slice(0, 7)}` : ""}${r.testsTotal ? ` · ${r.testsTotal - (r.testsFailed ?? 0)}/${r.testsTotal} tests` : ""}${(r.findingsCritical ?? 0) + (r.findingsHigh ?? 0) > 0 ? ` · ${r.findingsCritical}C/${r.findingsHigh}H findings` : ""}${r.environment ? ` · env=${r.environment}` : ""}`)
+      .join("\n");
+    return `Totals by category:\n${summary}\n\nMost recent runs (sample of up to 30):\n${recent}`;
+  })();
+
   const system = `You are Auditee's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it AND explicitly enumerate "required evidence vs found evidence vs missing evidence" so the user gets a clean conformance report.
 
-You have FOUR inputs to reason from:
+You have FIVE inputs to reason from:
 1) The project's requirements (formal documented behaviour). Many of these are imported from Requirements-Management tools (DOORS, Jama, Polarion, …) — treat the imported ones as authoritative when they cite an external system.
 2) The framework's controls (what must be true).
 3) Project sources — actual files ingested from GitHub / uploads / etc. These are real evidence. Cite them when they prove or disprove a control.
 4) Defects imported from connected defect-management tools (Jira, Azure DevOps Bugs, Bugzilla, ServiceNow, ALM Octane, Linear, GitHub Issues, …). The defect log is direct evidence of: incident-management maturity, problem-resolution effectiveness, and unresolved risk against safety/security controls. A high count of OPEN critical defects is a meaningful gap signal — call it out specifically by ticket key when relevant.
+5) Pipeline runs from connected CI/CD, CD, test-execution, data, MLOps, security-scan and infrastructure pipelines (GitHub Actions, GitLab CI, Jenkins, Azure Pipelines, CircleCI, Spinnaker, Argo CD, Airflow, MLflow, SonarQube, Snyk, Semgrep, Terraform Cloud, …). These prove (or disprove) the existence and health of automated build, test, deployment, scanning and infrastructure-provisioning workflows. A green build/test history and a clean SAST/DAST/SCA scan log are positive evidence; persistent build failures, low test counts, or unresolved critical scan findings are negative evidence. Cite the pipeline kind and run name when relevant.
 
 Return strict JSON:
 {
@@ -1387,7 +1412,7 @@ Rules:
 - recommendation: one concrete next step (1 sentence). If evidence is missing for a control, say which file is needed.
 - headlineFindings: 2-4 short bullets summarising the audit, mentioning concrete sources where relevant.`;
 
-  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}\n\nProject sources & evidence:\n${evidenceBlock}\n\nDefects from connected defect-management tools (cite these by ticket key when they prove or disprove a control):\n${defectsBlock}`;
+  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}\n\nProject sources & evidence:\n${evidenceBlock}\n\nDefects from connected defect-management tools (cite these by ticket key when they prove or disprove a control):\n${defectsBlock}\n\nPipeline runs from connected CI/CD, CD, test, data, MLOps, security-scan and infrastructure pipelines (cite these by pipeline kind + run name when they prove or disprove a control):\n${pipelineBlock}`;
 
   type AuditResult = {
     overallVerdict: "strong" | "adequate" | "weak" | "failing";
@@ -1568,7 +1593,7 @@ Rules:
     framework.code,
   );
 
-  res.json({
+  const responsePayload = {
     framework: { id: framework.id, code: framework.code, name: framework.name },
     project: { id: project.id, name: project.name },
     capasCreated,
@@ -1587,7 +1612,30 @@ Rules:
     // afterwards so the model can never overwrite the standard-native rating.
     ...result,
     nativeRating,
-  });
+  };
+
+  // Persist so the dialog can re-open without re-spending a credit.
+  // We persist one row per (sourceId, framework) combination — the latest is
+  // returned on next dialog open. Failures are logged but never block the
+  // client response.
+  try {
+    const persistSourceId = includedSources[0]?.id ?? null;
+    const persistSourceLabel = includedSources[0]?.label ?? null;
+    await db.insert(auditRunsTable).values({
+      id: randomUUID(),
+      projectId: project.id,
+      sourceId: persistSourceId,
+      kind: "compliance",
+      frameworkId: framework.id,
+      frameworkCode: framework.code,
+      sourceLabel: persistSourceLabel,
+      result: responsePayload as unknown as Record<string, unknown>,
+    });
+  } catch (err) {
+    req.log?.warn?.({ err }, "Failed to persist compliance audit run");
+  }
+
+  res.json(responsePayload);
 }));
 
 // =============================================================
@@ -1870,7 +1918,7 @@ Rules:
     project.slug ?? project.id,
   );
 
-  res.json({
+  const tracePayload = {
     project: { id: project.id, name: project.name },
     overallVerdict: result.overallVerdict,
     headlineFindings: result.headlineFindings ?? [],
@@ -1889,6 +1937,344 @@ Rules:
       testingCount: buckets[s.id]?.testing.length ?? 0,
       deploymentCount: buckets[s.id]?.deployment.length ?? 0,
     })),
+  };
+
+  try {
+    const persistSourceId = includedSources[0]?.id ?? null;
+    const persistSourceLabel = includedSources[0]?.label ?? null;
+    await db.insert(auditRunsTable).values({
+      id: randomUUID(),
+      projectId: project.id,
+      sourceId: persistSourceId,
+      kind: "traceability",
+      sourceLabel: persistSourceLabel,
+      result: tracePayload as unknown as Record<string, unknown>,
+    });
+  } catch (err) {
+    req.log?.warn?.({ err }, "Failed to persist traceability audit run");
+  }
+
+  res.json(tracePayload);
+}));
+
+// =============================================================
+// GET latest audit run (compliance or traceability) for a source
+// so the dialog can re-open without re-running the LLM.
+// =============================================================
+router.get("/ai/audit-runs/latest", aiHandler(async (req, res) => {
+  const sourceId = requireString(req.query?.sourceId, "sourceId", { min: 1 });
+  const kindRaw = requireString(req.query?.kind, "kind", { min: 1 });
+  if (kindRaw !== "compliance" && kindRaw !== "traceability") {
+    res.status(400).json({ error: "kind must be 'compliance' or 'traceability'" });
+    return;
+  }
+  const kind = kindRaw as "compliance" | "traceability";
+  const frameworkId = typeof req.query?.frameworkId === "string" && req.query.frameworkId.length > 0
+    ? (req.query.frameworkId as string)
+    : null;
+
+  const conditions = [
+    eq(auditRunsTable.sourceId, sourceId),
+    eq(auditRunsTable.kind, kind),
+  ];
+  if (kind === "compliance" && frameworkId) {
+    conditions.push(eq(auditRunsTable.frameworkId, frameworkId));
+  }
+  const [latest] = await db
+    .select()
+    .from(auditRunsTable)
+    .where(and(...conditions))
+    .orderBy(desc(auditRunsTable.createdAt))
+    .limit(1);
+
+  if (!latest) {
+    res.status(404).json({ error: "No prior audit" });
+    return;
+  }
+
+  // Project-level access check using the persisted projectId.
+  {
+    const access = await assertProjectAccessIfAuthed(req, res, latest.projectId, "viewer");
+    if (access === false) return;
+  }
+
+  res.json({
+    id: latest.id,
+    kind: latest.kind,
+    frameworkId: latest.frameworkId,
+    frameworkCode: latest.frameworkCode,
+    runAt: latest.createdAt.toISOString(),
+    result: latest.result,
+  });
+}));
+
+// =============================================================
+// GET aggregated traceability completeness summary for a project.
+// Pivots the latest traceability audit_run per source into a
+// requirement × stage matrix, taking the BEST status per cell across
+// all sources (covered > partial > missing). Read-only, no AI credit.
+// =============================================================
+router.get("/ai/audit-runs/traceability-summary", aiHandler(async (req, res) => {
+  const projectId = requireString(req.query?.projectId, "projectId", { min: 1 });
+  {
+    // Content read of project-scoped audit data — must require an
+    // authenticated, project-member caller (not the AI anonymous-trial path).
+    // Project roles are manager > developer > reviewer > auditor; "auditor"
+    // is the read-only floor (there is no "viewer" role).
+    const access = await requireProjectAccessInline(req, res, projectId, "auditor");
+    if (access === false) return;
+  }
+
+  const [project] = await db.select().from(projectsTable).where(eq(projectsTable.id, projectId));
+  if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const allReqs = await db
+    .select({
+      id: requirementsTable.id,
+      code: requirementsTable.code,
+      title: requirementsTable.title,
+      type: requirementsTable.type,
+      status: requirementsTable.status,
+      priority: requirementsTable.priority,
+    })
+    .from(requirementsTable)
+    .where(eq(requirementsTable.projectId, projectId));
+
+  const allRuns = await db
+    .select()
+    .from(auditRunsTable)
+    .where(and(eq(auditRunsTable.projectId, projectId), eq(auditRunsTable.kind, "traceability")))
+    .orderBy(desc(auditRunsTable.createdAt));
+
+  // Latest run per source — first occurrence wins because we ordered DESC.
+  type RunRow = typeof auditRunsTable.$inferSelect;
+  const latestBySource = new Map<string, RunRow>();
+  for (const r of allRuns) {
+    const key = r.sourceId ?? "__no_source__";
+    if (!latestBySource.has(key)) latestBySource.set(key, r);
+  }
+  const runs = Array.from(latestBySource.values());
+
+  type StageKey = "architecture" | "design" | "implementation" | "testing" | "deployment";
+  const STAGE_KEYS: StageKey[] = ["architecture", "design", "implementation", "testing", "deployment"];
+  type CellStatus = "covered" | "partial" | "missing" | "unaudited";
+  const RANK: Record<CellStatus, number> = { covered: 3, partial: 2, missing: 1, unaudited: 0 };
+
+  type SourceCellEvidence = {
+    sourceId: string;
+    sourceLabel: string;
+    status: "covered" | "partial" | "missing";
+    artifacts: string[];
+    note: string;
+  };
+  type RequirementRow = {
+    requirementId: string;
+    requirementCode: string;
+    requirementTitle: string;
+    type: string;
+    status: string;
+    priority: string;
+    stages: Record<StageKey, { best: CellStatus; perSource: SourceCellEvidence[] }>;
+    recommendations: Array<{ sourceLabel: string; text: string }>;
+    auditedBySources: number;
+  };
+
+  // Track unique source IDs per requirement (keyed by requirement ID, not
+  // code, because legacy bulk-import races could create multiple
+  // requirements that share the same code — we still want the matrix to
+  // show every requirement row independently).
+  const auditingSourcesByReq = new Map<string, Set<string>>();
+  // Rows are keyed by requirement ID (always unique). A separate
+  // codeToReqIds index lets us broadcast a coverage entry to every
+  // requirement that shares the same code, so duplicate-code projects
+  // still render every requirement instead of collapsing to one row.
+  const rows: Map<string, RequirementRow> = new Map();
+  const codeToReqIds: Map<string, string[]> = new Map();
+  for (const r of allReqs) {
+    rows.set(r.id, {
+      requirementId: r.id,
+      requirementCode: r.code,
+      requirementTitle: r.title,
+      type: r.type,
+      status: r.status,
+      priority: r.priority,
+      stages: {
+        architecture: { best: "unaudited", perSource: [] },
+        design: { best: "unaudited", perSource: [] },
+        implementation: { best: "unaudited", perSource: [] },
+        testing: { best: "unaudited", perSource: [] },
+        deployment: { best: "unaudited", perSource: [] },
+      },
+      recommendations: [],
+      auditedBySources: 0,
+    });
+    const existing = codeToReqIds.get(r.code);
+    if (existing) existing.push(r.id);
+    else codeToReqIds.set(r.code, [r.id]);
+  }
+
+  // Sources block (latest-per-source metadata)
+  const sourcesUsed = runs.map((r) => ({
+    sourceId: r.sourceId,
+    sourceLabel: r.sourceLabel ?? "(unknown source)",
+    runAt: r.createdAt.toISOString(),
+    overallVerdict:
+      (r.result as any)?.overallVerdict ?? null,
+    completenessPercentage:
+      typeof (r.result as any)?.completenessPercentage === "number"
+        ? (r.result as any).completenessPercentage
+        : null,
+  }));
+
+  for (const run of runs) {
+    const payload = run.result as any;
+    const sourceLabel = run.sourceLabel ?? "(unknown source)";
+    const sourceId = run.sourceId ?? "__no_source__";
+    const coverage: any[] = Array.isArray(payload?.requirementCoverage) ? payload.requirementCoverage : [];
+    for (const rc of coverage) {
+      const code = typeof rc?.requirementCode === "string" ? rc.requirementCode : null;
+      if (!code) continue;
+      const reqIds = codeToReqIds.get(code);
+      if (!reqIds || reqIds.length === 0) continue; // requirement was deleted after the audit
+      // Pre-compute the per-stage values once per coverage entry, then fan
+      // out to every requirement sharing this code (handles legacy
+      // duplicate-code projects without inflating credit cost).
+      const stageVals = STAGE_KEYS.map((stage) => {
+        const stageVal = rc?.[stage];
+        const status: "covered" | "partial" | "missing" =
+          stageVal?.status === "covered" || stageVal?.status === "partial" || stageVal?.status === "missing"
+            ? stageVal.status
+            : "missing";
+        const artifacts = Array.isArray(stageVal?.artifacts)
+          ? stageVal.artifacts.filter((x: any) => typeof x === "string")
+          : [];
+        const note = typeof stageVal?.note === "string" ? stageVal.note : "";
+        return { stage, status, artifacts, note };
+      });
+      const recommendation =
+        typeof rc?.recommendation === "string" && rc.recommendation.trim() ? rc.recommendation : null;
+      for (const reqId of reqIds) {
+        const row = rows.get(reqId);
+        if (!row) continue;
+        let srcSet = auditingSourcesByReq.get(reqId);
+        if (!srcSet) {
+          srcSet = new Set<string>();
+          auditingSourcesByReq.set(reqId, srcSet);
+        }
+        srcSet.add(sourceId);
+        for (const sv of stageVals) {
+          row.stages[sv.stage].perSource.push({
+            sourceId,
+            sourceLabel,
+            status: sv.status,
+            artifacts: sv.artifacts,
+            note: sv.note,
+          });
+          if (RANK[sv.status] > RANK[row.stages[sv.stage].best]) {
+            row.stages[sv.stage].best = sv.status;
+          }
+        }
+        if (recommendation) {
+          row.recommendations.push({ sourceLabel, text: recommendation });
+        }
+      }
+    }
+  }
+
+  // Compute KPIs based on the BEST cell per requirement-stage across sources.
+  function score(s: CellStatus): number {
+    if (s === "covered") return 1;
+    if (s === "partial") return 0.5;
+    return 0; // missing or unaudited
+  }
+  const stageTotals: Record<StageKey, { score: number; missing: number; partial: number; covered: number; unaudited: number }> = {
+    architecture: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    design: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    implementation: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    testing: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+    deployment: { score: 0, missing: 0, partial: 0, covered: 0, unaudited: 0 },
+  };
+  let perReqScoreSum = 0;
+  let requirementsWithGaps = 0;
+  let requirementsFullyCovered = 0;
+  const requirementRows = Array.from(rows.values());
+  // Backfill the deduplicated audited-source count.
+  for (const row of requirementRows) {
+    row.auditedBySources = auditingSourcesByReq.get(row.requirementId)?.size ?? 0;
+  }
+  for (const row of requirementRows) {
+    let rowScore = 0;
+    let hasGap = false;
+    let allCovered = true;
+    for (const stage of STAGE_KEYS) {
+      const best = row.stages[stage].best;
+      stageTotals[stage][best as keyof typeof stageTotals[StageKey]]++;
+      stageTotals[stage].score += score(best);
+      rowScore += score(best);
+      if (best !== "covered") allCovered = false;
+      if (best === "missing" || best === "unaudited") hasGap = true;
+    }
+    perReqScoreSum += rowScore / STAGE_KEYS.length;
+    if (hasGap) requirementsWithGaps++;
+    if (allCovered) requirementsFullyCovered++;
+  }
+  const totalReqs = requirementRows.length;
+  const completenessPercentage = totalReqs > 0 ? Math.round((perReqScoreSum / totalReqs) * 100) : 0;
+  const stagePercentages: Record<StageKey, number> = {
+    architecture: totalReqs ? Math.round((stageTotals.architecture.score / totalReqs) * 100) : 0,
+    design: totalReqs ? Math.round((stageTotals.design.score / totalReqs) * 100) : 0,
+    implementation: totalReqs ? Math.round((stageTotals.implementation.score / totalReqs) * 100) : 0,
+    testing: totalReqs ? Math.round((stageTotals.testing.score / totalReqs) * 100) : 0,
+    deployment: totalReqs ? Math.round((stageTotals.deployment.score / totalReqs) * 100) : 0,
+  };
+
+  // Sort requirements: gaps first, then partials, then fully covered. Within
+  // each bucket, by code ASC for stable display.
+  function bucket(row: RequirementRow): number {
+    let hasMissing = false;
+    let hasPartialOrUnaudited = false;
+    let allCovered = true;
+    for (const s of STAGE_KEYS) {
+      const b = row.stages[s].best;
+      if (b !== "covered") allCovered = false;
+      if (b === "missing") hasMissing = true;
+      if (b === "partial" || b === "unaudited") hasPartialOrUnaudited = true;
+    }
+    if (allCovered) return 2;
+    if (hasMissing) return 0;
+    if (hasPartialOrUnaudited) return 1;
+    return 1;
+  }
+  requirementRows.sort((a, b) => {
+    const d = bucket(a) - bucket(b);
+    if (d !== 0) return d;
+    return a.requirementCode.localeCompare(b.requirementCode);
+  });
+
+  // Identify the weakest stage for the headline.
+  let weakestStage: StageKey | null = null;
+  for (const s of STAGE_KEYS) {
+    if (weakestStage === null || stagePercentages[s] < stagePercentages[weakestStage]) {
+      weakestStage = s;
+    }
+  }
+
+  res.json({
+    project: { id: project.id, name: project.name, slug: project.slug ?? null },
+    completenessPercentage,
+    stagePercentages,
+    stageBreakdown: stageTotals,
+    weakestStage,
+    requirementsTotal: totalReqs,
+    requirementsAudited: requirementRows.filter((r) => r.auditedBySources > 0).length,
+    requirementsWithGaps,
+    requirementsFullyCovered,
+    sourcesUsed,
+    requirements: requirementRows,
+    hasAnyRun: runs.length > 0,
   });
 }));
 
@@ -1971,23 +2357,16 @@ Rules:
           });
           continue;
         }
-        const code = await nextRequirementCode(body.projectId);
-        const [row] = await db
-          .insert(requirementsTable)
-          .values({
-            id: randomUUID(),
-            projectId: body.projectId,
-            code,
-            title: r.title.slice(0, 200),
-            description: r.description,
-            type: r.type,
-            status: "draft",
-            priority: r.priority,
-            owner: "Auditee (legacy)",
-            tags: [...(r.tags ?? []), "legacy", system.name],
-            linkedFrameworks: [],
-          })
-          .returning();
+        const row = await insertRequirement(body.projectId, () => ({
+          title: r.title.slice(0, 200),
+          description: r.description,
+          type: r.type,
+          status: "draft",
+          priority: r.priority,
+          owner: "Auditee (legacy)",
+          tags: [...(r.tags ?? []), "legacy", system.name],
+          linkedFrameworks: [],
+        }));
         createdRequirements.push(row);
         indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
       }
@@ -2376,7 +2755,6 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
     row = existing!;
     alreadyExisted = true;
   } else {
-    const code = await nextRequirementCode(projectId);
     // Allowlist category — only the categories the gap-analysis prompt is permitted
     // to emit can become a tag, so we never accept arbitrary user-controlled strings
     // into the tags column.
@@ -2394,25 +2772,18 @@ router.post("/ai/gap-analysis/promote", aiHandler(async (req, res) => {
     const tags = ["gap-analysis"];
     if (category && ALLOWED_GAP_CATEGORIES.has(category)) tags.push(category);
 
-    const [inserted] = await db
-      .insert(requirementsTable)
-      .values({
-        id: randomUUID(),
-        projectId,
-        code,
-        title,
-        description,
-        type: type as "BRD" | "PRD" | "FRD" | "NFR",
-        status: "draft",
-        priority: priority as "low" | "medium" | "high" | "critical",
-        owner: "Auditee",
-        tags,
-        linkedFrameworks: [],
-        externalSystem: "auditee_ai",
-        externalId: code,
-      })
-      .returning();
-    row = inserted!;
+    row = await insertRequirement(projectId, (code) => ({
+      title,
+      description,
+      type: type as "BRD" | "PRD" | "FRD" | "NFR",
+      status: "draft",
+      priority: priority as "low" | "medium" | "high" | "critical",
+      owner: "Auditee",
+      tags,
+      linkedFrameworks: [],
+      externalSystem: "auditee_ai",
+      externalId: code,
+    }));
   }
   const code = row.code;
 
@@ -3417,7 +3788,6 @@ ${qaJson}`;
       });
       continue;
     }
-    const code = await nextRequirementCode(projectId);
     const sourceQ = qa.find((q) => q.id === r.sourceQuestionId);
     const tags = Array.isArray(r.tags) ? r.tags.filter((t) => typeof t === "string").slice(0, 8) : [];
     if (sourceQ && !tags.some((t) => t.startsWith("interview:"))) {
@@ -3426,31 +3796,25 @@ ${qaJson}`;
     const linkedFrameworks = (r.linkedFrameworkCodes ?? [])
       .map((c) => codeToId.get(c))
       .filter((x): x is string => Boolean(x));
-    const [row] = await db
-      .insert(requirementsTable)
-      .values({
-        id: randomUUID(),
-        projectId,
-        code,
-        title: r.title.slice(0, 200),
-        description: r.description.slice(0, 4000),
-        type: r.type,
-        status: "draft",
-        priority: r.priority,
-        owner: "Auditee",
-        tags,
-        linkedFrameworks,
-        externalSystem: "auditee_smart_interview",
-        externalId: code,
-      })
-      .returning();
+    const row = await insertRequirement(projectId, (code) => ({
+      title: r.title.slice(0, 200),
+      description: r.description.slice(0, 4000),
+      type: r.type,
+      status: "draft",
+      priority: r.priority,
+      owner: "Auditee",
+      tags,
+      linkedFrameworks,
+      externalSystem: "auditee_smart_interview",
+      externalId: code,
+    }));
     created.push(row);
     indexNewRow(dedupIndex, { id: row.id, code: row.code, title: row.title, description: row.description });
     await logActivity(
       "requirement",
-      `${code} drafted by Smart Interview from ${sourceQ ? `Q "${sourceQ.prompt.slice(0, 60)}"` : "interview"}`,
+      `${row.code} drafted by Smart Interview from ${sourceQ ? `Q "${sourceQ.prompt.slice(0, 60)}"` : "interview"}`,
       "Auditee",
-      code,
+      row.code,
     );
   }
 

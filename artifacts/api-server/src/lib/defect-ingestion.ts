@@ -88,7 +88,7 @@ export type DefectIngestResult = {
   summary: string;
 };
 
-async function persistDefects(
+export async function persistDefects(
   projectId: string,
   sourceId: string,
   externalSystem: string,
@@ -143,7 +143,7 @@ async function persistDefects(
   return { inserted, updated, bytes, skipped };
 }
 
-async function finalizeSource(
+export async function finalizeSource(
   sourceId: string,
   status: "ready" | "error",
   count: number,

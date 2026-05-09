@@ -64,7 +64,14 @@ async function loadGithubSource(projectId: string, sourceId: string | undefined)
   if (!picked) throw new Error("The chosen GitHub source was not found in this project.");
   const cfg = (picked.config ?? {}) as GithubSourceConfig;
   if (!cfg.repoUrl) throw new Error("The chosen GitHub source has no repoUrl configured.");
-  return { source: picked, cfg };
+  // Token resolution: prefer the per-source token (user-supplied, scoped to
+  // their account). Fall back to the platform-level GITHUB_PAT secret so
+  // pushes to *public* repos owned by accounts that PAT can write to still
+  // succeed without the user having to mint their own token. The push will
+  // still fail at the GitHub API layer if the effective token lacks write
+  // access — and we surface that error message verbatim.
+  const effectiveToken = cfg.token || process.env.GITHUB_PAT || "";
+  return { source: picked, cfg: { ...cfg, token: effectiveToken } };
 }
 
 // -------------------------------------------------------------
@@ -78,7 +85,7 @@ router.get("/repo/push-targets", async (req, res) => {
     res.status(400).json({ error: "projectId required" });
     return;
   }
-  const access = await requireProjectAccessInline(req, res, projectId, "viewer");
+  const access = await requireProjectAccessInline(req, res, projectId, "auditor");
   if (!access) return;
 
   const sources = await db
@@ -95,7 +102,7 @@ router.get("/repo/push-targets", async (req, res) => {
         label: s.label,
         repoUrl: cfg.repoUrl ?? null,
         branch: cfg.branch ?? null,
-        hasToken: Boolean(cfg.token),
+        hasToken: Boolean(cfg.token) || Boolean(process.env.GITHUB_PAT),
         status: s.status,
       };
     }),

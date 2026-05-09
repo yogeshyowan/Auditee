@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pause, Play, Repeat, Volume2, VolumeX } from 'lucide-react';
 import { useSceneControls } from '@/hooks/useSceneControls';
 import VideoTemplate, { SCENE_DURATIONS } from './VideoTemplate';
 
@@ -9,11 +9,15 @@ interface ControlBarProps {
   visible: boolean;
   collapsed: boolean;
   locked: boolean;
+  paused: boolean;
+  muted: boolean;
   sceneKeys: string[];
   activeIndex: number;
   activeDuration: number;
   tick: number;
   onToggleLock: () => void;
+  onTogglePause: () => void;
+  onToggleMute: () => void;
   onJumpTo: (index: number) => void;
   onToggleCollapsed: () => void;
 }
@@ -23,24 +27,31 @@ function ProgressSegments({
   activeIndex,
   activeDuration,
   tick,
+  paused,
   onJumpTo,
 }: {
   sceneKeys: string[];
   activeIndex: number;
   activeDuration: number;
   tick: number;
+  paused: boolean;
   onJumpTo: (index: number) => void;
 }) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     setElapsed(0);
-    const start = performance.now();
+  }, [tick]);
+
+  useEffect(() => {
+    if (paused) return;
+    const start = performance.now() - elapsed;
     const id = window.setInterval(() => {
       setElapsed(performance.now() - start);
     }, PROGRESS_TICK_MS);
     return () => window.clearInterval(id);
-  }, [tick]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick, paused]);
 
   const progress = activeDuration > 0 ? Math.min(1, elapsed / activeDuration) : 0;
 
@@ -72,11 +83,15 @@ function ControlBar({
   visible,
   collapsed,
   locked,
+  paused,
+  muted,
   sceneKeys,
   activeIndex,
   activeDuration,
   tick,
   onToggleLock,
+  onTogglePause,
+  onToggleMute,
   onJumpTo,
   onToggleCollapsed,
 }: ControlBarProps) {
@@ -89,6 +104,30 @@ function ControlBar({
       }`}
       aria-hidden={!visible}
     >
+      <button
+        onClick={onTogglePause}
+        className="w-14 h-14 flex items-center justify-center text-white hover:bg-white/10 transition-colors rounded-lg shrink-0"
+        title={paused ? 'Play' : 'Pause'}
+        aria-label={paused ? 'Play' : 'Pause'}
+        aria-pressed={paused}
+      >
+        {paused ? <Play className="w-8 h-8" /> : <Pause className="w-8 h-8" />}
+      </button>
+
+      <button
+        onClick={onToggleMute}
+        className={`w-14 h-14 flex items-center justify-center transition-colors rounded-lg shrink-0 ${
+          muted
+            ? 'text-white bg-white/15 hover:bg-white/25'
+            : 'text-white/60 hover:text-white hover:bg-white/10'
+        }`}
+        title={muted ? 'Unmute' : 'Mute'}
+        aria-label={muted ? 'Unmute' : 'Mute'}
+        aria-pressed={muted}
+      >
+        {muted ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
+      </button>
+
       <button
         onClick={onToggleLock}
         className={`w-14 h-14 flex items-center justify-center transition-colors rounded-lg shrink-0 ${
@@ -110,6 +149,7 @@ function ControlBar({
         activeIndex={activeIndex}
         activeDuration={activeDuration}
         tick={tick}
+        paused={paused}
         onJumpTo={onJumpTo}
       />
 
@@ -141,9 +181,13 @@ export default function VideoWithControls() {
     tick,
     durations,
     activeDuration,
+    paused,
+    muted,
     onSceneChange,
     jumpTo,
     toggleLock,
+    togglePause,
+    toggleMute,
   } = useSceneControls(SCENE_DURATIONS);
 
   const sensorRef = useRef<HTMLDivElement | null>(null);
@@ -195,6 +239,8 @@ export default function VideoWithControls() {
         key={mountKey}
         durations={durations}
         loop
+        paused={paused}
+        muted={muted}
         onSceneChange={onSceneChange}
       />
       <div
@@ -210,11 +256,15 @@ export default function VideoWithControls() {
           visible={barVisible}
           collapsed={collapsed}
           locked={locked}
+          paused={paused}
+          muted={muted}
           sceneKeys={sceneKeys}
           activeIndex={activeIndex}
           activeDuration={activeDuration}
           tick={tick}
           onToggleLock={toggleLock}
+          onTogglePause={togglePause}
+          onToggleMute={toggleMute}
           onJumpTo={jumpTo}
           onToggleCollapsed={handleToggleCollapsed}
         />

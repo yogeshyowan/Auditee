@@ -1,10 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useListComplianceFrameworks } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronDown, ShieldCheck, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Building2, ChevronDown, Search, ShieldCheck, X } from "lucide-react";
+import { INDUSTRY_FRAMEWORKS, INDUSTRY_OPTIONS } from "@/lib/industry-frameworks";
 
 type Framework = { id: string; code: string; name: string };
 
@@ -18,6 +27,7 @@ type Props = {
   required?: boolean;
 };
 
+
 export function StandardsMultiSelect({
   value,
   onChange,
@@ -30,8 +40,53 @@ export function StandardsMultiSelect({
   const { data } = useListComplianceFrameworks();
   const frameworks = (data ?? []) as Framework[];
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [industry, setIndustry] = useState<string>("all");
 
   const selected = frameworks.filter((f) => value.includes(f.id));
+
+  // Filter pipeline:
+  //   1. Narrow by selected industry (if not "all").
+  //   2. Narrow by free-text search across code + name.
+  //   3. Pin currently-selected items to the top so they don't disappear
+  //      while the user changes industry/search.
+  const filtered = useMemo(() => {
+    const industryAllow = industry === "all"
+      ? null
+      : new Set(INDUSTRY_FRAMEWORKS[industry] ?? []);
+
+    let pool = frameworks;
+    if (industryAllow) {
+      // Always keep already-selected items visible even if they fall
+      // outside the chosen industry — otherwise the chip in the trigger
+      // would refer to a row the user can no longer uncheck from inside
+      // the popover.
+      pool = frameworks.filter(
+        (f) => industryAllow.has(f.code) || value.includes(f.id),
+      );
+    }
+
+    const q = query.trim().toLowerCase();
+    const matches = q
+      ? pool.filter(
+          (f) =>
+            f.code.toLowerCase().includes(q) ||
+            f.name.toLowerCase().includes(q),
+        )
+      : pool;
+
+    const sel = matches.filter((f) => value.includes(f.id));
+    const rest = matches.filter((f) => !value.includes(f.id));
+    return [...sel, ...rest];
+  }, [frameworks, industry, query, value]);
+
+  // Industry-only count (ignoring search) for the header badge so the user
+  // sees how many standards live under each industry.
+  const industryPoolCount = useMemo(() => {
+    if (industry === "all") return frameworks.length;
+    const allow = new Set(INDUSTRY_FRAMEWORKS[industry] ?? []);
+    return frameworks.filter((f) => allow.has(f.code)).length;
+  }, [frameworks, industry]);
 
   const toggle = (id: string) => {
     if (value.includes(id)) {
@@ -113,11 +168,81 @@ export function StandardsMultiSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <div className="border-b border-slate-200 p-2 space-y-2">
+            {/* Industry selector — narrows the standards list to the
+                domains the user actually cares about. */}
+            <div>
+              <label className="text-[10px] font-medium text-slate-600 flex items-center gap-1 mb-1">
+                <Building2 className="h-3 w-3 text-slate-400" />
+                Industry
+              </label>
+              <Select
+                value={industry}
+                onValueChange={(v) => {
+                  setIndustry(v);
+                  setQuery("");
+                }}
+              >
+                <SelectTrigger
+                  className="h-8 text-xs"
+                  data-testid="standards-industry-select"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INDUSTRY_OPTIONS.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      className="text-xs"
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Search within the (industry-narrowed) standards. */}
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  industry === "all"
+                    ? "Search standards (e.g. ISO 26262, HIPAA…)"
+                    : `Search within ${industryPoolCount} ${industryPoolCount === 1 ? "standard" : "standards"}…`
+                }
+                className="h-8 pl-7 text-sm"
+                data-testid="standards-search-input"
+              />
+            </div>
+
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] text-slate-500">
+                {query
+                  ? `${filtered.length} match${filtered.length === 1 ? "" : "es"}`
+                  : industry === "all"
+                    ? `${frameworks.length} standards`
+                    : `${industryPoolCount} in this industry`}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {value.length}/{max} selected
+              </span>
+            </div>
+          </div>
           <div className="max-h-72 overflow-y-auto py-1">
             {frameworks.length === 0 ? (
               <div className="p-4 text-sm text-slate-500">No frameworks available.</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-4 text-sm text-slate-500">
+                {query
+                  ? `No standards match "${query}" in this industry.`
+                  : "No standards in this industry yet."}
+              </div>
             ) : (
-              frameworks.map((f) => {
+              filtered.map((f) => {
                 const checked = value.includes(f.id);
                 return (
                   <label

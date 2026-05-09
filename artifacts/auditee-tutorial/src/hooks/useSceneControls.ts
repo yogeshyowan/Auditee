@@ -31,6 +31,8 @@ export function useSceneControls(baseDurations: Record<string, number>) {
   const [locked, setLocked] = useState(false);
   const [mountKey, setMountKey] = useState(0);
   const [tick, setTick] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   const durations = useMemo(() => {
     if (locked) {
@@ -62,6 +64,20 @@ export function useSceneControls(baseDurations: Record<string, number>) {
     setTick((t) => t + 1);
   }, []);
 
+  const togglePause = useCallback(() => {
+    setPaused((prev) => !prev);
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      try {
+        window.dispatchEvent(new Event(next ? 'auditee:music:mute' : 'auditee:music:unmute'));
+      } catch { /* noop */ }
+      return next;
+    });
+  }, []);
+
   return {
     sceneKeys,
     activeIndex,
@@ -70,8 +86,12 @@ export function useSceneControls(baseDurations: Record<string, number>) {
     tick,
     durations,
     activeDuration: baseDurations[sceneKeys[activeIndex]] ?? 0,
+    paused,
+    muted,
     onSceneChange,
     jumpTo,
     toggleLock,
+    togglePause,
+    toggleMute,
   };
 }

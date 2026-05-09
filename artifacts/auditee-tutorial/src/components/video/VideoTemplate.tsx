@@ -58,12 +58,16 @@ export default function VideoTemplate({
   durations = SCENE_DURATIONS,
   loop = true,
   onSceneChange,
+  paused = false,
+  muted = false,
 }: {
   durations?: Record<string, number>;
   loop?: boolean;
   onSceneChange?: (sceneKey: string) => void;
+  paused?: boolean;
+  muted?: boolean;
 } = {}) {
-  const { currentSceneKey } = useVideoPlayer({ durations, loop });
+  const { currentSceneKey } = useVideoPlayer({ durations, loop, paused });
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -75,7 +79,7 @@ export default function VideoTemplate({
 
   // Reset audio at the start of every loop (when we land on the first scene).
   useEffect(() => {
-    if (baseSceneKey === 'problem' && audioRef.current) {
+    if (baseSceneKey === 'problem' && audioRef.current && !paused) {
       try {
         audioRef.current.currentTime = 0;
         const p = audioRef.current.play();
@@ -84,12 +88,33 @@ export default function VideoTemplate({
         /* noop */
       }
     }
-  }, [baseSceneKey]);
+  }, [baseSceneKey, paused]);
+
+  // Pause/resume narration audio in sync with the scene timeline.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (paused) {
+      try { el.pause(); } catch { /* noop */ }
+    } else {
+      try {
+        const p = el.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch { /* noop */ }
+    }
+  }, [paused]);
+
+  // Mute/unmute narration in sync with the global mute toggle.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.muted = muted;
+  }, [muted]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[var(--color-bg-dark)] font-display text-white">
       <audio ref={audioRef} src={NARRATION_SRC} autoPlay preload="auto" />
-      <BackgroundMusic audioRef={audioRef} />
+      <BackgroundMusic audioRef={audioRef} muted={muted} paused={paused} />
 
       {/* Persistent Background */}
       <div className="absolute inset-0 pointer-events-none">

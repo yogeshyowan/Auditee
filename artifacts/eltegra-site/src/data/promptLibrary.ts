@@ -1,6 +1,6 @@
 export type PromptCategory =
   | "Discovery"
-  | "Gap Detection"
+  | "Requirements Gap Detection"
   | "BRD / PRD Drafting"
   | "Stakeholder Validation"
   | "Compliance";
@@ -45,7 +45,7 @@ export const PROMPT_LIBRARY: LibraryPrompt[] = [
   {
     id: "gap-missing-nfrs",
     title: "Missing non-functional requirements",
-    category: "Gap Detection",
+    category: "Requirements Gap Detection",
     summary: "Inspect a requirements list and flag every NFR category (performance, security, accessibility, …) that is missing.",
     prompt:
       "Inspect the requirements list. List every non-functional requirement category that is missing or under-specified. For each gap: category, why it matters for this domain, and a draft NFR statement.\n\nRequirements:\n{{requirements}}\n\nDomain: {{domain}}",
@@ -54,7 +54,7 @@ export const PROMPT_LIBRARY: LibraryPrompt[] = [
   {
     id: "gap-conflict-finder",
     title: "Conflicting requirements finder",
-    category: "Gap Detection",
+    category: "Requirements Gap Detection",
     summary: "Find pairs of requirements that contradict each other, with explanation and proposed reconciliation.",
     prompt:
       "Find every pair of requirements that conflict or contradict each other. For each conflict: the two requirement codes, why they conflict, and a proposed reconciliation that preserves both intents where possible.\n\nRequirements:\n{{requirements}}",
@@ -63,7 +63,7 @@ export const PROMPT_LIBRARY: LibraryPrompt[] = [
   {
     id: "gap-edge-cases",
     title: "Edge case generator",
-    category: "Gap Detection",
+    category: "Requirements Gap Detection",
     summary: "For one user story, generate the edge and failure cases the happy path doesn't cover.",
     prompt:
       "For the user story below, generate 12 edge / failure cases the happy path does not cover. Group as: input edges, state edges, integration edges, security edges, regulatory edges.\n\nUser story:\n{{userStory}}",

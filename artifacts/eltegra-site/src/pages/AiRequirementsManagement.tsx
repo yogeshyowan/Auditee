@@ -110,7 +110,7 @@ const CAPABILITIES = [
 const STEPS = [
   { step: "1", title: "Connect or create a project", desc: "Plug in your existing RM tool, upload BRDs, or start from a brief — Auditee builds the requirements knowledge graph either way." },
   { step: "2", title: "Generate, ingest, or interview", desc: "Three on-ramps: AI generation from a brief, ingestion from your existing tool, or a Smart Interview discovery flow." },
-  { step: "3", title: "Validate with Gap Detection", desc: "AI scans for missing, duplicate, conflicting and weak requirements — categorised and severity-ranked." },
+  { step: "3", title: "Validate with Requirements Gap Detection", desc: "AI scans for missing, duplicate, conflicting and weak requirements — categorised and severity-ranked." },
   { step: "4", title: "Generate downstream artefacts", desc: "BRDs, PRDs, FRDs, test cases, compliance audits and effort estimates — all from the same requirements graph." },
   { step: "5", title: "Trace, ship, audit", desc: "Bidirectional traceability links every requirement to code, tests and controls. Ship with confidence; audit without panic." },
 ];

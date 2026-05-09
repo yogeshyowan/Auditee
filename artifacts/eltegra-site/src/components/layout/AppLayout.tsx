@@ -50,7 +50,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { AskAuditeeFloater } from "@/components/AskAuditeeFloater";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useProjectContext } from "@/lib/project-context";
-import { startTour, maybeAutoStartTour } from "@/lib/tour";
+import { startTour } from "@/lib/tour";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 
@@ -63,8 +63,9 @@ const NAV_ITEMS = [
   { href: "/app/sources", label: "Project Sources", icon: FolderInput },
   { href: "/app/interview", label: "Smart Interview", icon: MessagesSquare },
   { href: "/app/requirements", label: "Requirements", icon: ListChecks },
-  { href: "/app/gaps", label: "Gap Detection", icon: AlertTriangle },
+  { href: "/app/gaps", label: "Requirements Gap Detection", icon: AlertTriangle },
   { href: "/app/traceability", label: "Traceability Graph", icon: Network },
+  { href: "/app/completeness", label: "Completeness Gaps", icon: FileSearch },
   { href: "/app/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/app/standards", label: "Custom Standards", icon: FileBadge2 },
   { href: "/app/capa", label: "CAPA Actions", icon: AlertTriangle },
@@ -197,9 +198,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    maybeAutoStartTour(navigate);
-  }, [navigate]);
+  // Product tour is opt-in only — launch it manually from the "Take a tour"
+  // button in the header. Auto-start was dropped because the localStorage flag
+  // it relied on (`STORAGE_SEEN`) gets wiped in preview iframes / fresh
+  // sessions, causing the tour to re-trigger on every reload.
+  // useEffect(() => {
+  //   maybeAutoStartTour(navigate);
+  // }, [navigate]);
 
   // Look up the active project across ALL projects (connected or not) so
   // freshly-created projects with 0 sources still appear in the switcher button.

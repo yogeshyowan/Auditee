@@ -172,6 +172,7 @@ export const UpdateRequirementBody = zod.object({
   priority: zod.enum(["low", "medium", "high", "critical"]).optional(),
   owner: zod.string().optional(),
   tags: zod.array(zod.string()).optional(),
+  linkedFrameworks: zod.array(zod.string()).optional(),
 });
 
 export const UpdateRequirementResponse = zod.object({
@@ -489,4 +490,13 @@ export const CreateBillingVerifyResponse = zod.object({
 export const CreateBillingCancelResponse = zod.object({
   ok: zod.boolean(),
   cancelAtPeriodEnd: zod.boolean(),
+});
+
+export const PatchPdlcStagePathParams = zod.object({
+  id: zod.string(),
+});
+
+export const PatchPdlcStageBody = zod.object({
+  blockers: zod.number().int().min(0).optional(),
+  completion: zod.number().int().min(0).max(100).optional(),
 });

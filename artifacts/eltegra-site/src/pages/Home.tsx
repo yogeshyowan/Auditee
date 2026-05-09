@@ -509,7 +509,7 @@ function Capabilities() {
               ]
             },
             {
-              title: "Automated Gap Detection",
+              title: "Automated Requirements Gap Detection",
               items: [
                 "AI analyzes against industry standards",
                 "Flags missing security/compliance logic",

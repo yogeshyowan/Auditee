@@ -270,10 +270,16 @@ export async function bootstrapGapRequirements(): Promise<void> {
     let inserted = 0;
     for (const r of REQUIREMENTS) {
       const id = `req-${PROJECT.slug}-${r.code.toLowerCase()}`;
+      // Two unique constraints can fire here:
+      //   - PK on `id` (re-running this bootstrap with the deterministic id)
+      //   - `requirements_project_code_unique` on (project_id, code)
+      //     (someone created a row with the same code via the API before
+      //     this bootstrap got to it).
+      // Either way we want a no-op, not an error — the row already exists.
       const res = await pool.query(
         `INSERT INTO requirements (id, project_id, code, title, description, type, status, priority, owner, tags, linked_frameworks, created_at, updated_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb, NOW(), NOW())
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT DO NOTHING`,
         [
           id,
           PROJECT.id,

@@ -41,7 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { title: "AI Product Development", desc: "From idea to shipped feature — Smart Interview, BRDs, traceability and tests.", href: "/ai-product-development" },
       { title: "AI Requirements Management", desc: "Unify DOORS, Jama, Jira + AI generation in one knowledge graph.", href: "/ai-requirements-management" },
-      { title: "Missing Requirements Analysis", desc: "AI Gap Detection finds the requirements you forgot to write.", href: "/missing-requirements-analysis" },
+      { title: "Missing Requirements Analysis", desc: "AI Requirements Gap Detection finds the requirements you forgot to write.", href: "/missing-requirements-analysis" },
       { title: "Test Case Generation", desc: "Auto-generate structured test suites from every requirement.", href: "/test-case-generation" },
       { title: "Automated Compliance", desc: "Continuous control-by-control evidence across 23+ frameworks.", href: "/automated-compliance" },
     ],

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
 import { expirePastDueAnnualPlan } from "./billingPlanSync";
+import { applyAccessOverrides } from "./accessOverrides";
 import {
   db,
   workspacesTable,
@@ -134,11 +135,16 @@ export async function requireWorkspace(req: Request, res: Response, next: NextFu
   // trigger downgrade — instead we expire the plan on the next workspace
   // load after planExpiresAt has passed.
   const liveWorkspace = await expirePastDueAnnualPlan(workspace);
-  (req as AuthedRequest).ws_ctx = { ...ctx, workspace: liveWorkspace, role };
+  // Operator override: allowlisted founder/test emails are forced to plan
+  // 'enterprise' + role 'owner' in-memory only (no DB write). See
+  // ./accessOverrides.ts.
+  const { workspace: effectiveWorkspace, role: effectiveRole } =
+    applyAccessOverrides(liveWorkspace, role, ctx.email);
+  (req as AuthedRequest).ws_ctx = { ...ctx, workspace: effectiveWorkspace, role: effectiveRole };
   // Enterprise IP allowlist enforcement. Empty list = disabled. The check is
   // intentionally placed AFTER workspace resolution so it can read per-tenant
   // policy, and BEFORE any business handler runs.
-  const allow = ((liveWorkspace as { ipAllowlist?: string[] }).ipAllowlist ?? []) as string[];
+  const allow = ((effectiveWorkspace as { ipAllowlist?: string[] }).ipAllowlist ?? []) as string[];
   if (allow.length > 0) {
     const remote = (req.ip ?? "").replace(/^::ffff:/, "");
     const { ipMatchesAnyCidr } = await import("./ipAllowlist");
@@ -147,9 +153,12 @@ export async function requireWorkspace(req: Request, res: Response, next: NextFu
       // themselves out permanently from any IP.
       // Exact-path match (not endsWith) to prevent suffix-based bypass like
       // /api/anything?/workspace/ip-allowlist or weird path-traversal attempts.
+      // Operator-allowlisted emails (isUnlimitedEmail) are also exempt — they
+      // are the founder/test accounts and must never be locked out.
       const p = req.path;
       const isAllowlistRoute = p === "/workspace/ip-allowlist" || p === "/api/workspace/ip-allowlist";
-      if (!isAllowlistRoute) {
+      const { isUnlimitedEmail } = await import("./accessOverrides");
+      if (!isAllowlistRoute && !isUnlimitedEmail(ctx.email)) {
         res.status(403).json({ error: "Source IP is not allowed for this workspace.", remote });
         return;
       }
@@ -174,7 +183,9 @@ export async function optionalWorkspace(req: Request, _res: Response, next: Next
     email = null;
   }
   const { workspace, role } = await getOrCreateWorkspace(userId, email);
+  const { workspace: effectiveWorkspace, role: effectiveRole } =
+    applyAccessOverrides(workspace, role, email);
   (req as AuthedRequest).auth_ctx = { userId, email };
-  (req as AuthedRequest).ws_ctx = { ...{ userId, email }, workspace, role };
+  (req as AuthedRequest).ws_ctx = { ...{ userId, email }, workspace: effectiveWorkspace, role: effectiveRole };
   next();
 }
