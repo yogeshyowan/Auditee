@@ -18,7 +18,13 @@ const CODE_KINDS = ["github", "zip", "folder", "jira", "jenkins", "aws_s3", "gdr
 // `defects_file` is created when the user uploads an exported defect file
 // (CSV / Excel / PDF / JSON) from any defect-management tool.
 const DEFECT_FILE_KIND = "defects_file";
-const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS, ...DEFECT_KINDS, DEFECT_FILE_KIND, ...PIPELINE_KINDS];
+// Document-target connectors are push-only (audit reports → Confluence /
+// SharePoint via routes/connectorPush.ts). Sync is a no-op like pipelines.
+const DOCUMENT_TARGET_KINDS = ["confluence", "sharepoint"];
+function isDocumentTargetKind(k: string): boolean {
+  return DOCUMENT_TARGET_KINDS.includes(k);
+}
+const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS, ...DEFECT_KINDS, DEFECT_FILE_KIND, ...PIPELINE_KINDS, ...DOCUMENT_TARGET_KINDS];
 
 // Strip secrets from config before returning to the client.
 function safeConfig(kind: string, cfg: Record<string, any>): Record<string, any> {
@@ -140,6 +146,15 @@ router.post("/sources/:id/sync", async (req, res) => {
         .set({ status: "ready", statusMessage: "Awaiting pipeline events", updatedAt: new Date() })
         .where(eq(projectSourcesTable.id, src.id));
       result = { count: 0, bytes: 0, summary: "Pipeline sources receive events via webhook/upload — no pull needed." };
+    } else if (isDocumentTargetKind(src.kind)) {
+      // Document targets (Confluence/SharePoint) are write-only — Auditee
+      // pushes generated reports out via routes/connectorPush.ts. Sync is
+      // a no-op acknowledgement that the credentials are saved.
+      await db
+        .update(projectSourcesTable)
+        .set({ status: "ready", statusMessage: "Ready for document push", updatedAt: new Date() })
+        .where(eq(projectSourcesTable.id, src.id));
+      result = { count: 0, bytes: 0, summary: "Document targets are push-only — use \"Publish to…\" on a report." };
     } else {
       result = await ingestRemoteSystem(src.id, src.kind, src.config as any);
     }

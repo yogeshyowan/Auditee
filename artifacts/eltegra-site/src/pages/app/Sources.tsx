@@ -223,7 +223,21 @@ const DEFECT_FILE_KIND_DEF: KindDef = {
   ingests: "metadata",
 };
 
-const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS, DEFECT_FILE_KIND_DEF, ...PIPELINE_KIND_DEFS];
+// Document-target connectors — Auditee pushes generated reports out to
+// these. Read is not supported (the corresponding read-side already lives
+// under `confluence` ingestion in source-ingestion.ts; this is the WRITE
+// side, surfaced as "Publish to…" on every report).
+const DOC_TARGET_KIND_DEFS: KindDef[] = [
+  { kind: "confluence", title: "Confluence (push)", blurb: "Publish generated reports as Confluence pages in a space.", icon: BookOpen, color: "bg-blue-100 text-blue-800", ingests: "metadata" },
+  { kind: "sharepoint", title: "SharePoint (push)", blurb: "Upload reports to a SharePoint document library (Azure AD app-only).", icon: Cloud, color: "bg-sky-100 text-sky-800", ingests: "metadata" },
+];
+
+const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS, DEFECT_FILE_KIND_DEF, ...PIPELINE_KIND_DEFS, ...DOC_TARGET_KIND_DEFS];
+
+const DOC_TARGET_KINDS = DOC_TARGET_KIND_DEFS.map((d) => d.kind);
+function isDocTargetKindFE(k: string): boolean {
+  return DOC_TARGET_KINDS.includes(k);
+}
 
 const PIPELINE_CATEGORY_LABELS: Record<PipelineCategory, { label: string; blurb: string }> = {
   ci_cd: { label: "Build pipelines (CI / CD)", blurb: "GitHub Actions, GitLab CI, Jenkins, Azure Pipelines, CircleCI, Bitbucket, Bamboo, TeamCity, Travis, Tekton, AWS CodePipeline, Cloud Build, Drone, Buddy, Concourse." },
@@ -521,6 +535,46 @@ export default function Sources() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="h-4 w-4 text-blue-700" /> Document targets (push-only)
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Connect a Confluence space or SharePoint document library — every generated audit report (BRD, PRD, exec brief, compliance report, etc.) gains a "Publish to…" button that uploads it to the chosen target. No data is read back.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+            {DOC_TARGET_KIND_DEFS.map((d) => {
+              const isConnected = connectedKinds.has(d.kind);
+              return (
+                <button
+                  key={d.kind}
+                  data-testid={`kind-card-${d.kind}`}
+                  onClick={() => setPicker(d.kind)}
+                  className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                >
+                  {isConnected && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                    </span>
+                  )}
+                  <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                    <d.icon className="h-5 w-5" />
+                  </div>
+                  <div className="font-medium text-sm">{d.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                  <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                    {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Connected sources</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -534,9 +588,10 @@ export default function Sources() {
             const sKind = s.kind as string;
             const def = ALL_KIND_DEFS.find((d) => d.kind === sKind);
             const isPipeline = isPipelineKindFE(sKind);
-            // Pipeline kinds are push-based — there's nothing to pull on Sync,
-            // so we hide the button to avoid implying we'd contact the upstream.
-            const canSync = !isPipeline && sKind !== "zip" && sKind !== "folder" && sKind !== "reqif" && sKind !== "doors" && sKind !== "defects_file";
+            const isDocTarget = isDocTargetKindFE(sKind);
+            // Pipeline + document-target kinds are push-only — there's nothing
+            // to pull on Sync, so we hide the button to avoid confusion.
+            const canSync = !isPipeline && !isDocTarget && sKind !== "zip" && sKind !== "folder" && sKind !== "reqif" && sKind !== "doors" && sKind !== "defects_file";
             return (
               <div key={s.id} className="flex items-center gap-3 border rounded-md p-3 hover:bg-slate-50">
                 <div className={`h-9 w-9 rounded-md flex items-center justify-center ${def?.color ?? "bg-slate-100"}`}>
@@ -806,6 +861,28 @@ function ConnectDialog({
         <Field label="Project key" placeholder="ABC" value={cfg.projectKey ?? ""} onChange={(v) => up("projectKey", v)} />
         <Field label="Email" value={cfg.email ?? ""} onChange={(v) => up("email", v)} />
         <Field label="API token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+      </div>
+    );
+  } else if (kind === "confluence") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">Auditee will publish generated reports as new pages in this space. Use the same Atlassian email + API token as Jira.</p>
+        <Field label="Confluence host" placeholder="https://yourorg.atlassian.net" value={cfg.host ?? ""} onChange={(v) => up("host", v)} />
+        <Field label="Space key" placeholder="ENG" value={cfg.spaceKey ?? ""} onChange={(v) => up("spaceKey", v)} />
+        <Field label="Email" value={cfg.email ?? ""} onChange={(v) => up("email", v)} />
+        <Field label="API token" type="password" value={cfg.token ?? ""} onChange={(v) => up("token", v)} />
+        <Field label="Parent page ID (optional)" placeholder="123456" value={cfg.parentId ?? ""} onChange={(v) => up("parentId", v)} />
+      </div>
+    );
+  } else if (kind === "sharepoint") {
+    body = (
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">Auditee uploads reports as Markdown files to a SharePoint document library. Create an Azure AD app registration with <span className="font-mono">Sites.ReadWrite.All</span> (application permission) and grant admin consent — then paste its tenant/client/secret here.</p>
+        <Field label="Tenant ID" placeholder="00000000-0000-0000-0000-000000000000" value={cfg.tenantId ?? ""} onChange={(v) => up("tenantId", v)} />
+        <Field label="Client ID" value={cfg.clientId ?? ""} onChange={(v) => up("clientId", v)} />
+        <Field label="Client secret" type="password" value={cfg.clientSecret ?? ""} onChange={(v) => up("clientSecret", v)} />
+        <Field label="Site ID" placeholder="contoso.sharepoint.com,abcd...,efgh..." value={cfg.siteId ?? ""} onChange={(v) => up("siteId", v)} />
+        <Field label="Folder path" placeholder="Auditee" value={cfg.folderPath ?? "Auditee"} onChange={(v) => up("folderPath", v)} />
       </div>
     );
   } else if (kind === "jenkins") {

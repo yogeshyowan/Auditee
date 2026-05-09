@@ -10,7 +10,9 @@ import {
   useDeleteReport,
   downloadReport,
   type ReportRow,
+  type ReportContent,
 } from "@/lib/wave1-api";
+import { PushToConnectorButton } from "@/components/PushToConnectorButton";
 import { useAuth } from "@clerk/react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +25,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { FileText, Sparkles, Download, Trash2, RefreshCw } from "lucide-react";
 import { Comments } from "@/components/Comments";
 import { StandardsMultiSelect } from "@/components/StandardsMultiSelect";
+
+// Flatten a structured report into Markdown for push to Confluence /
+// SharePoint. We re-serialize the in-memory ReportContent as plain
+// Markdown so the same code path works for both push targets without
+// needing to round-trip through the server-rendered DOCX.
+function reportToMarkdown(title: string, content: ReportContent): string {
+  const out: string[] = [];
+  out.push(`# ${title}`);
+  if (content.subtitle) out.push(`_${content.subtitle}_`);
+  if (content.executiveSummary) {
+    out.push("\n## Executive summary\n");
+    out.push(content.executiveSummary);
+  }
+  for (const s of content.sections ?? []) {
+    out.push(`\n## ${s.heading}\n`);
+    out.push(s.body);
+    if (s.citations?.length) {
+      out.push(`\n_Citations:_ ${s.citations.join(", ")}`);
+    }
+  }
+  if (content.evidence?.length) {
+    out.push("\n## Evidence\n");
+    for (const e of content.evidence) {
+      out.push(`- **${e.label}** (${e.source}) — ${e.id}`);
+    }
+  }
+  return out.join("\n");
+}
 import { PushToRepoButton } from "@/components/PushToRepoButton";
 
 // Grouped catalogue of every report kind, used for both the dropdown UI
@@ -649,6 +679,15 @@ export default function Reports() {
                       defaultCommitMessage={`chore(auditee): add ${KIND_LABELS[r.kind] ?? r.kind} — ${r.title.slice(0, 60)}`}
                       testid={`push-report-${r.id}`}
                     />
+                    <PushToConnectorButton
+                      projectId={projectId}
+                      payload={{
+                        type: "document",
+                        title: r.title,
+                        markdown: reportToMarkdown(r.title, r.content),
+                      }}
+                      testid={`publish-report-${r.id}`}
+                    />
                     <Button variant="ghost" size="icon" onClick={() => del.mutate(r.id)}>
                       <Trash2 className="h-4 w-4 text-slate-400" />
                     </Button>
@@ -717,6 +756,16 @@ function ReportViewer({ id, onClose }: { id: string; onClose: () => void }) {
                 label="Push to repo"
                 defaultCommitMessage={`chore(auditee): add report — ${report.title.slice(0, 60)}`}
                 testid={`push-report-viewer-${report.id}`}
+              />
+              <PushToConnectorButton
+                projectId={projectId}
+                payload={{
+                  type: "document",
+                  title: report.title,
+                  markdown: reportToMarkdown(report.title, report.content),
+                }}
+                buttonLabel="Publish to Confluence/SharePoint"
+                testid={`publish-report-viewer-${report.id}`}
               />
             </div>
             <div className="bg-slate-50 border-l-4 border-primary rounded p-4 my-3">
