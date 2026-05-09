@@ -73,9 +73,24 @@ import {
   Layers,
   Zap,
   Upload,
+  Workflow,
+  Rocket,
+  TestTube2,
+  Database,
+  BrainCircuit,
+  ScanSearch,
+  Cog,
+  Copy,
+  Key,
 } from "lucide-react";
 
-type Kind = ProjectSourceRow["kind"];
+// `Kind` is intentionally widened to `string` — the backend `project_sources.kind`
+// column is `text`, and the strict Zod union in the OpenAPI spec lags behind the
+// connector catalog (defects_file, all pipeline kinds, etc. are valid at runtime
+// but not yet in the spec). Treating Kind as a free-form string here avoids
+// having to re-spec the API every time a connector is added; the create call
+// still validates server-side via SUPPORTED_KINDS in routes/sources.ts.
+type Kind = string;
 
 type KindDef = {
   kind: Kind;
@@ -137,6 +152,65 @@ const DEFECT_KIND_DEFS: KindDef[] = [
   { kind: "gitlab_issues", title: "GitLab Issues", blurb: "Pulls bug-labelled issues from a GitLab project.", icon: GitBranch, color: "bg-orange-100 text-orange-800", ingests: "metadata" },
 ];
 
+// Pipeline connectors — CI/CD, CD, test execution, data/ETL, MLOps,
+// security scanning, and infrastructure-as-code pipelines. All ingestion
+// is push-based: each tool POSTs runs to a per-source webhook URL or
+// uploads JUnit/SARIF artifacts. The audit pipeline reads runs as direct
+// evidence of build/test/deploy/scan/infra health.
+type PipelineCategory = "ci_cd" | "cd" | "test_exec" | "data" | "mlops" | "security_scan" | "infra";
+const PIPELINE_KIND_DEFS: Array<KindDef & { category: PipelineCategory }> = [
+  // CI/CD
+  { kind: "github_actions", title: "GitHub Actions", blurb: "Native webhook for workflow_run / check_run.", icon: Github, color: "bg-slate-900 text-white", ingests: "metadata", category: "ci_cd" },
+  { kind: "gitlab_ci", title: "GitLab CI", blurb: "Native Pipeline + Job webhook (SaaS or self-hosted).", icon: GitBranch, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "jenkins", title: "Jenkins (notification)", blurb: "Notification Plugin posts JSON on every build event.", icon: Hammer, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "azure_pipelines", title: "Azure Pipelines", blurb: "Service hook posts build/release JSON.", icon: Workflow, color: "bg-sky-100 text-sky-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "circleci", title: "CircleCI", blurb: "Project webhook for workflow-completed events.", icon: Workflow, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "bitbucket_pipelines", title: "Bitbucket Pipelines", blurb: "Repository webhook on pipeline status events.", icon: GitBranch, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "bamboo", title: "Bamboo", blurb: "Notification post on plan / job result.", icon: Workflow, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "teamcity", title: "TeamCity", blurb: "Webhook plugin posts build state JSON.", icon: Workflow, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "travis", title: "Travis CI", blurb: "Build webhook with signed payload.", icon: Workflow, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "tekton", title: "Tekton", blurb: "TaskRun / PipelineRun events via CloudEvents.", icon: Workflow, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "aws_codepipeline", title: "AWS CodePipeline", blurb: "EventBridge → API Destinations forwards state events.", icon: Workflow, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "google_cloudbuild", title: "Google Cloud Build", blurb: "Pub/Sub → Cloud Function forwards build events.", icon: Workflow, color: "bg-yellow-100 text-yellow-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "drone", title: "Drone CI", blurb: "Webhook plugin posts build status JSON.", icon: Workflow, color: "bg-slate-100 text-slate-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "buddy", title: "Buddy", blurb: "Pipeline webhook on execution events.", icon: Workflow, color: "bg-amber-100 text-amber-800", ingests: "metadata", category: "ci_cd" },
+  { kind: "concourse", title: "Concourse", blurb: "Resource webhook posts build state JSON.", icon: Workflow, color: "bg-cyan-100 text-cyan-800", ingests: "metadata", category: "ci_cd" },
+  // CD
+  { kind: "spinnaker", title: "Spinnaker", blurb: "Echo webhook on pipeline / stage state changes.", icon: Rocket, color: "bg-indigo-100 text-indigo-800", ingests: "metadata", category: "cd" },
+  { kind: "argocd", title: "Argo CD", blurb: "Notifications controller posts sync / health events.", icon: Rocket, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "cd" },
+  { kind: "flux", title: "Flux CD", blurb: "Alerts notification provider posts reconciliation events.", icon: Rocket, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "cd" },
+  { kind: "harness", title: "Harness CD", blurb: "Notification webhook on pipeline execution events.", icon: Rocket, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "cd" },
+  { kind: "octopus_deploy", title: "Octopus Deploy", blurb: "Subscription webhook on deployment events.", icon: Rocket, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "cd" },
+  // Test execution
+  { kind: "test_junit", title: "JUnit XML upload", blurb: "Upload JUnit XML from any test framework.", icon: TestTube2, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "test_exec" },
+  { kind: "test_pipeline_generic", title: "Generic test webhook", blurb: "POST a JSON test summary from any CI step.", icon: TestTube2, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "test_exec" },
+  // Data / ETL
+  { kind: "airflow", title: "Apache Airflow", blurb: "DAG callback posts run summary.", icon: Database, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "data" },
+  { kind: "dagster", title: "Dagster", blurb: "Sensor / hook posts run-status events.", icon: Database, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "data" },
+  { kind: "prefect", title: "Prefect", blurb: "Automation webhook on flow-run state changes.", icon: Database, color: "bg-indigo-100 text-indigo-800", ingests: "metadata", category: "data" },
+  { kind: "dbt", title: "dbt (Cloud or Core)", blurb: "dbt Cloud webhook or run_results.json upload.", icon: Database, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "data" },
+  { kind: "fivetran", title: "Fivetran", blurb: "Connector webhook on sync state changes.", icon: Database, color: "bg-cyan-100 text-cyan-800", ingests: "metadata", category: "data" },
+  // MLOps
+  { kind: "kubeflow", title: "Kubeflow Pipelines", blurb: "Pipeline-completion event via exit handler.", icon: BrainCircuit, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "mlops" },
+  { kind: "mlflow", title: "MLflow", blurb: "Webhook on run / model-version events.", icon: BrainCircuit, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "mlops" },
+  { kind: "wandb", title: "Weights & Biases", blurb: "Automation webhook on run / artifact events.", icon: BrainCircuit, color: "bg-amber-100 text-amber-800", ingests: "metadata", category: "mlops" },
+  { kind: "vertex_ai_pipelines", title: "Vertex AI Pipelines", blurb: "Pub/Sub → Cloud Function forwards events.", icon: BrainCircuit, color: "bg-yellow-100 text-yellow-800", ingests: "metadata", category: "mlops" },
+  { kind: "sagemaker_pipelines", title: "SageMaker Pipelines", blurb: "EventBridge → API Destinations forwards events.", icon: BrainCircuit, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "mlops" },
+  // Security / scan
+  { kind: "sonarqube", title: "SonarQube / SonarCloud", blurb: "SARIF export from sonar-scanner; analysis webhook.", icon: ScanSearch, color: "bg-blue-100 text-blue-800", ingests: "metadata", category: "security_scan" },
+  { kind: "snyk", title: "Snyk", blurb: "SARIF + SBOM from `snyk test --sarif-file-output`.", icon: ScanSearch, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "security_scan" },
+  { kind: "blackduck", title: "Black Duck", blurb: "SARIF + CycloneDX SBOM from Detect.", icon: ScanSearch, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "security_scan" },
+  { kind: "veracode", title: "Veracode", blurb: "SARIF export from Veracode SAST / DAST scans.", icon: ScanSearch, color: "bg-rose-100 text-rose-800", ingests: "metadata", category: "security_scan" },
+  { kind: "checkmarx", title: "Checkmarx", blurb: "SARIF export from CxOne / SAST / SCA.", icon: ScanSearch, color: "bg-orange-100 text-orange-800", ingests: "metadata", category: "security_scan" },
+  { kind: "owasp_zap", title: "OWASP ZAP", blurb: "SARIF report output via the SARIF add-on.", icon: ScanSearch, color: "bg-amber-100 text-amber-800", ingests: "metadata", category: "security_scan" },
+  { kind: "semgrep", title: "Semgrep", blurb: "Native SARIF export with `semgrep --sarif`.", icon: ScanSearch, color: "bg-indigo-100 text-indigo-800", ingests: "metadata", category: "security_scan" },
+  { kind: "scan_sarif_generic", title: "Generic SARIF upload", blurb: "Drop in any SARIF v2.1.0 file from any tool.", icon: ScanSearch, color: "bg-slate-100 text-slate-800", ingests: "metadata", category: "security_scan" },
+  // Infra
+  { kind: "terraform_cloud", title: "Terraform Cloud", blurb: "Run-task webhook on plan / apply events.", icon: Cog, color: "bg-violet-100 text-violet-800", ingests: "metadata", category: "infra" },
+  { kind: "pulumi", title: "Pulumi", blurb: "Stack webhook on update / preview events.", icon: Cog, color: "bg-purple-100 text-purple-800", ingests: "metadata", category: "infra" },
+  { kind: "atlantis", title: "Atlantis", blurb: "Plan / apply webhook on Terraform PR workflow.", icon: Cog, color: "bg-emerald-100 text-emerald-800", ingests: "metadata", category: "infra" },
+];
+
 // Synthetic kind for files uploaded via the "Upload exported file" flow
 // (CSV / TSV / XLSX / XLS / PDF / JSON). Not shown as a connector tile, but
 // rendered correctly in the Connected sources list when present.
@@ -149,7 +223,25 @@ const DEFECT_FILE_KIND_DEF: KindDef = {
   ingests: "metadata",
 };
 
-const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS, DEFECT_FILE_KIND_DEF];
+const ALL_KIND_DEFS: KindDef[] = [...KIND_DEFS, ...RM_KIND_DEFS, ...DEFECT_KIND_DEFS, DEFECT_FILE_KIND_DEF, ...PIPELINE_KIND_DEFS];
+
+const PIPELINE_CATEGORY_LABELS: Record<PipelineCategory, { label: string; blurb: string }> = {
+  ci_cd: { label: "Build pipelines (CI / CD)", blurb: "GitHub Actions, GitLab CI, Jenkins, Azure Pipelines, CircleCI, Bitbucket, Bamboo, TeamCity, Travis, Tekton, AWS CodePipeline, Cloud Build, Drone, Buddy, Concourse." },
+  cd: { label: "Deployment pipelines (CD)", blurb: "Spinnaker, Argo CD, Flux, Harness, Octopus Deploy." },
+  test_exec: { label: "Test-execution pipelines", blurb: "Upload JUnit XML or POST a JSON summary from any test runner." },
+  data: { label: "Data / ETL pipelines", blurb: "Airflow, Dagster, Prefect, dbt, Fivetran." },
+  mlops: { label: "MLOps pipelines", blurb: "Kubeflow, MLflow, Weights & Biases, Vertex AI Pipelines, SageMaker Pipelines." },
+  security_scan: { label: "Security / scan pipelines", blurb: "SonarQube, Snyk, Black Duck, Veracode, Checkmarx, OWASP ZAP, Semgrep, generic SARIF." },
+  infra: { label: "Infrastructure pipelines", blurb: "Terraform Cloud, Pulumi, Atlantis." },
+};
+const PIPELINE_CATEGORIES: PipelineCategory[] = ["ci_cd", "cd", "test_exec", "data", "mlops", "security_scan", "infra"];
+
+function isPipelineKindFE(k: string): boolean {
+  return PIPELINE_KIND_DEFS.some((d) => d.kind === k);
+}
+function pipelineToolDef(k: string) {
+  return PIPELINE_KIND_DEFS.find((d) => d.kind === k);
+}
 
 const DEFECT_FILE_TOOLS: Array<{ value: string; label: string }> = [
   { value: "", label: "Auto-detect / generic" },
@@ -196,6 +288,7 @@ export default function Sources() {
   const [browsing, setBrowsing] = useState<ProjectSourceRow | null>(null);
   const [auditing, setAuditing] = useState<ProjectSourceRow | null>(null);
   const [tracing, setTracing] = useState<ProjectSourceRow | null>(null);
+  const [showingWebhook, setShowingWebhook] = useState<ProjectSourceRow | null>(null);
 
   async function onUploadZip(file: File) {
     if (!projectId) return;
@@ -245,7 +338,7 @@ export default function Sources() {
   }
 
   const sources = data?.sources ?? [];
-  const connectedKinds = new Set(sources.map((s) => s.kind));
+  const connectedKinds = new Set<string>(sources.map((s) => s.kind as string));
 
   return (
     <div className="flex flex-col gap-6">
@@ -377,6 +470,57 @@ export default function Sources() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Workflow className="h-4 w-4 text-indigo-700" /> Pipelines (CI/CD, CD, test, data, MLOps, scan, infra)
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Connect any pipeline tool — builds, deploys, tests, ETL/data pipelines, ML training runs, security scans (SAST/DAST/SCA/SBOM), and infrastructure-as-code provisioning. All ingestion is push-based via webhooks or JUnit/SARIF uploads. Every run becomes audit evidence: green builds and clean scans count for you, persistent failures and unresolved critical findings count against you.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {PIPELINE_CATEGORIES.map((cat) => {
+            const items = PIPELINE_KIND_DEFS.filter((d) => d.category === cat);
+            if (items.length === 0) return null;
+            const meta = PIPELINE_CATEGORY_LABELS[cat];
+            return (
+              <div key={cat}>
+                <div className="text-xs uppercase tracking-wide text-slate-500 font-medium">{meta.label}</div>
+                <div className="text-[11px] text-muted-foreground mt-0.5 mb-2">{meta.blurb}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                  {items.map((d) => {
+                    const isConnected = connectedKinds.has(d.kind);
+                    return (
+                      <button
+                        key={d.kind}
+                        data-testid={`kind-card-${d.kind}`}
+                        onClick={() => setPicker(d.kind)}
+                        className={`text-left border rounded-lg p-3 hover:border-emerald-500 hover:shadow-sm transition group relative ${isConnected ? "border-emerald-400 bg-emerald-50/40" : ""}`}
+                      >
+                        {isConnected && (
+                          <span className="absolute top-2 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 rounded-full px-1.5 py-0.5">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> Connected
+                          </span>
+                        )}
+                        <div className={`inline-flex h-9 w-9 rounded-md items-center justify-center ${d.color} mb-2`}>
+                          <d.icon className="h-5 w-5" />
+                        </div>
+                        <div className="font-medium text-sm">{d.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{d.blurb}</div>
+                        <div className="text-xs text-emerald-700 mt-2 inline-flex items-center opacity-0 group-hover:opacity-100 transition">
+                          {isConnected ? <>Add another <ChevronRight className="h-3 w-3 ml-0.5" /></> : <>Connect <ChevronRight className="h-3 w-3 ml-0.5" /></>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Connected sources</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -387,8 +531,12 @@ export default function Sources() {
             </div>
           )}
           {sources.map((s) => {
-            const def = ALL_KIND_DEFS.find((d) => d.kind === s.kind);
-            const canSync = s.kind !== "zip" && s.kind !== "folder" && s.kind !== "reqif" && s.kind !== "doors" && s.kind !== "defects_file";
+            const sKind = s.kind as string;
+            const def = ALL_KIND_DEFS.find((d) => d.kind === sKind);
+            const isPipeline = isPipelineKindFE(sKind);
+            // Pipeline kinds are push-based — there's nothing to pull on Sync,
+            // so we hide the button to avoid implying we'd contact the upstream.
+            const canSync = !isPipeline && sKind !== "zip" && sKind !== "folder" && sKind !== "reqif" && sKind !== "doors" && sKind !== "defects_file";
             return (
               <div key={s.id} className="flex items-center gap-3 border rounded-md p-3 hover:bg-slate-50">
                 <div className={`h-9 w-9 rounded-md flex items-center justify-center ${def?.color ?? "bg-slate-100"}`}>
@@ -425,6 +573,11 @@ export default function Sources() {
                 >
                   <ShieldCheck className="h-3 w-3 mr-1" /> Check completeness
                 </Button>
+                {isPipeline && (
+                  <Button variant="outline" size="sm" onClick={() => setShowingWebhook(s)} title="Show the webhook URL and secret to paste into the upstream tool">
+                    <Key className="h-3 w-3 mr-1" /> Webhook
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={() => setBrowsing(s)}>
                   <FileCode2 className="h-3 w-3 mr-1" /> Browse
                 </Button>
@@ -448,7 +601,7 @@ export default function Sources() {
         projectId={projectId}
         onCreate={async (kind, label, config) => {
           if (!projectId) return;
-          const created = await create.mutateAsync({ projectId, kind, label, config });
+          const created = await create.mutateAsync({ projectId, kind: kind as any, label, config });
           toast({ title: "Source connected", description: label });
           if (kind !== "zip" && kind !== "folder") {
             try {
@@ -466,6 +619,7 @@ export default function Sources() {
       />
 
       <BrowseDialog source={browsing} onClose={() => setBrowsing(null)} />
+      <PipelineWebhookDialog source={showingWebhook} onClose={() => setShowingWebhook(null)} />
       <RunAuditDialog source={auditing} projectId={projectId} onClose={() => setAuditing(null)} />
       <TraceabilityAuditDialog source={tracing} projectId={projectId} onClose={() => setTracing(null)} />
     </div>
@@ -907,6 +1061,28 @@ function ConnectDialog({
         <Field label="Bug label (optional)" placeholder="bug" value={cfg.labels ?? ""} onChange={(v) => up("labels", v)} />
       </div>
     );
+  } else if (isPipelineKindFE(kind)) {
+    // All pipeline connectors share the same setup flow:
+    //   1) Create the source (no upstream config required up front).
+    //   2) After it's created, the Sources list shows a "Webhook URL" panel
+    //      with a per-source secret you paste into the upstream tool.
+    // The dialog itself just collects an optional friendly name.
+    const tool = pipelineToolDef(kind)!;
+    body = (
+      <div className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Pipeline sources receive runs <strong>push-side</strong>. After you click Connect, you'll get a unique webhook URL and a secret to paste into {tool.title}. Every run that {tool.title} reports will appear in this project's audit evidence.
+        </p>
+        <div className="rounded-md border bg-slate-50 p-3 text-xs leading-relaxed">
+          <div className="font-medium text-slate-700 mb-1">What happens next</div>
+          <ol className="list-decimal list-inside space-y-0.5 text-slate-600">
+            <li>We create the source and generate a webhook secret.</li>
+            <li>You copy the webhook URL into {tool.title}.</li>
+            <li>Each run posts here automatically — no polling, no agent.</li>
+          </ol>
+        </div>
+      </div>
+    );
   }
 
   // File-upload kinds handle their own submit flow.
@@ -930,6 +1106,121 @@ function ConnectDialog({
             <Button onClick={submit} disabled={busy}>{busy ? "Connecting…" : "Connect & sync"}</Button>
           </DialogFooter>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ───────── Pipeline webhook dialog ─────────
+//
+// Shows the per-source webhook URL + secret so the user can paste it into
+// the upstream pipeline tool (GitHub Actions, GitLab CI, Jenkins, etc).
+// "Generate / rotate secret" hits POST /api/sources/:id/pipeline-secret;
+// the previous secret stops working immediately on rotation.
+function PipelineWebhookDialog({ source, onClose }: { source: ProjectSourceRow | null; onClose: () => void }) {
+  const [secret, setSecret] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const { toast } = useToast();
+
+  if (!source) return null;
+  const sKind = source.kind as string;
+  const tool = pipelineToolDef(sKind);
+  const origin = window.location.origin;
+  const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  const webhookUrl = `${origin}${basePath}/api/integrations/pipelines/${sKind}/webhook?source=${source.id}`;
+  const isUploadKind = sKind === "test_junit" || sKind === "scan_sarif_generic";
+  const uploadUrl = `${origin}${basePath}/api/integrations/pipelines/${sKind}/upload?source=${source.id}`;
+
+  async function rotate() {
+    if (!source) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`${basePath}/api/sources/${source.id}/pipeline-secret`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const j = await r.json();
+      setSecret(j.secret);
+      toast({ title: "Secret generated", description: "Paste it into the upstream tool now — it won't be shown again unless you rotate." });
+    } catch (err: any) {
+      toast({ title: "Could not generate secret", description: err.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copy(text: string, what: string) {
+    navigator.clipboard.writeText(text).then(
+      () => toast({ title: `${what} copied` }),
+      () => toast({ title: "Copy failed", variant: "destructive" }),
+    );
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Workflow className="h-5 w-5" /> Webhook for {tool?.title ?? source.kind}
+          </DialogTitle>
+          <DialogDescription>
+            Paste the URL below into {tool?.title ?? "your pipeline tool"}. Each run posted here becomes audit evidence for this project.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 text-sm">
+          <div>
+            <Label className="text-xs uppercase text-muted-foreground">Webhook URL</Label>
+            <div className="flex gap-2 mt-1">
+              <Input readOnly value={webhookUrl} className="font-mono text-xs" />
+              <Button variant="outline" size="sm" onClick={() => copy(webhookUrl, "URL")}><Copy className="h-3 w-3" /></Button>
+            </div>
+          </div>
+
+          {isUploadKind && (
+            <div>
+              <Label className="text-xs uppercase text-muted-foreground">File-upload URL (multipart, field name: <code>file</code>)</Label>
+              <div className="flex gap-2 mt-1">
+                <Input readOnly value={uploadUrl} className="font-mono text-xs" />
+                <Button variant="outline" size="sm" onClick={() => copy(uploadUrl, "Upload URL")}><Copy className="h-3 w-3" /></Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {sKind === "test_junit"
+                  ? "Upload JUnit XML from any test runner (pytest, mocha, JUnit, NUnit, Go, etc.)."
+                  : "Upload any SARIF v2.1.0 file from any scanner."}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <Label className="text-xs uppercase text-muted-foreground">Webhook secret</Label>
+            {secret ? (
+              <div className="flex gap-2 mt-1">
+                <Input readOnly value={secret} className="font-mono text-xs" />
+                <Button variant="outline" size="sm" onClick={() => copy(secret, "Secret")}><Copy className="h-3 w-3" /></Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                No secret shown. Click <strong>Generate</strong> to create one. We display secrets only at the moment of creation — store it now.
+              </p>
+            )}
+            <Button variant="outline" size="sm" onClick={rotate} disabled={busy} className="mt-2">
+              <Key className="h-3 w-3 mr-1" /> {busy ? "Generating…" : secret ? "Rotate secret" : "Generate secret"}
+            </Button>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Use the secret as the upstream tool's webhook signing key. We accept either an HMAC-SHA256 signature header (recommended) or the secret as a shared bearer token, depending on what the tool supports.
+            </p>
+          </div>
+
+          <div className="rounded-md border bg-amber-50 border-amber-200 p-3 text-xs text-amber-900 leading-relaxed">
+            <strong>Setup hint.</strong> In {tool?.title ?? "your tool"}, paste the URL above as the webhook destination, and the generated secret as the signing key. The exact field names vary — see the tool's docs for "outgoing webhook" / "notification" / "service hook".
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

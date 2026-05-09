@@ -30,3 +30,4 @@ export * from "./enterprise";
 export * from "./documentChunks";
 export * from "./effortEstimates";
 export * from "./auditRuns";
+export * from "./pipelineRuns";

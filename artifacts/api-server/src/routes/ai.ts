@@ -31,6 +31,7 @@ import {
   aiReportsTable,
   effortEstimatesTable,
   auditRunsTable,
+  pipelineRunsTable,
 } from "@workspace/db";
 import { inArray } from "drizzle-orm";
 import { count as drizzleCount } from "drizzle-orm";
@@ -1212,6 +1213,19 @@ router.post("/ai/compliance-audit", consumeCredit(), aiHandler(async (req, res) 
     .from(defectsTable)
     .where(eq(defectsTable.projectId, body.projectId));
 
+  // ───────── Load pipeline runs (CI/CD/CD/test/data/MLOps/scan/infra) ────
+  // Pipeline runs are direct evidence of build/test/deploy/scan health and
+  // close compliance gaps that purely-static evidence can't (ASPICE MAN.3,
+  // SWE.4-6; IEC 62304 §5.5–5.8; ISO 26262-6 §11; SOC 2 CC7.1/CC8.1; ISO
+  // 21434; FDA 21 CFR Part 11 §11.10). We pull the most recent ~50 runs
+  // per project — older history is summarised, recent runs cited verbatim.
+  const allPipelineRuns = await db
+    .select()
+    .from(pipelineRunsTable)
+    .where(eq(pipelineRunsTable.projectId, body.projectId))
+    .orderBy(desc(pipelineRunsTable.receivedAt))
+    .limit(200);
+
   // ───────── Load project sources as evidence ─────────
   // Default: every "ready" source for the project.  If the caller passed sourceIds, scope to those.
   const sourcesForProject = await db
@@ -1331,13 +1345,46 @@ router.post("/ai/compliance-audit", consumeCredit(), aiHandler(async (req, res) 
     return `Totals by tool:\n${summary}\n\nMost severe / oldest first (sample of up to 25):\n${samples}`;
   })();
 
+  // ── Pipeline runs evidence block ─────────────────────────────────────
+  // Pipeline runs (CI/CD/CD/test/data/MLOps/security-scan/infra) are direct
+  // evidence of build, test, deploy, scan and infra health. They typically
+  // close compliance gaps that purely-static evidence can't (ASPICE MAN.3 /
+  // SWE.4-6, IEC 62304 §5.5–5.8, ISO 26262-6 §11, SOC 2 CC7.1/CC8.1, ISO
+  // 21434, FDA 21 CFR Part 11 §11.10, NIST CSF PR.IP-3).
+  const pipelineRunsForAudit = allPipelineRuns.filter((r) => includedSourceIds.has(r.sourceId));
+  const pipelineBlock = ((): string => {
+    if (pipelineRunsForAudit.length === 0) {
+      return "(no pipeline runs ingested from connected CI/CD, CD, test, data, MLOps, security-scan, or infrastructure pipelines)";
+    }
+    const byCategory: Record<string, { runs: number; success: number; failure: number; testsTotal: number; testsFailed: number; criticals: number; highs: number }> = {};
+    for (const r of pipelineRunsForAudit) {
+      byCategory[r.category] ??= { runs: 0, success: 0, failure: 0, testsTotal: 0, testsFailed: 0, criticals: 0, highs: 0 };
+      const c = byCategory[r.category]!;
+      c.runs++;
+      if (r.status === "success") c.success++;
+      else if (r.status === "failure") c.failure++;
+      c.testsTotal += r.testsTotal ?? 0;
+      c.testsFailed += r.testsFailed ?? 0;
+      c.criticals += r.findingsCritical ?? 0;
+      c.highs += r.findingsHigh ?? 0;
+    }
+    const summary = Object.entries(byCategory)
+      .map(([cat, t]) => `- ${cat}: ${t.runs} runs (${t.success} success / ${t.failure} failure)${t.testsTotal ? ` · tests ${t.testsTotal - t.testsFailed}/${t.testsTotal} pass` : ""}${t.criticals + t.highs > 0 ? ` · ${t.criticals} critical + ${t.highs} high findings` : ""}`)
+      .join("\n");
+    const recent = pipelineRunsForAudit.slice(0, 30)
+      .map((r) => `- [${r.kind}] ${r.name} (${r.status}${r.conclusion ? `/${r.conclusion}` : ""})${r.branch ? ` on ${r.branch}` : ""}${r.commitSha ? ` @ ${r.commitSha.slice(0, 7)}` : ""}${r.testsTotal ? ` · ${r.testsTotal - (r.testsFailed ?? 0)}/${r.testsTotal} tests` : ""}${(r.findingsCritical ?? 0) + (r.findingsHigh ?? 0) > 0 ? ` · ${r.findingsCritical}C/${r.findingsHigh}H findings` : ""}${r.environment ? ` · env=${r.environment}` : ""}`)
+      .join("\n");
+    return `Totals by category:\n${summary}\n\nMost recent runs (sample of up to 30):\n${recent}`;
+  })();
+
   const system = `You are Auditee's compliance auditor. For each control of the given framework, evaluate whether the project adequately covers it AND explicitly enumerate "required evidence vs found evidence vs missing evidence" so the user gets a clean conformance report.
 
-You have FOUR inputs to reason from:
+You have FIVE inputs to reason from:
 1) The project's requirements (formal documented behaviour). Many of these are imported from Requirements-Management tools (DOORS, Jama, Polarion, …) — treat the imported ones as authoritative when they cite an external system.
 2) The framework's controls (what must be true).
 3) Project sources — actual files ingested from GitHub / uploads / etc. These are real evidence. Cite them when they prove or disprove a control.
 4) Defects imported from connected defect-management tools (Jira, Azure DevOps Bugs, Bugzilla, ServiceNow, ALM Octane, Linear, GitHub Issues, …). The defect log is direct evidence of: incident-management maturity, problem-resolution effectiveness, and unresolved risk against safety/security controls. A high count of OPEN critical defects is a meaningful gap signal — call it out specifically by ticket key when relevant.
+5) Pipeline runs from connected CI/CD, CD, test-execution, data, MLOps, security-scan and infrastructure pipelines (GitHub Actions, GitLab CI, Jenkins, Azure Pipelines, CircleCI, Spinnaker, Argo CD, Airflow, MLflow, SonarQube, Snyk, Semgrep, Terraform Cloud, …). These prove (or disprove) the existence and health of automated build, test, deployment, scanning and infrastructure-provisioning workflows. A green build/test history and a clean SAST/DAST/SCA scan log are positive evidence; persistent build failures, low test counts, or unresolved critical scan findings are negative evidence. Cite the pipeline kind and run name when relevant.
 
 Return strict JSON:
 {
@@ -1365,7 +1412,7 @@ Rules:
 - recommendation: one concrete next step (1 sentence). If evidence is missing for a control, say which file is needed.
 - headlineFindings: 2-4 short bullets summarising the audit, mentioning concrete sources where relevant.`;
 
-  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}\n\nProject sources & evidence:\n${evidenceBlock}\n\nDefects from connected defect-management tools (cite these by ticket key when they prove or disprove a control):\n${defectsBlock}`;
+  const user = `Framework: ${framework.code} — ${framework.name}\nProject: ${project.name}\n\nControls:\n${controls.map((c) => `${c.code}: ${c.title} — ${c.description}`).join("\n")}\n\nRequirements:\n${reqs.map((r) => `${r.code} [${r.type}/${r.status}]: ${r.title} — ${r.description}`).join("\n") || "(none)"}\n\nProject sources & evidence:\n${evidenceBlock}\n\nDefects from connected defect-management tools (cite these by ticket key when they prove or disprove a control):\n${defectsBlock}\n\nPipeline runs from connected CI/CD, CD, test, data, MLOps, security-scan and infrastructure pipelines (cite these by pipeline kind + run name when they prove or disprove a control):\n${pipelineBlock}`;
 
   type AuditResult = {
     overallVerdict: "strong" | "adequate" | "weak" | "failing";

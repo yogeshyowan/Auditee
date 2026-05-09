@@ -9,6 +9,7 @@ import { ingestRequirementsTool, ingestReqifBuffer, isRmKind, RM_KINDS } from ".
 import { ingestDefectsTool, isDefectKind, DEFECT_KINDS } from "../lib/defect-ingestion.js";
 import { ingestDefectsFileBuffer } from "../lib/defect-file-ingestion.js";
 import { requireProjectAccessInline } from "../lib/projectAccess";
+import { PIPELINE_KINDS, isPipelineKind } from "../lib/pipeline-registry.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } }); // 100 MB
 const router: IRouter = Router();
@@ -17,12 +18,12 @@ const CODE_KINDS = ["github", "zip", "folder", "jira", "jenkins", "aws_s3", "gdr
 // `defects_file` is created when the user uploads an exported defect file
 // (CSV / Excel / PDF / JSON) from any defect-management tool.
 const DEFECT_FILE_KIND = "defects_file";
-const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS, ...DEFECT_KINDS, DEFECT_FILE_KIND];
+const SUPPORTED_KINDS = [...CODE_KINDS, ...RM_KINDS, ...DEFECT_KINDS, DEFECT_FILE_KIND, ...PIPELINE_KINDS];
 
 // Strip secrets from config before returning to the client.
 function safeConfig(kind: string, cfg: Record<string, any>): Record<string, any> {
   const out = { ...cfg };
-  for (const k of ["token", "secretAccessKey", "apiKey", "password", "sshKey", "pat", "clientSecret"]) {
+  for (const k of ["token", "secretAccessKey", "apiKey", "password", "sshKey", "pat", "clientSecret", "webhookSecret"]) {
     if (out[k]) out[k] = "•••";
   }
   return out;
@@ -130,6 +131,15 @@ router.post("/sources/:id/sync", async (req, res) => {
       result = await ingestRequirementsTool(src.id, src.projectId, src.kind, src.config as any);
     } else if (isDefectKind(src.kind)) {
       result = await ingestDefectsTool(src.id, src.projectId, src.kind, src.config as any);
+    } else if (isPipelineKind(src.kind)) {
+      // Pipeline sources are inbound-only — they receive runs via webhook /
+      // upload (see routes/pipelineWebhooks.ts). "Sync" just acknowledges
+      // that the source is wired up; ingestion happens push-side.
+      await db
+        .update(projectSourcesTable)
+        .set({ status: "ready", statusMessage: "Awaiting pipeline events", updatedAt: new Date() })
+        .where(eq(projectSourcesTable.id, src.id));
+      result = { count: 0, bytes: 0, summary: "Pipeline sources receive events via webhook/upload — no pull needed." };
     } else {
       result = await ingestRemoteSystem(src.id, src.kind, src.config as any);
     }

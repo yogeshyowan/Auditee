@@ -36,6 +36,7 @@ import enterpriseRouter from "./enterprise";
 import enterpriseExtraRouter from "./enterpriseExtra";
 import chatMessagesRouter from "./chatMessages";
 import githubWebhookRouter from "./githubWebhook";
+import pipelineWebhooksRouter from "./pipelineWebhooks";
 
 const router: IRouter = Router();
 
@@ -76,5 +77,6 @@ router.use(enterpriseRouter);
 router.use(enterpriseExtraRouter);
 router.use(chatMessagesRouter);
 router.use(githubWebhookRouter);
+router.use(pipelineWebhooksRouter);
 
 export default router;
