@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useCanonicalOverride } from "@/contexts/CanonicalContext";
 
 export const SITE_URL = "https://auditee.site";
 export const SITE_NAME = "Auditee";
@@ -99,10 +100,16 @@ export function SEO(props: SEOProps) {
     articleTags,
   } = props;
 
+  // Context-provided canonical takes effect when this component is rendered
+  // inside an <AliasRoute>. The explicit prop always wins; context is the
+  // defence-in-depth fallback; finally fall back to the page's own path.
+  const contextCanonical = useCanonicalOverride();
+
   useEffect(() => {
     const safePath = typeof path === "string" && path.length > 0 ? path : "/";
-    const canonSafePath = canonicalPath
-      ? (canonicalPath.startsWith("/") ? canonicalPath : `/${canonicalPath}`)
+    const resolvedCanonical = canonicalPath ?? contextCanonical ?? null;
+    const canonSafePath = resolvedCanonical
+      ? (resolvedCanonical.startsWith("/") ? resolvedCanonical : `/${resolvedCanonical}`)
       : safePath;
 
     const fullUrl = `${SITE_URL}${safePath.startsWith("/") ? safePath : `/${safePath}`}`;

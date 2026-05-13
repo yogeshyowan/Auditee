@@ -3,6 +3,7 @@ import { Switch, Route, Router as WouterRouter, Redirect, useLocation } from "wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, Show, useClerk } from "@clerk/react";
 import { ClerkLoadGate } from "@/components/ClerkLoadGate";
+import { AliasRoute } from "@/components/AliasRoute";
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/toaster";
 import { UpsellDialog } from "@/components/UpsellDialog";
@@ -311,7 +312,7 @@ function Router() {
       <Route path="/ai-product-development" component={AiProductDevelopment} />
       <Route path="/automated-compliance" component={AutomatedCompliance} />
       <Route path="/ai-requirements-management" component={AiRequirementsManagement} />
-      <Route path="/ai-requirements-generation" component={AiRequirementsManagement} />
+      <AliasRoute path="/ai-requirements-generation" canonical="/ai-requirements-management" component={AiRequirementsManagement} />
       <Route path="/requirements-management" component={RequirementsManagement} />
       <Route path="/brd-generation" component={BrdGeneration} />
       <Route path="/intelligent-document-analysis" component={IntelligentDocumentAnalysis} />
@@ -332,165 +333,165 @@ function Router() {
       <Route path="/faqs" component={Faqs} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
-      <Route path="/terms-of-services" component={TermsOfService} />
+      <AliasRoute path="/terms-of-services" canonical="/terms-of-service" component={TermsOfService} />
       <Route path="/compare/doors" component={CompareDoors} />
-      <Route path="/compare/ibm-doors" component={CompareDoors} />
+      <AliasRoute path="/compare/ibm-doors" canonical="/compare/doors" component={CompareDoors} />
       <Route path="/compare/jama" component={CompareJama} />
-      <Route path="/compare/jama-connect" component={CompareJama} />
+      <AliasRoute path="/compare/jama-connect" canonical="/compare/jama" component={CompareJama} />
       <Route path="/compare/polarion" component={ComparePolarion} />
       <Route path="/integrations" component={Integrations} />
       <Route path="/glossary" component={Glossary} />
       <Route path="/case-studies" component={CaseStudies} />
-      <Route path="/customers" component={CaseStudies} />
+      <AliasRoute path="/customers" canonical="/case-studies" component={CaseStudies} />
       <Route path="/trust" component={TrustCenter} />
-      <Route path="/trust-center" component={TrustCenter} />
+      <AliasRoute path="/trust-center" canonical="/trust" component={TrustCenter} />
       <Route path="/changelog" component={Changelog} />
-      <Route path="/whats-new" component={Changelog} />
+      <AliasRoute path="/whats-new" canonical="/changelog" component={Changelog} />
       <Route path="/use-cases" component={UseCases} />
-      <Route path="/solutions" component={UseCases} />
+      <AliasRoute path="/solutions" canonical="/use-cases" component={UseCases} />
       <Route path="/whitepapers" component={Whitepapers} />
-      <Route path="/resources" component={Whitepapers} />
+      <AliasRoute path="/resources" canonical="/whitepapers" component={Whitepapers} />
       <Route path="/developers" component={Developers} />
-      <Route path="/docs" component={Developers} />
+      <AliasRoute path="/docs" canonical="/developers" component={Developers} />
       <Route path="/partners" component={Partners} />
-      <Route path="/partner-program" component={Partners} />
+      <AliasRoute path="/partner-program" canonical="/partners" component={Partners} />
       <Route path="/status" component={Status} />
-      <Route path="/uptime" component={Status} />
+      <AliasRoute path="/uptime" canonical="/status" component={Status} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/roi-calculator" component={RoiCalculator} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/roadmap" component={Roadmap} />
       <Route path="/careers" component={Careers} />
-      <Route path="/jobs" component={Careers} />
+      <AliasRoute path="/jobs" canonical="/careers" component={Careers} />
       <Route path="/cookie-policy" component={CookiePolicy} />
-      <Route path="/cookies" component={CookiePolicy} />
+      <AliasRoute path="/cookies" canonical="/cookie-policy" component={CookiePolicy} />
       <Route path="/sla" component={Sla} />
-      <Route path="/service-level-agreement" component={Sla} />
+      <AliasRoute path="/service-level-agreement" canonical="/sla" component={Sla} />
       <Route path="/newsroom" component={Newsroom} />
-      <Route path="/press" component={Newsroom} />
+      <AliasRoute path="/press" canonical="/newsroom" component={Newsroom} />
       <Route path="/brand" component={BrandKit} />
-      <Route path="/brand-kit" component={BrandKit} />
-      <Route path="/press-kit" component={BrandKit} />
+      <AliasRoute path="/brand-kit" canonical="/brand" component={BrandKit} />
+      <AliasRoute path="/press-kit" canonical="/brand" component={BrandKit} />
       <Route path="/dpa" component={Dpa} />
-      <Route path="/data-processing-addendum" component={Dpa} />
+      <AliasRoute path="/data-processing-addendum" canonical="/dpa" component={Dpa} />
       <Route path="/msa" component={Msa} />
-      <Route path="/master-services-agreement" component={Msa} />
+      <AliasRoute path="/master-services-agreement" canonical="/msa" component={Msa} />
       <Route path="/baa" component={Baa} />
-      <Route path="/business-associate-agreement" component={Baa} />
+      <AliasRoute path="/business-associate-agreement" canonical="/baa" component={Baa} />
       <Route path="/security-whitepaper" component={SecurityWhitepaper} />
-      <Route path="/whitepaper" component={SecurityWhitepaper} />
+      <AliasRoute path="/whitepaper" canonical="/security-whitepaper" component={SecurityWhitepaper} />
       <Route path="/pentest" component={PentestSummary} />
-      <Route path="/penetration-test" component={PentestSummary} />
+      <AliasRoute path="/penetration-test" canonical="/pentest" component={PentestSummary} />
       <Route path="/security-questionnaire" component={SecurityQuestionnaire} />
-      <Route path="/caiq" component={SecurityQuestionnaire} />
-      <Route path="/sig" component={SecurityQuestionnaire} />
+      <AliasRoute path="/caiq" canonical="/security-questionnaire" component={SecurityQuestionnaire} />
+      <AliasRoute path="/sig" canonical="/security-questionnaire" component={SecurityQuestionnaire} />
       <Route path="/soc2" component={Soc2Report} />
-      <Route path="/soc-2" component={Soc2Report} />
-      <Route path="/soc2-report" component={Soc2Report} />
+      <AliasRoute path="/soc-2" canonical="/soc2" component={Soc2Report} />
+      <AliasRoute path="/soc2-report" canonical="/soc2" component={Soc2Report} />
       <Route path="/sub-processors" component={SubProcessors} />
-      <Route path="/subprocessors" component={SubProcessors} />
+      <AliasRoute path="/subprocessors" canonical="/sub-processors" component={SubProcessors} />
       <Route path="/aup" component={Aup} />
-      <Route path="/acceptable-use" component={Aup} />
-      <Route path="/acceptable-use-policy" component={Aup} />
+      <AliasRoute path="/acceptable-use" canonical="/aup" component={Aup} />
+      <AliasRoute path="/acceptable-use-policy" canonical="/aup" component={Aup} />
       <Route path="/webinars" component={Webinars} />
-      <Route path="/events" component={Webinars} />
+      <AliasRoute path="/events" canonical="/webinars" component={Webinars} />
       <Route path="/help" component={HelpCenter} />
-      <Route path="/help-center" component={HelpCenter} />
-      <Route path="/support" component={HelpCenter} />
+      <AliasRoute path="/help-center" canonical="/help" component={HelpCenter} />
+      <AliasRoute path="/support" canonical="/help" component={HelpCenter} />
       <Route path="/migrations" component={Migrations} />
-      <Route path="/migrate" component={Migrations} />
+      <AliasRoute path="/migrate" canonical="/migrations" component={Migrations} />
       <Route path="/affiliates" component={Affiliates} />
-      <Route path="/affiliate-program" component={Affiliates} />
-      <Route path="/referral" component={Affiliates} />
+      <AliasRoute path="/affiliate-program" canonical="/affiliates" component={Affiliates} />
+      <AliasRoute path="/referral" canonical="/affiliates" component={Affiliates} />
       <Route path="/free-tools" component={FreeTools} />
-      <Route path="/tools" component={FreeTools} />
+      <AliasRoute path="/tools" canonical="/free-tools" component={FreeTools} />
       <Route path="/compare" component={CompareHub} />
-      <Route path="/comparisons" component={CompareHub} />
-      <Route path="/alternatives" component={CompareHub} />
+      <AliasRoute path="/comparisons" canonical="/compare" component={CompareHub} />
+      <AliasRoute path="/alternatives" canonical="/compare" component={CompareHub} />
       <Route path="/industries" component={IndustriesHub} />
-      <Route path="/sectors" component={IndustriesHub} />
+      <AliasRoute path="/sectors" canonical="/industries" component={IndustriesHub} />
       <Route path="/for-startups" component={ForStartups} />
-      <Route path="/startups" component={ForStartups} />
+      <AliasRoute path="/startups" canonical="/for-startups" component={ForStartups} />
       <Route path="/for-enterprise" component={ForEnterprise} />
-      <Route path="/enterprise" component={ForEnterprise} />
+      <AliasRoute path="/enterprise" canonical="/for-enterprise" component={ForEnterprise} />
       <Route path="/templates" component={TemplatesPage} />
-      <Route path="/template-library" component={TemplatesPage} />
+      <AliasRoute path="/template-library" canonical="/templates" component={TemplatesPage} />
       <Route path="/customers" component={Customers} />
-      <Route path="/logos" component={Customers} />
+      <AliasRoute path="/logos" canonical="/customers" component={Customers} />
       <Route path="/standards" component={StandardsHub} />
-      <Route path="/standards-library" component={StandardsHub} />
+      <AliasRoute path="/standards-library" canonical="/standards" component={StandardsHub} />
       <Route path="/teams" component={Teams} />
-      <Route path="/roles" component={Teams} />
+      <AliasRoute path="/roles" canonical="/teams" component={Teams} />
       <Route path="/vdp" component={VulnerabilityDisclosure} />
-      <Route path="/vulnerability-disclosure" component={VulnerabilityDisclosure} />
-      <Route path="/security/disclosure" component={VulnerabilityDisclosure} />
+      <AliasRoute path="/vulnerability-disclosure" canonical="/vdp" component={VulnerabilityDisclosure} />
+      <AliasRoute path="/security/disclosure" canonical="/vdp" component={VulnerabilityDisclosure} />
       <Route path="/sitemap" component={HtmlSitemap} />
-      <Route path="/site-map" component={HtmlSitemap} />
+      <AliasRoute path="/site-map" canonical="/sitemap" component={HtmlSitemap} />
       <Route path="/refund-policy" component={RefundPolicy} />
-      <Route path="/refunds" component={RefundPolicy} />
+      <AliasRoute path="/refunds" canonical="/refund-policy" component={RefundPolicy} />
       <Route path="/cancellation-policy" component={CancellationPolicy} />
-      <Route path="/cancellation" component={CancellationPolicy} />
+      <AliasRoute path="/cancellation" canonical="/cancellation-policy" component={CancellationPolicy} />
       <Route path="/shipping-policy" component={ShippingPolicy} />
-      <Route path="/shipping" component={ShippingPolicy} />
-      <Route path="/delivery-policy" component={ShippingPolicy} />
+      <AliasRoute path="/shipping" canonical="/shipping-policy" component={ShippingPolicy} />
+      <AliasRoute path="/delivery-policy" canonical="/shipping-policy" component={ShippingPolicy} />
       <Route path="/accessibility" component={Accessibility} />
-      <Route path="/a11y" component={Accessibility} />
+      <AliasRoute path="/a11y" canonical="/accessibility" component={Accessibility} />
       <Route path="/community" component={Community} />
-      <Route path="/slack" component={Community} />
+      <AliasRoute path="/slack" canonical="/community" component={Community} />
       <Route path="/aspice" component={Aspice} />
-      <Route path="/aspice-4-0" component={Aspice} />
-      <Route path="/aspice-compliance" component={Aspice} />
-      <Route path="/automotive-spice" component={Aspice} />
+      <AliasRoute path="/aspice-4-0" canonical="/aspice" component={Aspice} />
+      <AliasRoute path="/aspice-compliance" canonical="/aspice" component={Aspice} />
+      <AliasRoute path="/automotive-spice" canonical="/aspice" component={Aspice} />
       <Route path="/iec-62304" component={Iec62304} />
-      <Route path="/iec62304" component={Iec62304} />
-      <Route path="/iec-62304-compliance" component={Iec62304} />
+      <AliasRoute path="/iec62304" canonical="/iec-62304" component={Iec62304} />
+      <AliasRoute path="/iec-62304-compliance" canonical="/iec-62304" component={Iec62304} />
       <Route path="/fda-qmsr" component={FdaQmsr} />
-      <Route path="/qmsr" component={FdaQmsr} />
-      <Route path="/21-cfr-820" component={FdaQmsr} />
+      <AliasRoute path="/qmsr" canonical="/fda-qmsr" component={FdaQmsr} />
+      <AliasRoute path="/21-cfr-820" canonical="/fda-qmsr" component={FdaQmsr} />
       <Route path="/integrations/jira" component={IntegrationJira} />
-      <Route path="/jira-integration" component={IntegrationJira} />
+      <AliasRoute path="/jira-integration" canonical="/integrations/jira" component={IntegrationJira} />
       <Route path="/integrations/azure-devops" component={IntegrationAzureDevOps} />
-      <Route path="/integrations/ado" component={IntegrationAzureDevOps} />
-      <Route path="/azure-devops-integration" component={IntegrationAzureDevOps} />
+      <AliasRoute path="/integrations/ado" canonical="/integrations/azure-devops" component={IntegrationAzureDevOps} />
+      <AliasRoute path="/azure-devops-integration" canonical="/integrations/azure-devops" component={IntegrationAzureDevOps} />
       <Route path="/iso-26262" component={Iso26262} />
-      <Route path="/iso26262" component={Iso26262} />
-      <Route path="/functional-safety" component={Iso26262} />
+      <AliasRoute path="/iso26262" canonical="/iso-26262" component={Iso26262} />
+      <AliasRoute path="/functional-safety" canonical="/iso-26262" component={Iso26262} />
       <Route path="/iso-21434" component={Iso21434} />
-      <Route path="/iso21434" component={Iso21434} />
-      <Route path="/automotive-cybersecurity" component={Iso21434} />
-      <Route path="/un-r155" component={Iso21434} />
+      <AliasRoute path="/iso21434" canonical="/iso-21434" component={Iso21434} />
+      <AliasRoute path="/automotive-cybersecurity" canonical="/iso-21434" component={Iso21434} />
+      <AliasRoute path="/un-r155" canonical="/iso-21434" component={Iso21434} />
       <Route path="/dpdp-act" component={DpdpAct} />
-      <Route path="/dpdp" component={DpdpAct} />
-      <Route path="/india-data-protection" component={DpdpAct} />
+      <AliasRoute path="/dpdp" canonical="/dpdp-act" component={DpdpAct} />
+      <AliasRoute path="/india-data-protection" canonical="/dpdp-act" component={DpdpAct} />
       <Route path="/integrations/github" component={IntegrationGitHub} />
-      <Route path="/github-integration" component={IntegrationGitHub} />
+      <AliasRoute path="/github-integration" canonical="/integrations/github" component={IntegrationGitHub} />
       <Route path="/integrations/slack" component={IntegrationSlack} />
-      <Route path="/slack-integration" component={IntegrationSlack} />
+      <AliasRoute path="/slack-integration" canonical="/integrations/slack" component={IntegrationSlack} />
       <Route path="/gdpr" component={Gdpr} />
-      <Route path="/eu-gdpr" component={Gdpr} />
-      <Route path="/uk-gdpr" component={Gdpr} />
+      <AliasRoute path="/eu-gdpr" canonical="/gdpr" component={Gdpr} />
+      <AliasRoute path="/uk-gdpr" canonical="/gdpr" component={Gdpr} />
       <Route path="/soc-2-type-ii" component={Soc2} />
       <Route path="/iso-27001" component={Iso27001} />
-      <Route path="/iso27001" component={Iso27001} />
-      <Route path="/isms" component={Iso27001} />
+      <AliasRoute path="/iso27001" canonical="/iso-27001" component={Iso27001} />
+      <AliasRoute path="/isms" canonical="/iso-27001" component={Iso27001} />
       <Route path="/integrations/gitlab" component={IntegrationGitLab} />
-      <Route path="/gitlab-integration" component={IntegrationGitLab} />
+      <AliasRoute path="/gitlab-integration" canonical="/integrations/gitlab" component={IntegrationGitLab} />
       <Route path="/integrations/confluence" component={IntegrationConfluence} />
-      <Route path="/confluence-integration" component={IntegrationConfluence} />
+      <AliasRoute path="/confluence-integration" canonical="/integrations/confluence" component={IntegrationConfluence} />
       <Route path="/hipaa" component={Hipaa} />
-      <Route path="/hipaa-compliance" component={Hipaa} />
+      <AliasRoute path="/hipaa-compliance" canonical="/hipaa" component={Hipaa} />
       <Route path="/dora" component={Dora} />
-      <Route path="/dora-regulation" component={Dora} />
-      <Route path="/digital-operational-resilience-act" component={Dora} />
+      <AliasRoute path="/dora-regulation" canonical="/dora" component={Dora} />
+      <AliasRoute path="/digital-operational-resilience-act" canonical="/dora" component={Dora} />
       <Route path="/eu-ai-act" component={EuAiAct} />
-      <Route path="/ai-act" component={EuAiAct} />
-      <Route path="/eu-2024-1689" component={EuAiAct} />
+      <AliasRoute path="/ai-act" canonical="/eu-ai-act" component={EuAiAct} />
+      <AliasRoute path="/eu-2024-1689" canonical="/eu-ai-act" component={EuAiAct} />
       <Route path="/integrations/servicenow" component={IntegrationServiceNow} />
-      <Route path="/servicenow-integration" component={IntegrationServiceNow} />
+      <AliasRoute path="/servicenow-integration" canonical="/integrations/servicenow" component={IntegrationServiceNow} />
       <Route path="/integrations/microsoft-teams" component={IntegrationMicrosoftTeams} />
-      <Route path="/integrations/teams" component={IntegrationMicrosoftTeams} />
-      <Route path="/microsoft-teams-integration" component={IntegrationMicrosoftTeams} />
+      <AliasRoute path="/integrations/teams" canonical="/integrations/microsoft-teams" component={IntegrationMicrosoftTeams} />
+      <AliasRoute path="/microsoft-teams-integration" canonical="/integrations/microsoft-teams" component={IntegrationMicrosoftTeams} />
       <Route path="/security" component={Security} />
       <Route path="/blog" component={Blog} />
       <Route path="/blog/:slug" component={BlogPost} />
