@@ -17,9 +17,35 @@ export interface SEOProps {
   modifiedTime?: string;
   author?: string;
   articleTags?: string[];
+  /** Override the canonical URL path. Use when a page is served at multiple
+   *  alias routes and only the primary canonical should be declared. */
+  canonicalPath?: string;
 }
 
 const MANAGED_ATTR = "data-seo-managed";
+
+/** Truncate at word boundary to keep under `max` characters. */
+function truncateAtWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd() + "\u2026";
+}
+
+/** Return a title that fits Google's ~60-char display limit. */
+function buildTitle(rawTitle: string): string {
+  const branded = rawTitle.includes(SITE_NAME) ? rawTitle : `${rawTitle} | ${SITE_NAME}`;
+  if (branded.length <= 60) return branded;
+  // Try the raw title without the site name suffix
+  if (rawTitle.length <= 60) return rawTitle;
+  // Truncate at word boundary preserving the site name if possible
+  return truncateAtWord(rawTitle, 57) + " | " + SITE_NAME.slice(0, 0) || truncateAtWord(branded, 60);
+}
+
+/** Return a description that fits the ~160-char meta description limit. */
+function buildDescription(desc: string): string {
+  return truncateAtWord(desc, 160);
+}
 
 // Claim ANY existing tag matching the key (managed or static from index.html)
 // so we don't end up with duplicate description / canonical / og:url / hreflang
@@ -61,6 +87,7 @@ export function SEO(props: SEOProps) {
     title,
     description,
     path,
+    canonicalPath,
     ogImage = DEFAULT_OG_IMAGE,
     ogType = "website",
     keywords,
@@ -74,8 +101,15 @@ export function SEO(props: SEOProps) {
 
   useEffect(() => {
     const safePath = typeof path === "string" && path.length > 0 ? path : "/";
+    const canonSafePath = canonicalPath
+      ? (canonicalPath.startsWith("/") ? canonicalPath : `/${canonicalPath}`)
+      : safePath;
+
     const fullUrl = `${SITE_URL}${safePath.startsWith("/") ? safePath : `/${safePath}`}`;
-    const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
+    const canonicalUrl = `${SITE_URL}${canonSafePath}`;
+
+    const fullTitle = buildTitle(title);
+    const safeDescription = buildDescription(description);
 
     document.title = fullTitle;
 
@@ -89,7 +123,7 @@ export function SEO(props: SEOProps) {
         : "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
     );
 
-    setMeta(`meta[name="description"][${MANAGED_ATTR}]`, "name", "description", description);
+    setMeta(`meta[name="description"][${MANAGED_ATTR}]`, "name", "description", safeDescription);
     if (keywords && keywords.length > 0) {
       setMeta(`meta[name="keywords"][${MANAGED_ATTR}]`, "name", "keywords", keywords.join(", "));
     }
@@ -97,10 +131,11 @@ export function SEO(props: SEOProps) {
     // Open Graph
     setMeta(`meta[property="og:type"][${MANAGED_ATTR}]`, "property", "og:type", ogType);
     setMeta(`meta[property="og:title"][${MANAGED_ATTR}]`, "property", "og:title", fullTitle);
-    setMeta(`meta[property="og:description"][${MANAGED_ATTR}]`, "property", "og:description", description);
-    setMeta(`meta[property="og:url"][${MANAGED_ATTR}]`, "property", "og:url", fullUrl);
+    setMeta(`meta[property="og:description"][${MANAGED_ATTR}]`, "property", "og:description", safeDescription);
+    setMeta(`meta[property="og:url"][${MANAGED_ATTR}]`, "property", "og:url", canonicalUrl);
     setMeta(`meta[property="og:image"][${MANAGED_ATTR}]`, "property", "og:image", ogImage);
     setMeta(`meta[property="og:site_name"][${MANAGED_ATTR}]`, "property", "og:site_name", SITE_NAME);
+    setMeta(`meta[property="og:locale"][${MANAGED_ATTR}]`, "property", "og:locale", "en_US");
 
     // Article-specific
     if (ogType === "article") {
@@ -149,14 +184,14 @@ export function SEO(props: SEOProps) {
       `meta[name="twitter:description"][${MANAGED_ATTR}]`,
       "name",
       "twitter:description",
-      description,
+      safeDescription,
     );
     setMeta(`meta[name="twitter:image"][${MANAGED_ATTR}]`, "name", "twitter:image", ogImage);
     setMeta(
       `meta[name="twitter:image:alt"][${MANAGED_ATTR}]`,
       "name",
       "twitter:image:alt",
-      title,
+      fullTitle,
     );
     setMeta(`meta[name="twitter:site"][${MANAGED_ATTR}]`, "name", "twitter:site", "@auditee_ai");
     setMeta(
@@ -165,21 +200,21 @@ export function SEO(props: SEOProps) {
       "twitter:creator",
       "@auditee_ai",
     );
-    setMeta(`meta[name="twitter:url"][${MANAGED_ATTR}]`, "name", "twitter:url", fullUrl);
+    setMeta(`meta[name="twitter:url"][${MANAGED_ATTR}]`, "name", "twitter:url", canonicalUrl);
     setMeta(
       `meta[property="og:image:alt"][${MANAGED_ATTR}]`,
       "property",
       "og:image:alt",
-      title,
+      fullTitle,
     );
 
     // Canonical + per-page hreflang. The site is single-language English so we
     // only emit a self-referencing `en` and `x-default` (per Google guidance —
     // declaring en-US/en-GB/en-IN/en-AU/en-CA all pointing at the same URL is
     // low-signal and Semrush/Ahrefs flag it as redundant).
-    setLink("canonical", fullUrl);
-    setLink("alternate", fullUrl, { name: "hreflang", value: "en" });
-    setLink("alternate", fullUrl, { name: "hreflang", value: "x-default" });
+    setLink("canonical", canonicalUrl);
+    setLink("alternate", canonicalUrl, { name: "hreflang", value: "en" });
+    setLink("alternate", canonicalUrl, { name: "hreflang", value: "x-default" });
 
     // JSON-LD
     const userLds = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
@@ -191,7 +226,7 @@ export function SEO(props: SEOProps) {
     // use it for site-hierarchy context. Skipped on "/" (just Home is
     // noise) and skipped if the page already provides a BreadcrumbList
     // (e.g. Pricing) to avoid duplicates. Same shape as breadcrumbsLd().
-    const trimmedPath = safePath.replace(/^\/+|\/+$/g, "");
+    const trimmedPath = canonSafePath.replace(/^\/+|\/+$/g, "");
     const hasUserBreadcrumb = userLds.some(
       (d) => (d as Record<string, unknown>)["@type"] === "BreadcrumbList",
     );
@@ -221,7 +256,10 @@ export function SEO(props: SEOProps) {
           "@type": "ListItem",
           position: i + 1,
           name: c.name,
-          item: c.url,
+          item: {
+            "@type": "Thing",
+            "@id": c.url,
+          },
         })),
       });
     }
@@ -247,6 +285,7 @@ export function SEO(props: SEOProps) {
     title,
     description,
     path,
+    canonicalPath,
     ogImage,
     ogType,
     keywords?.join("|"),
@@ -269,7 +308,10 @@ export function breadcrumbsLd(items: { name: string; path: string }[]): Record<s
       "@type": "ListItem",
       position: i + 1,
       name: it.name,
-      item: `${SITE_URL}${it.path.startsWith("/") ? it.path : `/${it.path}`}`,
+      item: {
+        "@type": "Thing",
+        "@id": `${SITE_URL}${it.path.startsWith("/") ? it.path : `/${it.path}`}`,
+      },
     })),
   };
 }
