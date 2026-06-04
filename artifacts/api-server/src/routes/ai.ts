@@ -1219,12 +1219,17 @@ router.post("/ai/compliance-audit", consumeCredit(), aiHandler(async (req, res) 
   // SWE.4-6; IEC 62304 §5.5–5.8; ISO 26262-6 §11; SOC 2 CC7.1/CC8.1; ISO
   // 21434; FDA 21 CFR Part 11 §11.10). We pull the most recent ~50 runs
   // per project — older history is summarised, recent runs cited verbatim.
-  const allPipelineRuns = await db
+  let allPipelineRuns: typeof pipelineRunsTable.$inferSelect[] = [];
+try {
+  allPipelineRuns = await db
     .select()
     .from(pipelineRunsTable)
     .where(eq(pipelineRunsTable.projectId, body.projectId))
     .orderBy(desc(pipelineRunsTable.receivedAt))
     .limit(200);
+} catch (err) {
+  req.log?.warn?.({ err }, "pipeline_runs query failed — skipping pipeline evidence (table may not exist yet)");
+}
 
   // ───────── Load project sources as evidence ─────────
   // Default: every "ready" source for the project.  If the caller passed sourceIds, scope to those.
